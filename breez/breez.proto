@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.breez.service";
+option java_outer_classname = "BreezProto";
+
+package breez;
+
+service Information {
+  rpc Ping (PingRequest) returns (PingReply) {}
+}
+
+service MempoolNotifier {
+  rpc MempoolRegister (MempoolRegisterRequest) returns (MempoolRegisterReply) {}
+}
+
+service FundManager {
+    rpc OpenChannel (OpenChannelRequest) returns (OpenChannelReply) {}
+    rpc AddFund (AddFundRequest) returns (AddFundReply) {}
+    rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
+    rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
+}
+
+message OpenChannelRequest {
+    string pubKey = 1;
+}
+
+message OpenChannelReply {}
+
+message AddFundRequest {
+    string paymentRequest = 1;
+    string notificationToken = 2;
+}
+
+message AddFundReply {
+    string address = 1;
+}
+
+message AddFundStatusRequest {
+    repeated string addresses = 1;
+    string notificationToken = 2;
+}
+
+message AddFundStatusReply {
+    message AddressStatus {
+        string tx = 1;
+        int64 amount = 2;
+        bool confirmed = 3;
+        string blockHash = 4;
+    }
+    map<string, AddressStatus> statuses = 1;
+}
+
+message RemoveFundRequest {
+    string address = 1;
+    int64 amount = 2;
+}
+
+message RemoveFundReply {
+}
+
+message MempoolRegisterRequest {
+  string clientID = 1;
+  repeated string addresses = 2;
+}
+
+message MempoolRegisterReply {
+  message Transaction {
+      string TX = 1;
+      string Address = 2;
+      double Value = 3;
+  }
+  repeated Transaction TXS = 1;
+}
+
+message PingRequest {
+}
+
+message PingReply {
+  string version = 1;
+}
