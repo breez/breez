@@ -124,6 +124,7 @@ func onReady() {
 		go watchRoutingNodeConnection()
 		go watchPayments()
 		go generateBlankInvoiceWithRetry()
+		watchFundTransfers()
 		syncToChain()
 		connectRoutingNode()
 		go watchOnChainState()
