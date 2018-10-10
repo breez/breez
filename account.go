@@ -16,7 +16,7 @@ import (
 
 const (
 	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout = 30
+	endpointTimeout      = 30
 )
 
 var (
@@ -59,83 +59,6 @@ func createChannel(pubkey string) error {
 	}
 
 	return nil
-}
-
-/*
-AddFunds is responsible for topping up an existing channel
-*/
-func AddFunds(notificationToken string) (string, error) {
-	invoiceData := &data.InvoiceMemo{TransferRequest: true}
-	memo, err := proto.Marshal(invoiceData)
-	if err != nil {
-		return "", err
-	}
-
-	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
-	if err != nil {
-		log.Criticalf("Failed to call AddInvoice %v", err)
-		return "", err
-	}
-
-	c := breezservice.NewFundManagerClient(breezClientConnection)
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	defer cancel()
-
-	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
-	if err != nil {
-		log.Errorf("Error in AddFund: %v", err)
-		return "", err
-	}
-
-	err = saveFundingAddress(r.Address)
-	if err != nil {
-		return "", err
-	}
-	return r.Address, nil
-}
-
-/*
-GetFundStatus gets a notification token and does two things:
-1. Register for notifications on all saved addresses
-2. Fetch the current status for the saved addresses from the server
-*/
-func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	defer cancel()
-	c := breezservice.NewFundManagerClient(breezClientConnection)
-	addresses := fetchAllFundingAddresses()
-	if len(addresses) == 0 {
-		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
-	}
-
-	statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: addresses})
-	if err != nil {
-		return nil, err
-	}
-
-	var confirmedAddresses []string
-	var hasWaitingConfirmation bool
-	for address, status := range statusesMap.Statuses {
-		if status.Confirmed {
-			confirmedAddresses = append(confirmedAddresses, address)
-		} else {
-			hasWaitingConfirmation = true
-		}
-	}
-
-	err = removeFundingAddresses(confirmedAddresses)
-	if err != nil {
-		return nil, err
-	}
-
-	status := data.FundStatusReply_NO_FUND
-	if hasWaitingConfirmation {
-		status = data.FundStatusReply_WAITING_CONFIRMATION
-	} else if len(confirmedAddresses) > 0 {
-		status = data.FundStatusReply_CONFIRMED
-	}
-
-	return &data.FundStatusReply{Status: status}, nil
 }
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
