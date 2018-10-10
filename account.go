@@ -2,6 +2,7 @@ package breez
 
 import (
 	"context"
+	"io"
 	"math"
 	"sync/atomic"
 	"time"
@@ -199,6 +200,9 @@ func onAccountChanged() {
 func watchRoutingNodeConnection() error {
 	log.Infof("watchRoutingNodeConnection started")
 	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
+	if err == io.EOF {
+		return err
+	}
 	if err != nil {
 		log.Errorf("Failed to subscribe peers %v", err)
 		return err
