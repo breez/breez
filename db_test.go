@@ -8,21 +8,33 @@ import (
 func TestAddresses(t *testing.T) {
 	openDB("testdb")
 	defer deleteDB()
-	if err := saveFundingAddress("addr1"); err != nil {
+	if err := saveSwapAddressInfo(&swapAddressInfo{Address: "addr1", PaymentHash: []byte{1, 2, 3}}); err != nil {
 		t.Error(err)
 	}
-	if err := saveFundingAddress("addr2"); err != nil {
+	if err := saveSwapAddressInfo(&swapAddressInfo{Address: "addr2", PaymentHash: []byte{4, 5, 6}}); err != nil {
 		t.Error(err)
 	}
-	addresses := fetchAllFundingAddresses()
+	addresses := fetchAllSwapAddresses()
 
 	if len(addresses) != 2 {
 		t.Error("addresses length is ", len(addresses))
-		t.FailNow()
 	}
-	if strings.Compare(addresses[0], "addr1") != 0 || strings.Compare(addresses[1], "addr2") != 0 {
-		t.Error("addresses from db are ", addresses)
-		t.FailNow()
+	if strings.Compare(addresses[0].Address, "addr1") != 0 || strings.Compare(addresses[1].Address, "addr2") != 0 {
+		t.Error("addresses from db are ", addresses[0].Address)
+	}
+
+	removed, err := removeSwapAddressByPaymentHash([]byte{1, 2, 3})
+	if err != nil || !removed {
+		t.Error("failed to remove swap address")
+	}
+	addresses = fetchAllSwapAddresses()
+	if len(addresses) != 1 {
+		t.Error("addresses length is ", len(addresses))
+	}
+
+	removed, err = removeSwapAddressByPaymentHash([]byte{1, 2, 3})
+	if err != nil || removed {
+		t.Error("failed to remove not existing swap address")
 	}
 }
 
