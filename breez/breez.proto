@@ -19,6 +19,7 @@ service FundManager {
     rpc AddFund (AddFundRequest) returns (AddFundReply) {}
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
+    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}
 }
 
 message OpenChannelRequest {
@@ -57,6 +58,15 @@ message RemoveFundRequest {
 }
 
 message RemoveFundReply {
+}
+
+message GetPaymentRequest {
+  string paymentRequest = 1;
+  string address = 2;
+}
+
+message GetPaymentReply {
+  string paymentError = 1;
 }
 
 message MempoolRegisterRequest {
