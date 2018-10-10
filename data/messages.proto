@@ -23,6 +23,7 @@ message Account {
     AccountStatus status = 6;        
     int64 maxAllowedToReceive = 9;
     int64 maxPaymentAmount = 10;
+    int64 balanceLimitForDeposit = 11;
 }
 
 message Payment {
