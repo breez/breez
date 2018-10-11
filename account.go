@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout      = 30
+	maxPaymentAllowedSat   = math.MaxUint32 / 1000
+	maxAllowedLocalBalance = 500000
+	endpointTimeout        = 30
 )
 
 var (
@@ -88,7 +89,7 @@ func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_
 	return data.Account_WAITING_DEPOSIT, nil
 }
 
-func getAccountLimits() (remoteBalance int64, maxAllowedToReceive int64, maxAllowedPaymentAmount int64, er error) {
+func getAccountLimits() (remoteBalance int64, maxAllowedToReceive int64, maxAllowedPaymentAmount int64, balanceLimitForDeposit int64, er error) {
 	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
@@ -113,6 +114,7 @@ func getAccountLimits() (remoteBalance int64, maxAllowedToReceive int64, maxAllo
 	}
 
 	maxAllowedPaymentAmount = maxPaymentAllowedSat
+	balanceLimitForDeposit = maxAllowedLocalBalance
 
 	return
 }
@@ -154,7 +156,7 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	remoteBalance, maxAllowedToReceive, maxPaymentAmount, err := getAccountLimits()
+	remoteBalance, maxAllowedToReceive, maxPaymentAmount, balanceLimitForDeposit, err := getAccountLimits()
 	if err != nil {
 		return nil, err
 	}
@@ -169,14 +171,15 @@ func calculateAccount() (*data.Account, error) {
 	}
 
 	return &data.Account{
-		Id:                    lnInfo.IdentityPubkey,
-		Balance:               channelBalance.Balance,
-		RemoteBalance:         remoteBalance,
-		MaxAllowedToReceive:   maxAllowedToReceive,
-		MaxPaymentAmount:      maxPaymentAmount,
-		Status:                accStatus,
-		WalletBalance:         walletBalance.ConfirmedBalance,
-		NonDepositableBalance: nonDepositableBalance,
+		Id:                     lnInfo.IdentityPubkey,
+		Balance:                channelBalance.Balance,
+		RemoteBalance:          remoteBalance,
+		MaxAllowedToReceive:    maxAllowedToReceive,
+		MaxPaymentAmount:       maxPaymentAmount,
+		Status:                 accStatus,
+		WalletBalance:          walletBalance.ConfirmedBalance,
+		NonDepositableBalance:  nonDepositableBalance,
+		BalanceLimitForDeposit: balanceLimitForDeposit,
 	}, nil
 }
 
