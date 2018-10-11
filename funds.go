@@ -195,6 +195,7 @@ func getPayment(address string) {
 	reply, err := c.GetPayment(ctx, &breezservice.GetPaymentRequest{Address: address})
 	if err != nil {
 		log.Errorf("failed to get payment for address %v, err = %v", address, err)
+		return
 	}
 	if len(reply.PaymentError) > 0 {
 		log.Errorf("failed to get payment for address %v, err = %v", address, reply.PaymentError)
