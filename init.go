@@ -56,6 +56,7 @@ var (
 	breezClientConnection *grpc.ClientConn
 	notificationsChan     = make(chan data.NotificationEvent)
 	appWorkingDir         string
+	isReady               bool
 )
 
 type config struct {
@@ -125,6 +126,7 @@ func onReady() {
 		return
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
+	isReady = true
 
 	go func() {
 		go watchRoutingNodeConnection()
