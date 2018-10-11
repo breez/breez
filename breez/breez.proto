@@ -20,6 +20,7 @@ service FundManager {
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
     rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}
+    rpc GetFundLimits(GetFundLimitsRequest) returns (GetFundLimitsReply) {}
 }
 
 message OpenChannelRequest {
@@ -67,6 +68,15 @@ message GetPaymentRequest {
 
 message GetPaymentReply {
   string paymentError = 1;
+}
+
+message GetFundLimitsRequest {
+  string lightningID = 1;
+}
+
+message GetFundLimitsReply {
+  int64 maxDepositAmount = 1;  
+  int64 depositBalanceThreshold = 2;  
 }
 
 message MempoolRegisterRequest {
