@@ -27,15 +27,7 @@ message Account {
     int64 maxAllowedToPay = 6;
 
     //The lightning absolute payment amount
-    int64 maxPaymentAmount = 7;
-
-    //The maximum amount allowed for this node to deposit on-chain
-    int64 maxAllowedDeposit = 8;
-
-    //The maximum amount that this node can have in its local balance
-    //and still have the ability to deposit. If the node's local balance is more than 
-    //this amount it won't be able to deposit.
-    int64 depositBalanceThreshold = 9;
+    int64 maxPaymentAmount = 7;    
 }
 
 message Payment {
@@ -91,6 +83,12 @@ message NotificationEvent {
     }
 
     NotificationType type = 1;
+}
+
+message AddFundReply {
+    string address = 1;
+    int64 maxAllowedDeposit = 2;
+    string errorMessage = 3;
 }
 
 message FundStatusReply {

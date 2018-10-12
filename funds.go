@@ -34,17 +34,17 @@ func deserializeSwapAddressInfo(addressBytes []byte) (*swapAddressInfo, error) {
 /*
 AddFunds is responsible for topping up an existing channel
 */
-func AddFunds(notificationToken string) (string, error) {
+func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
 	memo, err := proto.Marshal(invoiceData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
 	if err != nil {
 		log.Criticalf("Failed to call AddInvoice %v", err)
-		return "", err
+		return nil, err
 	}
 
 	c := breezservice.NewFundManagerClient(breezClientConnection)
@@ -54,16 +54,18 @@ func AddFunds(notificationToken string) (string, error) {
 	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
 	if err != nil {
 		log.Errorf("Error in AddFund: %v", err)
-		return "", err
+		return nil, err
 	}
 
-	addressInfo := &swapAddressInfo{Address: r.Address, Payed: false, TransactinoConfirmed: false, PaymentHash: invoice.RHash}
-
-	err = saveSwapAddressInfo(addressInfo)
-	if err != nil {
-		return "", err
+	if r.Address != "" {
+		addressInfo := &swapAddressInfo{Address: r.Address, Payed: false, TransactinoConfirmed: false, PaymentHash: invoice.RHash}
+		err = saveSwapAddressInfo(addressInfo)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return r.Address, nil
+
+	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 }
 
 /*

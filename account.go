@@ -165,11 +165,6 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	maxAllowedDeposit, depositBalanceThreshold, err := getAccountLimits(lnInfo.IdentityPubkey)
-	if err != nil {
-		return nil, err
-	}
-
 	nonDepositableBalance := walletBalance.ConfirmedBalance
 
 	//In case we have funds in our wallet and the funding transaction is still didn't braodcasted and the channel is not opened yet
@@ -181,15 +176,13 @@ func calculateAccount() (*data.Account, error) {
 	}
 
 	return &data.Account{
-		Id:                      lnInfo.IdentityPubkey,
-		Balance:                 channelBalance.Balance,
-		MaxAllowedToReceive:     maxAllowedToReceive,
-		MaxAllowedToPay:         maxAllowedToPay,
-		MaxPaymentAmount:        maxPaymentAllowedSat,
-		Status:                  accStatus,
-		NonDepositableBalance:   nonDepositableBalance,
-		MaxAllowedDeposit:       maxAllowedDeposit,
-		DepositBalanceThreshold: depositBalanceThreshold,
+		Id:                    lnInfo.IdentityPubkey,
+		Balance:               channelBalance.Balance,
+		MaxAllowedToReceive:   maxAllowedToReceive,
+		MaxAllowedToPay:       maxAllowedToPay,
+		MaxPaymentAmount:      maxPaymentAllowedSat,
+		Status:                accStatus,
+		NonDepositableBalance: nonDepositableBalance,
 	}, nil
 }
 
@@ -250,16 +243,4 @@ func onRoutingNodeConnectionChanged(connected bool) {
 			onAccountChanged()
 		}
 	}
-}
-
-func getAccountLimits(pubKey string) (maxDeposit int64, depositBalanceThreshold int64, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	c := breezservice.NewFundManagerClient(breezClientConnection)
-	defer cancel()
-	maxReply, err := c.GetFundLimits(ctx, &breezservice.GetFundLimitsRequest{LightningID: pubKey})
-	if err != nil {
-		return 0, 0, err
-	}
-	log.Infof("getMaxAllowedDeposit: max amount = %v max", maxReply.MaxDepositAmount, maxReply.DepositBalanceThreshold)
-	return maxReply.MaxDepositAmount, maxReply.DepositBalanceThreshold, nil
 }
