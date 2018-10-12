@@ -140,6 +140,13 @@ func SendCommand(command string) (string, error) {
 	return breez.SendCommand(command)
 }
 
+/*
+TryConnecting is part of the binding inteface which is delegated to breez.TryConnecting
+*/
+func TryConnecting () {
+	breez.TryConnecting()
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
 	for {
 		notification := <-notificationsChan
