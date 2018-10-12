@@ -7,18 +7,16 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"path"
-	"strings"
-	"time"
-
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"path"
+	"strings"
 
-	flags "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 )
 
 const (
@@ -85,11 +83,7 @@ func Start(workingDir string) (chan data.NotificationEvent, error) {
 		fmt.Println("Warning initConfig", err)
 		return nil, err
 	}
-	readyChan := make(chan interface{})
-	go func() {
-		<-readyChan
-		onReady()
-	}()
+
 
 	openDB(path.Join(appWorkingDir, "breez.db"))
 	go func() {
@@ -100,13 +94,25 @@ func Start(workingDir string) (chan data.NotificationEvent, error) {
 			fmt.Println("Error connecting to breez", err)
 		}
 		defer breezClientConnection.Close()
-		for err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, readyChan); err != nil; {
-			fmt.Println("Error starting breez", err)
-			time.Sleep(1 * time.Second)
-		}
+		TryConnecting()
 	}()
 
 	return notificationsChan, nil
+}
+
+func TryConnecting () {
+	readyChan := make(chan interface{})
+	go func() {
+		<-readyChan
+		onReady()
+	}()
+	var err error
+	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, readyChan)
+
+	if err != nil {
+		fmt.Println("Error starting breez", err)
+		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+	}
 }
 
 func onReady() {
