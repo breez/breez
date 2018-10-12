@@ -2,6 +2,7 @@ package breez
 
 import (
 	"github.com/breez/lightninglib/daemon"
+	"sync/atomic"
 )
 
 var log = daemon.BackendLog().Logger("BRUI")
@@ -10,7 +11,7 @@ var log = daemon.BackendLog().Logger("BRUI")
 Log a message to lightninglib's logging system
 */
 func Log(msg string, lvl string) {
-	if isReady {
+	if atomic.LoadInt32(&isReady) == 1 {
 		switch lvl {
 		case "FINEST":
 		case "FINER":

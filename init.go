@@ -7,14 +7,16 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"path"
+	"strings"
+	"sync/atomic"
+
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"path"
-	"strings"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -56,7 +58,7 @@ var (
 	breezClientConnection *grpc.ClientConn
 	notificationsChan     = make(chan data.NotificationEvent)
 	appWorkingDir         string
-	isReady               bool
+	isReady               int32
 )
 
 type config struct {
@@ -126,7 +128,7 @@ func onReady() {
 		return
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-	isReady = true
+	atomic.StoreInt32(&isReady, 1)
 
 	go func() {
 		go watchRoutingNodeConnection()
