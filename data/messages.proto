@@ -80,6 +80,7 @@ message NotificationEvent {
         ACCOUNT_CHANGED = 2;        
         INVOICE_PAID = 3;
         ROUTING_NODE_CONNECTION_CHANGED = 4;
+        LIGHTNING_SERVICE_DOWN = 5;
     }
 
     NotificationType type = 1;
