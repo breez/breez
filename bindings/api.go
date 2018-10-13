@@ -52,8 +52,8 @@ func IsConnectedToRoutingNode() bool {
 /*
 AddFunds is part of the binding inteface which is delegated to breez.AddFunds
 */
-func AddFunds(breezID string) (address string, err error) {
-	return breez.AddFunds(breezID)
+func AddFunds(breezID string) ([]byte, error) {
+	return marshalResponse(breez.AddFunds(breezID))
 }
 
 /*

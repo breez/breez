@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	maxPaymentAllowedSat   = math.MaxUint32 / 1000
-	maxAllowedLocalBalance = 500000
-	endpointTimeout        = 30
+	maxPaymentAllowedSat = math.MaxUint32 / 1000
+	endpointTimeout      = 30
 )
 
 var (
@@ -89,34 +88,39 @@ func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_
 	return data.Account_WAITING_DEPOSIT, nil
 }
 
-func getAccountLimits() (remoteBalance int64, maxAllowedToReceive int64, maxAllowedPaymentAmount int64, balanceLimitForDeposit int64, er error) {
+func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
 	if err != nil {
-		er = err
-		return
+		return 0, 0, err
 	}
 
+	var maxAllowedToReceive int64
+	var maxAllowedToPay int64
 	for _, b := range channels.Channels {
-		acountMinAmount := b.Capacity / 100
-		if acountMinAmount < int64(lnwallet.DefaultDustLimit()) {
-			acountMinAmount = int64(lnwallet.DefaultDustLimit())
+		accountMinAmount := b.Capacity / 100
+		if accountMinAmount < int64(lnwallet.DefaultDustLimit()) {
+			accountMinAmount = int64(lnwallet.DefaultDustLimit())
 		}
-		thisChannelCanReceive := b.RemoteBalance - acountMinAmount
+		thisChannelCanReceive := b.RemoteBalance - accountMinAmount
 		if thisChannelCanReceive < 0 {
 			thisChannelCanReceive = 0
 		}
 		if maxAllowedToReceive < thisChannelCanReceive {
 			maxAllowedToReceive = thisChannelCanReceive
 		}
-		remoteBalance += b.RemoteBalance
+
+		thisChannelCanPay := b.LocalBalance - accountMinAmount
+		if thisChannelCanPay < 0 {
+			thisChannelCanPay = 0
+		}
+		if maxAllowedToPay < thisChannelCanPay {
+			maxAllowedToPay = thisChannelCanPay
+		}
 	}
 
-	maxAllowedPaymentAmount = maxPaymentAllowedSat
-	balanceLimitForDeposit = maxAllowedLocalBalance
-
-	return
+	return maxAllowedToReceive, maxAllowedToPay, nil
 }
 
 func getOpenChannelsPoints() ([]string, error) {
@@ -156,10 +160,11 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	remoteBalance, maxAllowedToReceive, maxPaymentAmount, balanceLimitForDeposit, err := getAccountLimits()
+	maxAllowedToReceive, maxAllowedToPay, err := getRecievePayLimit()
 	if err != nil {
 		return nil, err
 	}
+
 	nonDepositableBalance := walletBalance.ConfirmedBalance
 
 	//In case we have funds in our wallet and the funding transaction is still didn't braodcasted and the channel is not opened yet
@@ -171,15 +176,13 @@ func calculateAccount() (*data.Account, error) {
 	}
 
 	return &data.Account{
-		Id:                     lnInfo.IdentityPubkey,
-		Balance:                channelBalance.Balance,
-		RemoteBalance:          remoteBalance,
-		MaxAllowedToReceive:    maxAllowedToReceive,
-		MaxPaymentAmount:       maxPaymentAmount,
-		Status:                 accStatus,
-		WalletBalance:          walletBalance.ConfirmedBalance,
-		NonDepositableBalance:  nonDepositableBalance,
-		BalanceLimitForDeposit: balanceLimitForDeposit,
+		Id:                    lnInfo.IdentityPubkey,
+		Balance:               channelBalance.Balance,
+		MaxAllowedToReceive:   maxAllowedToReceive,
+		MaxAllowedToPay:       maxAllowedToPay,
+		MaxPaymentAmount:      maxPaymentAllowedSat,
+		Status:                accStatus,
+		NonDepositableBalance: nonDepositableBalance,
 	}, nil
 }
 

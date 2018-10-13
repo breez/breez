@@ -19,7 +19,7 @@ service FundManager {
     rpc AddFund (AddFundRequest) returns (AddFundReply) {}
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
-    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}
+    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}    
 }
 
 message OpenChannelRequest {
@@ -35,6 +35,8 @@ message AddFundRequest {
 
 message AddFundReply {
     string address = 1;
+    int64 maxAllowedDeposit = 2;
+    string errorMessage = 3;
 }
 
 message AddFundStatusRequest {

@@ -16,14 +16,18 @@ message Account {
         ACTIVE = 4;
     }
     string id = 1;
-    int64 balance = 2;  
-    int64 remoteBalance = 3;
-    int64 walletBalance = 4;
-    int64 nonDepositableBalance = 5;
-    AccountStatus status = 6;        
-    int64 maxAllowedToReceive = 9;
-    int64 maxPaymentAmount = 10;
-    int64 balanceLimitForDeposit = 11;
+    int64 balance = 2;      
+    int64 nonDepositableBalance = 3;
+    AccountStatus status = 4;   
+
+    //maximum payment this node can receive via lightning  
+    int64 maxAllowedToReceive = 5;
+
+    //maximum payment this node can pay via lightning    
+    int64 maxAllowedToPay = 6;
+
+    //The lightning absolute payment amount
+    int64 maxPaymentAmount = 7;    
 }
 
 message Payment {
@@ -80,6 +84,12 @@ message NotificationEvent {
     }
 
     NotificationType type = 1;
+}
+
+message AddFundReply {
+    string address = 1;
+    int64 maxAllowedDeposit = 2;
+    string errorMessage = 3;
 }
 
 message FundStatusReply {
