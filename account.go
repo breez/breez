@@ -215,6 +215,9 @@ func watchRoutingNodeConnection() error {
 	}
 	for {
 		notification, err := subscription.Recv()
+		if err == io.EOF {
+			return err
+		}
 		if err != nil {
 			log.Errorf("subscribe peers Failed to get notification %v", err)
 			continue
