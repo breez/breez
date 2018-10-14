@@ -29,14 +29,16 @@ message OpenChannelRequest {
 message OpenChannelReply {}
 
 message AddFundRequest {
-    string paymentRequest = 1;
-    string notificationToken = 2;
+    bytes lightningPublicKey = 1;
+    bytes chainPublicKey = 2;
+    string notificationToken = 3;
 }
 
 message AddFundReply {
     string address = 1;
-    int64 maxAllowedDeposit = 2;
-    string errorMessage = 3;
+    bytes chainPublicKey = 2;
+    int64 maxAllowedDeposit = 3;
+    string errorMessage = 4;
 }
 
 message AddFundStatusRequest {
