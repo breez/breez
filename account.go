@@ -23,7 +23,8 @@ const (
 
 var (
 	connectedToRoutingNode int32
-	createChannelGroup     singleflight.Group
+        createChannelGroup     singleflight.Group
+	lightningPubKey string
 )
 
 /*
@@ -181,8 +182,10 @@ func calculateAccount() (*data.Account, error) {
 		}
 	}
 
+	lightningPubKey = lnInfo.IdentityPubkey
+
 	return &data.Account{
-		Id:                    lnInfo.IdentityPubkey,
+		Id:                    lightningPubKey,
 		Balance:               channelBalance.Balance,
 		MaxAllowedToReceive:   maxAllowedToReceive,
 		MaxAllowedToPay:       maxAllowedToPay,

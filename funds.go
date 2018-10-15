@@ -2,9 +2,11 @@ package breez
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/golang/protobuf/proto"
 	"io"
 	"time"
 
@@ -21,6 +23,7 @@ type swapAddressInfo struct {
 	OurPubKey            []byte
 	OurPrivateKey        []byte
 	PayeePubKey          []byte
+	SerializedScript     []byte
 	Transaction          string
 	TransactionConfirmed bool
 	Paid                 bool
@@ -39,7 +42,7 @@ func deserializeSwapAddressInfo(addressBytes []byte) (*swapAddressInfo, error) {
 /*
 AddFunds is responsible for topping up an existing channel via a submarine swap
 */
-func AddFunds(notificationToken string) (string, error) {
+func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	// Generate two secrets
 	lightningPaymentHash, lightningPreimage := submarine.GenSecret()
 	chainPublicKey, chainPrivateKey, err := submarine.GenPublicPrivateKeypair()
@@ -51,19 +54,25 @@ func AddFunds(notificationToken string) (string, error) {
 
 	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{
 		NotificationToken:  notificationToken,
-		LightningPublicKey: lightningPaymentHash[:],
-		ChainPublicKey:     chainPublicKey[:]})
+		PaymentHash:        lightningPaymentHash,
+		ChainPublicKey:     chainPublicKey,
+		LightningNodeId:    lightningPubKey})
 	if err != nil {
 		log.Errorf("Error in AddFund: %v", err)
-		return "", err
+		return nil, err
 	}
 
+	log.Infof("AddFunds got server address %v", r.Address)
+
 	// Create a script with server's data
-	script, err := submarine.GenSubmarineSwapScript(r.ChainPublicKey, chainPublicKey[:], lightningPaymentHash[:], 600)
+	script, err := submarine.GenSubmarineSwapScript(r.ChainPublicKey, chainPublicKey, lightningPaymentHash, int64(72))
 	if err != nil {
 		log.Errorf("Error in GenSubmarineSwapScript: %v", err)
-		return "", err
+		return nil, err
 	}
+
+	log.Infof("AddFunds local script %v", script)
+
 
 	// Determine which network we are running on
 	var network *chaincfg.Params
@@ -75,12 +84,16 @@ func AddFunds(notificationToken string) (string, error) {
 	} else if cfg.Network == "mainnet" {
 		network = &chaincfg.MainNetParams
 	} else {
-		return "", errors.New("unknown network type " + cfg.Network)
+		return nil, errors.New("unknown network type " + cfg.Network)
 	}
 
+	log.Infof("AddFunds local network %v", network)
+
+	ourAddress := submarine.GenBase58Address(script, network)
+
 	// Verify we are on the same page
-	if submarine.GenBase58Address(script, network)  != r.Address {
-		return "", errors.New("base58 address mismatch")
+	if ourAddress != r.Address {
+		return nil, errors.New("base58 address mismatch")
 	}
 
 	// Save everything to DB
@@ -93,33 +106,62 @@ func AddFunds(notificationToken string) (string, error) {
 		OurPubKey: chainPublicKey,
 		OurPrivateKey: chainPrivateKey,
 		PayeePubKey: r.ChainPublicKey,
+		SerializedScript: script,
 	}
 
 	err = saveSwapAddressInfo(addressInfo)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return r.Address, nil
+	log.Infof("AddFunds got address %v", r.Address)
 
-	// Create an invoice when server tells us to... After someone paid into the address
-	// This is done on a different call
+	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
+	type ScriptBackup struct {
+		Script string
+		PrivateKey string
+	}
 
-	//invoiceData := &data.InvoiceMemo{TransferRequest: true}
-	//memo, err := proto.Marshal(invoiceData)
-	//if err != nil {
-	//	return "", err
-	//}
+	backup := ScriptBackup{Script: hex.EncodeToString(script), PrivateKey: hex.EncodeToString(chainPrivateKey)}
+	jsonBytes,err := json.Marshal(backup)
+	if err != nil {
+		return nil, err
+	}
 
-	//invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
-	//if err != nil {
-	//	log.Criticalf("Failed to call AddInvoice %v", err)
-	//	return "", err
-	//}
+	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
 }
 
+func SendSwapInvoice(address string, tx string, value int64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	defer cancel()
+	c := breezservice.NewFundManagerClient(breezClientConnection)
 
+	invoiceData := &data.InvoiceMemo {
+		TransferRequest: true,
+		Amount: value,
+		PayerName: address,
+		Description: tx,
+	}
 
+	memo, err := proto.Marshal(invoiceData)
+	if err != nil {
+		return err
+	}
+
+	paymentRequest, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Value: value, Private: true, Expiry: 60 * 60 * 24 * 30})
+	if err != nil {
+		log.Criticalf("Failed to call AddInvoice %v", err)
+		return err
+	}
+
+	_, err = c.GetPayment(ctx, &breezservice.GetPaymentRequest{PaymentRequest: paymentRequest.PaymentRequest, Address: address})
+	if err != nil {
+		log.Criticalf("GetPayment failed: %v", err)
+		return err
+	}
+
+	return nil
+}
 
 /*
 GetFundStatus gets a notification token and does two things:

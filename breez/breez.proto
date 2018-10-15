@@ -19,7 +19,9 @@ service FundManager {
     rpc AddFund (AddFundRequest) returns (AddFundReply) {}
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
-    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}    
+    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}
+    rpc PaySwapInvoice (PaySwapInvoiceRequest) returns (PaySwapInvoiceReply) {}
+    rpc GetRefunds (GetRefundsRequest) returns (GetRefundsReply) {}
 }
 
 message OpenChannelRequest {
@@ -29,9 +31,10 @@ message OpenChannelRequest {
 message OpenChannelReply {}
 
 message AddFundRequest {
-    bytes lightningPublicKey = 1;
+    bytes paymentHash = 1;
     bytes chainPublicKey = 2;
     string notificationToken = 3;
+    string lightningNodeId = 4;
 }
 
 message AddFundReply {
@@ -39,6 +42,14 @@ message AddFundReply {
     bytes chainPublicKey = 2;
     int64 maxAllowedDeposit = 3;
     string errorMessage = 4;
+}
+
+message PaySwapInvoiceRequest {
+    string paymentRequest = 1;
+}
+
+message PaySwapInvoiceReply {
+    string preimage = 1;
 }
 
 message AddFundStatusRequest {
@@ -71,6 +82,19 @@ message GetPaymentRequest {
 
 message GetPaymentReply {
   string paymentError = 1;
+}
+
+message GetRefundsRequest {
+    string notificationToken = 1;
+}
+
+message GetRefundsReply {
+    message RefundStatus {
+        string tx = 1;
+        int64 amount = 2;
+        string blockHash = 4;
+    }
+    map<string, RefundStatus> refunds = 1;
 }
 
 message MempoolRegisterRequest {

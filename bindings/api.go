@@ -64,6 +64,15 @@ func GetFundStatus(notificationToken string) ([]byte, error) {
 }
 
 /*
+SendSwapInvoice is part of the binding inteface which is delegated to breez.SendSwapInvoice
+*/
+func SendSwapInvoice(sendSwapInvoiceRequest []byte) error {
+	decodedRequest := &data.SendSwapInvoiceRequest{}
+	proto.Unmarshal(sendSwapInvoiceRequest, decodedRequest)
+	return breez.SendSwapInvoice(decodedRequest.Address, decodedRequest.Tx, decodedRequest.Value)
+}
+
+/*
 GetLogPath is part of the binding inteface which is delegated to breez.GetLogPath
 */
 func GetLogPath() string {

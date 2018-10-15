@@ -67,6 +67,12 @@ message InvoiceMemo {
     bool transferRequest = 7;
 }
 
+message SendSwapInvoiceRequest {
+    string address = 1;
+    string tx = 2;
+    int64 value = 3;
+}
+
 message Invoice {   
     InvoiceMemo memo = 1;
     bool settled = 2;    
@@ -90,6 +96,7 @@ message AddFundReply {
     string address = 1;
     int64 maxAllowedDeposit = 2;
     string errorMessage = 3;
+    string backupJson = 4;
 }
 
 message FundStatusReply {
