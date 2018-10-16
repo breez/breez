@@ -87,7 +87,6 @@ func Start(workingDir string) (chan data.NotificationEvent, error) {
 		return nil, err
 	}
 
-
 	openDB(path.Join(appWorkingDir, "breez.db"))
 	go func() {
 		defer closeDB()
@@ -103,7 +102,7 @@ func Start(workingDir string) (chan data.NotificationEvent, error) {
 	return notificationsChan, nil
 }
 
-func TryConnecting () {
+func TryConnecting() {
 	readyChan := make(chan interface{})
 	go func() {
 		<-readyChan
@@ -130,13 +129,13 @@ func onReady() {
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 	atomic.StoreInt32(&isReady, 1)
 
+	go connectRoutingNode()
+	go watchRoutingNodeConnection()
+	go watchPayments()
+	go generateBlankInvoiceWithRetry()
+	watchFundTransfers()
 	go func() {
-		go watchRoutingNodeConnection()
-		go watchPayments()
-		go generateBlankInvoiceWithRetry()
-		watchFundTransfers()
 		syncToChain()
-		connectRoutingNode()
 		go watchOnChainState()
 	}()
 }
@@ -159,7 +158,6 @@ func connectRoutingNode() error {
 			Pubkey: cfg.RoutingNodePubKey,
 			Host:   cfg.RoutingNodeHost,
 		},
-		Perm: true,
 	})
 	return err
 }
