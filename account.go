@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"math"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -22,6 +23,7 @@ const (
 
 var (
 	connectedToRoutingNode int32
+	createChannelSync      sync.Once
 )
 
 /*
@@ -49,17 +51,19 @@ func IsConnectedToRoutingNode() bool {
 /*
 createChannel is responsible for creating a new channel
 */
-func createChannel(pubkey string) error {
+func createChannel(pubkey string) {
 	c := breezservice.NewFundManagerClient(breezClientConnection)
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
-	_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
-	if err != nil {
-		log.Errorf("Error in openChannel: %v", err)
-		return err
+	for {
+		_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
+		if err != nil {
+			log.Errorf("Error in openChannel: %v", err)
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		return
 	}
-
-	return nil
 }
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
@@ -242,7 +246,7 @@ func onRoutingNodeConnectionChanged(connected bool) {
 	if connected {
 		accData, _ := calculateAccount()
 		if accData.Status == data.Account_WAITING_DEPOSIT {
-			createChannel(accData.Id)
+			createChannelSync.Do(func() { createChannel(accData.Id) })
 			onAccountChanged()
 		}
 	}
