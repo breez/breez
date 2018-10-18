@@ -11,6 +11,7 @@ import (
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/lnwallet"
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
 )
@@ -22,6 +23,7 @@ const (
 
 var (
 	connectedToRoutingNode int32
+	createChannelGroup     singleflight.Group
 )
 
 /*
@@ -49,17 +51,21 @@ func IsConnectedToRoutingNode() bool {
 /*
 createChannel is responsible for creating a new channel
 */
-func createChannel(pubkey string) error {
+func createChannel(pubkey string) {
 	c := breezservice.NewFundManagerClient(breezClientConnection)
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
-	_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
-	if err != nil {
-		log.Errorf("Error in openChannel: %v", err)
-		return err
+	for {
+		if IsConnectedToRoutingNode() {
+			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
+			if err != nil {
+				log.Errorf("Error in openChannel: %v", err)
+				time.Sleep(time.Second * 5)
+				continue
+			}
+			return
+		}
 	}
-
-	return nil
 }
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
@@ -242,7 +248,10 @@ func onRoutingNodeConnectionChanged(connected bool) {
 	if connected {
 		accData, _ := calculateAccount()
 		if accData.Status == data.Account_WAITING_DEPOSIT {
-			createChannel(accData.Id)
+			createChannelGroup.Do("createChannel", func() (interface{}, error) {
+				createChannel(accData.Id)
+				return nil, nil
+			})
 			onAccountChanged()
 		}
 	}

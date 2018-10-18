@@ -158,6 +158,7 @@ func connectRoutingNode() error {
 			Pubkey: cfg.RoutingNodePubKey,
 			Host:   cfg.RoutingNodeHost,
 		},
+		Perm: true,
 	})
 	return err
 }
