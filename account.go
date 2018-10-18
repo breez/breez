@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"math"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/lnwallet"
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
 )
@@ -23,7 +23,7 @@ const (
 
 var (
 	connectedToRoutingNode int32
-	createChannelSync      sync.Once
+	createChannelGroup     singleflight.Group
 )
 
 /*
@@ -248,7 +248,10 @@ func onRoutingNodeConnectionChanged(connected bool) {
 	if connected {
 		accData, _ := calculateAccount()
 		if accData.Status == data.Account_WAITING_DEPOSIT {
-			createChannelSync.Do(func() { createChannel(accData.Id) })
+			createChannelGroup.Do("createChannel", func() (interface{}, error) {
+				createChannel(accData.Id)
+				return nil, nil
+			})
 			onAccountChanged()
 		}
 	}
