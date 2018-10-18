@@ -56,13 +56,15 @@ func createChannel(pubkey string) {
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
 	for {
-		_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
-		if err != nil {
-			log.Errorf("Error in openChannel: %v", err)
-			time.Sleep(time.Second * 5)
-			continue
+		if IsConnectedToRoutingNode() {
+			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
+			if err != nil {
+				log.Errorf("Error in openChannel: %v", err)
+				time.Sleep(time.Second * 5)
+				continue
+			}
+			return
 		}
-		return
 	}
 }
 
