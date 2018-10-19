@@ -2,9 +2,7 @@ package breez
 
 import (
 	"context"
-	"io"
 	"math"
-	"sync/atomic"
 	"time"
 
 	"github.com/breez/breez/data"
@@ -22,8 +20,7 @@ const (
 )
 
 var (
-	connectedToRoutingNode int32
-	createChannelGroup     singleflight.Group
+	createChannelGroup singleflight.Group
 )
 
 /*
@@ -39,13 +36,6 @@ func GetAccountInfo() (*data.Account, error) {
 		err = proto.Unmarshal(accBuf, account)
 	}
 	return account, err
-}
-
-/*
-IsConnectedToRoutingNode returns the connection status to the routing node
-*/
-func IsConnectedToRoutingNode() bool {
-	return atomic.LoadInt32(&connectedToRoutingNode) == 1
 }
 
 /*
@@ -207,52 +197,4 @@ func onAccountChanged() {
 	}
 	saveAccount(accBuf)
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
-}
-
-func watchRoutingNodeConnection() error {
-	log.Infof("watchRoutingNodeConnection started")
-	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
-	if err == io.EOF {
-		return err
-	}
-	if err != nil {
-		log.Errorf("Failed to subscribe peers %v", err)
-		return err
-	}
-	for {
-		notification, err := subscription.Recv()
-		if err == io.EOF {
-			return err
-		}
-		if err != nil {
-			log.Errorf("subscribe peers Failed to get notification %v", err)
-			continue
-		}
-
-		log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
-		if notification.PubKey == cfg.RoutingNodePubKey {
-			onRoutingNodeConnectionChanged(notification.Connected)
-		}
-	}
-}
-
-func onRoutingNodeConnectionChanged(connected bool) {
-	var connectedFlag int32
-	if connected {
-		connectedFlag = 1
-	}
-	atomic.StoreInt32(&connectedToRoutingNode, connectedFlag)
-	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED}
-
-	// BREEZ-377: When there is no channel request one from Breez
-	if connected {
-		accData, _ := calculateAccount()
-		if accData.Status == data.Account_WAITING_DEPOSIT {
-			createChannelGroup.Do("createChannel", func() (interface{}, error) {
-				createChannel(accData.Id)
-				return nil, nil
-			})
-			onAccountChanged()
-		}
-	}
 }
