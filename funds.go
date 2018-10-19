@@ -13,7 +13,7 @@ import (
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
-	submarine "github.com/breez/submarinelib"
+	"github.com/breez/submarinelib"
 )
 
 type swapAddressInfo struct {
@@ -44,8 +44,8 @@ AddFunds is responsible for topping up an existing channel via a submarine swap
 */
 func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	// Generate two secrets
-	lightningPaymentHash, lightningPreimage := submarine.GenSecret()
-	chainPublicKey, chainPrivateKey, err := submarine.GenPublicPrivateKeypair()
+	lightningPaymentHash, lightningPreimage := submarinelib.GenSecret()
+	chainPublicKey, chainPrivateKey, err := submarinelib.GenPublicPrivateKeypair()
 
 	// Send them to the server along with the notification token
 	c := breezservice.NewFundManagerClient(breezClientConnection)
@@ -65,7 +65,7 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	log.Infof("AddFunds got server address %v", r.Address)
 
 	// Create a script with server's data
-	script, err := submarine.GenSubmarineSwapScript(r.ChainPublicKey, chainPublicKey, lightningPaymentHash, int64(72))
+	script, err := submarinelib.GenSubmarineSwapScript(r.ChainPublicKey, chainPublicKey, lightningPaymentHash, int64(72))
 	if err != nil {
 		log.Errorf("Error in GenSubmarineSwapScript: %v", err)
 		return nil, err
@@ -89,7 +89,7 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 
 	log.Infof("AddFunds local network %v", network)
 
-	ourAddress := submarine.GenBase58Address(script, network)
+	ourAddress := submarinelib.GenBase58Address(script, network)
 
 	// Verify we are on the same page
 	if ourAddress != r.Address {
