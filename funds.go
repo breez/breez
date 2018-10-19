@@ -131,7 +131,7 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
 }
 
-func SendSwapInvoice(address string, tx string, value int64) error {
+func sendSwapInvoice(address string, tx string, value int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
 	c := breezservice.NewFundManagerClient(breezClientConnection)
