@@ -14,6 +14,14 @@ var (
 )
 
 /*
+ConnectAccount force connect to the routing node.
+This is meant to be used from the mobile platform when the network and device state allows it.
+*/
+func ConnectAccount() error {
+	return connectRoutingNode()
+}
+
+/*
 IsConnectedToRoutingNode returns the connection status to the routing node
 */
 func IsConnectedToRoutingNode() bool {
