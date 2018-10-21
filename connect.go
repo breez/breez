@@ -31,9 +31,6 @@ func IsConnectedToRoutingNode() bool {
 func watchRoutingNodeConnection() error {
 	log.Infof("watchRoutingNodeConnection started")
 	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
-	if err == io.EOF {
-		return err
-	}
 	if err != nil {
 		log.Errorf("Failed to subscribe peers %v", err)
 		return err
