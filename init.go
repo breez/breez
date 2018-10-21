@@ -3,7 +3,6 @@
 package breez
 
 import (
-	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -149,16 +148,4 @@ func initConfig() error {
 		return errors.New("Breez must have routing node defined in the configuration file")
 	}
 	return nil
-}
-
-func connectRoutingNode() error {
-	log.Infof("Connecting to routing node host: %v, pubKey: %v", cfg.RoutingNodeHost, cfg.RoutingNodePubKey)
-	_, err := lightningClient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
-		Addr: &lnrpc.LightningAddress{
-			Pubkey: cfg.RoutingNodePubKey,
-			Host:   cfg.RoutingNodeHost,
-		},
-		Perm: true,
-	})
-	return err
 }

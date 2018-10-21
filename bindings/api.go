@@ -43,6 +43,13 @@ func GetAccountInfo() ([]byte, error) {
 }
 
 /*
+ConnectAccount is part of the binding inteface which is delegated to breez.ConnectAccount
+*/
+func ConnectAccount() error {
+	return breez.ConnectAccount()
+}
+
+/*
 IsConnectedToRoutingNode is part of the binding inteface which is delegated to breez.IsConnectedToRoutingNode
 */
 func IsConnectedToRoutingNode() bool {
@@ -143,7 +150,7 @@ func SendCommand(command string) (string, error) {
 /*
 TryConnecting is part of the binding inteface which is delegated to breez.TryConnecting
 */
-func TryConnecting () {
+func TryConnecting() {
 	breez.TryConnecting()
 }
 
