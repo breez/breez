@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/golang/protobuf/proto"
 	"io"
+	"strconv"
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
@@ -96,6 +97,12 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 		return nil, errors.New("base58 address mismatch")
 	}
 
+	// Ask lightninglib to watch this address for any transactions
+	_, err = lightningClient.WatchAddress(context.Background(), &lnrpc.WatchAddressRequest{Address: r.Address})
+	if err != nil {
+		return nil, errors.New("couldn't add address to watchlist")
+	}
+
 	// Save everything to DB
 	addressInfo := &swapAddressInfo{
 		Address: r.Address,
@@ -131,7 +138,14 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
 }
 
-func sendSwapInvoice(address string, tx string, value int64) error {
+func sendSwapInvoice(address string, tx string, value int64, preimage []byte) error {
+	log.Infof("sendSwapInvoice:")
+	log.Infof(address)
+	log.Infof(tx)
+	log.Infof(strconv.FormatInt(value, 10))
+	log.Infof(string(preimage))
+
+
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
 	c := breezservice.NewFundManagerClient(breezClientConnection)
@@ -148,7 +162,7 @@ func sendSwapInvoice(address string, tx string, value int64) error {
 		return err
 	}
 
-	paymentRequest, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Value: value, Private: true, Expiry: 60 * 60 * 24 * 30})
+	paymentRequest, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: preimage, Memo: string(memo), Value: value, Private: true, Expiry: 60 * 60 * 24 * 30})
 	if err != nil {
 		log.Criticalf("Failed to call AddInvoice %v", err)
 		return err
