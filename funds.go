@@ -230,6 +230,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 }
 
 func watchFundTransfers() {
+	go watchSwapTransactions()
 	go watchSettledSwapAddresses()
 	go settlePendingTransfers()
 }
