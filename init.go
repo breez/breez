@@ -3,12 +3,14 @@
 package breez
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
 	"path"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/lightningclient"
@@ -50,6 +52,10 @@ PfZ+G6Z6h7mjem0Y+iWlkYcV4PIWL1iwBi8saCbGS5jN2p8M+X+Q7UNKEkROb3N6
 KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 -----END CERTIFICATE-----`
 )
+const (
+	syncToChainDefaultPollingInterval = 3 * time.Second
+	syncChainFastPollingInterval      = 1 * time.Second
+)
 
 var (
 	cfg                   *config
@@ -79,11 +85,18 @@ func getBreezClientConnection(breezServer string) (*grpc.ClientConn, error) {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start(workingDir string) (chan data.NotificationEvent, error) {
+func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, error) {
+	if appWorkingDir != "" {
+		return nil, errors.New("Daemon already started")
+	}
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)
 		return nil, err
+	}
+
+	if syncJobMode {
+		return nil, startLightningDaemon(syncAndStop)
 	}
 
 	openDB(path.Join(appWorkingDir, "breez.db"))
@@ -95,16 +108,29 @@ func Start(workingDir string) (chan data.NotificationEvent, error) {
 			fmt.Println("Error connecting to breez", err)
 		}
 		defer breezClientConnection.Close()
-		TryConnecting()
+		startLightningDaemon(startBreez)
 	}()
 
 	return notificationsChan, nil
 }
 
-func TryConnecting() {
+/*
+Stop is responsible for stopping the ligtning daemon.
+*/
+func Stop() error {
+	return stopLightningDaemon()
+}
+
+func startLightningDaemon(onReady func()) error {
 	readyChan := make(chan interface{})
 	go func() {
 		<-readyChan
+
+		//initialize lightning client
+		if err := initLightningClient(); err != nil {
+			stopLightningDaemon()
+			return
+		}
 		onReady()
 	}()
 	var err error
@@ -113,18 +139,23 @@ func TryConnecting() {
 	if err != nil {
 		fmt.Println("Error starting breez", err)
 		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+		return err
 	}
+	return nil
 }
 
-func onReady() {
-	var clientError error
-	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", cfg.Network}, "/")
-	lightningClient, clientError = lightningclient.NewLightningClient(appWorkingDir, macaroonDir)
-	if clientError != nil {
-		log.Errorf("Error in creating client", clientError)
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INITIALIZATION_FAILED}
-		return
-	}
+func stopLightningDaemon() error {
+	_, err := lightningClient.StopDaemon(context.Background(), &lnrpc.StopRequest{})
+	return err
+}
+
+func syncAndStop() {
+	syncToChain(syncChainFastPollingInterval)
+	stopLightningDaemon()
+}
+
+func startBreez() {
+	//notify ready and start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 	atomic.StoreInt32(&isReady, 1)
 
@@ -134,7 +165,8 @@ func onReady() {
 	go generateBlankInvoiceWithRetry()
 	watchFundTransfers()
 	go func() {
-		syncToChain()
+		onAccountChanged()
+		syncToChain(syncToChainDefaultPollingInterval)
 		go watchOnChainState()
 	}()
 }
@@ -146,6 +178,18 @@ func initConfig() error {
 	}
 	if len(cfg.RoutingNodeHost) == 0 || len(cfg.RoutingNodePubKey) == 0 {
 		return errors.New("Breez must have routing node defined in the configuration file")
+	}
+	return nil
+}
+
+func initLightningClient() error {
+	var clientError error
+	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", cfg.Network}, "/")
+	lightningClient, clientError = lightningclient.NewLightningClient(appWorkingDir, macaroonDir)
+	if clientError != nil {
+		log.Errorf("Error in creating client", clientError)
+		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INITIALIZATION_FAILED}
+		return clientError
 	}
 	return nil
 }
