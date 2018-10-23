@@ -19,13 +19,21 @@ type BreezNotifier interface {
 /*
 Start the lightning client
 */
-func Start(workingDir string, syncJobMode bool, notifier BreezNotifier) (err error) {
-	notificationsChan, err := breez.Start(workingDir, syncJobMode)
+func Start(workingDir string, notifier BreezNotifier) (err error) {
+	notificationsChan, err := breez.Start(workingDir, false)
 	if err != nil {
 		return err
 	}
 	go deliverNotifications(notificationsChan, notifier)
 	return nil
+}
+
+/*
+RunSyncJob a sync to chain job in a synchronous way
+*/
+func RunSyncJob(workingDir string) error {
+	_, err := breez.Start(workingDir, true)
+	return err
 }
 
 /*
