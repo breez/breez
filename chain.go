@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	syncToChainSecondsInterval  = 3
 	maxBtcFundingAmount         = 1<<24 - 1
 	fundingMaxRetries           = 3
 	fundingRetryInterval        = 3 * time.Second
@@ -67,8 +66,7 @@ func SendNonDepositedCoins(address string) error {
 	return nil
 }
 
-func syncToChain() {
-	onAccountChanged()
+func syncToChain(pollInterval time.Duration) {
 	for {
 		chainInfo, chainErr := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if chainErr != nil {
@@ -80,7 +78,7 @@ func syncToChain() {
 				break
 			}
 		}
-		time.Sleep(syncToChainSecondsInterval * time.Second)
+		time.Sleep(pollInterval)
 	}
 }
 
