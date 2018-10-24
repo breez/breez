@@ -54,7 +54,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 )
 const (
 	syncToChainDefaultPollingInterval = 3 * time.Second
-	syncChainFastPollingInterval      = 1 * time.Second
+	syncToChainFastPollingInterval    = 1 * time.Second
 )
 
 var (
@@ -150,7 +150,7 @@ func stopLightningDaemon() error {
 }
 
 func syncAndStop() {
-	syncToChain(syncChainFastPollingInterval)
+	syncToChain(syncToChainFastPollingInterval)
 	stopLightningDaemon()
 }
 
