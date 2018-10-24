@@ -39,8 +39,8 @@ func RunSyncJob(workingDir string) error {
 /*
 Stop the lightning client
 */
-func Stop() error {
-	return breez.Stop()
+func Stop() {
+	breez.Stop()
 }
 
 /*
