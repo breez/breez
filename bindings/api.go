@@ -20,12 +20,27 @@ type BreezNotifier interface {
 Start the lightning client
 */
 func Start(workingDir string, notifier BreezNotifier) (err error) {
-	notificationsChan, err := breez.Start(workingDir)
+	notificationsChan, err := breez.Start(workingDir, false)
 	if err != nil {
 		return err
 	}
 	go deliverNotifications(notificationsChan, notifier)
 	return nil
+}
+
+/*
+RunSyncJob a sync to chain job in a synchronous way
+*/
+func RunSyncJob(workingDir string) error {
+	_, err := breez.Start(workingDir, true)
+	return err
+}
+
+/*
+Stop the lightning client
+*/
+func Stop() error {
+	return breez.Stop()
 }
 
 /*
@@ -145,13 +160,6 @@ SendCommand is part of the binding inteface which is delegated to breez.SendPaym
 */
 func SendCommand(command string) (string, error) {
 	return breez.SendCommand(command)
-}
-
-/*
-TryConnecting is part of the binding inteface which is delegated to breez.TryConnecting
-*/
-func TryConnecting() {
-	breez.TryConnecting()
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
