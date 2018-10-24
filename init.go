@@ -3,7 +3,6 @@
 package breez
 
 import (
-	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
+	"github.com/breez/lightninglib/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -120,8 +120,8 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 /*
 Stop is responsible for stopping the ligtning daemon.
 */
-func Stop() error {
-	return stopLightningDaemon()
+func Stop() {
+	stopLightningDaemon()
 }
 
 func startLightningDaemon(onReady func()) error {
@@ -147,9 +147,8 @@ func startLightningDaemon(onReady func()) error {
 	return nil
 }
 
-func stopLightningDaemon() error {
-	_, err := lightningClient.StopDaemon(context.Background(), &lnrpc.StopRequest{})
-	return err
+func stopLightningDaemon() {
+	signal.RequestShutdown()
 }
 
 func syncAndStop() {
