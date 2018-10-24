@@ -159,7 +159,7 @@ func startBreez() {
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 	atomic.StoreInt32(&isReady, 1)
 
-	go connectRoutingNode()
+	go connectOnStartup()
 	go watchRoutingNodeConnection()
 	go watchPayments()
 	go generateBlankInvoiceWithRetry()
@@ -192,4 +192,22 @@ func initLightningClient() error {
 		return clientError
 	}
 	return nil
+}
+
+func connectOnStartup() {
+	channelPoints, err := getOpenChannelsPoints()
+	if err != nil {
+		log.Errorf("connectOnStartup: error in getOpenChannelsPoints", err)
+		return
+	}
+	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		log.Errorf("connectOnStartup: error in PendingChannels", err)
+		return
+	}
+	if len(channelPoints) > 0 || len(pendingChannels.PendingOpenChannels) > 0 {
+		log.Infof("connectOnStartup: already has a channel, ignoring manual connection")
+	}
+
+	connectRoutingNode()
 }
