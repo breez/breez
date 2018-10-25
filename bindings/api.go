@@ -44,6 +44,13 @@ func Stop() {
 }
 
 /*
+DaemonReady returns the status of the daemon
+*/
+func DaemonReady() bool {
+	return breez.DaemonReady()
+}
+
+/*
 Log is a function that uses the breez logger
 */
 func Log(msg string, lvl string) {

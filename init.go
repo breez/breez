@@ -56,6 +56,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 const (
 	syncToChainDefaultPollingInterval = 3 * time.Second
 	syncToChainFastPollingInterval    = 1 * time.Second
+	waitBestBlockDuration             = 3 * time.Second
 )
 
 var (
@@ -125,6 +126,13 @@ func Stop() {
 	stopLightningDaemon()
 }
 
+/*
+DaemonReady return the status of the lightningLib daemon
+*/
+func DaemonReady() bool {
+	return atomic.LoadInt32(&isReady) == 1
+}
+
 func startLightningDaemon(onReady func()) error {
 	readyChan := make(chan interface{})
 	go func() {
@@ -153,8 +161,15 @@ func stopLightningDaemon() {
 }
 
 func syncAndStop() {
-	syncToChain(syncToChainFastPollingInterval)
-	stopLightningDaemon()
+
+	//give it some time to get the best block and then sync.
+	select {
+	case <-time.After(waitBestBlockDuration):
+		syncToChain(syncToChainFastPollingInterval)
+		stopLightningDaemon()
+	case <-signal.ShutdownChannel():
+		return
+	}
 }
 
 func startBreez() {
