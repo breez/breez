@@ -3,6 +3,7 @@
 package breez
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
