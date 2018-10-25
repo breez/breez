@@ -3,7 +3,6 @@
 package breez
 
 import (
-	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
+	"github.com/breez/lightninglib/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -64,6 +64,7 @@ var (
 	notificationsChan     = make(chan data.NotificationEvent)
 	appWorkingDir         string
 	isReady               int32
+	started               int32
 )
 
 type config struct {
@@ -86,7 +87,7 @@ func getBreezClientConnection(breezServer string) (*grpc.ClientConn, error) {
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
 func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, error) {
-	if appWorkingDir != "" {
+	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
 	appWorkingDir = workingDir
@@ -96,12 +97,14 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 	}
 
 	if syncJobMode {
+		defer atomic.StoreInt32(&started, 0)
 		return nil, startLightningDaemon(syncAndStop)
 	}
 
 	openDB(path.Join(appWorkingDir, "breez.db"))
 	go func() {
 		defer closeDB()
+		defer atomic.StoreInt32(&started, 0)
 		var err error
 		breezClientConnection, err = getBreezClientConnection(cfg.BreezServer)
 		if err != nil {
@@ -117,8 +120,8 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 /*
 Stop is responsible for stopping the ligtning daemon.
 */
-func Stop() error {
-	return stopLightningDaemon()
+func Stop() {
+	stopLightningDaemon()
 }
 
 func startLightningDaemon(onReady func()) error {
@@ -144,9 +147,8 @@ func startLightningDaemon(onReady func()) error {
 	return nil
 }
 
-func stopLightningDaemon() error {
-	_, err := lightningClient.StopDaemon(context.Background(), &lnrpc.StopRequest{})
-	return err
+func stopLightningDaemon() {
+	signal.RequestShutdown()
 }
 
 func syncAndStop() {
