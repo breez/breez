@@ -210,6 +210,7 @@ func connectOnStartup() {
 	}
 	if len(channelPoints) > 0 || len(pendingChannels.PendingOpenChannels) > 0 {
 		log.Infof("connectOnStartup: already has a channel, ignoring manual connection")
+		return
 	}
 
 	connectRoutingNode()
