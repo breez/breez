@@ -12,6 +12,12 @@ github.com/aead/siphash v0.0.0-20170329201724-e404fcfc8885 h1:bBmEG9/q1xH07CqeeF
 github.com/aead/siphash v0.0.0-20170329201724-e404fcfc8885/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e h1:24jix3mqu421BBMWbVBOl5pDw0f9ncazW10kaMywzHQ=
 github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e/go.mod h1:GEV5wmg4YquNw7v1kkyoX9etIk8yVmXj+AkDHuuETHs=
+github.com/breez/btcd v0.0.0-20181020175716-b6894c46eccd h1:06Qjd2zlJmGB5a0iv6nOaX7wPuVaZfzhBj1d/IUg0KE=
+github.com/breez/btcd v0.0.0-20181020175716-b6894c46eccd/go.mod h1:sIybN7Ago86gMPwn0ehML0Fa5br5InqD2P4b+C/Ofog=
+github.com/breez/btcd v0.0.0-20181025150601-acccfea9669b h1:+CeOqbDAEFAnCQpKm4Hmq4jgjkL1ylMa6UX99Jbvi/I=
+github.com/breez/btcd v0.0.0-20181025150601-acccfea9669b/go.mod h1:sIybN7Ago86gMPwn0ehML0Fa5br5InqD2P4b+C/Ofog=
+github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7 h1:ulOCEZzIl7jShnU8cMBpg94wc17dCyI6oH39CU61SAg=
+github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528 h1:aQnVfQYpZNVymnDiRbGE5rwlPIyWEBGq0bkfqpSWMjU=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528/go.mod h1:V3+W74Ra09P8QXHyGjdtj5tdjGyI7A6ymolBIDIkcH8=
 github.com/breez/lightninglib v0.0.0-20180914104818-04fdcb693b99 h1:/Ub34t0EQzHek4/Gl7AXue2RwC1S3N5fIYfNkqaRg3c=

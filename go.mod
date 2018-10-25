@@ -18,6 +18,8 @@ require (
 	gopkg.in/macaroon.v2 v2.0.0
 )
 
-replace github.com/btcsuite/btcd v0.0.0-20181013004428-67e573d211ac => github.com/breez/btcd v0.0.0-20181020175716-b6894c46eccd
+replace github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc => github.com/breez/btcd v0.0.0-20181025150601-acccfea9669b
 
 replace github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a => github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db
+
+replace github.com/btcsuite/btcwallet v0.0.0-20181017015332-c4dd27e481f9 => github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7
