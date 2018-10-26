@@ -56,7 +56,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 const (
 	syncToChainDefaultPollingInterval = 3 * time.Second
 	syncToChainFastPollingInterval    = 1 * time.Second
-	waitBestBlockDuration             = 3 * time.Second
+	waitBestBlockDuration             = 10 * time.Second
 )
 
 var (
@@ -92,6 +92,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
+	fmt.Println("Breez daemon started syncJobMode = %v", syncJobMode)
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)
@@ -137,6 +138,7 @@ func startLightningDaemon(onReady func()) error {
 	readyChan := make(chan interface{})
 	go func() {
 		<-readyChan
+		atomic.StoreInt32(&isReady, 1)
 
 		//initialize lightning client
 		if err := initLightningClient(); err != nil {
@@ -157,25 +159,25 @@ func startLightningDaemon(onReady func()) error {
 }
 
 func stopLightningDaemon() {
-	signal.RequestShutdown()
-}
-
-func syncAndStop() {
-
-	//give it some time to get the best block and then sync.
-	select {
-	case <-time.After(waitBestBlockDuration):
-		syncToChain(syncToChainFastPollingInterval)
-		stopLightningDaemon()
-	case <-signal.ShutdownChannel():
-		return
+	alive := signal.Alive()
+	log.Infof("stopLightningDaemon called, stopping breez daemon alive=%v", alive)
+	if alive {
+		signal.RequestShutdown()
 	}
 }
 
+func syncAndStop() {
+	//give it some time to get the best block and then sync.
+	time.Sleep(waitBestBlockDuration)
+	if err := syncToChain(syncToChainFastPollingInterval); err != nil {
+		log.Errorf("Failed to sync chain %v", err)
+	}
+	stopLightningDaemon()
+}
+
 func startBreez() {
-	//notify ready and start the go routings
+	//start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-	atomic.StoreInt32(&isReady, 1)
 
 	go connectOnStartup()
 	go watchRoutingNodeConnection()
@@ -184,7 +186,10 @@ func startBreez() {
 	watchFundTransfers()
 	go func() {
 		onAccountChanged()
-		syncToChain(syncToChainDefaultPollingInterval)
+		err := syncToChain(syncToChainDefaultPollingInterval)
+		if err != nil {
+			log.Errorf("Failed to sync chain %v", err)
+		}
 		go watchOnChainState()
 	}()
 }

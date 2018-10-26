@@ -66,20 +66,22 @@ func SendNonDepositedCoins(address string) error {
 	return nil
 }
 
-func syncToChain(pollInterval time.Duration) {
+func syncToChain(pollInterval time.Duration) error {
 	for {
 		chainInfo, chainErr := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if chainErr != nil {
 			log.Warnf("Failed get chain info", chainErr)
-		} else {
-			log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
-			if chainInfo.SyncedToChain {
-				log.Infof("Synchronized to chain finshed BlockHeight=%v", chainInfo.BlockHeight)
-				break
-			}
+			return chainErr
+		}
+
+		log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
+		if chainInfo.SyncedToChain {
+			log.Infof("Synchronized to chain finshed BlockHeight=%v", chainInfo.BlockHeight)
+			break
 		}
 		time.Sleep(pollInterval)
 	}
+	return nil
 }
 
 //This function is responsible for refreshing the account on each transaction.
