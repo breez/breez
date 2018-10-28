@@ -29,9 +29,10 @@ func Start(workingDir string, notifier BreezNotifier) (err error) {
 }
 
 /*
-RunSyncJob a sync to chain job in a synchronous way
+StartSyncJob starts breez only to reach synchronized state.
+The daemon closes itself automatically when reaching this state.
 */
-func RunSyncJob(workingDir string) error {
+func StartSyncJob(workingDir string) error {
 	_, err := breez.Start(workingDir, true)
 	return err
 }
@@ -41,6 +42,13 @@ Stop the lightning client
 */
 func Stop() {
 	breez.Stop()
+}
+
+/*
+WaitDaemonShutdown blocks untill the daemon shutdown
+*/
+func WaitDaemonShutdown() {
+	breez.WaitDaemonShutdown()
 }
 
 /*

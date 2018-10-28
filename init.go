@@ -67,6 +67,7 @@ var (
 	appWorkingDir         string
 	isReady               int32
 	started               int32
+	quitChan              chan struct{}
 )
 
 type config struct {
@@ -92,6 +93,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
+	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started syncJobMode = %v", syncJobMode)
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
@@ -99,22 +101,22 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		return nil, err
 	}
 
-	if syncJobMode {
-		defer atomic.StoreInt32(&started, 0)
-		return nil, startLightningDaemon(syncAndStop)
-	}
-
 	openDB(path.Join(appWorkingDir, "breez.db"))
 	go func() {
 		defer closeDB()
 		defer atomic.StoreInt32(&started, 0)
+		defer atomic.StoreInt32(&isReady, 0)
 		var err error
 		breezClientConnection, err = getBreezClientConnection(cfg.BreezServer)
 		if err != nil {
 			fmt.Println("Error connecting to breez", err)
 		}
 		defer breezClientConnection.Close()
-		startLightningDaemon(startBreez)
+		if syncJobMode {
+			startLightningDaemon(syncAndStop)
+		} else {
+			startLightningDaemon(startBreez)
+		}
 	}()
 
 	return notificationsChan, nil
@@ -125,6 +127,18 @@ Stop is responsible for stopping the ligtning daemon.
 */
 func Stop() {
 	stopLightningDaemon()
+}
+
+/*
+WaitDaemonShutdown blocks untill daemon shutdown.
+*/
+func WaitDaemonShutdown() {
+	if atomic.LoadInt32(&started) == 0 {
+		return
+	}
+	select {
+	case <-quitChan:
+	}
 }
 
 /*
@@ -155,6 +169,7 @@ func startLightningDaemon(onReady func()) error {
 		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 		return err
 	}
+	close(quitChan)
 	return nil
 }
 
@@ -166,13 +181,31 @@ func stopLightningDaemon() {
 	}
 }
 
+//syncAndStop just wait for the chan to sync.
+//It first waits a pre-defined interval for the best block to retrieve
+//After that it just poll untill syncTocChain=true and then stop the daemon.
 func syncAndStop() {
 	//give it some time to get the best block and then sync.
-	time.Sleep(waitBestBlockDuration)
-	if err := syncToChain(syncToChainFastPollingInterval); err != nil {
-		log.Errorf("Failed to sync chain %v", err)
+	timeToWait := waitBestBlockDuration
+	for {
+		select {
+		case <-time.After(timeToWait):
+			//after first iteration switch to faster interval
+			timeToWait = syncToChainFastPollingInterval
+			chainInfo, chainErr := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+			if chainErr != nil {
+				log.Errorf("failed to call GetInfo %v", chainErr)
+				continue
+			}
+			log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
+			if chainInfo.SyncedToChain {
+				stopLightningDaemon()
+				return
+			}
+		case <-quitChan:
+			return
+		}
 	}
-	stopLightningDaemon()
 }
 
 func startBreez() {
