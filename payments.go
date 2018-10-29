@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strings"
 
 	"time"
 
@@ -200,7 +201,16 @@ func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 	invoiceMemo := &data.InvoiceMemo{}
 	if err := proto.Unmarshal([]byte(decodedPayReq.Description), invoiceMemo); err != nil {
 		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
-		invoiceMemo.Description = decodedPayReq.Description
+		if strings.Count(decodedPayReq.Description, " | ") == 2 {
+			// There is also the 'description | payee | logo' encoding
+			// meant to encode breez metadata in a way that's human readable
+			invoiceData := strings.Split(decodedPayReq.Description, " | ")
+			invoiceMemo.Description = invoiceData[0]
+			invoiceMemo.PayeeName = invoiceData[1]
+			invoiceMemo.PayeeImageURL = invoiceData[2]
+		} else {
+			invoiceMemo.Description = decodedPayReq.Description
+		}
 		invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	}
 
