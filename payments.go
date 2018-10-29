@@ -94,7 +94,7 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	if err != nil {
 		return "", err
 	}
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 180, Value: invoice.Amount})
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Value: invoice.Amount})
 	if err != nil {
 		return "", err
 	}
