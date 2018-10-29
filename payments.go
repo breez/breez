@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strings"
 
 	"time"
 
@@ -102,6 +103,18 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 }
 
 /*
+AddStandardInvoice encapsulate a given amount and description in a payment request
+*/
+func AddStandardInvoice(amount int64, description string) (paymentRequest string, err error) {
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: description, Private: true, Value: amount})
+	if err != nil {
+		return "", err
+	}
+	log.Infof("Generated Invoice: %v", response.PaymentRequest)
+	return response.PaymentRequest, nil
+}
+
+/*
 generateBlankInvoiceWithRetry calls generateBlankInvoice in 10 second intervals until it succeeds
 */
 func generateBlankInvoiceWithRetry() {
@@ -187,7 +200,18 @@ func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 	}
 	invoiceMemo := &data.InvoiceMemo{}
 	if err := proto.Unmarshal([]byte(decodedPayReq.Description), invoiceMemo); err != nil {
-		return nil, err
+		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
+		if strings.Count(decodedPayReq.Description, " | ") == 2 {
+			// There is also the 'description | payee | logo' encoding
+			// meant to encode breez metadata in a way that's human readable
+			invoiceData := strings.Split(decodedPayReq.Description, " | ")
+			invoiceMemo.Description = invoiceData[0]
+			invoiceMemo.PayeeName = invoiceData[1]
+			invoiceMemo.PayeeImageURL = invoiceData[2]
+		} else {
+			invoiceMemo.Description = decodedPayReq.Description
+		}
+		invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	}
 
 	return invoiceMemo, nil
