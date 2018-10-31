@@ -69,13 +69,13 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 }
 
 /*
-RemoveFunds transfers the user funds from the chanel to a supplied on-chain address
+RemoveFund transfers the user funds from the chanel to a supplied on-chain address
 It is executed in three steps:
 1. Send the breez server an address and an amount and get a corresponding payment request
 2. Pay the payment request.
 3. Redeem the removed funds from the server
 */
-func RemoveFunds(amount int64, address string) (*data.RemoveFundReply, error) {
+func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
 	c := breezservice.NewFundManagerClient(breezClientConnection)

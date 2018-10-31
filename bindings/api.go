@@ -106,7 +106,7 @@ RemoveFund is part of the binding inteface which is delegated to breez.RemoveFun
 func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	request := &data.RemoveFundRequest{}
 	proto.Unmarshal(removeFundRequest, request)
-	return marshalResponse(breez.RemoveFunds(request.Amount, request.Address))
+	return marshalResponse(breez.RemoveFund(request.Amount, request.Address))
 }
 
 /*
