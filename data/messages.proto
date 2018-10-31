@@ -100,3 +100,8 @@ message FundStatusReply {
     }
     FundStatus status = 1;
 }
+
+message RemoveFundRequest {
+  string address = 1;
+  int64 amount = 2;
+}
