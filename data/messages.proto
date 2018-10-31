@@ -105,3 +105,8 @@ message RemoveFundRequest {
   string address = 1;
   int64 amount = 2;
 }
+
+message RemoveFundReply{
+  string txid = 1;  
+  string errorMessage = 2;
+}
