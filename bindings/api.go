@@ -101,6 +101,15 @@ func GetFundStatus(notificationToken string) ([]byte, error) {
 }
 
 /*
+RemoveFund is part of the binding inteface which is delegated to breez.RemoveFund
+*/
+func RemoveFund(removeFundRequest []byte) ([]byte, error) {
+	request := &data.RemoveFundRequest{}
+	proto.Unmarshal(removeFundRequest, request)
+	return marshalResponse(breez.RemoveFund(request.Amount, request.Address))
+}
+
+/*
 GetLogPath is part of the binding inteface which is delegated to breez.GetLogPath
 */
 func GetLogPath() string {

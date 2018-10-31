@@ -308,8 +308,14 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		}
 	}
 
+	destination := paymentItem.Path[0]
+	paymentType := data.Payment_SENT
+	if len(paymentItem.Path) == 1 && destination == cfg.RoutingNodePubKey {
+		paymentType = data.Payment_WITHDRAWAL
+	}
+
 	paymentData := &data.Payment{
-		Type:              data.Payment_SENT,
+		Type:              paymentType,
 		Amount:            paymentItem.Value,
 		InvoiceMemo:       invoiceMemo,
 		CreationTimestamp: paymentItem.CreationDate,
@@ -337,7 +343,7 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 	if invoiceMemo.TransferRequest {
 		paymentType = data.Payment_DEPOSIT
 	}
-	
+
 	paymentData := &data.Payment{
 		Type:              paymentType,
 		Amount:            invoice.AmtPaidSat,

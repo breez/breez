@@ -19,6 +19,7 @@ service FundManager {
     rpc AddFund (AddFundRequest) returns (AddFundReply) {}
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
+    rpc RedeemRemovedFunds (RedeemRemovedFundsRequest) returns (RedeemRemovedFundsReply) {}
     rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}    
 }
 
@@ -55,11 +56,21 @@ message AddFundStatusReply {
 }
 
 message RemoveFundRequest {
-    string address = 1;
-    int64 amount = 2;
+  string address = 1;
+  int64 amount = 2;  
 }
 
 message RemoveFundReply {
+  string paymentRequest = 1;
+  string errorMessage = 2;
+}
+
+message RedeemRemovedFundsRequest {
+  string paymenthash = 1;
+}
+
+message RedeemRemovedFundsReply {
+  string txid = 1;
 }
 
 message GetPaymentRequest {
