@@ -62,6 +62,7 @@ message RemoveFundRequest {
 
 message RemoveFundReply {
   string paymentRequest = 1;
+  string errorMessage = 2;
 }
 
 message RedeemRemovedFundsRequest {
