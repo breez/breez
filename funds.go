@@ -69,6 +69,43 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 }
 
 /*
+RemoveFunds transfers the user funds from the chanel to a supplied on-chain address
+It is executed in three steps:
+1. Send the breez server an address and an amount and get a corresponding payment request
+2. Pay the payment request.
+3. Redeem the removed funds from the server
+*/
+func RemoveFunds(amount int64, address string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	defer cancel()
+	c := breezservice.NewFundManagerClient(breezClientConnection)
+	reply, err := c.RemoveFund(ctx, &breezservice.RemoveFundRequest{Address: address, Amount: amount})
+	if err != nil {
+		log.Errorf("RemoveFund: server endpoint call failed: %v", err)
+		return err
+	}
+	log.Infof("RemoveFunds: got payment request: %v", reply.PaymentRequest)
+	payreq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: reply.PaymentRequest})
+	if err != nil {
+		log.Errorf("DecodePayReq of server response failed: %v", err)
+		return err
+	}
+
+	err = SendPaymentForRequest(reply.PaymentRequest)
+	if err != nil {
+		log.Errorf("SendPaymentForRequest failed: %v", err)
+		return err
+	}
+	log.Infof("SendPaymentForRequest finished successfully")
+	_, err = c.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: payreq.PaymentHash})
+	if err != nil {
+		log.Errorf("RedeemRemovedFunds failed: %v", err)
+	}
+	log.Infof("RemoveFunds finished successfully")
+	return err
+}
+
+/*
 GetFundStatus gets a notification token and does two things:
 1. Register for notifications on all saved addresses
 2. Fetch the current status for the saved addresses from the server
