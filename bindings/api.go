@@ -103,10 +103,10 @@ func GetFundStatus(notificationToken string) ([]byte, error) {
 /*
 RemoveFund is part of the binding inteface which is delegated to breez.RemoveFund
 */
-func RemoveFund(removeFundRequest []byte) error {
+func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	request := &data.RemoveFundRequest{}
 	proto.Unmarshal(removeFundRequest, request)
-	return breez.RemoveFunds(request.Amount, request.Address)
+	return marshalResponse(breez.RemoveFunds(request.Amount, request.Address))
 }
 
 /*

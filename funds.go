@@ -75,34 +75,39 @@ It is executed in three steps:
 2. Pay the payment request.
 3. Redeem the removed funds from the server
 */
-func RemoveFunds(amount int64, address string) error {
+func RemoveFunds(amount int64, address string) (*data.RemoveFundReply, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 	defer cancel()
 	c := breezservice.NewFundManagerClient(breezClientConnection)
 	reply, err := c.RemoveFund(ctx, &breezservice.RemoveFundRequest{Address: address, Amount: amount})
 	if err != nil {
 		log.Errorf("RemoveFund: server endpoint call failed: %v", err)
-		return err
+		return nil, err
 	}
+	if reply.ErrorMessage != "" {
+		return &data.RemoveFundReply{ErrorMessage: reply.ErrorMessage}, nil
+	}
+
 	log.Infof("RemoveFunds: got payment request: %v", reply.PaymentRequest)
 	payreq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: reply.PaymentRequest})
 	if err != nil {
 		log.Errorf("DecodePayReq of server response failed: %v", err)
-		return err
+		return nil, err
 	}
 
 	err = SendPaymentForRequest(reply.PaymentRequest)
 	if err != nil {
 		log.Errorf("SendPaymentForRequest failed: %v", err)
-		return err
+		return nil, err
 	}
 	log.Infof("SendPaymentForRequest finished successfully")
-	_, err = c.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: payreq.PaymentHash})
+	redeemReply, err := c.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: payreq.PaymentHash})
 	if err != nil {
 		log.Errorf("RedeemRemovedFunds failed: %v", err)
+		return nil, err
 	}
 	log.Infof("RemoveFunds finished successfully")
-	return err
+	return &data.RemoveFundReply{ErrorMessage: "", Txid: redeemReply.Txid}, err
 }
 
 /*
