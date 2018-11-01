@@ -17,6 +17,10 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+const (
+	defaultInvoiceExpiry int64 = 3600
+)
+
 var blankInvoiceGroup singleflight.Group
 
 /*
@@ -94,7 +98,15 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	if err != nil {
 		return "", err
 	}
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Value: invoice.Amount})
+
+	var invoiceExpiry int64
+	if invoice.Expiry <= 0 {
+		invoiceExpiry = defaultInvoiceExpiry
+	} else {
+		invoiceExpiry = invoice.Expiry
+	}
+
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Value: invoice.Amount, Expiry: invoiceExpiry})
 	if err != nil {
 		return "", err
 	}
@@ -105,8 +117,12 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 /*
 AddStandardInvoice encapsulate a given amount and description in a payment request
 */
-func AddStandardInvoice(amount int64, description string) (paymentRequest string, err error) {
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: description, Private: true, Value: amount})
+func AddStandardInvoice(amount int64, description string, expiry int64) (paymentRequest string, err error) {
+	if expiry <= 0 {
+		expiry = defaultInvoiceExpiry
+	}
+
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: description, Private: true, Value: amount, Expiry: expiry})
 	if err != nil {
 		return "", err
 	}
