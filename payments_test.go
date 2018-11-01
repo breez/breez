@@ -5,9 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/breez/breez/data"
 	"github.com/btcsuite/btclog"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -41,31 +39,26 @@ func TestGetPayments(t *testing.T) {
 	var err error
 	openDB("testDB")
 	defer deleteDB()
-	payment1 := &data.Payment{
-		Type:              data.Payment_RECEIVED,
+	payment1 := &paymentInfo{
+		Type:              receivedPayment,
+		Description:       "Received Payment1",
 		Amount:            10,
-		InvoiceMemo:       &data.InvoiceMemo{Description: "Received Payment1"},
 		CreationTimestamp: 14,
+		PaymentHash:       "h1",
 	}
-	payment1Buf, err := proto.Marshal(payment1)
-	if err != nil {
-		log.Error("failed to marshal payment1")
-	}
-	payment2 := &data.Payment{
-		Type:              data.Payment_RECEIVED,
+
+	payment2 := &paymentInfo{
+		Type:              receivedPayment,
+		Description:       "Received Payment2",
 		Amount:            10,
-		InvoiceMemo:       &data.InvoiceMemo{Description: "Received Payment2"},
 		CreationTimestamp: 15,
+		PaymentHash:       "h2",
 	}
-	payment2Buf, err := proto.Marshal(payment2)
-	if err != nil {
-		log.Error("failed to marshal payment2")
-	}
-	err = addAccountPayment(payment1Buf, 5, 0)
+	err = addAccountPayment(payment1, 5, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = addAccountPayment(payment2Buf, 4, 0)
+	err = addAccountPayment(payment2, 4, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}

@@ -94,7 +94,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		return nil, errors.New("Daemon already started")
 	}
 	quitChan = make(chan struct{})
-	fmt.Println("Breez daemon started syncJobMode = %v", syncJobMode)
+	fmt.Println("Breez daemon started syncJobMode ", syncJobMode)
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)

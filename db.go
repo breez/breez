@@ -56,6 +56,10 @@ func openDB(dbPath string) error {
 		if err != nil {
 			return err
 		}
+		_, err = tx.CreateBucketIfNotExists([]byte(addressesBucket))
+		if err != nil {
+			return err
+		}
 		_, err = tx.CreateBucketIfNotExists([]byte(versionBucket))
 		if err != nil {
 			return err
