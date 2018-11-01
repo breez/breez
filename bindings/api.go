@@ -155,7 +155,7 @@ AddStandardInvoice is part of the binding inteface which is delegated to breez.A
 func AddStandardInvoice(invoice []byte) (paymentRequest string, err error) {
 	decodedStandardInvoiceMemo := &data.InvoiceMemo{}
 	proto.Unmarshal(invoice, decodedStandardInvoiceMemo)
-	return breez.AddStandardInvoice(decodedStandardInvoiceMemo.Amount, decodedStandardInvoiceMemo.Description)
+	return breez.AddStandardInvoice(decodedStandardInvoiceMemo.Amount, decodedStandardInvoiceMemo.Description, decodedStandardInvoiceMemo.expiry)
 }
 
 /*
