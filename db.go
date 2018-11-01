@@ -4,17 +4,29 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"os"
 
+	"github.com/breez/breez/data"
+	"github.com/golang/protobuf/proto"
 	bolt "go.etcd.io/bbolt"
 )
 
 const (
+	versionBucket          = "version"
 	incmoingPayReqBucket   = "paymentRequests"
 	addressesBucket        = "swap_addresses"
 	paymentsBucket         = "payments"
+	redeemableHashesBucket = "redeemableHashes"
+	paymentsHashBucket     = "paymentsByHash"
 	paymentsSyncInfoBucket = "paymentsSyncInfo"
 	accountBucket          = "account"
+)
+
+var (
+	migrations = []func(tx *bolt.Tx) error{
+		convertPaymentsFromProto,
+	}
 )
 
 var db *bolt.DB
@@ -44,11 +56,21 @@ func openDB(dbPath string) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.CreateBucketIfNotExists([]byte(addressesBucket))
-		return err
+		_, err = tx.CreateBucketIfNotExists([]byte(versionBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(redeemableHashesBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(paymentsHashBucket))
+		if err != nil {
+			return err
+		}
+		return migrateDB(tx)
 	})
 	if err != nil {
-		log.Criticalf("Failed to create buckets: %v", err)
 		return err
 	}
 	return nil
@@ -62,9 +84,128 @@ func deleteDB() error {
 	return os.Remove(db.Path())
 }
 
-func addAccountPayment(accPayment []byte, receivedIndex uint64, sentTime uint64) error {
+func migrateDB(tx *bolt.Tx) error {
+	versionB := tx.Bucket([]byte(versionBucket))
+	upgradedVersion := uint64(len(migrations))
+	var currentVersion uint64
+	currentVersionBuf := versionB.Get([]byte("currentVersion"))
+	if currentVersionBuf != nil {
+		currentVersion = btoi(currentVersionBuf)
+	}
+	if currentVersion >= upgradedVersion {
+		return nil
+	}
+	i := currentVersion
+	for i < upgradedVersion {
+		if err := migrations[i](tx); err != nil {
+			log.Criticalf("migration failed ", err)
+			return err
+		}
+		i++
+	}
+	log.Infof("migration passed! updating version to %v", i)
+	return versionB.Put([]byte("currentVersion"), itob(i))
+}
 
+func convertPaymentsFromProto(tx *bolt.Tx) error {
+	log.Infof("running migration: convertPaymentsFromProto")
+	paymentB := tx.Bucket([]byte(paymentsBucket))
+	return paymentB.ForEach(func(k, v []byte) error {
+		if v == nil {
+			return nil
+		}
+		var protoPayment data.Payment
+		if err := proto.Unmarshal(v, &protoPayment); err != nil {
+			return err
+		}
+
+		fmt.Println("migrating payment item: ", protoPayment)
+		payment := &paymentInfo{
+			Amount:            protoPayment.Amount,
+			CreationTimestamp: protoPayment.CreationTimestamp,
+		}
+		if protoPayment.InvoiceMemo != nil {
+			payment.Description = protoPayment.InvoiceMemo.Description
+			payment.PayeeImageURL = protoPayment.InvoiceMemo.PayeeImageURL
+			payment.PayeeName = protoPayment.InvoiceMemo.PayeeName
+			payment.PayerImageURL = protoPayment.InvoiceMemo.PayerImageURL
+			payment.PayerName = protoPayment.InvoiceMemo.PayerName
+		}
+
+		switch protoPayment.Type {
+		case data.Payment_SENT:
+			payment.Type = sentPayment
+		case data.Payment_RECEIVED:
+			payment.Type = receivedPayment
+		case data.Payment_DEPOSIT:
+			payment.Type = depositPayment
+		case data.Payment_WITHDRAWAL:
+			payment.Type = withdrawalPayment
+		}
+		paymentBuf, err := serializePaymentInfo(payment)
+		if err != nil {
+			return err
+		}
+		return paymentB.Put(k, paymentBuf)
+	})
+}
+
+func addRedeemablePaymentHash(hash string) error {
 	return db.Update(func(tx *bolt.Tx) error {
+		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
+		return redeemableHashesB.Put([]byte(hash), []byte{})
+	})
+}
+
+func fetchRedeemablePaymentHashes() ([]string, error) {
+	var hashes []string
+	err := db.View(func(tx *bolt.Tx) error {
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		return hashB.ForEach(func(k, v []byte) error {
+			hashes = append(hashes, string(k))
+			return nil
+		})
+	})
+	return hashes, err
+}
+
+func updateRedeemTxForPayment(hash string, txID string) error {
+	log.Infof("updateRedeemTxForPayment hash = %v, txid=%v", hash, txID)
+	return db.Update(func(tx *bolt.Tx) error {
+		paymentB := tx.Bucket([]byte(paymentsBucket))
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		paymentIndex := hashB.Get([]byte(hash))
+		if paymentIndex == nil {
+			return fmt.Errorf("payment doesn't exist for hash %v", hash)
+		}
+		paymentBuf := paymentB.Get(paymentIndex)
+		payment, err := deserializePaymentInfo(paymentBuf)
+		if err != nil {
+			return err
+		}
+		payment.RedeemTxID = txID
+		paymentBuf, err = serializePaymentInfo(payment)
+		if err != nil {
+			return err
+		}
+		err = paymentB.Put(paymentIndex, paymentBuf)
+		if err != nil {
+			return err
+		}
+		return nil
+		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
+		return redeemableHashesB.Delete([]byte(hash))
+	})
+}
+
+func addAccountPayment(accPayment *paymentInfo, receivedIndex uint64, sentTime uint64) error {
+	log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
+	return db.Update(func(tx *bolt.Tx) error {
+		paymentBuf, err := serializePaymentInfo(accPayment)
+		if err != nil {
+			return err
+		}
+
 		b := tx.Bucket([]byte(paymentsBucket))
 		id, err := b.NextSequence()
 		if err != nil {
@@ -72,9 +213,15 @@ func addAccountPayment(accPayment []byte, receivedIndex uint64, sentTime uint64)
 		}
 
 		//write the payment value with the next sequence as key
-		if err := b.Put(itob(id), accPayment); err != nil {
+		if err := b.Put(itob(id), paymentBuf); err != nil {
 			return err
 		}
+
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		if err := hashB.Put([]byte(accPayment.PaymentHash), itob(id)); err != nil {
+			return err
+		}
+
 		syncInfoBucket := b.Bucket([]byte(paymentsSyncInfoBucket))
 
 		//if we have a newer item, update the last payment timestamp
@@ -101,8 +248,8 @@ func addAccountPayment(accPayment []byte, receivedIndex uint64, sentTime uint64)
 	})
 }
 
-func fetchAllAccountPayments() ([][]byte, error) {
-	var payments [][]byte
+func fetchAllAccountPayments() ([]*paymentInfo, error) {
+	var payments []*paymentInfo
 	err := db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte(paymentsBucket))
@@ -114,7 +261,11 @@ func fetchAllAccountPayments() ([][]byte, error) {
 				//nested bucket
 				continue
 			}
-			payments = append(payments, v)
+			payment, err := deserializePaymentInfo(v)
+			if err != nil {
+				return err
+			}
+			payments = append(payments, payment)
 		}
 
 		return nil

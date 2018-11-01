@@ -101,7 +101,9 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		return nil, err
 	}
 
-	openDB(path.Join(appWorkingDir, "breez.db"))
+	if err := openDB(path.Join(appWorkingDir, "breez.db")); err != nil {
+		return nil, err
+	}
 	go func() {
 		defer closeDB()
 		defer atomic.StoreInt32(&started, 0)
