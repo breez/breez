@@ -47,8 +47,7 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 		return nil, err
 	}
 
-	c := breezservice.NewFundManagerClient(breezClientConnection)
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	c, ctx, cancel := getFundManager()
 	defer cancel()
 
 	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
@@ -76,9 +75,8 @@ It is executed in three steps:
 3. Redeem the removed funds from the server
 */
 func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	c, ctx, cancel := getFundManager()
 	defer cancel()
-	c := breezservice.NewFundManagerClient(breezClientConnection)
 	reply, err := c.RemoveFund(ctx, &breezservice.RemoveFundRequest{Address: address, Amount: amount})
 	if err != nil {
 		log.Errorf("RemoveFund: server endpoint call failed: %v", err)
@@ -95,19 +93,57 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 		return nil, err
 	}
 
+	//mark this payment request as redeemable
+	addRedeemablePaymentHash(payreq.PaymentHash)
+
 	err = SendPaymentForRequest(reply.PaymentRequest)
 	if err != nil {
 		log.Errorf("SendPaymentForRequest failed: %v", err)
 		return nil, err
 	}
 	log.Infof("SendPaymentForRequest finished successfully")
-	redeemReply, err := c.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: payreq.PaymentHash})
+	txID, err := redeemRemovedFundsForHash(payreq.PaymentHash)
 	if err != nil {
 		log.Errorf("RedeemRemovedFunds failed: %v", err)
 		return nil, err
 	}
 	log.Infof("RemoveFunds finished successfully")
-	return &data.RemoveFundReply{ErrorMessage: "", Txid: redeemReply.Txid}, err
+	return &data.RemoveFundReply{ErrorMessage: "", Txid: txID}, err
+}
+
+func redeemAllRemovedFunds() error {
+	log.Infof("redeemAllRemovedFunds")
+	hashes, err := fetchRedeemablePaymentHashes()
+	if err != nil {
+		log.Errorf("failed to fetchRedeemablePaymentHashes, %v", err)
+		return err
+	}
+	for _, hash := range hashes {
+		log.Infof("Redeeming transactino for has %v", hash)
+		txID, err := redeemRemovedFundsForHash(hash)
+		if err != nil {
+			log.Errorf("failed to redeem funds for hash %v, %v", hash, err)
+		} else {
+			log.Infof("successfully redeemed funds for hash %v, txid=%v", hash, txID)
+		}
+	}
+	return err
+}
+
+func redeemRemovedFundsForHash(hash string) (string, error) {
+	fundManager, ctx, cancel := getFundManager()
+	defer cancel()
+	redeemReply, err := fundManager.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: hash})
+	if err != nil {
+		log.Errorf("RedeemRemovedFunds failed for hash: %v,   %v", hash, err)
+		return "", err
+	}
+	return redeemReply.Txid, updateRedeemTxForPayment(hash, redeemReply.Txid)
+}
+
+func getFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	return breezservice.NewFundManagerClient(breezClientConnection), ctx, cancel
 }
 
 /*
@@ -116,9 +152,8 @@ GetFundStatus gets a notification token and does two things:
 2. Fetch the current status for the saved addresses from the server
 */
 func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	c, ctx, cancel := getFundManager()
 	defer cancel()
-	c := breezservice.NewFundManagerClient(breezClientConnection)
 	addresses, err := fetchAllSwapAddresses()
 	if err != nil {
 		return nil, err
@@ -212,7 +247,8 @@ func settlePendingTransfers() error {
 		}
 
 		if notification.PubKey == cfg.RoutingNodePubKey && notification.Connected {
-			getPaymentsForConfirmedTransactions()
+			go getPaymentsForConfirmedTransactions()
+			go redeemAllRemovedFunds()
 		}
 	}
 }
@@ -228,14 +264,13 @@ func getPaymentsForConfirmedTransactions() {
 	}
 	log.Infof("getPaymentsForConfirmedTransactions: confirmedAddresses length = %v", len(confirmedAddresses))
 	for _, address := range confirmedAddresses {
-		go getPayment(address.Address)
+		getPayment(address.Address)
 	}
 }
 
 func getPayment(address string) {
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	c, ctx, cancel := getFundManager()
 	defer cancel()
-	c := breezservice.NewFundManagerClient(breezClientConnection)
 	reply, err := c.GetPayment(ctx, &breezservice.GetPaymentRequest{Address: address})
 	if err != nil {
 		log.Errorf("failed to get payment for address %v, err = %v", address, err)
