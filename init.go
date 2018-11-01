@@ -94,14 +94,16 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		return nil, errors.New("Daemon already started")
 	}
 	quitChan = make(chan struct{})
-	fmt.Println("Breez daemon started syncJobMode = %v", syncJobMode)
+	fmt.Println("Breez daemon started syncJobMode ", syncJobMode)
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)
 		return nil, err
 	}
 
-	openDB(path.Join(appWorkingDir, "breez.db"))
+	if err := openDB(path.Join(appWorkingDir, "breez.db")); err != nil {
+		return nil, err
+	}
 	go func() {
 		defer closeDB()
 		defer atomic.StoreInt32(&started, 0)

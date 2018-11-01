@@ -6,7 +6,9 @@ import (
 )
 
 func TestAddresses(t *testing.T) {
-	openDB("testdb")
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
 	defer deleteDB()
 	if err := saveSwapAddressInfo(&swapAddressInfo{Address: "addr1", PaymentHash: []byte{1, 2, 3}}); err != nil {
 		t.Error(err)
@@ -14,7 +16,7 @@ func TestAddresses(t *testing.T) {
 	if err := saveSwapAddressInfo(&swapAddressInfo{Address: "addr2", PaymentHash: []byte{4, 5, 6}}); err != nil {
 		t.Error(err)
 	}
-	addresses := fetchAllSwapAddresses()
+	addresses, err := fetchAllSwapAddresses()
 
 	if len(addresses) != 2 {
 		t.Error("addresses length is ", len(addresses))
@@ -27,7 +29,7 @@ func TestAddresses(t *testing.T) {
 	if err != nil || !removed {
 		t.Error("failed to remove swap address")
 	}
-	addresses = fetchAllSwapAddresses()
+	addresses, err = fetchAllSwapAddresses()
 	if len(addresses) != 1 {
 		t.Error("addresses length is ", len(addresses))
 	}
@@ -42,12 +44,12 @@ func TestAddPayments(t *testing.T) {
 	var err error
 	openDB("testdb")
 	defer deleteDB()
-	err = addAccountPayment([]byte{}, 1, 0)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h1"}, 1, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	err = addAccountPayment([]byte{}, 0, 11)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h2"}, 0, 11)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
@@ -65,20 +67,20 @@ func TestPaymentsSyncInfo(t *testing.T) {
 	var err error
 	openDB("testdb")
 	defer deleteDB()
-	err = addAccountPayment([]byte{}, 5, 0)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h1"}, 5, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = addAccountPayment([]byte{}, 4, 0)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h2"}, 4, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	err = addAccountPayment([]byte{}, 0, 13)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h3"}, 0, 13)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = addAccountPayment([]byte{}, 0, 0)
+	err = addAccountPayment(&paymentInfo{PaymentHash: "h4"}, 0, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}

@@ -2,6 +2,8 @@ package breez
 
 import (
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -17,9 +19,39 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+type paymentType byte
+
 const (
 	defaultInvoiceExpiry int64 = 3600
+	sentPayment                = paymentType(0)
+	receivedPayment            = paymentType(1)
+	depositPayment             = paymentType(2)
+	withdrawalPayment          = paymentType(3)
 )
+
+type paymentInfo struct {
+	Type              paymentType
+	Amount            int64
+	CreationTimestamp int64
+	Description       string
+	PayeeName         string
+	PayeeImageURL     string
+	PayerName         string
+	PayerImageURL     string
+	TransferRequest   bool
+	PaymentHash       string
+	RedeemTxID        string
+}
+
+func serializePaymentInfo(s *paymentInfo) ([]byte, error) {
+	return json.Marshal(s)
+}
+
+func deserializePaymentInfo(paymentBytes []byte) (*paymentInfo, error) {
+	var payment paymentInfo
+	err := json.Unmarshal(paymentBytes, &payment)
+	return &payment, err
+}
 
 var blankInvoiceGroup singleflight.Group
 
@@ -32,9 +64,31 @@ func GetPayments() (*data.PaymentsList, error) {
 		return nil, err
 	}
 	var paymentsList []*data.Payment
-	for _, pBuf := range rawPayments {
-		paymentItem := &data.Payment{}
-		proto.Unmarshal(pBuf, paymentItem)
+	for _, payment := range rawPayments {
+		paymentItem := &data.Payment{
+			Amount:            payment.Amount,
+			CreationTimestamp: payment.CreationTimestamp,
+			InvoiceMemo: &data.InvoiceMemo{
+				Description:     payment.Description,
+				Amount:          payment.Amount,
+				PayeeImageURL:   payment.PayeeImageURL,
+				PayeeName:       payment.PayeeName,
+				PayerImageURL:   payment.PayerImageURL,
+				PayerName:       payment.PayerName,
+				TransferRequest: payment.TransferRequest,
+			},
+		}
+		switch payment.Type {
+		case sentPayment:
+			paymentItem.Type = data.Payment_SENT
+		case receivedPayment:
+			paymentItem.Type = data.Payment_RECEIVED
+		case depositPayment:
+			paymentItem.Type = data.Payment_DEPOSIT
+		case withdrawalPayment:
+			paymentItem.Type = data.Payment_WITHDRAWAL
+		}
+
 		paymentsList = append(paymentsList, paymentItem)
 	}
 	sort.Slice(paymentsList, func(i, j int) bool {
@@ -324,24 +378,29 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		}
 	}
 
-	destination := paymentItem.Path[0]
-	paymentType := data.Payment_SENT
-	if len(paymentItem.Path) == 1 && destination == cfg.RoutingNodePubKey {
-		paymentType = data.Payment_WITHDRAWAL
-	}
-
-	paymentData := &data.Payment{
-		Type:              paymentType,
-		Amount:            paymentItem.Value,
-		InvoiceMemo:       invoiceMemo,
-		CreationTimestamp: paymentItem.CreationDate,
-	}
-	buf, err := proto.Marshal(paymentData)
+	paymentType := sentPayment
+	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentRequest)})
 	if err != nil {
 		return err
 	}
+	if decodedReq.Destination == cfg.RoutingNodePubKey {
+		paymentType = withdrawalPayment
+	}
 
-	err = addAccountPayment(buf, 0, uint64(paymentItem.CreationDate))
+	paymentData := &paymentInfo{
+		Type:              paymentType,
+		Amount:            paymentItem.Value,
+		CreationTimestamp: paymentItem.CreationDate,
+		Description:       invoiceMemo.Description,
+		PayeeImageURL:     invoiceMemo.PayeeImageURL,
+		PayeeName:         invoiceMemo.PayeeName,
+		PayerImageURL:     invoiceMemo.PayerImageURL,
+		PayerName:         invoiceMemo.PayerName,
+		TransferRequest:   invoiceMemo.TransferRequest,
+		PaymentHash:       decodedReq.PaymentHash,
+	}
+
+	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
 	onAccountChanged()
 	return err
 }
@@ -355,23 +414,25 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		}
 	}
 
-	paymentType := data.Payment_RECEIVED
+	paymentType := receivedPayment
 	if invoiceMemo.TransferRequest {
-		paymentType = data.Payment_DEPOSIT
+		paymentType = depositPayment
 	}
 
-	paymentData := &data.Payment{
+	paymentData := &paymentInfo{
 		Type:              paymentType,
 		Amount:            invoice.AmtPaidSat,
-		InvoiceMemo:       invoiceMemo,
 		CreationTimestamp: invoice.SettleDate,
-	}
-	buf, err := proto.Marshal(paymentData)
-	if err != nil {
-		return err
+		Description:       invoiceMemo.Description,
+		PayeeImageURL:     invoiceMemo.PayeeImageURL,
+		PayeeName:         invoiceMemo.PayeeName,
+		PayerImageURL:     invoiceMemo.PayerImageURL,
+		PayerName:         invoiceMemo.PayerName,
+		TransferRequest:   invoiceMemo.TransferRequest,
+		PaymentHash:       hex.EncodeToString(invoice.RHash),
 	}
 
-	err = addAccountPayment(buf, invoice.SettleIndex, 0)
+	err = addAccountPayment(paymentData, invoice.SettleIndex, 0)
 	if err != nil {
 		log.Criticalf("Unable to add reveived payment : %v", err)
 		return err
