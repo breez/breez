@@ -65,6 +65,7 @@ message InvoiceMemo {
     string payerName = 5;
     string payerImageURL = 6;
     bool transferRequest = 7;
+    int64 expiry = 8;
 }
 
 message Invoice {   
