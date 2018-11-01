@@ -42,6 +42,9 @@ message Payment {
     int64 amount = 3;
     int64 creationTimestamp = 4;    
     InvoiceMemo invoiceMemo = 6;
+    string redeemTxID = 7;
+    string paymentHash = 8;
+    string destination = 9;
 }
 
 message PaymentsList {

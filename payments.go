@@ -41,6 +41,7 @@ type paymentInfo struct {
 	TransferRequest   bool
 	PaymentHash       string
 	RedeemTxID        string
+	Destination       string
 }
 
 func serializePaymentInfo(s *paymentInfo) ([]byte, error) {
@@ -68,6 +69,9 @@ func GetPayments() (*data.PaymentsList, error) {
 		paymentItem := &data.Payment{
 			Amount:            payment.Amount,
 			CreationTimestamp: payment.CreationTimestamp,
+			RedeemTxID:        payment.RedeemTxID,
+			PaymentHash:       payment.PaymentHash,
+			Destination:       payment.Destination,
 			InvoiceMemo: &data.InvoiceMemo{
 				Description:     payment.Description,
 				Amount:          payment.Amount,
@@ -398,6 +402,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		PayerName:         invoiceMemo.PayerName,
 		TransferRequest:   invoiceMemo.TransferRequest,
 		PaymentHash:       decodedReq.PaymentHash,
+		Destination:       decodedReq.Destination,
 	}
 
 	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
