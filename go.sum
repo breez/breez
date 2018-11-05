@@ -40,6 +40,8 @@ github.com/breez/lightninglib v0.0.0-20181030125758-c72e5fea88bd h1:2HX761NztxOP
 github.com/breez/lightninglib v0.0.0-20181030125758-c72e5fea88bd/go.mod h1:FTcU2QgRxFcRZ6P/Gi0U2BwJVGdqdxR+wDoJsQ+Y70s=
 github.com/breez/lightninglib v0.0.0-20181105101218-250c92936df2 h1:Yga2SGrio8jCLH5d47MPu98cAoyKrpm6IycXD3NC+4Y=
 github.com/breez/lightninglib v0.0.0-20181105101218-250c92936df2/go.mod h1:lyHEDNScy4AmW3lDEIrk1hpeu6/KJme47voQx1TgL20=
+github.com/breez/lightninglib v0.0.0-20181105173014-a5eb7cf58639 h1:iL2dxK1Ipf08T0WDvEp0uZz6Tn/LRMugW+Zke2cM++Y=
+github.com/breez/lightninglib v0.0.0-20181105173014-a5eb7cf58639/go.mod h1:lyHEDNScy4AmW3lDEIrk1hpeu6/KJme47voQx1TgL20=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe04V66s2oP6RocdtG6nxRJ1P7M2Xk=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=
