@@ -2,7 +2,6 @@ package breez
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -362,12 +361,12 @@ func saveSwapAddressInfo(address *swapAddressInfo) error {
 		if err = addressesBucket.Put([]byte(address.Address), bytes); err != nil {
 			return err
 		}
-	}
+	})
 }
 
-func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressInfo)) (bool, error) {
+func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressInfo) error) (bool, error) {
 
-	address, err := fetchItem([]byte(swapAddressesByHashBucket), paymentsHashBucket)
+	address, err := fetchItem([]byte(swapAddressesByHashBucket), []byte(paymentsHashBucket))
 	if err != nil {
 		return false, err
 	}
@@ -377,28 +376,31 @@ func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressIn
 	return updateSwapAddress(string(address), updateFunc)
 }
 
-func updateSwapAddress(address string, updateFunc func(*swapAddressInfo)) (bool, error) {
+func updateSwapAddress(address string, updateFunc func(*swapAddressInfo) error) (bool, error) {
 	var found bool
 	err := db.Update(func(tx *bolt.Tx) error {
 		addressesBucket := tx.Bucket([]byte(addressesBucket))
-		addressInfoBytes := addressesBucket.Get([]byte(address))	
+		addressInfoBytes := addressesBucket.Get([]byte(address))
 		if addressInfoBytes == nil {
 			return nil
-		}	
+		}
 		found = true
 		swapAddress, err := deserializeSwapAddressInfo(addressInfoBytes)
 		if err != nil {
 			return err
 		}
-		updateFunc(swapAddress)
-		
+		if err = updateFunc(swapAddress); err != nil {
+			return err
+		}
+
 		if err != nil {
 			return err
 		}
 
-		if swapAddressData, err = serializeSwapAddressInfo(swapAddress); err != nil {
+		swapAddressData, err := serializeSwapAddressInfo(swapAddress)
+		if err != nil {
 			return err
-		}		
+		}
 
 		if err = addressesBucket.Put([]byte(swapAddress.Address), swapAddressData); err != nil {
 			return err

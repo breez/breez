@@ -11,7 +11,6 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/golang/protobuf/proto"
 
 	breezservice "github.com/breez/breez/breez"
 )
@@ -21,15 +20,15 @@ type swapAddressInfo struct {
 
 	//client side data
 	PaymentHash []byte
-	Preimage    string
-	PrivateKey  string
-	PublicKey   string
+	Preimage    []byte
+	PrivateKey  []byte
+	PublicKey   []byte
 
 	//tracked data
 	ConfirmedTransactionIds []string
 	ConfirmedAmount         int64
 	PaidAmount              int64
-	Expiry                  int64
+	LockHeight              int64
 
 	//address script
 	Script       []byte
@@ -71,15 +70,15 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
-	// Verify we are on the same page
-	if client.Address != r.Address {
-		return nil, errors.New("address mismatch")
-	}
-
 	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
 		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
+	}
+
+	// Verify we are on the same page
+	if client.Address != r.Address {
+		return nil, errors.New("address mismatch")
 	}
 
 	saveSwapAddressInfo(&swapAddressInfo{
@@ -108,38 +107,38 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 /*
 AddFunds is responsible for topping up an existing channel
 */
-func AddFunds(notificationToken string) (*data.AddFundReply, error) {
-	invoiceData := &data.InvoiceMemo{TransferRequest: true}
-	memo, err := proto.Marshal(invoiceData)
-	if err != nil {
-		return nil, err
-	}
+// func AddFunds(notificationToken string) (*data.AddFundReply, error) {
+// 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
+// 	memo, err := proto.Marshal(invoiceData)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
-	if err != nil {
-		log.Criticalf("Failed to call AddInvoice %v", err)
-		return nil, err
-	}
+// 	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
+// 	if err != nil {
+// 		log.Criticalf("Failed to call AddInvoice %v", err)
+// 		return nil, err
+// 	}
 
-	c, ctx, cancel := getFundManager()
-	defer cancel()
+// 	c, ctx, cancel := getFundManager()
+// 	defer cancel()
 
-	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
-	if err != nil {
-		log.Errorf("Error in AddFund: %v", err)
-		return nil, err
-	}
+// 	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
+// 	if err != nil {
+// 		log.Errorf("Error in AddFund: %v", err)
+// 		return nil, err
+// 	}
 
-	if r.Address != "" {
-		addressInfo := &swapAddressInfo{Address: r.Address, Payed: false, TransactinoConfirmed: false, PaymentHash: invoice.RHash}
-		err = saveSwapAddressInfo(addressInfo)
-		if err != nil {
-			return nil, err
-		}
-	}
+// 	if r.Address != "" {
+// 		addressInfo := &swapAddressInfo{Address: r.Address, Payed: false, TransactinoConfirmed: false, PaymentHash: invoice.RHash}
+// 		err = saveSwapAddressInfo(addressInfo)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
-}
+// 	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
+// }
 
 /*return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 RemoveFund transfers the user funds from the chanel to a supplied on-chain address
@@ -249,7 +248,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var confirmedAddresses []string
 	var hasWaitingConfirmation bool
 	for address, status := range statusesMap.Statuses {
-		updateSwapAddressInfo(address, func(addressInfo *swapAddressInfo) {
+		updateSwapAddress(address, func(addressInfo *swapAddressInfo) {
 			addressInfo.TransactinoConfirmed = status.Confirmed
 			addressInfo.Transaction = status.Tx
 		})
@@ -267,7 +266,6 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		status = data.FundStatusReply_CONFIRMED
 	}
 
-	getPaymentsForConfirmedTransactions()
 	return &data.FundStatusReply{Status: status}, nil
 }
 
@@ -314,8 +312,20 @@ func watchSwapAddressConfirmations() error {
 }
 
 func updateUnspentAmount(address string) (bool, error) {
-	return updateSwapAddress(address, func(swapInfo *swapAddressInfo) {
-		swapInfo.ConfirmedAmount = 0 //get unsepnt amount
+	return updateSwapAddress(address, func(swapInfo *swapAddressInfo) error {
+		unspentResponse, err := lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
+		if err != nil {
+			return err
+		}
+		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
+		swapInfo.LockHeight = unspentResponse.LockHeight
+
+		var confirmedTransactionIDs []string
+		for i, tx := range unspentResponse.Utxos {
+			append(tx.Txid)
+		}
+		swapInfo.ConfirmedTransactionIds = confirmedTransactionIDs
+		return nil
 	})
 }
 
