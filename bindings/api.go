@@ -97,7 +97,7 @@ func AddFundsInit(breezID string) ([]byte, error) {
 AddFunds is part of the binding inteface which is delegated to breez.AddFunds
 */
 func AddFunds(breezID string) ([]byte, error) {
-	return marshalResponse(breez.AddFunds(breezID))
+	return marshalResponse(breez.AddFundsInit(breezID))
 }
 
 /*

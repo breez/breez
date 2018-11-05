@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 
@@ -28,11 +27,12 @@ type swapAddressInfo struct {
 	ConfirmedTransactionIds []string
 	ConfirmedAmount         int64
 	PaidAmount              int64
-	LockHeight              int64
+	LockHeight              int32
 
 	//address script
-	Script       []byte
-	ErrorMessage string
+	Script         []byte
+	ErrorMessage   string
+	EnteredMempool bool
 }
 
 func serializeSwapAddressInfo(s *swapAddressInfo) ([]byte, error) {
@@ -76,19 +76,23 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
+	log.Infof("Finished watch: %v, %v", hex.EncodeToString(r.Pubkey), r.LockHeight)
+
 	// Verify we are on the same page
 	if client.Address != r.Address {
 		return nil, errors.New("address mismatch")
 	}
 
-	saveSwapAddressInfo(&swapAddressInfo{
+	swapInfo := &swapAddressInfo{
 		Address:     r.Address,
 		PaymentHash: swap.Hash,
 		Preimage:    swap.Preimage,
 		PrivateKey:  swap.Key,
 		PublicKey:   swap.Pubkey,
 		Script:      client.Script,
-	})
+	}
+	log.Infof("Saving new swap info %v", swapInfo)
+	saveSwapAddressInfo(swapInfo)
 
 	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
 	type ScriptBackup struct {
@@ -225,8 +229,6 @@ GetFundStatus gets a notification token and does two things:
 2. Fetch the current status for the saved addresses from the server
 */
 func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
-	c, ctx, cancel := getFundManager()
-	defer cancel()
 	addresses, err := fetchAllSwapAddresses()
 	if err != nil {
 		return nil, err
@@ -235,56 +237,85 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 	}
 
-	var rawAddresses []string
-	for _, add := range addresses {
-		rawAddresses = append(rawAddresses, add.Address)
-	}
-
-	statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: rawAddresses})
-	if err != nil {
-		return nil, err
-	}
-
-	var confirmedAddresses []string
-	var hasWaitingConfirmation bool
-	for address, status := range statusesMap.Statuses {
-		updateSwapAddress(address, func(addressInfo *swapAddressInfo) {
-			addressInfo.TransactinoConfirmed = status.Confirmed
-			addressInfo.Transaction = status.Tx
-		})
-		if status.Confirmed {
-			confirmedAddresses = append(confirmedAddresses, address)
-		} else {
-			hasWaitingConfirmation = true
+	var confirmedAddresses, unConfirmedAddresses []string
+	var hasMempool bool
+	for _, a := range addresses {
+		if a.ErrorMessage != "" {
+			if len(a.ConfirmedTransactionIds) > 0 {
+				confirmedAddresses = append(confirmedAddresses, a.Address)
+			} else {
+				hasMempool = hasMempool || a.EnteredMempool
+				unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
+			}
 		}
 	}
 
-	status := data.FundStatusReply_NO_FUND
-	if hasWaitingConfirmation {
-		status = data.FundStatusReply_WAITING_CONFIRMATION
-	} else if len(confirmedAddresses) > 0 {
-		status = data.FundStatusReply_CONFIRMED
+	if len(confirmedAddresses) > 0 {
+		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
-	return &data.FundStatusReply{Status: status}, nil
+	if hasMempool {
+		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
+	}
+
+	if len(unConfirmedAddresses) > 0 {
+		c, ctx, cancel := getFundManager()
+		defer cancel()
+		var rawAddresses []string
+		for _, add := range addresses {
+			rawAddresses = append(rawAddresses, add.Address)
+		}
+
+		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
+		if err != nil {
+			return nil, err
+		}
+
+		var hasUnconfirmed bool
+		for addr, status := range statusesMap.Statuses {
+			if !status.Confirmed && status.Tx != "" {
+				hasUnconfirmed = true
+				updateSwapAddress(addr, func(swapInfo *swapAddressInfo) error {
+					swapInfo.EnteredMempool = true
+					return nil
+				})
+			}
+		}
+		if hasUnconfirmed {
+			return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
+		}
+	}
+
+	return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 }
 
 func watchFundTransfers() {
 	go watchSettledSwapAddresses()
 	go settlePendingTransfers()
+	go watchSwapAddressConfirmations()
 }
 
-func watchSwapAddressConfirmations() error {
+func watchSwapAddressConfirmations() {
 	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
 		return true
 	})
+	log.Infof("watchSwapAddressConfirmations got these addresses to check: %v", addresses)
 	if err != nil {
-		return err
+		log.Errorf("failed to call fetchSwapAddresses %v", err)
+		return
+	}
+
+	for _, a := range addresses {
+		_, err = updateUnspentAmount(a.Address)
+		if err != nil {
+			log.Errorf("Failed to update unspent output for address %v", a.Address)
+		}
 	}
 
 	stream, err := lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
 	if err != nil {
-		return fmt.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
+		log.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
+		return
 	}
 
 	for {
@@ -296,12 +327,12 @@ func watchSwapAddressConfirmations() error {
 		}
 		log.Infof("watchSwapAddressConfirmations updating swap addresses")
 		var newConfirmation bool
-		for i, addr := range tx.DestAddresses {
+		for _, addr := range tx.DestAddresses {
 			updated, err := updateUnspentAmount(addr)
 			if err != nil {
 				log.Criticalf("Unable to call updateUnspentAmount for address %v", addr)
 			}
-			newConfirmation |= updated
+			newConfirmation = newConfirmation || updated
 		}
 
 		//if we got new confirmation, let's try to get payments
@@ -312,17 +343,19 @@ func watchSwapAddressConfirmations() error {
 }
 
 func updateUnspentAmount(address string) (bool, error) {
+	log.Infof("Updating unspend amount for address %v", address)
 	return updateSwapAddress(address, func(swapInfo *swapAddressInfo) error {
 		unspentResponse, err := lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
 		}
+		log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
 		swapInfo.LockHeight = unspentResponse.LockHeight
 
 		var confirmedTransactionIDs []string
-		for i, tx := range unspentResponse.Utxos {
-			append(tx.Txid)
+		for _, tx := range unspentResponse.Utxos {
+			confirmedTransactionIDs = append(confirmedTransactionIDs, tx.Txid)
 		}
 		swapInfo.ConfirmedTransactionIds = confirmedTransactionIDs
 		return nil
@@ -346,8 +379,9 @@ func watchSettledSwapAddresses() {
 		}
 		if invoice.Settled {
 			log.Infof("watchSettledSwapAddresses - removing paid swapAddressInfo")
-			found, err = updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *swapAddressInfo) {
+			_, err := updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *swapAddressInfo) error {
 				addressInfo.PaidAmount = invoice.AmtPaidSat
+				return nil
 			})
 			if err != nil {
 				log.Criticalf("watchSettledSwapAddresses - failed to call updateSwapAddressByPaymentHash : %v", err)
@@ -389,7 +423,7 @@ func settlePendingTransfers() error {
 func getPaymentsForConfirmedTransactions() {
 	log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
 	confirmedAddresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
-		return addr.TransactinoConfirmed
+		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0 && addr.ErrorMessage == ""
 	})
 	if err != nil {
 		log.Errorf("getPaymentsForConfirmedTransactions: failed to fetch swap addresses %v", err)

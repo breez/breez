@@ -16,8 +16,8 @@ const (
 	incmoingPayReqBucket = "paymentRequests"
 
 	//add funds
-	addressesBucket           = "swap_addresses"
-	swapAddressesByHashBucket = "swap_addresses_by_hash"
+	addressesBucket           = "subswap_addresses"
+	swapAddressesByHashBucket = "subswap_addresses_by_hash"
 
 	//remove funds
 	redeemableHashesBucket = "redeemableHashes"
@@ -30,9 +30,7 @@ const (
 )
 
 var (
-	migrations = []func(tx *bolt.Tx) error{
-		convertPaymentsFromProto,
-	}
+	migrations = []func(tx *bolt.Tx) error{}
 )
 
 var db *bolt.DB
@@ -63,6 +61,10 @@ func openDB(dbPath string) error {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(addressesBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(swapAddressesByHashBucket))
 		if err != nil {
 			return err
 		}
@@ -361,6 +363,7 @@ func saveSwapAddressInfo(address *swapAddressInfo) error {
 		if err = addressesBucket.Put([]byte(address.Address), bytes); err != nil {
 			return err
 		}
+		return nil
 	})
 }
 
@@ -405,6 +408,7 @@ func updateSwapAddress(address string, updateFunc func(*swapAddressInfo) error) 
 		if err = addressesBucket.Put([]byte(swapAddress.Address), swapAddressData); err != nil {
 			return err
 		}
+		return nil
 	})
 	return found, err
 }
