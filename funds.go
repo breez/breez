@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -16,11 +17,23 @@ import (
 )
 
 type swapAddressInfo struct {
-	Address              string
-	PaymentHash          []byte
-	Transaction          string
-	TransactinoConfirmed bool
-	Payed                bool
+	Address string
+
+	//client side data
+	PaymentHash []byte
+	Preimage    string
+	PrivateKey  string
+	PublicKey   string
+
+	//tracked data
+	ConfirmedTransactionIds []string
+	ConfirmedAmount         int64
+	PaidAmount              int64
+	Expiry                  int64
+
+	//address script
+	Script       []byte
+	ErrorMessage string
 }
 
 func serializeSwapAddressInfo(s *swapAddressInfo) ([]byte, error) {
@@ -58,20 +71,29 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
+	// Verify we are on the same page
+	if client.Address != r.Address {
+		return nil, errors.New("address mismatch")
+	}
+
 	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
 		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
 	}
 
-	// Verify we are on the same page
-	if client.Address != r.Address {
-		return nil, errors.New("address mismatch")
-	}
+	saveSwapAddressInfo(&swapAddressInfo{
+		Address:     r.Address,
+		PaymentHash: swap.Hash,
+		Preimage:    swap.Preimage,
+		PrivateKey:  swap.Key,
+		PublicKey:   swap.Pubkey,
+		Script:      client.Script,
+	})
 
 	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
 	type ScriptBackup struct {
-		Script string
+		Script     string
 		PrivateKey string
 	}
 	backup := ScriptBackup{Script: hex.EncodeToString(client.Script), PrivateKey: hex.EncodeToString(swap.Key)}
@@ -254,6 +276,51 @@ func watchFundTransfers() {
 	go settlePendingTransfers()
 }
 
+func watchSwapAddressConfirmations() error {
+	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+		return true
+	})
+	if err != nil {
+		return err
+	}
+
+	stream, err := lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
+	if err != nil {
+		return fmt.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
+	}
+
+	for {
+		tx, err := stream.Recv()
+		log.Infof("watchSwapAddressConfirmations - transactions subscription received new transaction")
+		if err != nil {
+			log.Errorf("Failed to call SubscribeTransactions %v, %v", stream, err)
+			return
+		}
+		log.Infof("watchSwapAddressConfirmations updating swap addresses")
+		var newConfirmation bool
+		for i, addr := range tx.DestAddresses {
+			updated, err := updateUnspentAmount(addr)
+			if err != nil {
+				log.Criticalf("Unable to call updateUnspentAmount for address %v", addr)
+			}
+			newConfirmation |= updated
+		}
+
+		//if we got new confirmation, let's try to get payments
+		if newConfirmation {
+			go getPaymentsForConfirmedTransactions()
+		}
+	}
+}
+
+func updateUnspentAmount(address string) (bool, error) {
+	return updateSwapAddress(address, func(swapInfo *swapAddressInfo) {
+		swapInfo.ConfirmedAmount = 0 //get unsepnt amount
+	})
+}
+
+//watchSettledSwapAddresses watch for settled invoices and for each invoice update
+//the corresponding swap address with the LN paid amount.
 func watchSettledSwapAddresses() {
 	stream, err := lightningClient.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{})
 	if err != nil {
@@ -263,24 +330,28 @@ func watchSettledSwapAddresses() {
 	for {
 		invoice, err := stream.Recv()
 		log.Infof("watchSettledSwapAddresses - Invoice received by subscription")
-		if err == io.EOF {
-			return
-		}
 		if err != nil {
 			log.Criticalf("watchSettledSwapAddresses - failed to receive an invoice : %v", err)
+			return
 		}
 		if invoice.Settled {
 			log.Infof("watchSettledSwapAddresses - removing paid swapAddressInfo")
-			removed, err := removeSwapAddressByPaymentHash(invoice.RHash)
+			found, err = updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *swapAddressInfo) {
+				addressInfo.PaidAmount = invoice.AmtPaidSat
+			})
 			if err != nil {
-				log.Errorf("watchSettledSwapAddresses - failed to remove swap address %v", err)
+				log.Criticalf("watchSettledSwapAddresses - failed to call updateSwapAddressByPaymentHash : %v", err)
+				return
 			}
-
-			log.Infof("watchSettledSwapAddresses - removed swap address from database result = %v", removed)
 		}
 	}
 }
 
+//settlePendingTransfers watch for routing peer connection and once connected it does two things:
+//1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
+//   that the funds are confirmred
+//2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
+//   remove funds flow
 func settlePendingTransfers() error {
 	log.Infof("askForIncomingTransfers started")
 	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
