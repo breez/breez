@@ -90,10 +90,15 @@ message NotificationEvent {
     NotificationType type = 1;
 }
 
-message AddFundReply {
+message AddFundInitReply {
     string address = 1;
     int64 maxAllowedDeposit = 2;
     string errorMessage = 3;
+    string backupJson = 4;
+}
+
+message AddFundReply {
+    string errorMessage = 1;
 }
 
 message FundStatusReply {

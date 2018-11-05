@@ -2,7 +2,9 @@ package breez
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"time"
 
@@ -29,6 +31,56 @@ func deserializeSwapAddressInfo(addressBytes []byte) (*swapAddressInfo, error) {
 	var addressInfo swapAddressInfo
 	err := json.Unmarshal(addressBytes, &addressInfo)
 	return &addressInfo, err
+}
+
+/*
+AddFundsInit is responsible for topping up an existing channel
+*/
+func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
+	acc, err := calculateAccount()
+	if err != nil {
+		log.Errorf("Error in calculateAccount: %v", err)
+		return nil, err
+	}
+
+	swap, err := lightningClient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
+	if err != nil {
+		log.Criticalf("Failed to call SubSwapClientInit %v", err)
+		return nil, err
+	}
+
+	c, ctx, cancel := getFundManager()
+	defer cancel()
+
+	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: acc.Id, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
+	if err != nil {
+		log.Errorf("Error in AddFundInit: %v", err)
+		return nil, err
+	}
+
+	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
+	if err != nil {
+		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
+		return nil, err
+	}
+
+	// Verify we are on the same page
+	if client.Address != r.Address {
+		return nil, errors.New("address mismatch")
+	}
+
+	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
+	type ScriptBackup struct {
+		Script string
+		PrivateKey string
+	}
+	backup := ScriptBackup{Script: hex.EncodeToString(client.Script), PrivateKey: hex.EncodeToString(swap.Key)}
+	jsonBytes, err := json.Marshal(backup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &data.AddFundInitReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
 }
 
 /*
@@ -67,7 +119,7 @@ func AddFunds(notificationToken string) (*data.AddFundReply, error) {
 	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 }
 
-/*
+/*return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 RemoveFund transfers the user funds from the chanel to a supplied on-chain address
 It is executed in three steps:
 1. Send the breez server an address and an amount and get a corresponding payment request
