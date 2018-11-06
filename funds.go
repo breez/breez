@@ -15,7 +15,7 @@ import (
 	breezservice "github.com/breez/breez/breez"
 )
 
-type swapAddressInfo struct {
+type SwapAddressInfo struct {
 	Address string
 
 	//client side data
@@ -28,7 +28,7 @@ type swapAddressInfo struct {
 	ConfirmedTransactionIds []string
 	ConfirmedAmount         int64
 	PaidAmount              int64
-	LockHeight              int32
+	LockHeight              uint32
 
 	//address script
 	Script         []byte
@@ -36,12 +36,12 @@ type swapAddressInfo struct {
 	EnteredMempool bool
 }
 
-func serializeSwapAddressInfo(s *swapAddressInfo) ([]byte, error) {
+func serializeSwapAddressInfo(s *SwapAddressInfo) ([]byte, error) {
 	return json.Marshal(s)
 }
 
-func deserializeSwapAddressInfo(addressBytes []byte) (*swapAddressInfo, error) {
-	var addressInfo swapAddressInfo
+func deserializeSwapAddressInfo(addressBytes []byte) (*SwapAddressInfo, error) {
+	var addressInfo SwapAddressInfo
 	err := json.Unmarshal(addressBytes, &addressInfo)
 	return &addressInfo, err
 }
@@ -84,7 +84,7 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, errors.New("address mismatch")
 	}
 
-	swapInfo := &swapAddressInfo{
+	swapInfo := &SwapAddressInfo{
 		Address:     r.Address,
 		PaymentHash: swap.Hash,
 		Preimage:    swap.Preimage,
@@ -107,6 +107,24 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 	}
 
 	return &data.AddFundInitReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
+}
+
+//GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
+func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
+	// info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
+		//return a.LockHeight >= info.BlockHeight && a.ConfirmedAmount > a.PaidAmount
+		return true
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return refundable, nil
 }
 
 /*
@@ -240,7 +258,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		for addr, status := range statusesMap.Statuses {
 			if !status.Confirmed && status.Tx != "" {
 				hasUnconfirmed = true
-				updateSwapAddress(addr, func(swapInfo *swapAddressInfo) error {
+				updateSwapAddress(addr, func(swapInfo *SwapAddressInfo) error {
 					swapInfo.EnteredMempool = true
 					return nil
 				})
@@ -261,7 +279,7 @@ func watchFundTransfers() {
 }
 
 //watchSwapAddressConfirmations subscribe to cofirmed transaction notifications in order
-//to update the status of changed swapAddressInfo in the db.
+//to update the status of changed SwapAddressInfo in the db.
 //On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
 //In order to calim the payments from the swap service.
 func watchSwapAddressConfirmations() {
@@ -274,7 +292,7 @@ func watchSwapAddressConfirmations() {
 	}
 
 	//then initiate an update for all swap addresses in the db
-	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return true
 	})
 	log.Infof("watchSwapAddressConfirmations got these addresses to check: %v", addresses)
@@ -317,14 +335,14 @@ func watchSwapAddressConfirmations() {
 
 func updateUnspentAmount(address string) (bool, error) {
 	log.Infof("Updating unspend amount for address %v", address)
-	return updateSwapAddress(address, func(swapInfo *swapAddressInfo) error {
+	return updateSwapAddress(address, func(swapInfo *SwapAddressInfo) error {
 		unspentResponse, err := lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
 		}
 		log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
-		swapInfo.LockHeight = unspentResponse.LockHeight
+		swapInfo.LockHeight = uint32(unspentResponse.LockHeight)
 
 		var confirmedTransactionIDs []string
 		for _, tx := range unspentResponse.Utxos {
@@ -344,7 +362,7 @@ func watchSettledSwapAddresses() {
 	}
 
 	//then initiate an update for all swap addresses in the db
-	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return addr.PaidAmount == 0
 	})
 	log.Infof("watchSettledSwapAddresses got these addresses to check: %v", addresses)
@@ -360,7 +378,7 @@ func watchSettledSwapAddresses() {
 			continue
 		}
 		if invoice != nil && invoice.Settled {
-			_, err := updateSwapAddress(a.Address, func(a *swapAddressInfo) error {
+			_, err := updateSwapAddress(a.Address, func(a *SwapAddressInfo) error {
 				a.PaidAmount = invoice.AmtPaidSat
 				return nil
 			})
@@ -380,8 +398,8 @@ func watchSettledSwapAddresses() {
 			return
 		}
 		if invoice.Settled {
-			log.Infof("watchSettledSwapAddresses - removing paid swapAddressInfo")
-			_, err := updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *swapAddressInfo) error {
+			log.Infof("watchSettledSwapAddresses - removing paid SwapAddressInfo")
+			_, err := updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *SwapAddressInfo) error {
 				addressInfo.PaidAmount = invoice.AmtPaidSat
 				return nil
 			})
@@ -424,7 +442,7 @@ func settlePendingTransfers() error {
 
 func getPaymentsForConfirmedTransactions() {
 	log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
-	confirmedAddresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+	confirmedAddresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0
 	})
 	if err != nil {
@@ -437,7 +455,7 @@ func getPaymentsForConfirmedTransactions() {
 	}
 }
 
-func getPayment(addressInfo *swapAddressInfo) {
+func getPayment(addressInfo *SwapAddressInfo) {
 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
 	memo, err := proto.Marshal(invoiceData)
 	if err != nil {
@@ -456,14 +474,12 @@ func getPayment(addressInfo *swapAddressInfo) {
 	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: invoice.PaymentRequest})
 	if err != nil {
 		paymentError = err.Error()
-	}
-	if reply.PaymentError != "" {
+	} else if reply.PaymentError != "" {
 		paymentError = reply.PaymentError
-
 	}
 	if paymentError != "" {
-		log.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, reply.PaymentError)
-		updateSwapAddress(addressInfo.Address, func(a *swapAddressInfo) error {
+		log.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
+		updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
 			a.ErrorMessage = paymentError
 			return nil
 		})

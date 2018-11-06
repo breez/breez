@@ -119,3 +119,17 @@ message RemoveFundReply{
   string txid = 1;  
   string errorMessage = 2;
 }
+
+message SwapAddressInfo {   
+    string address = 1;
+    string PaymentHash = 2;     
+    int64 ConfirmedAmount = 3;
+    repeated string ConfirmedTransactionIds = 4;
+    int64 PaidAmount = 5;
+    uint32 lockHeight = 6;
+    string errorMessage = 7;
+}
+
+message SwapAddressList {
+    repeated SwapAddressInfo addresses = 1;
+}

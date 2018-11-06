@@ -204,7 +204,7 @@ func updateRedeemTxForPayment(hash string, txID string) error {
 		if err != nil {
 			return err
 		}
-		return nil
+
 		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
 		return redeemableHashesB.Delete([]byte(hash))
 	})
@@ -323,18 +323,18 @@ func fetchPaymentRequest(payReqHash string) ([]byte, error) {
 /**
 Swap addresses
 **/
-func fetchAllSwapAddresses() ([]*swapAddressInfo, error) {
-	return fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+func fetchAllSwapAddresses() ([]*SwapAddressInfo, error) {
+	return fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return true
 	})
 }
 
-func fetchSwapAddresses(filterFunc func(addr *swapAddressInfo) bool) ([]*swapAddressInfo, error) {
-	var addresses []*swapAddressInfo
+func fetchSwapAddresses(filterFunc func(addr *SwapAddressInfo) bool) ([]*SwapAddressInfo, error) {
+	var addresses []*SwapAddressInfo
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(addressesBucket))
 		b.ForEach(func(k, v []byte) error {
-			var address swapAddressInfo
+			var address SwapAddressInfo
 			err := json.Unmarshal(v, &address)
 			if err != nil {
 				return err
@@ -349,7 +349,7 @@ func fetchSwapAddresses(filterFunc func(addr *swapAddressInfo) bool) ([]*swapAdd
 	return addresses, err
 }
 
-func saveSwapAddressInfo(address *swapAddressInfo) error {
+func saveSwapAddressInfo(address *SwapAddressInfo) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		byHashBucket := tx.Bucket([]byte(swapAddressesByHashBucket))
 		addressesBucket := tx.Bucket([]byte(addressesBucket))
@@ -367,7 +367,7 @@ func saveSwapAddressInfo(address *swapAddressInfo) error {
 	})
 }
 
-func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressInfo) error) (bool, error) {
+func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*SwapAddressInfo) error) (bool, error) {
 
 	address, err := fetchItem([]byte(swapAddressesByHashBucket), pHash)
 	if err != nil {
@@ -379,7 +379,7 @@ func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressIn
 	return updateSwapAddress(string(address), updateFunc)
 }
 
-func updateSwapAddress(address string, updateFunc func(*swapAddressInfo) error) (bool, error) {
+func updateSwapAddress(address string, updateFunc func(*SwapAddressInfo) error) (bool, error) {
 	var found bool
 	err := db.Update(func(tx *bolt.Tx) error {
 		addressesBucket := tx.Bucket([]byte(addressesBucket))
