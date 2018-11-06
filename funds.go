@@ -111,14 +111,13 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
 func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
-	// info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	// if err != nil {
-	// 	return nil, err
-	// }
+	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
 
 	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
-		//return a.LockHeight >= info.BlockHeight && a.ConfirmedAmount > a.PaidAmount
-		return true
+		return a.LockHeight >= info.BlockHeight && a.ConfirmedAmount > 0
 	})
 
 	if err != nil {
