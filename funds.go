@@ -117,7 +117,7 @@ func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
 	}
 
 	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
-		return a.LockHeight >= info.BlockHeight && a.ConfirmedAmount > 0
+		return a.LockHeight > info.BlockHeight && a.ConfirmedAmount > 0
 	})
 
 	if err != nil {
