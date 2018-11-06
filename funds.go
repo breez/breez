@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
+	"github.com/golang/protobuf/proto"
 
 	breezservice "github.com/breez/breez/breez"
 )
@@ -424,7 +425,7 @@ func settlePendingTransfers() error {
 func getPaymentsForConfirmedTransactions() {
 	log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
 	confirmedAddresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
-		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0 && addr.ErrorMessage == ""
+		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0
 	})
 	if err != nil {
 		log.Errorf("getPaymentsForConfirmedTransactions: failed to fetch swap addresses %v", err)
@@ -432,20 +433,41 @@ func getPaymentsForConfirmedTransactions() {
 	}
 	log.Infof("getPaymentsForConfirmedTransactions: confirmedAddresses length = %v", len(confirmedAddresses))
 	for _, address := range confirmedAddresses {
-		getPayment(address.Address)
+		getPayment(address)
 	}
 }
 
-func getPayment(address string) {
-	c, ctx, cancel := getFundManager()
-	defer cancel()
-	reply, err := c.GetPayment(ctx, &breezservice.GetPaymentRequest{Address: address})
+func getPayment(addressInfo *swapAddressInfo) {
+	invoiceData := &data.InvoiceMemo{TransferRequest: true}
+	memo, err := proto.Marshal(invoiceData)
 	if err != nil {
-		log.Errorf("failed to get payment for address %v, err = %v", address, err)
+		log.Errorf("failed to marshal invoice data, err = %v", err)
 		return
 	}
-	if len(reply.PaymentError) > 0 {
-		log.Errorf("failed to get payment for address %v, err = %v", address, reply.PaymentError)
+	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
+	if err != nil {
+		log.Errorf("failed to call AddInvoice, err = %v", err)
+		return
 	}
-	log.Infof("succeed to get payment for address %v", address)
+
+	c, ctx, cancel := getFundManager()
+	defer cancel()
+	var paymentError string
+	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: invoice.PaymentRequest})
+	if err != nil {
+		paymentError = err.Error()
+	}
+	if reply.PaymentError != "" {
+		paymentError = reply.PaymentError
+
+	}
+	if paymentError != "" {
+		log.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, reply.PaymentError)
+		updateSwapAddress(addressInfo.Address, func(a *swapAddressInfo) error {
+			a.ErrorMessage = paymentError
+			return nil
+		})
+		return
+	}
+	log.Infof("succeed to get payment for address %v", addressInfo.Address)
 }

@@ -21,7 +21,8 @@ service FundManager {
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
     rpc RedeemRemovedFunds (RedeemRemovedFundsRequest) returns (RedeemRemovedFundsReply) {}
-    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}    
+    rpc GetPayment (GetPaymentRequest) returns (GetPaymentReply) {}   
+    rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {} 
 }
 
 message OpenChannelRequest {
@@ -93,6 +94,14 @@ message GetPaymentRequest {
 }
 
 message GetPaymentReply {
+  string paymentError = 1;
+}
+
+message GetSwapPaymentRequest {
+  string paymentRequest = 1;
+}
+
+message GetSwapPaymentReply {
   string paymentError = 1;
 }
 
