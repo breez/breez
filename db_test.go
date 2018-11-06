@@ -25,18 +25,33 @@ func TestAddresses(t *testing.T) {
 		t.Error("addresses from db are ", addresses[0].Address)
 	}
 
-	removed, err := removeSwapAddressByPaymentHash([]byte{1, 2, 3})
-	if err != nil || !removed {
-		t.Error("failed to remove swap address")
+	found, err := updateSwapAddressByPaymentHash([]byte{1, 2, 3}, func(a *swapAddressInfo) error {
+		a.ConfirmedAmount = 100
+		return nil
+	})
+	if err != nil || !found {
+		t.Errorf("failed to update swap address found=%v, error = %v", found, err)
 	}
+
+	found, err = updateSwapAddress("addr2", func(a *swapAddressInfo) error {
+		a.ConfirmedAmount = 200
+		return nil
+	})
+	if err != nil || !found {
+		t.Errorf("failed to update swap address found=%v, error = %v", found, err)
+	}
+
 	addresses, err = fetchAllSwapAddresses()
-	if len(addresses) != 1 {
+	if len(addresses) != 2 {
 		t.Error("addresses length is ", len(addresses))
 	}
 
-	removed, err = removeSwapAddressByPaymentHash([]byte{1, 2, 3})
-	if err != nil || removed {
-		t.Error("failed to remove not existing swap address")
+	if addresses[0].ConfirmedAmount != 100 {
+		t.Errorf("first address confirmed amount = %v", addresses[0].ConfirmedAmount)
+	}
+
+	if addresses[1].ConfirmedAmount != 200 {
+		t.Errorf("second address confirmed amount = %v", addresses[1].ConfirmedAmount)
 	}
 }
 

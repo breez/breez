@@ -369,7 +369,7 @@ func saveSwapAddressInfo(address *swapAddressInfo) error {
 
 func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*swapAddressInfo) error) (bool, error) {
 
-	address, err := fetchItem([]byte(swapAddressesByHashBucket), []byte(paymentsHashBucket))
+	address, err := fetchItem([]byte(swapAddressesByHashBucket), pHash)
 	if err != nil {
 		return false, err
 	}
