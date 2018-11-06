@@ -109,42 +109,6 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 }
 
 /*
-AddFunds is responsible for topping up an existing channel
-*/
-// func AddFunds(notificationToken string) (*data.AddFundReply, error) {
-// 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
-// 	memo, err := proto.Marshal(invoiceData)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
-// 	if err != nil {
-// 		log.Criticalf("Failed to call AddInvoice %v", err)
-// 		return nil, err
-// 	}
-
-// 	c, ctx, cancel := getFundManager()
-// 	defer cancel()
-
-// 	r, err := c.AddFund(ctx, &breezservice.AddFundRequest{NotificationToken: notificationToken, PaymentRequest: invoice.PaymentRequest})
-// 	if err != nil {
-// 		log.Errorf("Error in AddFund: %v", err)
-// 		return nil, err
-// 	}
-
-// 	if r.Address != "" {
-// 		addressInfo := &swapAddressInfo{Address: r.Address, Payed: false, TransactinoConfirmed: false, PaymentHash: invoice.RHash}
-// 		err = saveSwapAddressInfo(addressInfo)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-
-// 	return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
-// }
-
-/*return &data.AddFundReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 RemoveFund transfers the user funds from the chanel to a supplied on-chain address
 It is executed in three steps:
 1. Send the breez server an address and an amount and get a corresponding payment request
@@ -295,7 +259,20 @@ func watchFundTransfers() {
 	go watchSwapAddressConfirmations()
 }
 
+//watchSwapAddressConfirmations subscribe to cofirmed transaction notifications in order
+//to update the status of changed swapAddressInfo in the db.
+//On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
+//In order to calim the payments from the swap service.
 func watchSwapAddressConfirmations() {
+
+	//first of all subscribe to transaction so we won't loose any transaction on startup
+	stream, err := lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
+	if err != nil {
+		log.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
+		return
+	}
+
+	//then initiate an update for all swap addresses in the db
 	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
 		return true
 	})
@@ -312,12 +289,7 @@ func watchSwapAddressConfirmations() {
 		}
 	}
 
-	stream, err := lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
-	if err != nil {
-		log.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
-		return
-	}
-
+	//Now enter the loopp of updating on each confirmed transaction
 	for {
 		tx, err := stream.Recv()
 		log.Infof("watchSwapAddressConfirmations - transactions subscription received new transaction")
@@ -370,6 +342,35 @@ func watchSettledSwapAddresses() {
 		log.Criticalf("watchSettledSwapAddresses failed to call SubscribeInvoices %v, %v", stream, err)
 	}
 
+	//then initiate an update for all swap addresses in the db
+	addresses, err := fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+		return addr.PaidAmount == 0
+	})
+	log.Infof("watchSettledSwapAddresses got these addresses to check: %v", addresses)
+	if err != nil {
+		log.Errorf("failed to call fetchSwapAddresses %v", err)
+		return
+	}
+
+	for _, a := range addresses {
+		invoice, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: a.PaymentHash})
+		if err != nil {
+			log.Errorf("failed to lookup invoice, %v", err)
+			continue
+		}
+		if invoice != nil && invoice.Settled {
+			_, err := updateSwapAddress(a.Address, func(a *swapAddressInfo) error {
+				a.PaidAmount = invoice.AmtPaidSat
+				return nil
+			})
+			if err != nil {
+				log.Errorf("Failed to update paid amount for address %v", a.Address)
+			}
+		}
+	}
+
+	//Now enter the loop of detecting each paid invoice and upate the corresponding
+	//swap address info
 	for {
 		invoice, err := stream.Recv()
 		log.Infof("watchSettledSwapAddresses - Invoice received by subscription")
