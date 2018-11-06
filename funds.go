@@ -462,7 +462,7 @@ func getPayment(addressInfo *SwapAddressInfo) {
 		log.Errorf("failed to marshal invoice data, err = %v", err)
 		return
 	}
-	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
+	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
 	if err != nil {
 		log.Errorf("failed to call AddInvoice, err = %v", err)
 		return
