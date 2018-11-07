@@ -1,7 +1,6 @@
 package breez
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -13,20 +12,25 @@ import (
 )
 
 const (
-	versionBucket          = "version"
-	incmoingPayReqBucket   = "paymentRequests"
-	addressesBucket        = "swap_addresses"
-	paymentsBucket         = "payments"
+	versionBucket        = "version"
+	incmoingPayReqBucket = "paymentRequests"
+
+	//add funds
+	addressesBucket           = "subswap_addresses"
+	swapAddressesByHashBucket = "subswap_addresses_by_hash"
+
+	//remove funds
 	redeemableHashesBucket = "redeemableHashes"
+
+	//payments and account
+	paymentsBucket         = "payments"
 	paymentsHashBucket     = "paymentsByHash"
 	paymentsSyncInfoBucket = "paymentsSyncInfo"
 	accountBucket          = "account"
 )
 
 var (
-	migrations = []func(tx *bolt.Tx) error{
-		convertPaymentsFromProto,
-	}
+	migrations = []func(tx *bolt.Tx) error{}
 )
 
 var db *bolt.DB
@@ -57,6 +61,10 @@ func openDB(dbPath string) error {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(addressesBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(swapAddressesByHashBucket))
 		if err != nil {
 			return err
 		}
@@ -196,7 +204,7 @@ func updateRedeemTxForPayment(hash string, txID string) error {
 		if err != nil {
 			return err
 		}
-		return nil
+
 		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
 		return redeemableHashesB.Delete([]byte(hash))
 	})
@@ -315,18 +323,18 @@ func fetchPaymentRequest(payReqHash string) ([]byte, error) {
 /**
 Swap addresses
 **/
-func fetchAllSwapAddresses() ([]*swapAddressInfo, error) {
-	return fetchSwapAddresses(func(addr *swapAddressInfo) bool {
+func fetchAllSwapAddresses() ([]*SwapAddressInfo, error) {
+	return fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return true
 	})
 }
 
-func fetchSwapAddresses(filterFunc func(addr *swapAddressInfo) bool) ([]*swapAddressInfo, error) {
-	var addresses []*swapAddressInfo
+func fetchSwapAddresses(filterFunc func(addr *SwapAddressInfo) bool) ([]*SwapAddressInfo, error) {
+	var addresses []*SwapAddressInfo
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(addressesBucket))
 		b.ForEach(func(k, v []byte) error {
-			var address swapAddressInfo
+			var address SwapAddressInfo
 			err := json.Unmarshal(v, &address)
 			if err != nil {
 				return err
@@ -341,57 +349,68 @@ func fetchSwapAddresses(filterFunc func(addr *swapAddressInfo) bool) ([]*swapAdd
 	return addresses, err
 }
 
-func saveSwapAddressInfo(address *swapAddressInfo) error {
-	bytes, err := serializeSwapAddressInfo(address)
-	if err != nil {
-		return err
-	}
-	return saveItem([]byte(addressesBucket), []byte(address.Address), bytes)
-}
-
-func removeSwapAddress(address string) error {
+func saveSwapAddressInfo(address *SwapAddressInfo) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(addressesBucket))
-		return b.Delete([]byte(address))
+		byHashBucket := tx.Bucket([]byte(swapAddressesByHashBucket))
+		addressesBucket := tx.Bucket([]byte(addressesBucket))
+		bytes, err := serializeSwapAddressInfo(address)
+		if err != nil {
+			return err
+		}
+		if err = byHashBucket.Put(address.PaymentHash, []byte(address.Address)); err != nil {
+			return err
+		}
+		if err = addressesBucket.Put([]byte(address.Address), bytes); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
-func removeSwapAddressByPaymentHash(pHash []byte) (bool, error) {
+func updateSwapAddressByPaymentHash(pHash []byte, updateFunc func(*SwapAddressInfo) error) (bool, error) {
+
+	address, err := fetchItem([]byte(swapAddressesByHashBucket), pHash)
+	if err != nil {
+		return false, err
+	}
+	if address == nil {
+		return false, nil
+	}
+	return updateSwapAddress(string(address), updateFunc)
+}
+
+func updateSwapAddress(address string, updateFunc func(*SwapAddressInfo) error) (bool, error) {
 	var found bool
 	err := db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(addressesBucket))
-		return b.ForEach(func(k, v []byte) error {
-			address, err := deserializeSwapAddressInfo(v)
-			if err != nil {
-				return err
-			}
-			if bytes.Equal(address.PaymentHash, pHash) {
-				found = true
-				return b.Delete(k)
-			}
+		addressesBucket := tx.Bucket([]byte(addressesBucket))
+		addressInfoBytes := addressesBucket.Get([]byte(address))
+		if addressInfoBytes == nil {
 			return nil
-		})
+		}
+		found = true
+		swapAddress, err := deserializeSwapAddressInfo(addressInfoBytes)
+		if err != nil {
+			return err
+		}
+		if err = updateFunc(swapAddress); err != nil {
+			return err
+		}
+
+		if err != nil {
+			return err
+		}
+
+		swapAddressData, err := serializeSwapAddressInfo(swapAddress)
+		if err != nil {
+			return err
+		}
+
+		if err = addressesBucket.Put([]byte(swapAddress.Address), swapAddressData); err != nil {
+			return err
+		}
+		return nil
 	})
 	return found, err
-}
-
-func updateSwapAddressInfo(address string, updateFund func(*swapAddressInfo)) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(addressesBucket))
-		addressInfoBytes := b.Get([]byte(address))
-		var decodedAddressInfo swapAddressInfo
-		err := json.Unmarshal(addressInfoBytes, &decodedAddressInfo)
-		if err != nil {
-			return err
-		}
-		updateFund(&decodedAddressInfo)
-		addressInfoBytes, err = json.Marshal(decodedAddressInfo)
-		if err != nil {
-			return err
-		}
-
-		return b.Put([]byte(address), addressInfoBytes)
-	})
 }
 
 func saveItem(bucket []byte, key []byte, value []byte) error {

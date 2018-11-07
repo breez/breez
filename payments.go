@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path"
 	"sort"
@@ -332,11 +331,9 @@ func watchPayments() {
 		for {
 			invoice, err := stream.Recv()
 			log.Infof("watchPayments - Invoice received by subscription")
-			if err == io.EOF {
-				return
-			}
 			if err != nil {
 				log.Criticalf("Failed to receive an invoice : %v", err)
+				return
 			}
 			if invoice.Settled {
 				if invoice.Value == 0 {
@@ -344,7 +341,10 @@ func watchPayments() {
 					go generateBlankInvoiceWithRetry()
 				}
 				log.Infof("watchPayments adding a received payment")
-				onNewReceivedPayment(invoice)
+				if err = onNewReceivedPayment(invoice); err != nil {
+					log.Criticalf("Failed to update received payment : %v", err)
+					return
+				}
 			}
 		}
 	}()

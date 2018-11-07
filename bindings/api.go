@@ -1,6 +1,7 @@
 package bindings
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -87,10 +88,41 @@ func IsConnectedToRoutingNode() bool {
 }
 
 /*
-AddFunds is part of the binding inteface which is delegated to breez.AddFunds
+AddFundsInit is part of the binding inteface which is delegated to breez.AddFundsInit
 */
-func AddFunds(breezID string) ([]byte, error) {
-	return marshalResponse(breez.AddFunds(breezID))
+func AddFundsInit(breezID string) ([]byte, error) {
+	return marshalResponse(breez.AddFundsInit(breezID))
+}
+
+/*
+GetRefundableSwapAddresses returns all addresses that are refundable, e.g expired and not paid
+*/
+func GetRefundableSwapAddresses() ([]byte, error) {
+	fmt.Println("GetRefundableSwapAddresses in api")
+	refundableAddresses, err := breez.GetRefundableAddresses()
+	if err != nil {
+		fmt.Println("GetRefundableSwapAddresses in api returned error from breez")
+		return nil, err
+	}
+	var rpcAddresses []*data.SwapAddressInfo
+	for _, a := range refundableAddresses {
+		rpcAddresses = append(rpcAddresses, &data.SwapAddressInfo{
+			Address:                 a.Address,
+			PaymentHash:             hex.EncodeToString(a.PaymentHash),
+			ConfirmedAmount:         a.ConfirmedAmount,
+			ConfirmedTransactionIds: a.ConfirmedTransactionIds,
+			PaidAmount:              a.PaidAmount,
+			LockHeight:              a.LockHeight,
+			ErrorMessage:            a.ErrorMessage,
+		})
+	}
+
+	fmt.Println("GetRefundableSwapAddresses creating address list")
+	addressList := &data.SwapAddressList{
+		Addresses: rpcAddresses,
+	}
+	fmt.Printf("GetRefundableSwapAddresses return result %v", addressList)
+	return marshalResponse(addressList, nil)
 }
 
 /*
