@@ -134,6 +134,7 @@ message SwapAddressInfo {
     int64 PaidAmount = 5;
     uint32 lockHeight = 6;
     string errorMessage = 7;
+    string lastRefundTxID = 8;
 }
 
 message SwapAddressList {

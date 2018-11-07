@@ -114,6 +114,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 			PaidAmount:              a.PaidAmount,
 			LockHeight:              a.LockHeight,
 			ErrorMessage:            a.ErrorMessage,
+			LastRefundTxID:          a.LastRefundTxID,
 		})
 	}
 

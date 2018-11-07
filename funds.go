@@ -36,6 +36,9 @@ type SwapAddressInfo struct {
 	Script         []byte
 	ErrorMessage   string
 	EnteredMempool bool
+
+	//refund
+	LastRefundTxID string
 }
 
 func serializeSwapAddressInfo(s *SwapAddressInfo) ([]byte, error) {
@@ -138,6 +141,14 @@ func Refund(address, refundAddress string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	_, err = updateSwapAddress(address, func(a *SwapAddressInfo) error {
+		a.LastRefundTxID = res.Txid
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	onUnspentChanged()
 	return res.Txid, nil
 }
 
@@ -347,7 +358,7 @@ func watchSwapAddressConfirmations() {
 
 		//if we got new confirmation, let's try to get payments
 		if newConfirmation {
-			notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_FUND_ADDRESS_UNSPENT_CHANGED}
+			onUnspentChanged()
 			go getPaymentsForConfirmedTransactions()
 		}
 	}
@@ -508,4 +519,8 @@ func getPayment(addressInfo *SwapAddressInfo) {
 		return
 	}
 	log.Infof("succeed to get payment for address %v", addressInfo.Address)
+}
+
+func onUnspentChanged() {
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_FUND_ADDRESS_UNSPENT_CHANGED}
 }
