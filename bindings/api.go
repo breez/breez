@@ -126,7 +126,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 	return marshalResponse(addressList, nil)
 }
 
-//Refund transfer the funds in address to the user destination address
+//Refund transfers the funds in address to the user destination address
 func Refund(refundRequest []byte) (string, error) {
 	request := &data.RefundRequest{}
 	if err := proto.Unmarshal(refundRequest, request); err != nil {
