@@ -85,6 +85,7 @@ message NotificationEvent {
         INVOICE_PAID = 3;
         ROUTING_NODE_CONNECTION_CHANGED = 4;
         LIGHTNING_SERVICE_DOWN = 5;
+        FUND_ADDRESS_UNSPENT_CHANGED = 6;
     }
 
     NotificationType type = 1;
@@ -99,6 +100,11 @@ message AddFundInitReply {
 
 message AddFundReply {
     string errorMessage = 1;
+}
+
+message RefundRequest {
+    string address = 1;
+    string refundAddress = 2;
 }
 
 message FundStatusReply {
@@ -128,6 +134,7 @@ message SwapAddressInfo {
     int64 PaidAmount = 5;
     uint32 lockHeight = 6;
     string errorMessage = 7;
+    string lastRefundTxID = 8;
 }
 
 message SwapAddressList {

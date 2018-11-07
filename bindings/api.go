@@ -114,6 +114,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 			PaidAmount:              a.PaidAmount,
 			LockHeight:              a.LockHeight,
 			ErrorMessage:            a.ErrorMessage,
+			LastRefundTxID:          a.LastRefundTxID,
 		})
 	}
 
@@ -123,6 +124,15 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 	}
 	fmt.Printf("GetRefundableSwapAddresses return result %v", addressList)
 	return marshalResponse(addressList, nil)
+}
+
+//Refund transfers the funds in address to the user destination address
+func Refund(refundRequest []byte) (string, error) {
+	request := &data.RefundRequest{}
+	if err := proto.Unmarshal(refundRequest, request); err != nil {
+		return "", err
+	}
+	return breez.Refund(request.Address, request.RefundAddress)
 }
 
 /*

@@ -15,6 +15,8 @@ import (
 	breezservice "github.com/breez/breez/breez"
 )
 
+//SwapAddressInfo contains all the infromation regarding
+//a submarine swap address.
 type SwapAddressInfo struct {
 	Address string
 
@@ -34,6 +36,9 @@ type SwapAddressInfo struct {
 	Script         []byte
 	ErrorMessage   string
 	EnteredMempool bool
+
+	//refund
+	LastRefundTxID string
 }
 
 func serializeSwapAddressInfo(s *SwapAddressInfo) ([]byte, error) {
@@ -117,13 +122,34 @@ func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
 	}
 
 	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
-		return a.LockHeight > info.BlockHeight && a.ConfirmedAmount > 0
+		log.Infof("checking refundable lockHeight=%v, amount=%v, currentHeight=%v", a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
+		return a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0
 	})
 
 	if err != nil {
 		return nil, err
 	}
 	return refundable, nil
+}
+
+//Refund broadcast a refund transaction for a sub swap address.
+func Refund(address, refundAddress string) (string, error) {
+	res, err := lightningClient.SubSwapClientRefund(context.Background(), &lnrpc.SubSwapClientRefundRequest{
+		Address:       address,
+		RefundAddress: refundAddress,
+	})
+	if err != nil {
+		return "", err
+	}
+	_, err = updateSwapAddress(address, func(a *SwapAddressInfo) error {
+		a.LastRefundTxID = res.Txid
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	onUnspentChanged()
+	return res.Txid, nil
 }
 
 /*
@@ -309,24 +335,30 @@ func watchSwapAddressConfirmations() {
 
 	//Now enter the loopp of updating on each confirmed transaction
 	for {
-		tx, err := stream.Recv()
+		_, err := stream.Recv()
 		log.Infof("watchSwapAddressConfirmations - transactions subscription received new transaction")
 		if err != nil {
-			log.Errorf("Failed to call SubscribeTransactions %v, %v", stream, err)
+			log.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
+			return
+		}
+		addresses, err := fetchAllSwapAddresses()
+		if err != nil {
+			log.Errorf("watchSwapAddressConfirmations - Failed to call fetchAllSwapAddresses %v", err)
 			return
 		}
 		log.Infof("watchSwapAddressConfirmations updating swap addresses")
 		var newConfirmation bool
-		for _, addr := range tx.DestAddresses {
-			updated, err := updateUnspentAmount(addr)
+		for _, addr := range addresses {
+			updated, err := updateUnspentAmount(addr.Address)
 			if err != nil {
-				log.Criticalf("Unable to call updateUnspentAmount for address %v", addr)
+				log.Criticalf("Unable to call updateUnspentAmount for address %v", addr.Address)
 			}
 			newConfirmation = newConfirmation || updated
 		}
 
 		//if we got new confirmation, let's try to get payments
 		if newConfirmation {
+			onUnspentChanged()
 			go getPaymentsForConfirmedTransactions()
 		}
 	}
@@ -341,7 +373,9 @@ func updateUnspentAmount(address string) (bool, error) {
 		}
 		log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
-		swapInfo.LockHeight = uint32(unspentResponse.LockHeight)
+		if len(unspentResponse.Utxos) > 0 {
+			swapInfo.LockHeight = uint32(unspentResponse.LockHeight + unspentResponse.Utxos[0].BlockHeight)
+		}
 
 		var confirmedTransactionIDs []string
 		for _, tx := range unspentResponse.Utxos {
@@ -485,4 +519,8 @@ func getPayment(addressInfo *SwapAddressInfo) {
 		return
 	}
 	log.Infof("succeed to get payment for address %v", addressInfo.Address)
+}
+
+func onUnspentChanged() {
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_FUND_ADDRESS_UNSPENT_CHANGED}
 }
