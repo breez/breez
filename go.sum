@@ -10,6 +10,8 @@ github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da h1:KjTM2ks9d14ZYCvmH
 github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da/go.mod h1:eHEWzANqSiWQsof+nXEI9bUVUyV6F53Fp89EuCh2EAA=
 github.com/aead/siphash v0.0.0-20170329201724-e404fcfc8885 h1:bBmEG9/q1xH07CqeeFw1ejup6Kw+/88WhhLHqIJ0ngQ=
 github.com/aead/siphash v0.0.0-20170329201724-e404fcfc8885/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
+github.com/aead/siphash v1.0.1 h1:FwHfE/T45KPKYuuSAKyyvE+oPWcaQ+CUmFW0bPlM+kg=
+github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e h1:24jix3mqu421BBMWbVBOl5pDw0f9ncazW10kaMywzHQ=
 github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e/go.mod h1:GEV5wmg4YquNw7v1kkyoX9etIk8yVmXj+AkDHuuETHs=
 github.com/breez/btcd v0.0.0-20181020175716-b6894c46eccd h1:06Qjd2zlJmGB5a0iv6nOaX7wPuVaZfzhBj1d/IUg0KE=
@@ -18,6 +20,8 @@ github.com/breez/btcd v0.0.0-20181025150601-acccfea9669b h1:+CeOqbDAEFAnCQpKm4Hm
 github.com/breez/btcd v0.0.0-20181025150601-acccfea9669b/go.mod h1:sIybN7Ago86gMPwn0ehML0Fa5br5InqD2P4b+C/Ofog=
 github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7 h1:ulOCEZzIl7jShnU8cMBpg94wc17dCyI6oH39CU61SAg=
 github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
+github.com/breez/btcwallet v0.0.0-20181108095430-ecd7fb361e83 h1:Bto0tW/zFg0rKx4A6KRAnSkp8A4M2nGVF7aSli2GFdc=
+github.com/breez/btcwallet v0.0.0-20181108095430-ecd7fb361e83/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528 h1:aQnVfQYpZNVymnDiRbGE5rwlPIyWEBGq0bkfqpSWMjU=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528/go.mod h1:V3+W74Ra09P8QXHyGjdtj5tdjGyI7A6ymolBIDIkcH8=
 github.com/breez/lightninglib v0.0.0-20180914104818-04fdcb693b99 h1:/Ub34t0EQzHek4/Gl7AXue2RwC1S3N5fIYfNkqaRg3c=
@@ -44,6 +48,8 @@ github.com/breez/lightninglib v0.0.0-20181105173014-a5eb7cf58639 h1:iL2dxK1Ipf08
 github.com/breez/lightninglib v0.0.0-20181105173014-a5eb7cf58639/go.mod h1:lyHEDNScy4AmW3lDEIrk1hpeu6/KJme47voQx1TgL20=
 github.com/breez/lightninglib v0.0.0-20181106130016-131b881c7f6b h1:OJgWR38w6d8VGpyQ0fTe4f98MyXpgaCeCu5Sa97mQAc=
 github.com/breez/lightninglib v0.0.0-20181106130016-131b881c7f6b/go.mod h1:lyHEDNScy4AmW3lDEIrk1hpeu6/KJme47voQx1TgL20=
+github.com/breez/lightninglib v0.0.0-20181108100350-ea01484b0b24 h1:MJokRK+lym+MMwRYmaqcDwW0TGxYsBu9kl3rhYrtu8c=
+github.com/breez/lightninglib v0.0.0-20181108100350-ea01484b0b24/go.mod h1:IXsnnTrV593HoAfVHcsf1FH0qQwah/Bl67VDe27iYds=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe04V66s2oP6RocdtG6nxRJ1P7M2Xk=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=
@@ -87,6 +93,7 @@ github.com/go-errors/errors v1.0.1/go.mod h1:f4zRHt4oKfwPJE5k8C9vpYG+aDHdBFUsgrm
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
 github.com/golang/protobuf v0.0.0-20180202184318-bbd03ef6da3a/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v0.0.0-20180712042225-70b3af33377e/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/golang/protobuf v0.0.0-20180821051752-b27b920f9e71/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.1.1-0.20180804220315-89a0c16f4dc2 h1:rZcRMpmru6orVhXPY5c7bKq61a2aGunV0tLMI28OcQA=
 github.com/golang/protobuf v1.1.1-0.20180804220315-89a0c16f4dc2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM=
@@ -123,6 +130,8 @@ github.com/lightninglabs/neutrino v0.0.0-20180913224338-bee0ed11601a h1:tOCGCMjg
 github.com/lightninglabs/neutrino v0.0.0-20180913224338-bee0ed11601a/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
 github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a h1:028dRQ5y6kwHePPPyPmvjMH9qv6UPWCbBpTKTyzE27s=
 github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
+github.com/lightninglabs/neutrino v0.0.0-20181024021741-23d294f83059 h1:82zz3CBwPCNVY0gCcE/CMSWe91TwZX7Lj43DVJPi558=
+github.com/lightninglabs/neutrino v0.0.0-20181024021741-23d294f83059/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
 github.com/lightningnetwork/lightning-onion v0.0.0-20180605012408-ac4d9da8f1d6 h1:ONLGrYJVQdbtP6CE/ff1KNWZtygRGEh12RzonTiCzPs=
 github.com/lightningnetwork/lightning-onion v0.0.0-20180605012408-ac4d9da8f1d6/go.mod h1:8EgEt4a/NUOVQd+3kk6n9aZCJ1Ssj96Pb6lCrci+6oc=
 github.com/ltcsuite/ltcd v0.0.0-20170901085657-5f654d5faab9 h1:aLgtHOvaE6DjIKS5IpQU6ZLjdcQzjxHTMPOpq4pAY+M=
@@ -146,6 +155,7 @@ golang.org/x/mobile v0.0.0-20180922163855-920b52be609a h1:k2W7wqwJjS98b+ECJjOyWb
 golang.org/x/mobile v0.0.0-20180922163855-920b52be609a/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/net v0.0.0-20180719180050-a680a1efc54d h1:i6RB+Qz1ug7TvJdY4zieRMpnLAtkHSHTOvApNXfLT4A=
 golang.org/x/net v0.0.0-20180719180050-a680a1efc54d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+golang.org/x/net v0.0.0-20180821023952-922f4815f713/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3 h1:czFLhve3vsQetD6JOJ8NZZvGQIXlnN3/yXxbT6/awxI=
 golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f h1:wMNYb4v58l5UBM7MYRLPG6ZhfOqbKu7X5eyFl8ZhKvA=
@@ -153,13 +163,18 @@ golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sys v0.0.0-20180709060233-1b2967e3c290/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180808154034-904bdc257025 h1:vE4lpaOfhRi5ci1V4lyWFx2Rg3CXZNaN09Q1e+GKioA=
 golang.org/x/sys v0.0.0-20180808154034-904bdc257025/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 h1:YoY1wS6JYVRpIfFngRf2HHo9R9dAne3xbkGOQ5rJXjU=
+golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 h1:+DCIGbF/swA92ohVg0//6X2IVY3KZs6p9mix0ziNYJM=
 golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 google.golang.org/genproto v0.0.0-20180306020942-df60624c1e9b h1:XeiFoG4FHSBJUL3qKCkMrkwBFRXB+hyQiTPg82JUssI=
 google.golang.org/genproto v0.0.0-20180306020942-df60624c1e9b/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
+google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8 h1:Nw54tB0rB7hY/N0NQvRW8DG4Yk3Q6T9cu9RcFQDu1tc=
+google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/grpc v1.5.2/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
+google.golang.org/grpc v1.12.0/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
 google.golang.org/grpc v1.14.0 h1:ArxJuB1NWfPY6r9Gp9gqwplT0Ge7nqv9msgu03lHLmo=
 google.golang.org/grpc v1.14.0/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
