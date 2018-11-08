@@ -76,6 +76,8 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
+	log.Infof("AddFundInit response = %v", r)
+
 	if r.ErrorMessage != "" {
 		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 	}
@@ -499,16 +501,31 @@ func getPayment(addressInfo *SwapAddressInfo) {
 		log.Errorf("failed to marshal invoice data, err = %v", err)
 		return
 	}
-	invoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
-	if err != nil {
-		log.Errorf("failed to call AddInvoice, err = %v", err)
-		return
+	//first lookup for an existing invoice
+	var paymentRequest string
+	invoice, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
+	if invoice != nil {
+		if invoice.Value != addressInfo.ConfirmedAmount {
+			_, err = updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
+				a.ErrorMessage = "Money was added after the invoice was created"
+				return nil
+			})
+			return
+		}
+		paymentRequest = invoice.PaymentRequest
+	} else {
+		addInvoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
+		if err != nil {
+			log.Errorf("failed to call AddInvoice, err = %v", err)
+			return
+		}
+		paymentRequest = addInvoice.PaymentRequest
 	}
 
 	c, ctx, cancel := getFundManager()
 	defer cancel()
 	var paymentError string
-	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: invoice.PaymentRequest})
+	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: paymentRequest})
 	if err != nil {
 		paymentError = err.Error()
 	} else if reply.PaymentError != "" {
