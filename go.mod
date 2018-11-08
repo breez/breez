@@ -2,7 +2,7 @@ module github.com/breez/breez
 
 require (
 	github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e
-	github.com/breez/lightninglib v0.0.0-20181106130016-131b881c7f6b
+	github.com/breez/lightninglib v0.0.0-20181108100350-ea01484b0b24
 	github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20180706230648-ab6388e0c60a
@@ -22,4 +22,4 @@ replace github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc => github.co
 
 replace github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a => github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db
 
-replace github.com/btcsuite/btcwallet v0.0.0-20181017015332-c4dd27e481f9 => github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7
+replace github.com/btcsuite/btcwallet v0.0.0-20181017015332-c4dd27e481f9 => github.com/breez/btcwallet v0.0.0-20181108095430-ecd7fb361e83
