@@ -76,6 +76,10 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
+	if r.ErrorMessage != "" {
+		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
+	}
+
 	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
 		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
