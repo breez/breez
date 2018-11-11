@@ -42,10 +42,9 @@ func GetAccountInfo() (*data.Account, error) {
 createChannel is responsible for creating a new channel
 */
 func createChannel(pubkey string) {
-	c := breezservice.NewFundManagerClient(breezClientConnection)
 	for {
 		if IsConnectedToRoutingNode() {
-			ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+			c, ctx, cancel := getFundManager()
 			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
 			cancel()
 			if err != nil {
