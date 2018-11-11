@@ -80,15 +80,11 @@ type config struct {
 	Network           string `long:"network"`
 }
 
-func getBreezClientConnection() (*grpc.ClientConn, error) {
+func getBreezClientConnection() *grpc.ClientConn {
 	connectionMu.Lock()
 	defer connectionMu.Unlock()
-	var err error
-	if breezClientConnection == nil {
-		breezClientConnection, err = newBreezClientConnection()
-	}
 	breezClientConnection.ResetConnectBackoff()
-	return breezClientConnection, err
+	return breezClientConnection
 }
 
 func newBreezClientConnection() (*grpc.ClientConn, error) {
@@ -97,7 +93,7 @@ func newBreezClientConnection() (*grpc.ClientConn, error) {
 		return nil, fmt.Errorf("credentials: failed to append certificates")
 	}
 	creds := credentials.NewClientTLSFromCert(cp, "")
-	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds), grpc.WithBlock())
+	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds))
 
 	//trace connection changes
 	go func() {
@@ -132,13 +128,11 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		defer closeDB()
 		defer atomic.StoreInt32(&started, 0)
 		defer atomic.StoreInt32(&isReady, 0)
-		grpc.EnableTracing = true
-		// var err error
-		// breezClientConnection, err = getBreezClientConnection(cfg.BreezServer)
-		// if err != nil {
-		// 	fmt.Println("Error connecting to breez", err)
-		// }
-		// defer breezClientConnection.Close()
+		breezClientConnection, err := newBreezClientConnection()
+		if err != nil {
+			fmt.Println("Error connecting to breez", err)
+		}
+		defer breezClientConnection.Close()
 		if syncJobMode {
 			startLightningDaemon(syncAndStop)
 		} else {
