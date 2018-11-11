@@ -43,11 +43,11 @@ createChannel is responsible for creating a new channel
 */
 func createChannel(pubkey string) {
 	c := breezservice.NewFundManagerClient(breezClientConnection)
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	defer cancel()
 	for {
 		if IsConnectedToRoutingNode() {
+			ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
 			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
+			cancel()
 			if err != nil {
 				log.Errorf("Error in openChannel: %v", err)
 				time.Sleep(time.Second * 5)
