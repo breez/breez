@@ -87,10 +87,12 @@ func getBreezClientConnection() *grpc.ClientConn {
 	return breezClientConnection
 }
 
-func newBreezClientConnection() (*grpc.ClientConn, error) {
+func initBreezClientConnection() error {
+	connectionMu.Lock()
+	defer connectionMu.Unlock()
 	cp := x509.NewCertPool()
 	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
-		return nil, fmt.Errorf("credentials: failed to append certificates")
+		return fmt.Errorf("credentials: failed to append certificates")
 	}
 	creds := credentials.NewClientTLSFromCert(cp, "")
 	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds))
@@ -103,7 +105,8 @@ func newBreezClientConnection() (*grpc.ClientConn, error) {
 			_ = con.WaitForStateChange(context.Background(), currentState)
 		}
 	}()
-	return con, err
+	breezClientConnection = con
+	return err
 }
 
 /*
@@ -128,7 +131,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		defer closeDB()
 		defer atomic.StoreInt32(&started, 0)
 		defer atomic.StoreInt32(&isReady, 0)
-		breezClientConnection, err := newBreezClientConnection()
+		err := initBreezClientConnection()
 		if err != nil {
 			fmt.Println("Error connecting to breez", err)
 		}
