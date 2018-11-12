@@ -8,6 +8,7 @@ require (
 	github.com/btcsuite/btcutil v0.0.0-20180706230648-ab6388e0c60a
 	github.com/golang/protobuf v1.2.0
 	github.com/jessevdk/go-flags v1.4.0
+	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/urfave/cli v1.18.0
 	go.etcd.io/bbolt v1.3.0
 	golang.org/x/mobile v0.0.0-20180922163855-920b52be609a // indirect
