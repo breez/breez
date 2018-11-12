@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/breez/breez/data"
-	"github.com/golang/protobuf/proto"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -27,10 +25,9 @@ const (
 	paymentsHashBucket     = "paymentsByHash"
 	paymentsSyncInfoBucket = "paymentsSyncInfo"
 	accountBucket          = "account"
-)
 
-var (
-	migrations = []func(tx *bolt.Tx) error{}
+	//encrypted sessinos
+	encryptedSessionsBucket = "encrypted_sessions"
 )
 
 var db *bolt.DB
@@ -80,7 +77,12 @@ func openDB(dbPath string) error {
 		if err != nil {
 			return err
 		}
-		return migrateDB(tx)
+		_, err = tx.CreateBucketIfNotExists([]byte(encryptedSessionsBucket))
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err
@@ -94,72 +96,6 @@ func closeDB() error {
 
 func deleteDB() error {
 	return os.Remove(db.Path())
-}
-
-func migrateDB(tx *bolt.Tx) error {
-	versionB := tx.Bucket([]byte(versionBucket))
-	upgradedVersion := uint64(len(migrations))
-	var currentVersion uint64
-	currentVersionBuf := versionB.Get([]byte("currentVersion"))
-	if currentVersionBuf != nil {
-		currentVersion = btoi(currentVersionBuf)
-	}
-	if currentVersion >= upgradedVersion {
-		return nil
-	}
-	i := currentVersion
-	for i < upgradedVersion {
-		if err := migrations[i](tx); err != nil {
-			log.Criticalf("migration failed ", err)
-			return err
-		}
-		i++
-	}
-	log.Infof("migration passed! updating version to %v", i)
-	return versionB.Put([]byte("currentVersion"), itob(i))
-}
-
-func convertPaymentsFromProto(tx *bolt.Tx) error {
-	log.Infof("running migration: convertPaymentsFromProto")
-	paymentB := tx.Bucket([]byte(paymentsBucket))
-	return paymentB.ForEach(func(k, v []byte) error {
-		if v == nil {
-			return nil
-		}
-		var protoPayment data.Payment
-		if err := proto.Unmarshal(v, &protoPayment); err != nil {
-			return err
-		}
-
-		fmt.Println("migrating payment item: ", protoPayment)
-		payment := &paymentInfo{
-			Amount:            protoPayment.Amount,
-			CreationTimestamp: protoPayment.CreationTimestamp,
-		}
-		if protoPayment.InvoiceMemo != nil {
-			payment.Description = protoPayment.InvoiceMemo.Description
-			payment.PayeeImageURL = protoPayment.InvoiceMemo.PayeeImageURL
-			payment.PayeeName = protoPayment.InvoiceMemo.PayeeName
-			payment.PayerImageURL = protoPayment.InvoiceMemo.PayerImageURL
-			payment.PayerName = protoPayment.InvoiceMemo.PayerName
-		}
-
-		switch protoPayment.Type {
-		case data.Payment_SENT:
-			payment.Type = sentPayment
-		case data.Payment_RECEIVED:
-			payment.Type = receivedPayment
-		case data.Payment_DEPOSIT:
-			payment.Type = depositPayment
-		case data.Payment_WITHDRAWAL:
-			payment.Type = withdrawalPayment
-		}
-		paymentBuf, err := serializePaymentInfo(payment)
-		if err != nil {
-			return err
-		}
-		return paymentB.Put(k, paymentBuf)
-	})
 }
 
 func addRedeemablePaymentHash(hash string) error {
@@ -411,6 +347,14 @@ func updateSwapAddress(address string, updateFunc func(*SwapAddressInfo) error) 
 		return nil
 	})
 	return found, err
+}
+
+func saveEncryptedSession(sessionID []byte, sessionData []byte) error {
+	return saveItem([]byte(encryptedSessionsBucket), sessionID, sessionData)
+}
+
+func fetchEncryptedSession(sessionID []byte) ([]byte, error) {
+	return fetchItem([]byte(encryptedSessionsBucket), []byte(sessionID))
 }
 
 func saveItem(bucket []byte, key []byte, value []byte) error {
