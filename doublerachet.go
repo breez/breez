@@ -152,7 +152,7 @@ func (p DHPair) PublicKey() doubleratchet.Key {
 	return p.publicKey
 }
 
-//BoltDBSessionStorage is a tructure that implements the SessionStore interface.
+//BoltDBSessionStorage is a structure that implements the SessionStore interface.
 //It uses boltdb to save sessions
 type BoltDBSessionStorage struct{}
 

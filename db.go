@@ -26,7 +26,7 @@ const (
 	paymentsSyncInfoBucket = "paymentsSyncInfo"
 	accountBucket          = "account"
 
-	//encrypted sessinos
+	//encrypted sessions
 	encryptedSessionsBucket = "encrypted_sessions"
 )
 
