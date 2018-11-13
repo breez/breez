@@ -69,7 +69,10 @@ func onRoutingNodeConnectionChanged(connected bool) {
 				return nil, nil
 			})
 			onAccountChanged()
+		} else {
+			updateNodeChannelPolicy(accData.Id)
 		}
+
 	}
 }
 

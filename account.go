@@ -38,6 +38,22 @@ func GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
+func updateNodeChannelPolicy(pubkey string) {
+	for {
+		if IsConnectedToRoutingNode() {
+			c, ctx, cancel := getFundManager()
+			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: pubkey})
+			cancel()
+			if err != nil {
+				log.Errorf("Error in updateChannelPolicy: %v", err)
+				time.Sleep(time.Second * 5)
+				continue
+			}
+			return
+		}
+	}
+}
+
 /*
 createChannel is responsible for creating a new channel
 */
