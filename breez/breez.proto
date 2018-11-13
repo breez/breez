@@ -16,6 +16,7 @@ service MempoolNotifier {
 
 service FundManager {
     rpc OpenChannel (OpenChannelRequest) returns (OpenChannelReply) {}
+    rpc UpdateChannelPolicy (UpdateChannelPolicyRequest) returns (UpdateChannelPolicyReply) {}
     rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
     rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
     rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
@@ -28,6 +29,12 @@ message OpenChannelRequest {
 }
 
 message OpenChannelReply {}
+
+message UpdateChannelPolicyRequest {
+    string pubKey = 1;
+}
+
+message UpdateChannelPolicyReply {}
 
 message AddFundInitRequest {
     string nodeID = 1;
