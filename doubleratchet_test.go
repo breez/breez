@@ -1,0 +1,108 @@
+package breez
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/status-im/doubleratchet"
+)
+
+func TestSessionStore(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer deleteDB()
+	// sessionID, secret, err := NewSession()
+	var rootChainKey [32]byte
+	state := doubleratchet.DefaultState(rootChainKey)
+	state.KeysCount = 10
+	state.Step = 11
+	state.PN = 12
+	state.DHr = [32]byte{1, 2, 3}
+	state.DHs = DHPair{privateKey: [32]byte{1, 1, 1}, publicKey: [32]byte{2, 2, 2}}
+	state.RecvCh.N = 5
+	state.RecvCh.CK = [32]byte{5, 5, 5}
+	state.SendCh.N = 6
+	state.SendCh.CK = [32]byte{6, 6, 6}
+
+	store := &BoltDBSessionStorage{}
+	if err := store.Save([]byte{1, 2, 3}, &state); err != nil {
+		t.Error(err)
+		return
+	}
+	loadedState, err := store.Load([]byte{1, 2, 3})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if loadedState.RootCh.CK != state.RootCh.CK {
+		t.Errorf("loadedState.RootCh.CK != state.RootCh.CK %v, %v", loadedState.RootCh.CK, state.RootCh.CK)
+	}
+	if loadedState.KeysCount != state.KeysCount {
+		t.Errorf("loadedState.KeysCount != state.KeysCount %v, %v", loadedState.KeysCount, state.KeysCount)
+	}
+	if loadedState.DHr != state.DHr {
+		t.Errorf("loadedState.DHr != state.DHr %v, %v", loadedState.DHr, state.DHr)
+	}
+	if loadedState.HKr != state.HKr {
+		t.Errorf("loadedState.HKr != state.HKr %v, %v", loadedState.HKr, state.HKr)
+	}
+	if loadedState.DHs.PrivateKey() != state.DHs.PrivateKey() {
+		t.Errorf("loadedState.DHs.PrivateKey != state.DHs.PrivateKey %v, %v", loadedState.DHs.PrivateKey(), state.DHs.PrivateKey())
+	}
+	if loadedState.DHs.PublicKey() != state.DHs.PublicKey() {
+		t.Errorf("loadedState.DHs.PublicKey != state.DHs.PublicKey %v, %v", loadedState.DHs.PublicKey(), state.DHs.PublicKey())
+	}
+	if loadedState.Step != state.Step {
+		t.Errorf("loadedState.Step != state.Step %v, %v", loadedState.Step, state.Step)
+	}
+	if loadedState.PN != state.PN {
+		t.Errorf("loadedState.PN != state.PN %v, %v", loadedState.PN, state.PN)
+	}
+	if loadedState.RecvCh.CK != state.RecvCh.CK {
+		t.Errorf("loadedState.RecvCh.CK != state.RecvCh.CK %v, %v", loadedState.RecvCh.CK, state.RecvCh.CK)
+	}
+	if loadedState.RecvCh.N != state.RecvCh.N {
+		t.Errorf("loadedState.RecvCh.N != state.RecvCh.N %v, %v", loadedState.RecvCh.N, state.RecvCh.N)
+	}
+	if loadedState.SendCh.CK != state.SendCh.CK {
+		t.Errorf("loadedState.SendCh.CK != state.SendCh.CK %v, %v", loadedState.SendCh.CK, state.SendCh.CK)
+	}
+	if loadedState.SendCh.N != state.SendCh.N {
+		t.Errorf("loadedState.SendCh.N != state.SendCh.N %v, %v", loadedState.SendCh.N, state.SendCh.N)
+	}
+}
+
+func TestEncryptDecrypt(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer deleteDB()
+	initiatorID, secret, pubKey, err := NewSession()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	receiverID, err := NewSessionWithRemoteKey(secret, pubKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	encrypted, err := RatchetEncrypt(initiatorID, "Hello from initiator")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	fmt.Printf("encrypted = %v", encrypted)
+
+	decrypted, err := RatchetDecrypt(receiverID, encrypted)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if decrypted != "Hello from initiator" {
+		t.Errorf("decrypted != Hello from initiator, value = %v", decrypted)
+	}
+}

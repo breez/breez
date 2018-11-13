@@ -237,6 +237,55 @@ func SendCommand(command string) (string, error) {
 	return breez.SendCommand(command)
 }
 
+/*
+CreateRatchetSession is part of the binding inteface which is delegated to breez.CreateRatchetSession
+*/
+func CreateRatchetSession(request []byte) ([]byte, error) {
+	var err error
+	var sessionID, secret, pubKey string
+
+	unmarshaledRequest := &data.CreateRatchetSessionRequest{}
+	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
+		return nil, err
+	}
+
+	//if has secret then we are initiators
+	if unmarshaledRequest.Secret != "" {
+		sessionID, secret, pubKey, err = breez.NewSession()
+	} else {
+		sessionID, err = breez.NewSessionWithRemoteKey(unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return marshalResponse(&data.CreateRatchetSessionReply{SessionID: sessionID, Secret: secret, PubKey: pubKey}, nil)
+}
+
+/*
+RatchetEncrypt is part of the binding inteface which is delegated to breez.RatchetEncrypt
+*/
+func RatchetEncrypt(request []byte) (string, error) {
+	unmarshaledRequest := &data.RatchetEncryptRequest{}
+	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
+		return "", err
+	}
+
+	return breez.RatchetEncrypt(unmarshaledRequest.SessionID, unmarshaledRequest.Message)
+}
+
+/*
+RatchetDecrypt is part of the binding inteface which is delegated to breez.RatchetDecrypt
+*/
+func RatchetDecrypt(request []byte) (string, error) {
+	unmarshaledRequest := &data.RatchetDecryptRequest{}
+	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
+		return "", err
+	}
+
+	return breez.RatchetDecrypt(unmarshaledRequest.SessionID, unmarshaledRequest.EncryptedMessage)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
 	for {
 		notification := <-notificationsChan

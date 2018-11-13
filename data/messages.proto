@@ -140,3 +140,24 @@ message SwapAddressInfo {
 message SwapAddressList {
     repeated SwapAddressInfo addresses = 1;
 }
+
+message CreateRatchetSessionRequest {
+    string secret = 1;
+    string remotePubKey = 2;
+}
+
+message CreateRatchetSessionReply {
+    string sessionID = 1;    
+    string secret = 2;
+    string pubKey = 3;
+}
+
+message RatchetEncryptRequest {
+    string sessionID = 1;
+    string message = 2;
+}
+
+message RatchetDecryptRequest {
+    string sessionID = 1;
+    string encryptedMessage = 2;
+}
