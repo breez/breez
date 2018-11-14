@@ -44,15 +44,15 @@ func updateNodeChannelPolicy(pubkey string) {
 			c, ctx, cancel := getFundManager()
 			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: pubkey})
 			cancel()
-			if err != nil {
-				log.Errorf("Error in updateChannelPolicy: %v", err)
-				time.Sleep(time.Second * 5)
-				continue
+			if err == nil {
+				return
 			}
-			return
+			log.Errorf("Error in updateChannelPolicy: %v", err)
 		}
+		time.Sleep(time.Second * 5)
 	}
 }
+
 
 /*
 createChannel is responsible for creating a new channel
@@ -63,15 +63,15 @@ func createChannel(pubkey string) {
 			c, ctx, cancel := getFundManager()
 			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
 			cancel()
-			if err != nil {
-				log.Errorf("Error in openChannel: %v", err)
-				time.Sleep(time.Second * 5)
-				continue
+			if err == nil {
+				return
 			}
-			return
+			log.Errorf("Error in openChannel: %v", err)
 		}
+		time.Sleep(time.Second * 5)
 	}
 }
+
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
 	channelPoints, err := getOpenChannelsPoints()
