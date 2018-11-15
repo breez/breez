@@ -63,6 +63,8 @@ func onRoutingNodeConnectionChanged(connected bool) {
 	// BREEZ-377: When there is no channel request one from Breez
 	if connected {
 		accData, _ := calculateAccount()
+		go updateNodeChannelPolicy(accData.Id)
+
 		if accData.Status == data.Account_WAITING_DEPOSIT {
 			createChannelGroup.Do("createChannel", func() (interface{}, error) {
 				createChannel(accData.Id)
