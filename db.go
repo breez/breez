@@ -108,8 +108,8 @@ func addRedeemablePaymentHash(hash string) error {
 func fetchRedeemablePaymentHashes() ([]string, error) {
 	var hashes []string
 	err := db.View(func(tx *bolt.Tx) error {
-		hashB := tx.Bucket([]byte(paymentsHashBucket))
-		return hashB.ForEach(func(k, v []byte) error {
+		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
+		return redeemableHashesB.ForEach(func(k, v []byte) error {
 			hashes = append(hashes, string(k))
 			return nil
 		})
