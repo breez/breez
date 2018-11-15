@@ -1,4 +1,4 @@
-package breez
+package doubleratchet
 
 import (
 	"bytes"
@@ -6,16 +6,28 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"sync"
 
 	"github.com/status-im/doubleratchet"
 )
 
 var (
 	byteOrder binary.ByteOrder
+	mu        sync.Mutex
 )
 
 func init() {
 	byteOrder = binary.BigEndian
+}
+
+//Start starts the doubleratchet service and makes it ready for action
+func Start(dbpath string) error {
+	return openDB(dbpath)
+}
+
+//Stop stops the doubleratchet service and release not needed resources
+func Stop() error {
+	return closeDB()
 }
 
 /*
@@ -83,7 +95,12 @@ func NewSessionWithRemoteKey(secret, remotePubKey string) (string, error) {
 		return "", err
 	}
 
-	_, err = doubleratchet.NewWithRemoteKey([]byte(sID), toKey(skBytes), toKey(pubKeyBytes), &BoltDBSessionStorage{})
+	_, err = doubleratchet.NewWithRemoteKey(
+		[]byte(sID),
+		toKey(skBytes),
+		toKey(pubKeyBytes),
+		&BoltDBSessionStorage{},
+		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
 	if err != nil {
 		return "", err
 	}
@@ -92,12 +109,17 @@ func NewSessionWithRemoteKey(secret, remotePubKey string) (string, error) {
 }
 
 /*
-Encrypt is used to encrypt a message providing a sessionID and a message to encrypt
+RatchetEncrypt is used to encrypt a message providing a sessionID and a message to encrypt
 This function loads the session from the session store and use it to encrypt the message.
 This way the user is free of managing sessions state and only need to provide the sessionID.
 */
 func RatchetEncrypt(sessionID, message string) (string, error) {
-	session, err := doubleratchet.Load([]byte(sessionID), &BoltDBSessionStorage{})
+	mu.Lock()
+	defer mu.Unlock()
+	session, err := doubleratchet.Load(
+		[]byte(sessionID),
+		&BoltDBSessionStorage{},
+		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
 	if err != nil {
 		return "", err
 	}
@@ -114,18 +136,22 @@ func RatchetEncrypt(sessionID, message string) (string, error) {
 }
 
 /*
-Decrypt is used to decrypt a message providing a sessionID and a message to decrypt
+RatchetDecrypt is used to decrypt a message providing a sessionID and a message to decrypt
 This function loads the session from the session store and use it to decrypt the message.
 This way the user is free of managing sessions state and only need to provide the sessionID.
 */
 func RatchetDecrypt(sessionID, message string) (string, error) {
-
+	mu.Lock()
+	defer mu.Unlock()
 	var msg doubleratchet.Message
 	if err := json.Unmarshal([]byte(message), &msg); err != nil {
 		return "", err
 	}
 
-	session, err := doubleratchet.Load([]byte(sessionID), &BoltDBSessionStorage{})
+	session, err := doubleratchet.Load(
+		[]byte(sessionID),
+		&BoltDBSessionStorage{},
+		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
 	if err != nil {
 		return "", err
 	}
@@ -266,6 +292,60 @@ func (s *BoltDBSessionStorage) Load(id []byte) (*doubleratchet.State, error) {
 	}
 
 	return &state, nil
+}
+
+//BoltDBKeysStorage is a structure that implements the KeysStorge interface.
+//Keys are saved for skipped messages that may come later.
+//It uses boltdb to save the keys.
+type BoltDBKeysStorage struct{}
+
+// Get returns a message key by the given key and message number.
+func (*BoltDBKeysStorage) Get(k doubleratchet.Key, msgNum uint) (mk doubleratchet.Key, ok bool, err error) {
+	key, err := fetchEncryptedMessageKey(k[:], msgNum)
+	return toKey(key), key != nil, err
+}
+
+// Put saves the given mk under the specified key and msgNum.
+func (*BoltDBKeysStorage) Put(sessionID []byte, k doubleratchet.Key, msgNum uint, mk doubleratchet.Key, keySeqNum uint) error {
+	return saveEncryptedMessageKey(sessionID, k[:], msgNum, mk[:])
+}
+
+// DeleteMk ensures there's no message key under the specified key and msgNum.
+func (*BoltDBKeysStorage) DeleteMk(k doubleratchet.Key, msgNum uint) error {
+	return nil
+}
+
+// DeleteOldMks deletes old message keys for a session.
+func (*BoltDBKeysStorage) DeleteOldMks(sessionID []byte, deleteUntilSeqKey uint) error {
+	return nil
+}
+
+// TruncateMks truncates the number of keys to maxKeys.
+//We have short live sessions so currently we don't implemented that
+func (*BoltDBKeysStorage) TruncateMks(sessionID []byte, maxKeys int) error {
+	return nil
+}
+
+// Count returns number of message keys stored under the specified key.
+func (*BoltDBKeysStorage) Count(k doubleratchet.Key) (uint, error) {
+	return countMessageKeys(k[:])
+}
+
+// All returns all the keys
+func (*BoltDBKeysStorage) All() (map[doubleratchet.Key]map[uint]doubleratchet.Key, error) {
+	all, err := allMessageKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	var keysMap map[doubleratchet.Key]map[uint]doubleratchet.Key
+	for k, v := range all {
+		keysMap[k] = make(map[uint]doubleratchet.Key)
+		for mk, mv := range v {
+			keysMap[k][mk] = mv
+		}
+	}
+	return keysMap, err
 }
 
 func readKey(buf *bytes.Buffer) (doubleratchet.Key, error) {

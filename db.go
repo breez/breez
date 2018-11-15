@@ -349,14 +349,6 @@ func updateSwapAddress(address string, updateFunc func(*SwapAddressInfo) error) 
 	return found, err
 }
 
-func saveEncryptedSession(sessionID []byte, sessionData []byte) error {
-	return saveItem([]byte(encryptedSessionsBucket), sessionID, sessionData)
-}
-
-func fetchEncryptedSession(sessionID []byte) ([]byte, error) {
-	return fetchItem([]byte(encryptedSessionsBucket), []byte(sessionID))
-}
-
 func saveItem(bucket []byte, key []byte, value []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
