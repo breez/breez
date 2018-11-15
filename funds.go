@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -249,6 +250,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("GetFundStatus len = %v", len(addresses))
 	if len(addresses) == 0 {
 		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 	}
@@ -256,13 +258,13 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var confirmedAddresses, unConfirmedAddresses []string
 	var hasMempool bool
 	for _, a := range addresses {
-		if a.ErrorMessage != "" {
-			if len(a.ConfirmedTransactionIds) > 0 {
-				confirmedAddresses = append(confirmedAddresses, a.Address)
-			} else {
-				hasMempool = hasMempool || a.EnteredMempool
-				unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
-			}
+		if len(a.ConfirmedTransactionIds) > 0 {
+			confirmedAddresses = append(confirmedAddresses, a.Address)
+			log.Infof("GetFundStatus adding confirmed transaction")
+		} else {
+			hasMempool = hasMempool || a.EnteredMempool
+			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
+			log.Infof("GetFundStatus adding UNconfirmed transaction")
 		}
 	}
 
@@ -273,22 +275,22 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	if hasMempool {
 		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 	}
-
+	log.Infof("GetFundStatus checknig unConfirmedAddresses len=%v", len(unConfirmedAddresses))
 	if len(unConfirmedAddresses) > 0 {
 		c, ctx, cancel := getFundManager()
 		defer cancel()
-		var rawAddresses []string
-		for _, add := range addresses {
-			rawAddresses = append(rawAddresses, add.Address)
-		}
 
+		log.Infof("GetFundStatus calling AddFundStatus addresses=%v", unConfirmedAddresses)
 		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
 		if err != nil {
 			return nil, err
 		}
 
+		log.Infof("GetFundStatus return result = %v", statusesMap)
+
 		var hasUnconfirmed bool
 		for addr, status := range statusesMap.Statuses {
+			log.Infof("GetFundStatus - got status for address %v", status)
 			if !status.Confirmed && status.Tx != "" {
 				hasUnconfirmed = true
 				updateSwapAddress(addr, func(swapInfo *SwapAddressInfo) error {
@@ -492,34 +494,45 @@ func getPaymentsForConfirmedTransactions() {
 	}
 	log.Infof("getPaymentsForConfirmedTransactions: confirmedAddresses length = %v", len(confirmedAddresses))
 	for _, address := range confirmedAddresses {
-		getPayment(address)
+		retryGetPayment(address, 3)
 	}
 }
 
-func getPayment(addressInfo *SwapAddressInfo) {
+func retryGetPayment(addressInfo *SwapAddressInfo, retries int) {
+	for i := 0; i < retries; i++ {
+		err := getPayment(addressInfo)
+		if err == nil {
+			log.Infof("succeed to get payment for address %v", addressInfo.Address)
+			break
+		}
+		log.Errorf("retryGetPayment - error getting payment in attempt=%v %v", i, err)
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func getPayment(addressInfo *SwapAddressInfo) error {
 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
 	memo, err := proto.Marshal(invoiceData)
 	if err != nil {
-		log.Errorf("failed to marshal invoice data, err = %v", err)
-		return
+		return fmt.Errorf("failed to marshal invoice data, err = %v", err)
 	}
 	//first lookup for an existing invoice
 	var paymentRequest string
 	invoice, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
 	if invoice != nil {
 		if invoice.Value != addressInfo.ConfirmedAmount {
+			errorMsg := "Money was added after the invoice was created"
 			_, err = updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
-				a.ErrorMessage = "Money was added after the invoice was created"
+				a.ErrorMessage = errorMsg
 				return nil
 			})
-			return
+			return errors.New(errorMsg)
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
 		addInvoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
 		if err != nil {
-			log.Errorf("failed to call AddInvoice, err = %v", err)
-			return
+			return fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
 		paymentRequest = addInvoice.PaymentRequest
 	}
@@ -534,14 +547,13 @@ func getPayment(addressInfo *SwapAddressInfo) {
 		paymentError = reply.PaymentError
 	}
 	if paymentError != "" {
-		log.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
 		updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
 			a.ErrorMessage = paymentError
 			return nil
 		})
-		return
+		return fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
 	}
-	log.Infof("succeed to get payment for address %v", addressInfo.Address)
+	return nil
 }
 
 func onUnspentChanged() {
