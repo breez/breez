@@ -211,7 +211,7 @@ func redeemAllRemovedFunds() error {
 		return err
 	}
 	for _, hash := range hashes {
-		log.Infof("Redeeming transactino for has %v", hash)
+		log.Infof("Redeeming transaction for has %v", hash)
 		txID, err := redeemRemovedFundsForHash(hash)
 		if err != nil {
 			log.Errorf("failed to redeem funds for hash %v, %v", hash, err)
