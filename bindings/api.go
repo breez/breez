@@ -7,6 +7,7 @@ import (
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/doubleratchet"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -250,10 +251,10 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 	}
 
 	//if has secret then we are initiators
-	if unmarshaledRequest.Secret != "" {
-		sessionID, secret, pubKey, err = breez.NewSession()
+	if unmarshaledRequest.Secret == "" {
+		sessionID, secret, pubKey, err = doubleratchet.NewSession()
 	} else {
-		sessionID, err = breez.NewSessionWithRemoteKey(unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
+		sessionID, err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
 	}
 
 	if err != nil {
@@ -271,7 +272,7 @@ func RatchetEncrypt(request []byte) (string, error) {
 		return "", err
 	}
 
-	return breez.RatchetEncrypt(unmarshaledRequest.SessionID, unmarshaledRequest.Message)
+	return doubleratchet.RatchetEncrypt(unmarshaledRequest.SessionID, unmarshaledRequest.Message)
 }
 
 /*
@@ -283,7 +284,7 @@ func RatchetDecrypt(request []byte) (string, error) {
 		return "", err
 	}
 
-	return breez.RatchetDecrypt(unmarshaledRequest.SessionID, unmarshaledRequest.EncryptedMessage)
+	return doubleratchet.RatchetDecrypt(unmarshaledRequest.SessionID, unmarshaledRequest.EncryptedMessage)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {

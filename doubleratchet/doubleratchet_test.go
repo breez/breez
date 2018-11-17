@@ -1,7 +1,6 @@
-package breez
+package doubleratchet
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/status-im/doubleratchet"
@@ -11,7 +10,7 @@ func TestSessionStore(t *testing.T) {
 	if err := openDB("testDB"); err != nil {
 		t.Error(err)
 	}
-	defer deleteDB()
+	defer destroyDB()
 	// sessionID, secret, err := NewSession()
 	var rootChainKey [32]byte
 	state := doubleratchet.DefaultState(rootChainKey)
@@ -78,7 +77,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	if err := openDB("testDB"); err != nil {
 		t.Error(err)
 	}
-	defer deleteDB()
+	defer destroyDB()
 	initiatorID, secret, pubKey, err := NewSession()
 	if err != nil {
 		t.Error(err)
@@ -95,7 +94,54 @@ func TestEncryptDecrypt(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	fmt.Printf("encrypted = %v", encrypted)
+
+	decrypted, err := RatchetDecrypt(receiverID, encrypted)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if decrypted != "Hello from initiator" {
+		t.Errorf("decrypted != Hello from initiator, value = %v", decrypted)
+	}
+}
+
+func TestOutOfOrderMessages(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer destroyDB()
+	initiatorID, secret, pubKey, err := NewSession()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	receiverID, err := NewSessionWithRemoteKey(secret, pubKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	encrypted, err := RatchetEncrypt(initiatorID, "Hello from initiator")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	//fmt.Printf("encrypted = %v", encrypted)
+
+	encrypted2, err := RatchetEncrypt(initiatorID, "Hello from initiator2")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	decrypted2, err := RatchetDecrypt(receiverID, encrypted2)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if decrypted2 != "Hello from initiator2" {
+		t.Errorf("decrypted != Hello from initiator2, value = %v", decrypted2)
+	}
 
 	decrypted, err := RatchetDecrypt(receiverID, encrypted)
 	if err != nil {

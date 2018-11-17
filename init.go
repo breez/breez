@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
@@ -133,8 +134,12 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 	if err := openDB(path.Join(appWorkingDir, "breez.db")); err != nil {
 		return nil, err
 	}
+	if err := doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
+		return nil, err
+	}
 	go func() {
 		defer closeDB()
+		defer doubleratchet.Stop()
 		defer atomic.StoreInt32(&started, 0)
 		defer atomic.StoreInt32(&isReady, 0)
 		err := initBreezClientConnection()
