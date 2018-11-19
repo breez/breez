@@ -86,9 +86,11 @@ message NotificationEvent {
         ROUTING_NODE_CONNECTION_CHANGED = 4;
         LIGHTNING_SERVICE_DOWN = 5;
         FUND_ADDRESS_UNSPENT_CHANGED = 6;
+        BACKUP_FILES_AVAILABLE = 7;
     }
 
     NotificationType type = 1;
+    string data = 2;
 }
 
 message AddFundInitReply {
