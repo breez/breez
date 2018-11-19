@@ -174,12 +174,15 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 /*
 AddStandardInvoice encapsulate a given amount and description in a payment request
 */
-func AddStandardInvoice(amount int64, description string, expiry int64) (paymentRequest string, err error) {
-	if expiry <= 0 {
-		expiry = defaultInvoiceExpiry
+func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
+	// Format the standard invoice memo
+	memo := invoice.Description + " | " + invoice.PayeeName + " | " + invoice.PayeeImageURL
+
+	if invoice.Expiry <= 0 {
+		invoice.Expiry = defaultInvoiceExpiry
 	}
 
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: description, Private: true, Value: amount, Expiry: expiry})
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
 	if err != nil {
 		return "", err
 	}
