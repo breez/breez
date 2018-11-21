@@ -61,6 +61,8 @@ github.com/breez/lightninglib v0.0.0-20181120132128-5a6d8038de5d h1:VxLtmCa34oSC
 github.com/breez/lightninglib v0.0.0-20181120132128-5a6d8038de5d/go.mod h1:V0xmJWQaQmPVgdliuvt1Lpk9HA5M9ZOl5JMLvXPkJzs=
 github.com/breez/lightninglib v0.0.0-20181121054244-c6534caefdcd h1:6u8kuAfxIra7ga2Jkh+KDTD6ZhowzgMatMXarel42Rc=
 github.com/breez/lightninglib v0.0.0-20181121054244-c6534caefdcd/go.mod h1:RP0d9nKTkxYka//vNx4Tb2T7KIsndqCpQIepJmLGZbs=
+github.com/breez/lightninglib v0.0.0-20181121084528-268563fa6b69 h1:Z4/22sUzhROqOpaiD8P7wY9VRv0GkBeN20JDA3xypbU=
+github.com/breez/lightninglib v0.0.0-20181121084528-268563fa6b69/go.mod h1:RP0d9nKTkxYka//vNx4Tb2T7KIsndqCpQIepJmLGZbs=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe04V66s2oP6RocdtG6nxRJ1P7M2Xk=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=
@@ -176,6 +178,8 @@ golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac/go.mod h1:6SG95UA2DQfeDnf
 golang.org/x/lint v0.0.0-20180702182130-06c8688daad7/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/mobile v0.0.0-20180922163855-920b52be609a h1:k2W7wqwJjS98b+ECJjOyWbVLFqNVTfBTbjtJ1OsVqj8=
 golang.org/x/mobile v0.0.0-20180922163855-920b52be609a/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
+golang.org/x/mobile v0.0.0-20181026062114-a27dd33d354d h1:DuZZDdMFwDrzmycNhCaWSve7Vh+BIrjm7ttgb4fD3Os=
+golang.org/x/mobile v0.0.0-20181026062114-a27dd33d354d/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/net v0.0.0-20180719180050-a680a1efc54d h1:i6RB+Qz1ug7TvJdY4zieRMpnLAtkHSHTOvApNXfLT4A=
 golang.org/x/net v0.0.0-20180719180050-a680a1efc54d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180821023952-922f4815f713/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
