@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	encryptedSessionsBucket = "encryptedSessions"
-	sessionKeysBucket       = "sessionKeys"
+	encryptedSessionsBucket    = "encryptedSessions"
+	sessionKeysBucket          = "sessionKeys"
+	initiatedSessionKeysBucket = "initiatedSessionKeys"
 )
 
 var db *bolt.DB
@@ -25,6 +26,10 @@ func openDB(dbPath string) error {
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
 		_, err = tx.CreateBucketIfNotExists([]byte(sessionKeysBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(initiatedSessionKeysBucket))
 		if err != nil {
 			return err
 		}
@@ -49,7 +54,7 @@ func saveEncryptedSession(sessionID []byte, sessionData []byte) error {
 	return saveItem([]byte(encryptedSessionsBucket), sessionID, sessionData)
 }
 
-func fetchEncryptedSession(sessionID []byte) ([]byte, error) {
+func fetchEncryptedSession(sessionID []byte) []byte {
 	return fetchItem([]byte(encryptedSessionsBucket), []byte(sessionID))
 }
 
@@ -124,6 +129,14 @@ func allMessageKeys() (map[[32]byte]map[uint][32]byte, error) {
 	return all, err
 }
 
+func addInitiatedSessionID(sessionID []byte) error {
+	return saveItem([]byte(initiatedSessionKeysBucket), sessionID, []byte{1})
+}
+
+func isInitiatedSession(sessionID []byte) bool {
+	return fetchItem([]byte(initiatedSessionKeysBucket), sessionID) != nil
+}
+
 func saveItem(bucket []byte, key []byte, value []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
@@ -131,14 +144,14 @@ func saveItem(bucket []byte, key []byte, value []byte) error {
 	})
 }
 
-func fetchItem(bucket []byte, key []byte) ([]byte, error) {
+func fetchItem(bucket []byte, key []byte) []byte {
 	var value []byte
-	err := db.View(func(tx *bolt.Tx) error {
+	_ = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		value = b.Get(key)
 		return nil
 	})
-	return value, err
+	return value
 }
 
 func itob(v uint64) []byte {

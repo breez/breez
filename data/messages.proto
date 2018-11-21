@@ -144,12 +144,18 @@ message SwapAddressList {
 message CreateRatchetSessionRequest {
     string secret = 1;
     string remotePubKey = 2;
+    string sessionID = 3;
 }
 
 message CreateRatchetSessionReply {
     string sessionID = 1;    
     string secret = 2;
     string pubKey = 3;
+}
+
+message RatchetSessionInfoReply {
+    string sessionID = 1;
+    bool initiated = 2;
 }
 
 message RatchetEncryptRequest {

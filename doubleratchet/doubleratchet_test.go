@@ -83,8 +83,8 @@ func TestEncryptDecrypt(t *testing.T) {
 		t.Error(err)
 		return
 	}
-
-	receiverID, err := NewSessionWithRemoteKey(secret, pubKey)
+	receiverID := "receiverID"
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
 	if err != nil {
 		t.Error(err)
 		return
@@ -116,7 +116,8 @@ func TestOutOfOrderMessages(t *testing.T) {
 		return
 	}
 
-	receiverID, err := NewSessionWithRemoteKey(secret, pubKey)
+	receiverID := "receiverID"
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
 	if err != nil {
 		t.Error(err)
 		return
@@ -150,5 +151,34 @@ func TestOutOfOrderMessages(t *testing.T) {
 	}
 	if decrypted != "Hello from initiator" {
 		t.Errorf("decrypted != Hello from initiator, value = %v", decrypted)
+	}
+}
+
+func TestInitiatedSessions(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer destroyDB()
+	initiatorID, secret, pubKey, err := NewSession()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	receiverID := "session"
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	reply := RatchetSessionInfo(initiatorID)
+	if reply.Initiated == false || reply.SessionID == "" {
+		t.Errorf("initiated should be true")
+	}
+
+	reply = RatchetSessionInfo(receiverID)
+	if reply.Initiated == true || reply.SessionID == "" {
+		t.Errorf("initiated should be false")
 	}
 }

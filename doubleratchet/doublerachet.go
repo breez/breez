@@ -6,10 +6,17 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/status-im/doubleratchet"
 )
+
+//RatchetSessionDetails represents the info of existing session
+type RatchetSessionDetails struct {
+	SessionID string
+	Initiated bool
+}
 
 var (
 	byteOrder binary.ByteOrder
@@ -54,6 +61,9 @@ func NewSession() (sessionID, secret, pubKey string, err error) {
 	if err != nil {
 		return
 	}
+	if err = addInitiatedSessionID([]byte(sID)); err != nil {
+		return
+	}
 
 	keyPair, err := crypto.GenerateDH()
 	if err != nil {
@@ -79,33 +89,49 @@ This function creates a session and stores its state in the SessionStore
 Following this operation the caller can imediately use Encrypt/Decrypt by
 providing the sessionID as identifier.
 */
-func NewSessionWithRemoteKey(secret, remotePubKey string) (string, error) {
-	sID, err := generateSessionID()
-	if err != nil {
-		return "", err
-	}
+func NewSessionWithRemoteKey(sessionID, secret, remotePubKey string) error {
 
 	skBytes, err := hex.DecodeString(secret)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	pubKeyBytes, err := hex.DecodeString(remotePubKey)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	_, err = doubleratchet.NewWithRemoteKey(
-		[]byte(sID),
+		[]byte(sessionID),
 		toKey(skBytes),
 		toKey(pubKeyBytes),
 		&BoltDBSessionStorage{},
 		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return sID, nil
+	return nil
+}
+
+/*
+RatchetSessionInfo checks if a session matches the sessionID and returns its details.
+Currently the details only consists if this is an initiated session or a received session.
+*/
+func RatchetSessionInfo(sessionID string) *RatchetSessionDetails {
+	session, err := doubleratchet.Load(
+		[]byte(sessionID),
+		&BoltDBSessionStorage{},
+		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
+	if err != nil || session == nil {
+		fmt.Printf("session %v is nil", sessionID)
+		return nil
+	}
+	fmt.Printf("session %v is NOT nil", sessionID)
+	return &RatchetSessionDetails{
+		SessionID: sessionID,
+		Initiated: isInitiatedSession([]byte(sessionID)),
+	}
 }
 
 /*
@@ -235,12 +261,9 @@ func (s *BoltDBSessionStorage) Save(id []byte, state *doubleratchet.State) error
 
 // Load session by id
 func (s *BoltDBSessionStorage) Load(id []byte) (*doubleratchet.State, error) {
-	sessionData, err := fetchEncryptedSession(id)
-	if err != nil {
-		return nil, err
-	}
-	buf := bytes.NewBuffer(sessionData)
+	sessionData := fetchEncryptedSession(id)
 
+	buf := bytes.NewBuffer(sessionData)
 	rootChainKey, err := readKey(buf)
 	if err != nil {
 		return nil, err

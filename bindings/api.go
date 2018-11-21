@@ -254,13 +254,33 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 	if unmarshaledRequest.Secret == "" {
 		sessionID, secret, pubKey, err = doubleratchet.NewSession()
 	} else {
-		sessionID, err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
+		err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.SessionID, unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 	return marshalResponse(&data.CreateRatchetSessionReply{SessionID: sessionID, Secret: secret, PubKey: pubKey}, nil)
+}
+
+/*
+RatchetSessionExists is part of the binding inteface which is delegated to breez.RatchetSessionExists
+*/
+func RatchetSessionInfo(sessionID string) ([]byte, error) {
+	var reply *data.RatchetSessionInfoReply
+	sessionDetails := doubleratchet.RatchetSessionInfo(sessionID)
+	if sessionDetails == nil {
+		reply = &data.RatchetSessionInfoReply{
+			SessionID: "",
+			Initiated: false,
+		}
+	} else {
+		reply = &data.RatchetSessionInfoReply{
+			SessionID: sessionDetails.SessionID,
+			Initiated: sessionDetails.Initiated,
+		}
+	}
+	return marshalResponse(reply, nil)
 }
 
 /*
