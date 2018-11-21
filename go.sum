@@ -23,6 +23,10 @@ github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7 h1:ulOCEZzIl7jShnU
 github.com/breez/btcwallet v0.0.0-20181025062152-a1da5037baf7/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/btcwallet v0.0.0-20181108095430-ecd7fb361e83 h1:Bto0tW/zFg0rKx4A6KRAnSkp8A4M2nGVF7aSli2GFdc=
 github.com/breez/btcwallet v0.0.0-20181108095430-ecd7fb361e83/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
+github.com/breez/btcwallet v0.0.0-20181116143700-0824eb7ec53b h1:W5m0o/XpfbPxsPAKDaKoBMRpxFMd5o5iw0pDm/+u2wM=
+github.com/breez/btcwallet v0.0.0-20181116143700-0824eb7ec53b/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
+github.com/breez/btcwallet v0.0.0-20181121053730-b0e44c9563a8 h1:P23e+ekRAScQ2Ybz4YABCLcCRv6RBCQf6u9HlgzjR2U=
+github.com/breez/btcwallet v0.0.0-20181121053730-b0e44c9563a8/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528 h1:aQnVfQYpZNVymnDiRbGE5rwlPIyWEBGq0bkfqpSWMjU=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528/go.mod h1:V3+W74Ra09P8QXHyGjdtj5tdjGyI7A6ymolBIDIkcH8=
 github.com/breez/lightninglib v0.0.0-20180914104818-04fdcb693b99 h1:/Ub34t0EQzHek4/Gl7AXue2RwC1S3N5fIYfNkqaRg3c=
@@ -51,11 +55,18 @@ github.com/breez/lightninglib v0.0.0-20181106130016-131b881c7f6b h1:OJgWR38w6d8V
 github.com/breez/lightninglib v0.0.0-20181106130016-131b881c7f6b/go.mod h1:lyHEDNScy4AmW3lDEIrk1hpeu6/KJme47voQx1TgL20=
 github.com/breez/lightninglib v0.0.0-20181108100350-ea01484b0b24 h1:MJokRK+lym+MMwRYmaqcDwW0TGxYsBu9kl3rhYrtu8c=
 github.com/breez/lightninglib v0.0.0-20181108100350-ea01484b0b24/go.mod h1:IXsnnTrV593HoAfVHcsf1FH0qQwah/Bl67VDe27iYds=
+github.com/breez/lightninglib v0.0.0-20181117165556-f5e36c2a74f7 h1:nBUHd1UiNsi8VB6qaNDIEO8M8MFLVf+NbOjdyGGByFQ=
+github.com/breez/lightninglib v0.0.0-20181117165556-f5e36c2a74f7/go.mod h1:ae5uUs9lsCviEMKV4wqK7dTrqukljJaraIQ/xam87UQ=
+github.com/breez/lightninglib v0.0.0-20181120132128-5a6d8038de5d h1:VxLtmCa34oSCqBGeINw8BEHheiRi/3a/JpSlv40GAc0=
+github.com/breez/lightninglib v0.0.0-20181120132128-5a6d8038de5d/go.mod h1:V0xmJWQaQmPVgdliuvt1Lpk9HA5M9ZOl5JMLvXPkJzs=
+github.com/breez/lightninglib v0.0.0-20181121054244-c6534caefdcd h1:6u8kuAfxIra7ga2Jkh+KDTD6ZhowzgMatMXarel42Rc=
+github.com/breez/lightninglib v0.0.0-20181121054244-c6534caefdcd/go.mod h1:RP0d9nKTkxYka//vNx4Tb2T7KIsndqCpQIepJmLGZbs=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe04V66s2oP6RocdtG6nxRJ1P7M2Xk=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/btcsuite/btcd v0.0.0-20180706232521-fdfc19097e7a/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
+github.com/btcsuite/btcd v0.0.0-20180824064422-79e00513b101/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc h1:nLRj+ULuRYb0qTAOnuayFXRnLjYXBots5CSp5zH4RqU=
 github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9VhRV3jjAVU7DJVjMaK+IsvSeZvFo=
@@ -104,6 +115,8 @@ github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/grpc-ecosystem/grpc-gateway v0.0.0-20170724004829-f2862b476edc h1:3NXdOHZ1YlN6SGP3FPbn4k73O2MeEp065abehRwGFxI=
 github.com/grpc-ecosystem/grpc-gateway v0.0.0-20170724004829-f2862b476edc/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
+github.com/grpc-ecosystem/grpc-gateway v1.5.1 h1:3scN4iuXkNOyP98jF55Lv8a9j1o/IwvnDIZ0LHJK1nk=
+github.com/grpc-ecosystem/grpc-gateway v1.5.1/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/jackpal/gateway v1.0.4 h1:LS5EHkLuQ6jzaHwULi0vL+JO0mU/n4yUtK8oUjHHOlM=
 github.com/jackpal/gateway v1.0.4/go.mod h1:lTpwd4ACLXmpyiCTRtfiNyVnUmqT9RivzCDQetPfnjA=
@@ -137,6 +150,8 @@ github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a h1:028dRQ5y
 github.com/lightninglabs/neutrino v0.0.0-20181019013733-8018ab76e70a/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
 github.com/lightninglabs/neutrino v0.0.0-20181024021741-23d294f83059 h1:82zz3CBwPCNVY0gCcE/CMSWe91TwZX7Lj43DVJPi558=
 github.com/lightninglabs/neutrino v0.0.0-20181024021741-23d294f83059/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
+github.com/lightninglabs/neutrino v0.0.0-20181102193151-641af1ca5561 h1:Xi58PB1hIfj5xbUEFYerU14LiBXYdLg5bnUD1OJmH7U=
+github.com/lightninglabs/neutrino v0.0.0-20181102193151-641af1ca5561/go.mod h1:KJq43Fu9ceitbJsSXMILcT4mGDNI/crKmPIkDOZXFyM=
 github.com/lightningnetwork/lightning-onion v0.0.0-20180605012408-ac4d9da8f1d6 h1:ONLGrYJVQdbtP6CE/ff1KNWZtygRGEh12RzonTiCzPs=
 github.com/lightningnetwork/lightning-onion v0.0.0-20180605012408-ac4d9da8f1d6/go.mod h1:8EgEt4a/NUOVQd+3kk6n9aZCJ1Ssj96Pb6lCrci+6oc=
 github.com/ltcsuite/ltcd v0.0.0-20170901085657-5f654d5faab9 h1:aLgtHOvaE6DjIKS5IpQU6ZLjdcQzjxHTMPOpq4pAY+M=
