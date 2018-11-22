@@ -21,7 +21,8 @@ type BreezNotifier interface {
 /*
 Start the lightning client
 */
-func Start(workingDir string, notifier BreezNotifier) (err error) {
+func Start(workingDir string, tempDir string, notifier BreezNotifier) (err error) {
+	os.Setenv("TMPDIR", tempDir)
 	notificationsChan, err := breez.Start(workingDir, false)
 	if err != nil {
 		return err
