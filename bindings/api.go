@@ -243,7 +243,7 @@ CreateRatchetSession is part of the binding inteface which is delegated to breez
 */
 func CreateRatchetSession(request []byte) ([]byte, error) {
 	var err error
-	var sessionID, secret, pubKey string
+	var secret, pubKey string
 
 	unmarshaledRequest := &data.CreateRatchetSessionRequest{}
 	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
@@ -252,7 +252,7 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 
 	//if has secret then we are initiators
 	if unmarshaledRequest.Secret == "" {
-		sessionID, secret, pubKey, err = doubleratchet.NewSession()
+		secret, pubKey, err = doubleratchet.NewSession(unmarshaledRequest.SessionID)
 	} else {
 		err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.SessionID, unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
 	}
@@ -260,7 +260,7 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return marshalResponse(&data.CreateRatchetSessionReply{SessionID: sessionID, Secret: secret, PubKey: pubKey}, nil)
+	return marshalResponse(&data.CreateRatchetSessionReply{SessionID: unmarshaledRequest.SessionID, Secret: secret, PubKey: pubKey}, nil)
 }
 
 /*

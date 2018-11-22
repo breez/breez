@@ -78,7 +78,8 @@ func TestEncryptDecrypt(t *testing.T) {
 		t.Error(err)
 	}
 	defer destroyDB()
-	initiatorID, secret, pubKey, err := NewSession()
+	initiatorID := "initiatorSession"
+	secret, pubKey, err := NewSession(initiatorID)
 	if err != nil {
 		t.Error(err)
 		return
@@ -110,7 +111,8 @@ func TestOutOfOrderMessages(t *testing.T) {
 		t.Error(err)
 	}
 	defer destroyDB()
-	initiatorID, secret, pubKey, err := NewSession()
+	initiatorID := "initiatorSession"
+	secret, pubKey, err := NewSession(initiatorID)
 	if err != nil {
 		t.Error(err)
 		return
@@ -159,7 +161,8 @@ func TestInitiatedSessions(t *testing.T) {
 		t.Error(err)
 	}
 	defer destroyDB()
-	initiatorID, secret, pubKey, err := NewSession()
+	initiatorID := "initiatorSession"
+	secret, pubKey, err := NewSession(initiatorID)
 	if err != nil {
 		t.Error(err)
 		return
