@@ -143,7 +143,7 @@ func PayBlankInvoice(paymentRequest string, amountSatoshi int64) error {
 	if len(response.PaymentError) > 0 {
 		return errors.New(response.PaymentError)
 	}
-	onAccountChanged()
+	syncSentPayments()
 	return nil
 }
 
@@ -409,6 +409,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 
 	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
+	doBackup()
 	onAccountChanged()
 	return err
 }
@@ -446,6 +447,7 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		return err
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INVOICE_PAID}
+	doBackup()
 	onAccountChanged()
 	return nil
 }
