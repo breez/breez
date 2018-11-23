@@ -143,8 +143,7 @@ func PayBlankInvoice(paymentRequest string, amountSatoshi int64) error {
 	if len(response.PaymentError) > 0 {
 		return errors.New(response.PaymentError)
 	}
-	getBackupPaths()
-	onAccountChanged()
+	syncSentPayments()
 	return nil
 }
 
