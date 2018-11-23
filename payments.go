@@ -409,7 +409,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 
 	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
-	getBackupPaths()
+	doBackup()
 	onAccountChanged()
 	return err
 }
@@ -447,7 +447,7 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		return err
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INVOICE_PAID}
-	getBackupPaths()
+	doBackup()
 	onAccountChanged()
 	return nil
 }

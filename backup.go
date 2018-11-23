@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func getBackupPaths() error {
+func doBackup() error {
 	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		log.Errorf("Couldn't get backup: %v", err)
