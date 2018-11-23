@@ -247,7 +247,6 @@ func startBreez() {
 	//start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 
-	go connectOnStartup()
 	go watchRoutingNodeConnection()
 	go watchPayments()
 	go generateBlankInvoiceWithRetry()
@@ -258,6 +257,7 @@ func startBreez() {
 		if err != nil {
 			log.Errorf("Failed to sync chain %v", err)
 		}
+		go connectOnStartup()
 		go watchOnChainState()
 	}()
 }
