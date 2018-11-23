@@ -90,7 +90,7 @@ message NotificationEvent {
     }
 
     NotificationType type = 1;
-    string data = 2;
+    repeated string data = 2;
 }
 
 message AddFundInitReply {
