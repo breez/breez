@@ -211,6 +211,5 @@ func onAccountChanged() {
 		return
 	}
 	saveAccount(accBuf)
-	getBackupPath()
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
 }
