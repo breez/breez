@@ -27,6 +27,8 @@ github.com/breez/btcwallet v0.0.0-20181116143700-0824eb7ec53b h1:W5m0o/XpfbPxsPA
 github.com/breez/btcwallet v0.0.0-20181116143700-0824eb7ec53b/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/btcwallet v0.0.0-20181121053730-b0e44c9563a8 h1:P23e+ekRAScQ2Ybz4YABCLcCRv6RBCQf6u9HlgzjR2U=
 github.com/breez/btcwallet v0.0.0-20181121053730-b0e44c9563a8/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
+github.com/breez/btcwallet v0.0.0-20181125103145-3f13c2a3e5b4 h1:/HnPgWtHVFERDECpzBPJRnhnpyx+z0a8Or7eZb0IEN0=
+github.com/breez/btcwallet v0.0.0-20181125103145-3f13c2a3e5b4/go.mod h1:Sxi9czQ0paWQSTFAa8jz0DYr+nvMM65bhaNZmZiD3O8=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528 h1:aQnVfQYpZNVymnDiRbGE5rwlPIyWEBGq0bkfqpSWMjU=
 github.com/breez/lightninglib v0.0.0-20180905191613-d3b0fbc7f528/go.mod h1:V3+W74Ra09P8QXHyGjdtj5tdjGyI7A6ymolBIDIkcH8=
 github.com/breez/lightninglib v0.0.0-20180914104818-04fdcb693b99 h1:/Ub34t0EQzHek4/Gl7AXue2RwC1S3N5fIYfNkqaRg3c=
