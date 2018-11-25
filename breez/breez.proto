@@ -25,7 +25,8 @@ service FundManager {
 }
 
 message OpenChannelRequest {
-    string pubKey = 1;
+   string pubKey = 1;
+   string notificationToken = 2;
 }
 
 message OpenChannelReply {}
