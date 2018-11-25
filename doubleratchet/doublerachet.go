@@ -48,7 +48,7 @@ This function creates a session and stores its state in the SessionStore
 Following this operation the caller can imediately use Encrypt/Decrypt by
 providing the sessionID as identifier.
 */
-func NewSession() (sessionID, secret, pubKey string, err error) {
+func NewSession(sessionID string) (secret, pubKey string, err error) {
 	crypto := doubleratchet.DefaultCrypto{}
 
 	var sk [32]byte
@@ -57,11 +57,7 @@ func NewSession() (sessionID, secret, pubKey string, err error) {
 		return
 	}
 
-	sID, err := generateSessionID()
-	if err != nil {
-		return
-	}
-	if err = addInitiatedSessionID([]byte(sID)); err != nil {
+	if err = addInitiatedSessionID([]byte(sessionID)); err != nil {
 		return
 	}
 
@@ -69,13 +65,13 @@ func NewSession() (sessionID, secret, pubKey string, err error) {
 	if err != nil {
 		return
 	}
-	_, err = doubleratchet.New([]byte(sID), sk, keyPair, &BoltDBSessionStorage{})
+	_, err = doubleratchet.New([]byte(sessionID), sk, keyPair, &BoltDBSessionStorage{})
 	if err != nil {
 		return
 	}
 
 	publicKey := keyPair.PublicKey()
-	return sID, hex.EncodeToString(sk[:]), hex.EncodeToString(publicKey[:]), nil
+	return hex.EncodeToString(sk[:]), hex.EncodeToString(publicKey[:]), nil
 }
 
 /*

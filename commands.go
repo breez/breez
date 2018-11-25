@@ -46,6 +46,7 @@ func SendCommand(command string) (string, error) {
 		walletBalanceCommand,
 		channelBalanceCommand,
 		getInfoCommand,
+		getBackupCommand,
 		pendingChannelsCommand,
 		sendPaymentCommand,
 		payInvoiceCommand,
@@ -1182,6 +1183,26 @@ func getInfo(ctx *cli.Context) error {
 
 	req := &lnrpc.GetInfoRequest{}
 	resp, err := client.GetInfo(ctxb, req)
+	if err != nil {
+		return err
+	}
+
+	printRespJSON(resp)
+	return nil
+}
+
+var getBackupCommand = cli.Command{
+	Name:   "getbackup",
+	Usage:  "Generate and returns backup files.",
+	Action: actionDecorator(getBackup),
+}
+
+func getBackup(ctx *cli.Context) error {
+	ctxb := context.Background()
+	client := lightningClient
+
+	req := &lnrpc.GetBackupRequest{}
+	resp, err := client.GetBackup(ctxb, req)
 	if err != nil {
 		return err
 	}
