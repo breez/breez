@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/breez/breez"
+	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/golang/protobuf/proto"
@@ -318,6 +319,16 @@ func RatchetDecrypt(request []byte) (string, error) {
 	}
 
 	return doubleratchet.RatchetDecrypt(unmarshaledRequest.SessionID, unmarshaledRequest.EncryptedMessage)
+}
+
+// BootstrapFiles is part of the binding inteface which is delegated to bootstrap.PutFiles
+func BootstrapFiles(request []byte) error {
+	req := &data.BootstrapFilesRequest{}
+	if err := proto.Unmarshal(request, req); err != nil {
+		return err
+	}
+
+	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
