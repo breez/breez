@@ -63,7 +63,7 @@ const (
 )
 
 var (
-	cfg                          *config
+	cfg                          *Config
 	lightningClient              lnrpc.LightningClient
 	breezClientConnection        *grpc.ClientConn
 	breezClientConnectionFailure int32
@@ -75,7 +75,7 @@ var (
 	quitChan                     chan struct{}
 )
 
-type config struct {
+type Config struct {
 	RoutingNodeHost   string `long:"routingnodehost"`
 	RoutingNodePubKey string `long:"routingnodepubkey"`
 	BreezServer       string `long:"breezserver"`
@@ -263,14 +263,27 @@ func startBreez() {
 }
 
 func initConfig() error {
-	cfg = &config{}
-	if err := flags.IniParse(path.Join(appWorkingDir, configFile), cfg); err != nil {
+	c := &Config{}
+	if err := flags.IniParse(path.Join(appWorkingDir, configFile), c); err != nil {
 		return err
 	}
-	if len(cfg.RoutingNodeHost) == 0 || len(cfg.RoutingNodePubKey) == 0 {
+	if len(c.RoutingNodeHost) == 0 || len(c.RoutingNodePubKey) == 0 {
 		return errors.New("Breez must have routing node defined in the configuration file")
 	}
+
+	cfg = c
 	return nil
+}
+
+// GetConfig returns the config object
+func GetConfig() (*Config, error) {
+	if cfg == nil {
+		err := initConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cfg, nil
 }
 
 func initLightningClient() error {

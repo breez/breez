@@ -175,3 +175,8 @@ message RatchetDecryptRequest {
     string sessionID = 1;
     string encryptedMessage = 2;
 }
+
+message BootstrapFilesRequest {
+    string WorkingDir = 1;
+    repeated string FullPaths = 2;
+}
