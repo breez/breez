@@ -16,6 +16,7 @@ import (
 type RatchetSessionDetails struct {
 	SessionID string
 	Initiated bool
+	UserInfo  string
 }
 
 var (
@@ -112,7 +113,6 @@ func NewSessionWithRemoteKey(sessionID, secret, remotePubKey string) error {
 
 /*
 RatchetSessionInfo checks if a session matches the sessionID and returns its details.
-Currently the details only consists if this is an initiated session or a received session.
 */
 func RatchetSessionInfo(sessionID string) *RatchetSessionDetails {
 	session, err := doubleratchet.Load(
@@ -124,10 +124,28 @@ func RatchetSessionInfo(sessionID string) *RatchetSessionDetails {
 		return nil
 	}
 	fmt.Printf("session %v is NOT nil", sessionID)
+	sessionInfo := fetchSessionInfo([]byte(sessionID))
 	return &RatchetSessionDetails{
 		SessionID: sessionID,
+		UserInfo:  string(sessionInfo),
 		Initiated: isInitiatedSession([]byte(sessionID)),
 	}
+}
+
+/*
+RatchetSessionSetInfo checks if a session matches the sessionID and set its details.
+*/
+func RatchetSessionSetInfo(sessionID, info string) error {
+	session, err := doubleratchet.Load(
+		[]byte(sessionID),
+		&BoltDBSessionStorage{},
+		doubleratchet.WithKeysStorage(&BoltDBKeysStorage{}))
+	if err != nil || session == nil {
+		fmt.Printf("session %v is nil", sessionID)
+		return fmt.Errorf("Session %v does not exist", sessionID)
+	}
+
+	return setSessionInfo([]byte(sessionID), []byte(info))
 }
 
 /*
