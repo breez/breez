@@ -265,7 +265,7 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 }
 
 /*
-RatchetSessionExists is part of the binding inteface which is delegated to breez.RatchetSessionExists
+RatchetSessionInfo is part of the binding inteface which is delegated to breez.RatchetSessionInfo
 */
 func RatchetSessionInfo(sessionID string) ([]byte, error) {
 	var reply *data.RatchetSessionInfoReply
@@ -279,9 +279,21 @@ func RatchetSessionInfo(sessionID string) ([]byte, error) {
 		reply = &data.RatchetSessionInfoReply{
 			SessionID: sessionDetails.SessionID,
 			Initiated: sessionDetails.Initiated,
+			UserInfo:  sessionDetails.UserInfo,
 		}
 	}
 	return marshalResponse(reply, nil)
+}
+
+/*
+RatchetSessionSetInfo is part of the binding inteface which is delegated to breez.RatchetSessionSetInfo
+*/
+func RatchetSessionSetInfo(request []byte) error {
+	unmarshaledRequest := &data.RatchetSessionSetInfoRequest{}
+	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
+		return err
+	}
+	return doubleratchet.RatchetSessionSetInfo(unmarshaledRequest.SessionID, unmarshaledRequest.UserInfo)
 }
 
 /*

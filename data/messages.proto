@@ -158,6 +158,12 @@ message CreateRatchetSessionReply {
 message RatchetSessionInfoReply {
     string sessionID = 1;
     bool initiated = 2;
+    string userInfo = 3;
+}
+
+message RatchetSessionSetInfoRequest {
+    string sessionID = 1;
+    string userInfo = 2;
 }
 
 message RatchetEncryptRequest {

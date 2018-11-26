@@ -12,6 +12,7 @@ const (
 	encryptedSessionsBucket    = "encryptedSessions"
 	sessionKeysBucket          = "sessionKeys"
 	initiatedSessionKeysBucket = "initiatedSessionKeys"
+	sessionUserInfoBucket      = "sessionUserInfo"
 )
 
 var db *bolt.DB
@@ -30,6 +31,10 @@ func openDB(dbPath string) error {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(initiatedSessionKeysBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(sessionUserInfoBucket))
 		if err != nil {
 			return err
 		}
@@ -135,6 +140,14 @@ func addInitiatedSessionID(sessionID []byte) error {
 
 func isInitiatedSession(sessionID []byte) bool {
 	return fetchItem([]byte(initiatedSessionKeysBucket), sessionID) != nil
+}
+
+func setSessionInfo(sessionID, info []byte) error {
+	return saveItem([]byte(sessionUserInfoBucket), []byte(sessionID), []byte(info))
+}
+
+func fetchSessionInfo(sessionID []byte) []byte {
+	return fetchItem([]byte(sessionUserInfoBucket), sessionID)
 }
 
 func saveItem(bucket []byte, key []byte, value []byte) error {
