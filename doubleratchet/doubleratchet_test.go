@@ -185,3 +185,51 @@ func TestInitiatedSessions(t *testing.T) {
 		t.Errorf("initiated should be false")
 	}
 }
+
+func TestSessionInfo(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer destroyDB()
+	initiatorID := "initiatorSession"
+	secret, pubKey, err := NewSession(initiatorID)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	receiverID := "session"
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if err = RatchetSessionSetInfo(initiatorID, "initiator user data"); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if err = RatchetSessionSetInfo(receiverID, "receiver user data"); err != nil {
+		t.Error(err)
+		return
+	}
+
+	reply := RatchetSessionInfo(initiatorID)
+	if reply.Initiated == false || reply.SessionID == "" {
+		t.Errorf("initiated should be true")
+	}
+
+	if reply.UserInfo != "initiator user data" {
+		t.Errorf("initiator user data is wrong!")
+	}
+
+	reply = RatchetSessionInfo(receiverID)
+	if reply.Initiated == true || reply.SessionID == "" {
+		t.Errorf("initiated should be false")
+	}
+
+	if reply.UserInfo != "receiver user data" {
+		t.Errorf("receiver user data is wrong!")
+	}
+}
