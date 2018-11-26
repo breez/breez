@@ -288,8 +288,12 @@ func RatchetSessionInfo(sessionID string) ([]byte, error) {
 /*
 RatchetSessionSetInfo is part of the binding inteface which is delegated to breez.RatchetSessionSetInfo
 */
-func RatchetSessionSetInfo(sessionID, info string) error {
-	return doubleratchet.RatchetSessionSetInfo(sessionID, info)
+func RatchetSessionSetInfo(request []byte) error {
+	unmarshaledRequest := &data.RatchetSessionSetInfoRequest{}
+	if err := proto.Unmarshal(request, unmarshaledRequest); err != nil {
+		return err
+	}
+	return doubleratchet.RatchetSessionSetInfo(unmarshaledRequest.SessionID, unmarshaledRequest.UserInfo)
 }
 
 /*
