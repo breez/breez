@@ -23,6 +23,19 @@ var (
 	createChannelGroup singleflight.Group
 )
 
+func init() {
+	ticker := time.NewTicker(time.Minute * 1)
+	go func() {
+		for range ticker.C {
+			channelPoints, err := getOpenChannelsPoints()
+			if err == nil && len(channelPoints) > 0 {
+				ticker.Stop()
+				onAccountChanged()
+			}
+		}
+	}()
+}
+
 /*
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
 */
@@ -53,7 +66,6 @@ func updateNodeChannelPolicy(pubkey string) {
 	}
 }
 
-
 /*
 createChannel is responsible for creating a new channel
 */
@@ -71,7 +83,6 @@ func createChannel(pubkey string) {
 		time.Sleep(time.Second * 5)
 	}
 }
-
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
 	channelPoints, err := getOpenChannelsPoints()
