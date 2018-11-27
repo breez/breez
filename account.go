@@ -3,6 +3,7 @@ package breez
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/breez/breez/data"
@@ -21,6 +22,7 @@ const (
 
 var (
 	createChannelGroup singleflight.Group
+	channelOpened      = make(chan struct{})
 )
 
 func init() {
@@ -51,6 +53,50 @@ func GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
+//RegisterReceivePaymentReadyNotification register in breez server for notification regarding the confirmation
+//of an existing pending channel. If there is not channels and no pending channels then this function waits for
+//for a channel to be opened and then execute the register.
+func RegisterReceivePaymentReadyNotification(token string) error {
+	channelPoints, err := getOpenChannelsPoints()
+	if err != nil {
+		return err
+	}
+	if len(channelPoints) > 0 {
+		return nil
+	}
+
+	go func() {
+		select {
+		case <-channelOpened:
+			err := registerReceivePaymentReadyNotification(token)
+			log.Infof("finiahed registerReceivePaymentReadyNotification, err = %v", err)
+		}
+	}()
+
+	return nil
+}
+
+func registerReceivePaymentReadyNotification(token string) error {
+	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		return err
+	}
+	if len(pendingChannels.PendingOpenChannels) == 0 {
+		return nil
+	}
+	channelPoint := pendingChannels.PendingOpenChannels[0].Channel.ChannelPoint
+	fundingTxID := strings.Split(channelPoint, ":")[0]
+	c, ctx, cancel := getFundManager()
+	defer cancel()
+	_, err = c.RegisterTransactionConfirmation(ctx,
+		&breezservice.RegisterTransactionConfirmationRequest{
+			NotificationToken: token,
+			TxID:              fundingTxID,
+			NotificationType:  breezservice.RegisterTransactionConfirmationRequest_READY_RECEIVE_PAYMENT,
+		})
+	return err
+}
+
 func updateNodeChannelPolicy(pubkey string) {
 	for {
 		if IsConnectedToRoutingNode() {
@@ -76,6 +122,7 @@ func createChannel(pubkey string) {
 			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
 			cancel()
 			if err == nil {
+				close(channelOpened)
 				return
 			}
 			log.Errorf("Error in openChannel: %v", err)

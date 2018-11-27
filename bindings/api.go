@@ -241,6 +241,13 @@ func SendCommand(command string) (string, error) {
 }
 
 /*
+RegisterReceivePaymentReadyNotification is part of the binding inteface which is delegated to breez.RegisterReceivePaymentReadyNotification
+*/
+func RegisterReceivePaymentReadyNotification(token string) error {
+	return breez.RegisterReceivePaymentReadyNotification(token)
+}
+
+/*
 CreateRatchetSession is part of the binding inteface which is delegated to breez.CreateRatchetSession
 */
 func CreateRatchetSession(request []byte) ([]byte, error) {
