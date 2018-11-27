@@ -65,7 +65,6 @@ func RegisterReceivePaymentReadyNotification(token string) error {
 		return nil
 	}
 
-	log.Info("BEFORE GO ROUTINE")
 	go func() {
 		select {
 		case <-channelOpened:
