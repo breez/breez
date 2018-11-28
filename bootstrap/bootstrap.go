@@ -39,7 +39,7 @@ func copyFile(src, dest string) error {
 // PutFiles restore each received files in the right directory
 // before lightninglib starts
 func PutFiles(workingDir string, files []string) error {
-	c, err := breez.GetConfig()
+	c, err := breez.GetConfig(workingDir)
 	if err != nil {
 		return err
 	}
