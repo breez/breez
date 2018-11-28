@@ -16,7 +16,7 @@ var (
 		"wallet.db":              "data/chain/bitcoin",
 		"channel.db":             "data/graph",
 	}
-	defaultPath = "data/chain/bicoin"
+	defaultPath = "data/chain/bitcoin"
 )
 
 func copyFile(src, dest string) error {
