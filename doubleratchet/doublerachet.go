@@ -30,7 +30,11 @@ func init() {
 
 //Start starts the doubleratchet service and makes it ready for action
 func Start(dbpath string) error {
-	return openDB(dbpath)
+	err := openDB(dbpath)
+	if err != nil {
+		return err
+	}
+	return deleteExpiredSessions()
 }
 
 //Stop stops the doubleratchet service and release not needed resources
@@ -49,7 +53,7 @@ This function creates a session and stores its state in the SessionStore
 Following this operation the caller can imediately use Encrypt/Decrypt by
 providing the sessionID as identifier.
 */
-func NewSession(sessionID string) (secret, pubKey string, err error) {
+func NewSession(sessionID string, expiry uint64) (secret, pubKey string, err error) {
 	crypto := doubleratchet.DefaultCrypto{}
 
 	var sk [32]byte
@@ -58,7 +62,7 @@ func NewSession(sessionID string) (secret, pubKey string, err error) {
 		return
 	}
 
-	if err = addInitiatedSessionID([]byte(sessionID)); err != nil {
+	if err = createSessionContext([]byte(sessionID), true, expiry); err != nil {
 		return
 	}
 
@@ -86,7 +90,7 @@ This function creates a session and stores its state in the SessionStore
 Following this operation the caller can imediately use Encrypt/Decrypt by
 providing the sessionID as identifier.
 */
-func NewSessionWithRemoteKey(sessionID, secret, remotePubKey string) error {
+func NewSessionWithRemoteKey(sessionID, secret, remotePubKey string, expiry uint64) error {
 
 	skBytes, err := hex.DecodeString(secret)
 	if err != nil {
@@ -95,6 +99,10 @@ func NewSessionWithRemoteKey(sessionID, secret, remotePubKey string) error {
 
 	pubKeyBytes, err := hex.DecodeString(remotePubKey)
 	if err != nil {
+		return err
+	}
+
+	if err = createSessionContext([]byte(sessionID), false, expiry); err != nil {
 		return err
 	}
 
@@ -125,10 +133,11 @@ func RatchetSessionInfo(sessionID string) *RatchetSessionDetails {
 	}
 	fmt.Printf("session %v is NOT nil", sessionID)
 	sessionInfo := fetchSessionInfo([]byte(sessionID))
+	initiated, _ := fetchSessionContext([]byte(sessionID))
 	return &RatchetSessionDetails{
 		SessionID: sessionID,
 		UserInfo:  string(sessionInfo),
-		Initiated: isInitiatedSession([]byte(sessionID)),
+		Initiated: initiated,
 	}
 }
 

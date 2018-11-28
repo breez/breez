@@ -147,6 +147,7 @@ message CreateRatchetSessionRequest {
     string secret = 1;
     string remotePubKey = 2;
     string sessionID = 3;
+    uint64 expiry = 4;
 }
 
 message CreateRatchetSessionReply {
