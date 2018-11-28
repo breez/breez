@@ -22,6 +22,7 @@ import (
 	"github.com/breez/lightninglib/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -98,7 +99,12 @@ func initBreezClientConnection() error {
 		return fmt.Errorf("credentials: failed to append certificates")
 	}
 	creds := credentials.NewClientTLSFromCert(cp, "")
-	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds))
+	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds), grpc.WithKeepaliveParams(
+		keepalive.ClientParameters{
+			PermitWithoutStream: true,
+			Time:                time.Second * 20,
+		},
+	))
 
 	//trace connection changes
 	go func() {
