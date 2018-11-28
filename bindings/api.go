@@ -63,6 +63,13 @@ func DaemonReady() bool {
 }
 
 /*
+OnResume just calls the breez.OnResume
+*/
+func OnResume() {
+	breez.OnResume()
+}
+
+/*
 Log is a function that uses the breez logger
 */
 func Log(msg string, lvl string) {

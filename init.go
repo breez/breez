@@ -183,6 +183,15 @@ func DaemonReady() bool {
 	return atomic.LoadInt32(&isReady) == 1
 }
 
+/*
+OnResume recalculate things we might missed when we were idle.
+*/
+func OnResume() {
+	if atomic.LoadInt32(&started) == 1 {
+		calculateAccountAndNotify()
+	}
+}
+
 func startLightningDaemon(onReady func()) error {
 	readyChan := make(chan interface{})
 	go func() {

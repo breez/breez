@@ -259,6 +259,10 @@ func calculateAccount() (*data.Account, error) {
 //like channel updates, balance updates etc...
 func onAccountChanged() {
 	time.Sleep(2 * time.Second)
+	calculateAccountAndNotify()
+}
+
+func calculateAccountAndNotify() {
 	acc, err := calculateAccount()
 	if err != nil {
 		log.Errorf("Failed to calculate account %v", err)
