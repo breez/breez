@@ -12,6 +12,7 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
 
 	breezservice "github.com/breez/breez/breez"
 )
