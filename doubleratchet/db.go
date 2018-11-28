@@ -4,15 +4,16 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
 
 const (
-	encryptedSessionsBucket    = "encryptedSessions"
-	sessionKeysBucket          = "sessionKeys"
-	initiatedSessionKeysBucket = "initiatedSessionKeys"
-	sessionUserInfoBucket      = "sessionUserInfo"
+	encryptedSessionsBucket = "encryptedSessions"
+	sessionKeysBucket       = "sessionKeys"
+	sessionContextBucket    = "sessionContext"
+	sessionUserInfoBucket   = "sessionUserInfo"
 )
 
 var db *bolt.DB
@@ -30,7 +31,7 @@ func openDB(dbPath string) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.CreateBucketIfNotExists([]byte(initiatedSessionKeysBucket))
+		_, err = tx.CreateBucketIfNotExists([]byte(sessionContextBucket))
 		if err != nil {
 			return err
 		}
@@ -65,11 +66,11 @@ func fetchEncryptedSession(sessionID []byte) []byte {
 
 func saveEncryptedMessageKey(sessionID []byte, pubKey []byte, msgNum uint, msgKey []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		keysBucket, err := tx.CreateBucketIfNotExists([]byte("sessionKeys"))
+		keysBucket := tx.Bucket([]byte(sessionKeysBucket))
+		pubKeyBucket, err := keysBucket.CreateBucketIfNotExists(pubKey)
 		if err != nil {
 			return err
 		}
-		pubKeyBucket, err := keysBucket.CreateBucketIfNotExists(pubKey)
 		return pubKeyBucket.Put(itob(uint64(msgNum)), msgKey)
 	})
 }
@@ -77,10 +78,7 @@ func saveEncryptedMessageKey(sessionID []byte, pubKey []byte, msgNum uint, msgKe
 func fetchEncryptedMessageKey(pubKey []byte, msgNum uint) ([]byte, error) {
 	var msgKey []byte
 	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("sessionKeys"))
-		if err != nil {
-			return err
-		}
+		bucket := tx.Bucket([]byte(sessionKeysBucket))
 		pubKeyBucket := bucket.Bucket(pubKey)
 		if pubKeyBucket == nil {
 			return nil
@@ -94,10 +92,7 @@ func fetchEncryptedMessageKey(pubKey []byte, msgNum uint) ([]byte, error) {
 func countMessageKeys(pubKey []byte) (uint, error) {
 	var count uint
 	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("sessionKeys"))
-		if err != nil {
-			return err
-		}
+		bucket := tx.Bucket([]byte(sessionKeysBucket))
 		pubKeyBucket := bucket.Bucket(pubKey)
 		if pubKeyBucket == nil {
 			return nil
@@ -111,10 +106,7 @@ func countMessageKeys(pubKey []byte) (uint, error) {
 func allMessageKeys() (map[[32]byte]map[uint][32]byte, error) {
 	var all map[[32]byte]map[uint][32]byte
 	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("sessionKeys"))
-		if err != nil {
-			return err
-		}
+		bucket := tx.Bucket([]byte(sessionKeysBucket))
 		return bucket.ForEach(func(k, v []byte) error {
 			if v == nil {
 				var key [32]byte
@@ -134,12 +126,51 @@ func allMessageKeys() (map[[32]byte]map[uint][32]byte, error) {
 	return all, err
 }
 
-func addInitiatedSessionID(sessionID []byte) error {
-	return saveItem([]byte(initiatedSessionKeysBucket), sessionID, []byte{1})
+func createSessionContext(sessionID []byte, initiated bool, expiry uint64) error {
+	contextBytes := itob(expiry)
+	initiatedByte := byte(0)
+	if initiated {
+		initiatedByte = byte(1)
+	}
+	contextBytes = append(contextBytes, initiatedByte)
+	return saveItem([]byte(sessionContextBucket), sessionID, contextBytes)
 }
 
-func isInitiatedSession(sessionID []byte) bool {
-	return fetchItem([]byte(initiatedSessionKeysBucket), sessionID) != nil
+func fetchSessionContext(sessionID []byte) (initiated bool, expiry uint64) {
+	sessionContext := fetchItem([]byte(sessionContextBucket), sessionID)
+	if sessionContext == nil {
+		return false, 0
+	}
+	expiry = btoi(sessionContext[:8])
+	initiated = sessionContext[8] == 1
+	return
+}
+
+func deleteExpiredSessions() error {
+	currentTime := uint64(time.Now().Unix())
+	return db.Update(func(tx *bolt.Tx) error {
+		sessionCtxBucket := tx.Bucket([]byte(sessionContextBucket))
+		sessionInfbucket := tx.Bucket([]byte(sessionUserInfoBucket))
+		sessionsBucket := tx.Bucket([]byte(encryptedSessionsBucket))
+		return sessionCtxBucket.ForEach(func(key []byte, val []byte) error {
+			if key == nil {
+				return nil
+			}
+			expiry := btoi(val[:8])
+			if currentTime >= expiry {
+				if err := sessionCtxBucket.Delete(key); err != nil {
+					return err
+				}
+				if err := sessionInfbucket.Delete(key); err != nil {
+					return err
+				}
+				if err := sessionsBucket.Delete(key); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	})
 }
 
 func setSessionInfo(sessionID, info []byte) error {
