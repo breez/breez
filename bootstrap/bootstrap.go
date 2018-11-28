@@ -49,7 +49,7 @@ func PutFiles(workingDir string, files []string) error {
 		if !ok {
 			p = defaultPath
 		}
-		err = os.MkdirAll(p, 0700)
+		err = os.MkdirAll(workingDir + "/" + p + "/" + c.Network, 0700)
 		if err != nil {
 			return err
 		}
