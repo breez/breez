@@ -268,9 +268,9 @@ func CreateRatchetSession(request []byte) ([]byte, error) {
 
 	//if has secret then we are initiators
 	if unmarshaledRequest.Secret == "" {
-		secret, pubKey, err = doubleratchet.NewSession(unmarshaledRequest.SessionID)
+		secret, pubKey, err = doubleratchet.NewSession(unmarshaledRequest.SessionID, unmarshaledRequest.Expiry)
 	} else {
-		err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.SessionID, unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey)
+		err = doubleratchet.NewSessionWithRemoteKey(unmarshaledRequest.SessionID, unmarshaledRequest.Secret, unmarshaledRequest.RemotePubKey, unmarshaledRequest.Expiry)
 	}
 
 	if err != nil {
