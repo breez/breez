@@ -281,7 +281,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		defer cancel()
 
 		log.Infof("GetFundStatus calling AddFundStatus addresses=%v", unConfirmedAddresses)
-		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
+		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses}, grpc_retry.WithMax(5))
 		if err != nil {
 			return nil, err
 		}
