@@ -12,7 +12,6 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
-	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
 
 	breezservice "github.com/breez/breez/breez"
 )
@@ -282,7 +281,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		defer cancel()
 
 		log.Infof("GetFundStatus calling AddFundStatus addresses=%v", unConfirmedAddresses)
-		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses}, grpc_retry.WithMax(5))
+		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
 		if err != nil {
 			return nil, err
 		}
