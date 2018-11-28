@@ -17,7 +17,7 @@ import (
 
 const (
 	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout      = 10
+	endpointTimeout      = 2
 )
 
 var (
