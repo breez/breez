@@ -2,9 +2,12 @@ package doubleratchet
 
 import (
 	"testing"
+	"time"
 
 	"github.com/status-im/doubleratchet"
 )
+
+var defaultExpiry = uint64(time.Now().Add(time.Hour).Unix())
 
 func TestSessionStore(t *testing.T) {
 	if err := openDB("testDB"); err != nil {
@@ -79,13 +82,13 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 	defer destroyDB()
 	initiatorID := "initiatorSession"
-	secret, pubKey, err := NewSession(initiatorID)
+	secret, pubKey, err := NewSession(initiatorID, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	receiverID := "receiverID"
-	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
@@ -112,14 +115,14 @@ func TestOutOfOrderMessages(t *testing.T) {
 	}
 	defer destroyDB()
 	initiatorID := "initiatorSession"
-	secret, pubKey, err := NewSession(initiatorID)
+	secret, pubKey, err := NewSession(initiatorID, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	receiverID := "receiverID"
-	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
@@ -162,14 +165,14 @@ func TestInitiatedSessions(t *testing.T) {
 	}
 	defer destroyDB()
 	initiatorID := "initiatorSession"
-	secret, pubKey, err := NewSession(initiatorID)
+	secret, pubKey, err := NewSession(initiatorID, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	receiverID := "session"
-	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
@@ -192,14 +195,14 @@ func TestSessionInfo(t *testing.T) {
 	}
 	defer destroyDB()
 	initiatorID := "initiatorSession"
-	secret, pubKey, err := NewSession(initiatorID)
+	secret, pubKey, err := NewSession(initiatorID, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	receiverID := "session"
-	err = NewSessionWithRemoteKey(receiverID, secret, pubKey)
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey, defaultExpiry)
 	if err != nil {
 		t.Error(err)
 		return
@@ -231,5 +234,38 @@ func TestSessionInfo(t *testing.T) {
 
 	if reply.UserInfo != "receiver user data" {
 		t.Errorf("receiver user data is wrong!")
+	}
+}
+
+func TestExpiredSessions(t *testing.T) {
+	if err := openDB("testDB"); err != nil {
+		t.Error(err)
+	}
+	defer destroyDB()
+	expiredTime := uint64(time.Now().Unix() - 10)
+	initiatorID := "initiatorSession"
+	secret, pubKey, err := NewSession(initiatorID, expiredTime)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	receiverID := "session"
+	err = NewSessionWithRemoteKey(receiverID, secret, pubKey, defaultExpiry)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	deleteExpiredSessions()
+
+	if err = RatchetSessionSetInfo(initiatorID, "initiator user data"); err == nil {
+		t.Error(err) //this  session is expired therefore should have error
+		return
+	}
+
+	if err = RatchetSessionSetInfo(receiverID, "receiver user data"); err != nil {
+		t.Error(err)
+		return
 	}
 }
