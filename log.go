@@ -33,6 +33,6 @@ func Log(msg string, lvl string) {
 	}
 }
 
-func GetLogPath() (string) {
+func GetLogPath() string {
 	return appWorkingDir + "/logs/bitcoin/" + cfg.Network + "/lnd.log"
 }

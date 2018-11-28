@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -90,6 +91,7 @@ func getBreezClientConnection() *grpc.ClientConn {
 }
 
 func initBreezClientConnection() error {
+	os.Setenv("GRPC_GO_RETRY", "on")
 	connectionMu.Lock()
 	defer connectionMu.Unlock()
 	cp := x509.NewCertPool()
