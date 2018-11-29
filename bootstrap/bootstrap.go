@@ -49,12 +49,12 @@ func PutFiles(workingDir string, files []string) error {
 		if !ok {
 			p = defaultPath
 		}
-		err = os.MkdirAll(workingDir + "/" + p + "/" + c.Network, 0700)
+		destDir := path.Join(workingDir, p, c.Network)
+		err = os.MkdirAll(destDir, 0700)
 		if err != nil {
 			return err
 		}
-		dest := path.Join(workingDir, p, c.Network, basename)
-		err = copyFile(f, dest)
+		err = copyFile(f, path.Join(destDir, basename))
 		if err != nil {
 			return err
 		}
