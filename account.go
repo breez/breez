@@ -25,17 +25,21 @@ var (
 	channelOpened      = make(chan struct{})
 )
 
-func init() {
+func trackOpenedChannel() {
 	ticker := time.NewTicker(time.Minute * 1)
-	go func() {
-		for range ticker.C {
+	for {
+		select {
+		case <-ticker.C:
 			channelPoints, err := getOpenChannelsPoints()
 			if err == nil && len(channelPoints) > 0 {
 				ticker.Stop()
 				onAccountChanged()
 			}
+		case <-quitChan:
+			ticker.Stop()
+			return
 		}
-	}()
+	}
 }
 
 /*

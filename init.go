@@ -258,6 +258,7 @@ func startBreez() {
 	//start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 
+	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
 	go generateBlankInvoiceWithRetry()
