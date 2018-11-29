@@ -4,17 +4,19 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/breez/breez"
 )
 
 var (
 	paths = map[string]string{
-		"block_headers.bin":      "data/chain/bitcoin",
-		"reg_filter_headers.bin": "data/chain/bitcoin",
-		"neutrino.db":            "data/chain/bitcoin",
-		"wallet.db":              "data/chain/bitcoin",
-		"channel.db":             "data/graph",
+		"block_headers.bin":      "data/chain/bitcoin/{{network}}",
+		"reg_filter_headers.bin": "data/chain/bitcoin/{{network}}",
+		"neutrino.db":            "data/chain/bitcoin/{{network}}",
+		"wallet.db":              "data/chain/bitcoin/{{network}}",
+		"channel.db":             "data/graph/{{network}}",
+		"breez.db":               "",
 	}
 	defaultPath = "data/chain/bitcoin"
 )
@@ -49,10 +51,12 @@ func PutFiles(workingDir string, files []string) error {
 		if !ok {
 			p = defaultPath
 		}
-		destDir := path.Join(workingDir, p, c.Network)
-		err = os.MkdirAll(destDir, 0700)
-		if err != nil {
-			return err
+		destDir := path.Join(workingDir, strings.Replace(p, "{{network}}", c.Network, -1))
+		if destDir != workingDir {
+			err = os.MkdirAll(destDir, 0700)
+			if err != nil {
+				return err
+			}
 		}
 		err = copyFile(f, path.Join(destDir, basename))
 		if err != nil {

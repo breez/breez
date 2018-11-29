@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -374,4 +376,21 @@ func itob(v uint64) []byte {
 
 func btoi(bytes []byte) uint64 {
 	return binary.BigEndian.Uint64(bytes)
+}
+
+func backupDb(dir string) (string, error) {
+	dbCopy := filepath.Join(dir, path.Base(db.Path()))
+	f1, err := os.Create(dbCopy)
+	if err != nil {
+		return "", err
+	}
+	defer f1.Close()
+	err = db.View(func(tx *bolt.Tx) error {
+		_, err := tx.WriteTo(f1)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	return dbCopy, nil
 }
