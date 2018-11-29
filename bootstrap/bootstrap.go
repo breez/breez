@@ -16,7 +16,7 @@ var (
 		"wallet.db":              "data/chain/bitcoin",
 		"channel.db":             "data/graph",
 	}
-	defaultPath = "data/chain/bicoin"
+	defaultPath = "data/chain/bitcoin"
 )
 
 func copyFile(src, dest string) error {
@@ -39,7 +39,7 @@ func copyFile(src, dest string) error {
 // PutFiles restore each received files in the right directory
 // before lightninglib starts
 func PutFiles(workingDir string, files []string) error {
-	c, err := breez.GetConfig()
+	c, err := breez.GetConfig(workingDir)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,12 @@ func PutFiles(workingDir string, files []string) error {
 		if !ok {
 			p = defaultPath
 		}
-		err = os.MkdirAll(p, 0700)
+		destDir := path.Join(workingDir, p, c.Network)
+		err = os.MkdirAll(destDir, 0700)
 		if err != nil {
 			return err
 		}
-		dest := path.Join(workingDir, p, c.Network, basename)
-		err = copyFile(f, dest)
+		err = copyFile(f, path.Join(destDir, basename))
 		if err != nil {
 			return err
 		}

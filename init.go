@@ -287,8 +287,9 @@ func initConfig() error {
 }
 
 // GetConfig returns the config object
-func GetConfig() (*Config, error) {
+func GetConfig(workingDir string) (*Config, error) {
 	if cfg == nil {
+		appWorkingDir = workingDir
 		err := initConfig()
 		if err != nil {
 			return nil, err
