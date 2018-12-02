@@ -81,6 +81,7 @@ type Config struct {
 	RoutingNodePubKey string `long:"routingnodepubkey"`
 	BreezServer       string `long:"breezserver"`
 	Network           string `long:"network"`
+	GrpcKeepAlive     bool   `log:"grpckeepalive"`
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
@@ -99,12 +100,16 @@ func initBreezClientConnection() error {
 		return fmt.Errorf("credentials: failed to append certificates")
 	}
 	creds := credentials.NewClientTLSFromCert(cp, "")
-	con, err := grpc.Dial(cfg.BreezServer, grpc.WithTransportCredentials(creds), grpc.WithKeepaliveParams(
-		keepalive.ClientParameters{
-			PermitWithoutStream: true,
-			Time:                time.Second * 20,
-		},
-	))
+	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
+	if cfg != nil && cfg.GrpcKeepAlive {
+		dialOptions = append(dialOptions, grpc.WithKeepaliveParams(
+			keepalive.ClientParameters{
+				PermitWithoutStream: true,
+				Time:                time.Second * 20,
+			},
+		))
+	}
+	con, err := grpc.Dial(cfg.BreezServer, dialOptions...)
 
 	//trace connection changes
 	go func() {
