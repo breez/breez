@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"strings"
 	"sync"
@@ -22,9 +21,9 @@ import (
 	"github.com/breez/lightninglib/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/keepalive"
-
 	"github.com/jessevdk/go-flags"
+	"google.golang.org/grpc/codes"
+	breezservice "github.com/breez/breez/breez"
 )
 
 const (
@@ -85,43 +84,38 @@ type Config struct {
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
-	connectionMu.Lock()
-	defer connectionMu.Unlock()
-	breezClientConnection.ResetConnectBackoff()
+	log.Infof("getBreezClientConnection - before Ping;")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	ic := breezservice.NewInformationClient(breezClientConnection)
+	_, err := ic.Ping(ctx, &breezservice.PingRequest{})
+	log.Infof("getBreezClientConnection - after Ping; err: %v", err)
+	if grpc.Code(err) == codes.DeadlineExceeded {
+		connectionMu.Lock()
+		defer connectionMu.Unlock()
+		breezClientConnection.Close()
+		err = dial()
+		log.Infof("getBreezClientConnection - new connection; err: %v", err)
+	}
 	return breezClientConnection
 }
 
-func initBreezClientConnection() error {
-	os.Setenv("GRPC_GO_RETRY", "on")
-	connectionMu.Lock()
-	defer connectionMu.Unlock()
+func dial() (err error) {
 	cp := x509.NewCertPool()
 	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
 		return fmt.Errorf("credentials: failed to append certificates")
 	}
 	creds := credentials.NewClientTLSFromCert(cp, "")
 	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
-	if cfg != nil && cfg.GrpcKeepAlive {
-		dialOptions = append(dialOptions, grpc.WithKeepaliveParams(
-			keepalive.ClientParameters{
-				//PermitWithoutStream: true,
-				Time:    1 * time.Second,
-				Timeout: 2 * time.Second,
-			},
-		))
-	}
-	con, err := grpc.Dial(cfg.BreezServer, dialOptions...)
+	breezClientConnection, err = grpc.Dial(cfg.BreezServer, dialOptions...)
 
-	//trace connection changes
-	go func() {
-		for {
-			currentState := con.GetState()
-			log.Infof("getBreezClientConnection - connection state = %v", currentState)
-			_ = con.WaitForStateChange(context.Background(), currentState)
-		}
-	}()
-	breezClientConnection = con
-	return err
+	return
+}
+
+func initBreezClientConnection() error {
+	connectionMu.Lock()
+	defer connectionMu.Unlock()
+	return dial()
 }
 
 /*
