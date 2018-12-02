@@ -104,8 +104,9 @@ func initBreezClientConnection() error {
 	if cfg != nil && cfg.GrpcKeepAlive {
 		dialOptions = append(dialOptions, grpc.WithKeepaliveParams(
 			keepalive.ClientParameters{
-				PermitWithoutStream: true,
-				Time:                time.Second * 20,
+				//PermitWithoutStream: true,
+				Time:    1 * time.Second,
+				Timeout: 2 * time.Second,
 			},
 		))
 	}
