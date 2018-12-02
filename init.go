@@ -81,7 +81,7 @@ type Config struct {
 	RoutingNodePubKey string `long:"routingnodepubkey"`
 	BreezServer       string `long:"breezserver"`
 	Network           string `long:"network"`
-	GrpcKeepAlive     bool   `log:"grpckeepalive"`
+	GrpcKeepAlive     bool   `long:"grpckeepalive"`
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
