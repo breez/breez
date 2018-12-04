@@ -409,7 +409,10 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 
 	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
-	extractBackupPaths()
+	go func() {
+		time.Sleep(2 * time.Second)
+		extractBackupPaths()
+	}()
 	onAccountChanged()
 	return err
 }
@@ -447,7 +450,10 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		return err
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INVOICE_PAID}
-	extractBackupPaths()
+	go func() {
+		time.Sleep(2 * time.Second)
+		extractBackupPaths()
+	}()
 	onAccountChanged()
 	return nil
 }
