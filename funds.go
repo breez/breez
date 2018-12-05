@@ -56,69 +56,11 @@ func deserializeSwapAddressInfo(addressBytes []byte) (*SwapAddressInfo, error) {
 AddFundsInit is responsible for topping up an existing channel
 */
 func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
-	acc, err := calculateAccount()
-	if err != nil {
-		log.Errorf("Error in calculateAccount: %v", err)
-		return nil, err
-	}
-
-	swap, err := lightningClient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
-	if err != nil {
-		log.Criticalf("Failed to call SubSwapClientInit %v", err)
-		return nil, err
-	}
-
-	c, ctx, cancel := getFundManager()
-	defer cancel()
-
-	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: acc.Id, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
-	if err != nil {
-		log.Errorf("Error in AddFundInit: %v", err)
-		return nil, err
-	}
-
-	log.Infof("AddFundInit response = %v", r)
-
-	if r.ErrorMessage != "" {
-		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
-	}
-
-	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
-	if err != nil {
-		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
-		return nil, err
-	}
-
-	log.Infof("Finished watch: %v, %v", hex.EncodeToString(r.Pubkey), r.LockHeight)
-
-	// Verify we are on the same page
-	if client.Address != r.Address {
-		return nil, errors.New("address mismatch")
-	}
-
-	swapInfo := &SwapAddressInfo{
-		Address:     r.Address,
-		PaymentHash: swap.Hash,
-		Preimage:    swap.Preimage,
-		PrivateKey:  swap.Key,
-		PublicKey:   swap.Pubkey,
-		Script:      client.Script,
-	}
-	log.Infof("Saving new swap info %v", swapInfo)
-	saveSwapAddressInfo(swapInfo)
-
-	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
-	type ScriptBackup struct {
-		Script     string
-		PrivateKey string
-	}
-	backup := ScriptBackup{Script: hex.EncodeToString(client.Script), PrivateKey: hex.EncodeToString(swap.Key)}
-	jsonBytes, err := json.Marshal(backup)
+	address, serviceError, backupJSON, maxDepositAllowed, err := addFundsInit(notificationToken)
 	if err != nil {
 		return nil, err
 	}
-
-	return &data.AddFundInitReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
+	return &data.AddFundInitReply{Address: address, MaxAllowedDeposit: maxDepositAllowed, ErrorMessage: serviceError, BackupJson: backupJSON}, nil
 }
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
@@ -203,6 +145,76 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	return &data.RemoveFundReply{ErrorMessage: "", Txid: txID}, err
 }
 
+func addFundsInit(notificationToken string) (address, serviceError, backupJSON string, maxDepositAllowed int64, err error) {
+	acc, err := calculateAccount()
+	if err != nil {
+		log.Errorf("Error in calculateAccount: %v", err)
+		return
+	}
+
+	swap, err := lightningClient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
+	if err != nil {
+		log.Criticalf("Failed to call SubSwapClientInit %v", err)
+		return
+	}
+
+	c, ctx, cancel := getFundManager()
+	defer cancel()
+
+	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: acc.Id, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
+	if err != nil {
+		log.Errorf("Error in AddFundInit: %v", err)
+		return
+	}
+
+	log.Infof("AddFundInit response = %v", r)
+
+	address = r.Address
+	serviceError = r.ErrorMessage
+	maxDepositAllowed = r.MaxAllowedDeposit
+	if r.ErrorMessage != "" {
+		return
+	}
+
+	client, err := lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
+	if err != nil {
+		log.Criticalf("Failed to call SubSwapClientWatch %v", err)
+		return
+	}
+
+	log.Infof("Finished watch: %v, %v", hex.EncodeToString(r.Pubkey), r.LockHeight)
+
+	// Verify we are on the same page
+	if client.Address != r.Address {
+		err = errors.New("address mismatch")
+		return
+	}
+
+	swapInfo := &SwapAddressInfo{
+		Address:     r.Address,
+		PaymentHash: swap.Hash,
+		Preimage:    swap.Preimage,
+		PrivateKey:  swap.Key,
+		PublicKey:   swap.Pubkey,
+		Script:      client.Script,
+	}
+	log.Infof("Saving new swap info %v", swapInfo)
+	saveSwapAddressInfo(swapInfo)
+
+	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
+	type ScriptBackup struct {
+		Script     string
+		PrivateKey string
+	}
+	backup := ScriptBackup{Script: hex.EncodeToString(client.Script), PrivateKey: hex.EncodeToString(swap.Key)}
+	jsonBytes, err := json.Marshal(backup)
+	if err != nil {
+		return
+	}
+	backupJSON = string(jsonBytes[:])
+	return
+}
+
 func redeemAllRemovedFunds() error {
 	log.Infof("redeemAllRemovedFunds")
 	hashes, err := fetchRedeemablePaymentHashes()
@@ -258,10 +270,13 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var confirmedAddresses, unConfirmedAddresses []string
 	var hasMempool bool
 	for _, a := range addresses {
+		log.Infof("Checking swap address: " + a.Address)
+		log.Infof("ConfirmedAmount: %v", a.ConfirmedAmount)
+		log.Infof("PaidAmount: %v", a.PaidAmount)
 		if len(a.ConfirmedTransactionIds) > 0 {
 			confirmedAddresses = append(confirmedAddresses, a.Address)
 			log.Infof("GetFundStatus adding confirmed transaction")
-		} else {
+		} else if a.PaidAmount == 0 {
 			hasMempool = hasMempool || a.EnteredMempool
 			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
 			log.Infof("GetFundStatus adding UNconfirmed transaction")
