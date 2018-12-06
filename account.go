@@ -238,24 +238,15 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	nonDepositableBalance := walletBalance.ConfirmedBalance
-
-	//In case we have funds in our wallet and the funding transaction is still didn't braodcasted and the channel is not opened yet
-	//reserve up to "maxBtcFundingAmount" and the rest are "non depositable"
-	if accStatus == data.Account_WAITING_DEPOSIT {
-		if nonDepositableBalance-maxBtcFundingAmount > 0 {
-			nonDepositableBalance -= maxBtcFundingAmount
-		}
-	}
-
+	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
-		Id:                    lnInfo.IdentityPubkey,
-		Balance:               channelBalance.Balance,
-		MaxAllowedToReceive:   maxAllowedToReceive,
-		MaxAllowedToPay:       maxAllowedToPay,
-		MaxPaymentAmount:      maxPaymentAllowedSat,
-		Status:                accStatus,
-		NonDepositableBalance: nonDepositableBalance,
+		Id:                  lnInfo.IdentityPubkey,
+		Balance:             channelBalance.Balance,
+		MaxAllowedToReceive: maxAllowedToReceive,
+		MaxAllowedToPay:     maxAllowedToPay,
+		MaxPaymentAmount:    maxPaymentAllowedSat,
+		Status:              accStatus,
+		WalletBalance:       onChainBalance,
 	}, nil
 }
 

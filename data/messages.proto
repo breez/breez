@@ -17,7 +17,7 @@ message Account {
     }
     string id = 1;
     int64 balance = 2;      
-    int64 nonDepositableBalance = 3;
+    int64 walletBalance = 3;
     AccountStatus status = 4;   
 
     //maximum payment this node can receive via lightning  
@@ -51,8 +51,10 @@ message PaymentsList {
     repeated Payment paymentsList = 1;
 }
 
-message SendNonDepositedCoinsRequest {
-    string address = 1;    
+message SendWalletCoinsRequest {
+    string address = 1;
+    int64 amount = 2;
+    int64 satPerByteFee = 3;    
 }
 
 message PayInvoiceRequest {
