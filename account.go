@@ -26,14 +26,14 @@ var (
 )
 
 func trackOpenedChannel() {
-	ticker := time.NewTicker(time.Minute * 1)
+	ticker := time.NewTicker(time.Second * 10)
 	for {
 		select {
 		case <-ticker.C:
 			channelPoints, err := getOpenChannelsPoints()
 			if err == nil && len(channelPoints) > 0 {
 				ticker.Stop()
-				onAccountChanged()
+				onOpenedChannelDetected()
 			}
 		case <-quitChan:
 			ticker.Stop()
@@ -278,4 +278,39 @@ func calculateAccountAndNotify() {
 	}
 	saveAccount(accBuf)
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
+}
+
+func onOpenedChannelDetected() {
+	onAccountChanged()
+	res, err := lightningClient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
+	if err != nil {
+		log.Infof("onOpenedChannelDetected - Could not get wallet balance %v", err)
+		return
+	}
+	if res.ConfirmedBalance == 0 {
+		return
+	}
+
+	address, serviceErr, _, maxDepositAllowed, err := addFundsInit("")
+	if serviceErr != "" {
+		log.Errorf("onOpenedChannelDetected - addFundInit finished with service error %v", serviceErr)
+		return
+	}
+
+	if err != nil {
+		log.Errorf("onOpenedChannelDetected - addFundInit finished with error %v", err)
+		return
+	}
+
+	if maxDepositAllowed < res.ConfirmedBalance {
+		log.Errorf("onOpenedChannelDetected - can't transfer money, maxDepositAllowed is less then the wallet balance. maxAllowed=%v, walletBalance=%v", maxDepositAllowed, res.ConfirmedBalance)
+		return
+	}
+
+	sendResponse, err := lightningClient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: res.ConfirmedBalance})
+	if err != nil {
+		log.Errorf("onOpenedChannelDetected - transfer money from wallet failed with error: %v", err)
+		return
+	}
+	log.Infof("Wallet balance was successfully transferred to swap address. amount=%v txid=%v", res.ConfirmedBalance, sendResponse.Txid)
 }
