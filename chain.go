@@ -9,12 +9,11 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/lnwallet"
 	"github.com/btcsuite/btcutil"
 )
 
 const (
-	maxBtcFundingAmount         = 1<<24 - 1
+	defaultSatPerByteFee        = 50
 	fundingMaxRetries           = 3
 	fundingRetryInterval        = 3 * time.Second
 	fallbackFee                 = 10000
@@ -51,19 +50,21 @@ func ValidateAddress(address string) error {
 }
 
 /*
-SendNonDepositedCoins executes a request to send all the wallet coins to a particular address.
-The wallet coins are considered as "non deposited" in oppoesed to the channel balance.
+SendWalletCoins executes a request to send wallet coins to a particular address.
 */
-func SendNonDepositedCoins(address string) error {
-	walletBalance, err := lightningClient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
+func SendWalletCoins(address string, satAmount, satPerByteFee int64) (string, error) {
+	res, err := lightningClient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: satAmount, SatPerByte: satPerByteFee})
 	if err != nil {
-		return err
+		return "", err
 	}
-	transferAmount := walletBalance.ConfirmedBalance - estimateFee()
-	if _, err := lightningClient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: transferAmount}); err != nil {
-		return err
-	}
-	return nil
+	return res.Txid, nil
+}
+
+/*
+GetDefaultSatPerByteFee returns the default sat per byte fee for on chain transactions
+*/
+func GetDefaultSatPerByteFee() int64 {
+	return defaultSatPerByteFee
 }
 
 func syncToChain(pollInterval time.Duration) error {
@@ -105,14 +106,4 @@ func watchOnChainState() {
 		log.Infof("watchOnChainState sending account change notification")
 		onAccountChanged()
 	}
-}
-
-func estimateFee() int64 {
-	estimator := &lnwallet.StaticFeeEstimator{FeePerKW: lnwallet.SatPerKWeight(12500)}
-	satPerKWeight, err := estimator.EstimateFeePerKW(1) //one block confirmation
-	if err != nil {
-		log.Errorf("estimateFee: can't calculate fee", err)
-		return fallbackFee
-	}
-	return int64(satPerKWeight.FeeForWeight(lnwallet.CommitWeight).ToUnit(btcutil.AmountSatoshi))
 }

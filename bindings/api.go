@@ -225,12 +225,19 @@ func GetRelatedInvoice(paymentRequest string) ([]byte, error) {
 }
 
 /*
-SendNonDepositedCoins is part of the binding inteface which is delegated to breez.SendNonDepositedCoins
+SendWalletCoins is part of the binding inteface which is delegated to breez.SendWalletCoins
 */
-func SendNonDepositedCoins(sendCoinsRequest []byte) error {
-	unmarshaledRequest := data.SendNonDepositedCoinsRequest{}
+func SendWalletCoins(sendCoinsRequest []byte) (string, error) {
+	unmarshaledRequest := data.SendWalletCoinsRequest{}
 	proto.Unmarshal(sendCoinsRequest, &unmarshaledRequest)
-	return breez.SendNonDepositedCoins(unmarshaledRequest.Address)
+	return breez.SendWalletCoins(unmarshaledRequest.Address, unmarshaledRequest.Amount, unmarshaledRequest.SatPerByteFee)
+}
+
+/*
+GetDefaultOnChainFeeRate is part of the binding inteface which is delegated to breez.GetDefaultOnChainFeeRate
+*/
+func GetDefaultOnChainFeeRate() int64 {
+	return breez.GetDefaultSatPerByteFee()
 }
 
 /*
