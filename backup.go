@@ -8,6 +8,13 @@ import (
 	"golang.org/x/net/context"
 )
 
+/*
+Backup creates the backup files of breez and send notification when ready
+*/
+func Backup() error {
+	return extractBackupPaths()
+}
+
 func breezdbCopy() (string, error) {
 	dir, err := ioutil.TempDir("", "backup")
 	if err != nil {
