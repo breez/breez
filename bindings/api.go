@@ -49,6 +49,13 @@ func Stop() {
 }
 
 /*
+Backup triggers breez backup
+*/
+func Backup() error {
+	return breez.Backup()
+}
+
+/*
 WaitDaemonShutdown blocks untill the daemon shutdown
 */
 func WaitDaemonShutdown() {
