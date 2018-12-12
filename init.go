@@ -13,17 +13,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"github.com/jessevdk/go-flags"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	breezservice "github.com/breez/breez/breez"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -81,6 +81,7 @@ type Config struct {
 	BreezServer       string `long:"breezserver"`
 	Network           string `long:"network"`
 	GrpcKeepAlive     bool   `long:"grpckeepalive"`
+	BootstrapURL      string `long:"bootstrap"`
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
