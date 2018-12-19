@@ -3,7 +3,6 @@ package breez
 import (
 	"context"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/breez/breez/data"
@@ -22,25 +21,7 @@ const (
 
 var (
 	createChannelGroup singleflight.Group
-	channelOpened      = make(chan struct{})
 )
-
-func trackOpenedChannel() {
-	ticker := time.NewTicker(time.Minute * 1)
-	for {
-		select {
-		case <-ticker.C:
-			channelPoints, err := getOpenChannelsPoints()
-			if err == nil && len(channelPoints) > 0 {
-				ticker.Stop()
-				onAccountChanged()
-			}
-		case <-quitChan:
-			ticker.Stop()
-			return
-		}
-	}
-}
 
 /*
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
@@ -55,50 +36,6 @@ func GetAccountInfo() (*data.Account, error) {
 		err = proto.Unmarshal(accBuf, account)
 	}
 	return account, err
-}
-
-//RegisterReceivePaymentReadyNotification register in breez server for notification regarding the confirmation
-//of an existing pending channel. If there is not channels and no pending channels then this function waits for
-//for a channel to be opened and then execute the register.
-func RegisterReceivePaymentReadyNotification(token string) error {
-	channelPoints, err := getOpenChannelsPoints()
-	if err != nil {
-		return err
-	}
-	if len(channelPoints) > 0 {
-		return nil
-	}
-
-	go func() {
-		select {
-		case <-channelOpened:
-			err := registerReceivePaymentReadyNotification(token)
-			log.Infof("finiahed registerReceivePaymentReadyNotification, err = %v", err)
-		}
-	}()
-
-	return nil
-}
-
-func registerReceivePaymentReadyNotification(token string) error {
-	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
-	if err != nil {
-		return err
-	}
-	if len(pendingChannels.PendingOpenChannels) == 0 {
-		return nil
-	}
-	channelPoint := pendingChannels.PendingOpenChannels[0].Channel.ChannelPoint
-	fundingTxID := strings.Split(channelPoint, ":")[0]
-	c, ctx, cancel := getFundManager()
-	defer cancel()
-	_, err = c.RegisterTransactionConfirmation(ctx,
-		&breezservice.RegisterTransactionConfirmationRequest{
-			NotificationToken: token,
-			TxID:              fundingTxID,
-			NotificationType:  breezservice.RegisterTransactionConfirmationRequest_READY_RECEIVE_PAYMENT,
-		})
-	return err
 }
 
 func updateNodeChannelPolicy(pubkey string) {
@@ -119,24 +56,41 @@ func updateNodeChannelPolicy(pubkey string) {
 /*
 createChannel is responsible for creating a new channel
 */
-func createChannel(pubkey string) {
-	for {
-		if IsConnectedToRoutingNode() {
-			c, ctx, cancel := getFundManager()
-			_, err := c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: pubkey})
-			cancel()
-			if err == nil {
-				close(channelOpened)
-				return
-			}
-			log.Errorf("Error in openChannel: %v", err)
-		}
-		time.Sleep(time.Second * 5)
+func ensureRoutingChannelOpened() {
+	log.Infof("ensureRoutingChannelOpened started...")
+	channelPoints, err := getBreezOpenChannelsPoints()
+	if err != nil {
+		log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannelsPoints %v", err)
 	}
+
+	if len(channelPoints) > 0 {
+		log.Infof("ensureRoutingChannelOpened already has a channel with breez, doing nothing")
+	}
+
+	createChannelGroup.Do("createChannel", func() (interface{}, error) {
+		for {
+			lnInfo, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+			if err == nil {
+				if IsConnectedToRoutingNode() {
+					c, ctx, cancel := getFundManager()
+					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
+					cancel()
+					if err == nil {
+						onRoutingNodePendingChannel()
+						return nil, nil
+					}
+				}
+			}
+			if err != nil {
+				log.Errorf("Error in openChannel: %v", err)
+			}
+			time.Sleep(time.Second * 5)
+		}
+	})
 }
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
-	channelPoints, err := getOpenChannelsPoints()
+	channelPoints, err := getBreezOpenChannelsPoints()
 	if err != nil {
 		return -1, err
 	}
@@ -196,7 +150,7 @@ func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 	return maxAllowedToReceive, maxAllowedToPay, nil
 }
 
-func getOpenChannelsPoints() ([]string, error) {
+func getBreezOpenChannelsPoints() ([]string, error) {
 	var channelPoints []string
 	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
@@ -206,10 +160,31 @@ func getOpenChannelsPoints() ([]string, error) {
 	}
 
 	for _, c := range channels.Channels {
-		channelPoints = append(channelPoints, c.ChannelPoint)
-		log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
+		if c.RemotePubkey == cfg.RoutingNodePubKey {
+			channelPoints = append(channelPoints, c.ChannelPoint)
+			log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
+		}
 	}
 	return channelPoints, nil
+}
+
+func getPendingBreezChannelPoint() (string, error) {
+	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(pendingChannels.PendingOpenChannels) == 0 {
+		return "", nil
+	}
+
+	for _, c := range pendingChannels.PendingOpenChannels {
+		if c.Channel.RemoteNodePub == cfg.RoutingNodePubKey {
+			return c.Channel.ChannelPoint, nil
+		}
+	}
+
+	return "", nil
 }
 
 func calculateAccount() (*data.Account, error) {
@@ -257,7 +232,7 @@ func onAccountChanged() {
 	calculateAccountAndNotify()
 }
 
-func calculateAccountAndNotify() {
+func calculateAccountAndNotify() (*data.Account, error) {
 	acc, err := calculateAccount()
 	if err != nil {
 		log.Errorf("Failed to calculate account %v", err)
@@ -265,8 +240,9 @@ func calculateAccountAndNotify() {
 	accBuf, err := proto.Marshal(acc)
 	if err != nil {
 		log.Errorf("failed to marshal account, change event wasn't propagated")
-		return
+		return nil, err
 	}
 	saveAccount(accBuf)
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
+	return acc, nil
 }

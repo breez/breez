@@ -64,14 +64,7 @@ func onRoutingNodeConnectionChanged(connected bool) {
 	if connected {
 		accData, _ := calculateAccount()
 		go updateNodeChannelPolicy(accData.Id)
-
-		if accData.Status == data.Account_WAITING_DEPOSIT {
-			createChannelGroup.Do("createChannel", func() (interface{}, error) {
-				createChannel(accData.Id)
-				return nil, nil
-			})
-			onAccountChanged()
-		}
+		ensureRoutingChannelOpened()
 	}
 }
 
