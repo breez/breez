@@ -313,9 +313,9 @@ func initLightningClient() error {
 }
 
 func connectOnStartup() {
-	channelPoints, err := getOpenChannelsPoints()
+	channelPoints, err := getBreezOpenChannelsPoints()
 	if err != nil {
-		log.Errorf("connectOnStartup: error in getOpenChannelsPoints", err)
+		log.Errorf("connectOnStartup: error in getBreezOpenChannelsPoints", err)
 		return
 	}
 	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
