@@ -259,7 +259,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var hasMempool bool
 	for _, a := range addresses {
 
-		if len(a.ConfirmedTransactionIds) > 0 {
+		if len(a.ConfirmedTransactionIds) > 0 && a.PaidAmount == 0 {
 			confirmedAddresses = append(confirmedAddresses, a.Address)
 			log.Infof("GetFundStatus adding confirmed transaction")
 		} else {
