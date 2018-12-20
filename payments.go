@@ -270,8 +270,10 @@ func generateBlankInvoice() (string, error) {
 DecodeInvoice is used by the payer to decode the payment request and read the invoice details.
 */
 func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
+	log.Infof("DecodePaymentRequest %v", paymentRequest)
 	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
+		log.Errorf("DecodePaymentRequest error: %v", err)
 		return nil, err
 	}
 	invoiceMemo := &data.InvoiceMemo{}
