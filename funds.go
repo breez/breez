@@ -188,6 +188,7 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	//mark this payment request as redeemable
 	addRedeemablePaymentHash(payreq.PaymentHash)
 
+	log.Infof("RemoveFunds: Sending payment...")
 	err = SendPaymentForRequest(reply.PaymentRequest)
 	if err != nil {
 		log.Errorf("SendPaymentForRequest failed: %v", err)
@@ -259,13 +260,22 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var hasMempool bool
 	for _, a := range addresses {
 
-		if len(a.ConfirmedTransactionIds) > 0 && a.PaidAmount == 0 {
+		//already paid
+		if a.PaidAmount > 0 {
+			continue
+		}
+
+		bytes, err := json.Marshal(a)
+		if err == nil {
+			log.Infof("GetFundStatus checking address: %v", string(bytes))
+		}
+
+		if len(a.ConfirmedTransactionIds) > 0 {
 			confirmedAddresses = append(confirmedAddresses, a.Address)
 			log.Infof("GetFundStatus adding confirmed transaction")
 		} else {
 			hasMempool = hasMempool || a.EnteredMempool
 			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
-			log.Infof("GetFundStatus adding UNconfirmed transaction")
 		}
 	}
 
@@ -276,6 +286,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	if hasMempool {
 		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 	}
+
 	log.Infof("GetFundStatus checknig unConfirmedAddresses len=%v", len(unConfirmedAddresses))
 	if len(unConfirmedAddresses) > 0 {
 		c, ctx, cancel := getFundManager()
