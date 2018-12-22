@@ -113,10 +113,13 @@ func SendPaymentForRequest(paymentRequest string) error {
 	if err := savePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
 		return err
 	}
+	log.Infof("sendPaymentForRequest: before sending payment...")
 	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest})
 	if err != nil {
+		log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return err
 	}
+	log.Infof("sendPaymentForRequest finished successfully")
 	if len(response.PaymentError) > 0 {
 		return errors.New(response.PaymentError)
 	}
