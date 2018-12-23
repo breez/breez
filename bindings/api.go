@@ -121,6 +121,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 		fmt.Println("GetRefundableSwapAddresses in api returned error from breez")
 		return nil, err
 	}
+
 	var rpcAddresses []*data.SwapAddressInfo
 	for _, a := range refundableAddresses {
 		rpcAddresses = append(rpcAddresses, &data.SwapAddressInfo{
@@ -135,11 +136,10 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 		})
 	}
 
-	fmt.Println("GetRefundableSwapAddresses creating address list")
 	addressList := &data.SwapAddressList{
 		Addresses: rpcAddresses,
 	}
-	fmt.Printf("GetRefundableSwapAddresses return result %v", addressList)
+	fmt.Printf("GetRefundableSwapAddresses returned %v addresses", len(rpcAddresses))
 	return marshalResponse(addressList, nil)
 }
 
