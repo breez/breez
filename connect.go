@@ -25,6 +25,10 @@ func ConnectAccount() error {
 IsConnectedToRoutingNode returns the connection status to the routing node
 */
 func IsConnectedToRoutingNode() bool {
+	return isConnectedToRoutingNode()
+}
+
+func isConnectedToRoutingNode() bool {
 	return atomic.LoadInt32(&connectedToRoutingNode) == 1
 }
 
