@@ -12,8 +12,13 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
+)
+
+var (
+	getPaymentGroup singleflight.Group
 )
 
 //SwapAddressInfo contains all the infromation regarding
@@ -129,8 +134,11 @@ func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
 	}
 
 	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
-		log.Infof("checking refundable lockHeight=%v, amount=%v, currentHeight=%v", a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
-		return a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0
+		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0
+		if refundable {
+			log.Infof("found refundable address: %v lockHeight=%v, amount=%v, currentHeight=%v", a.Address, a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
+		}
+		return refundable
 	})
 
 	if err != nil {
@@ -247,7 +255,9 @@ GetFundStatus gets a notification token and does two things:
 2. Fetch the current status for the saved addresses from the server
 */
 func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
-	addresses, err := fetchAllSwapAddresses()
+	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
+		return addr.PaidAmount == 0
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -260,19 +270,9 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var hasMempool bool
 	for _, a := range addresses {
 
-		//already paid
-		if a.PaidAmount > 0 {
-			continue
-		}
-
-		bytes, err := json.Marshal(a)
-		if err == nil {
-			log.Infof("GetFundStatus checking address: %v", string(bytes))
-		}
-
 		if len(a.ConfirmedTransactionIds) > 0 {
 			confirmedAddresses = append(confirmedAddresses, a.Address)
-			log.Infof("GetFundStatus adding confirmed transaction")
+			log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
 		} else {
 			hasMempool = hasMempool || a.EnteredMempool
 			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
@@ -280,10 +280,12 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	}
 
 	if len(confirmedAddresses) > 0 {
+		log.Infof("GetFundStatus return status 'confirmed'")
 		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
 	if hasMempool {
+		log.Infof("GetFundStatus return status 'waiting confirmation'")
 		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 	}
 
@@ -292,13 +294,10 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		c, ctx, cancel := getFundManager()
 		defer cancel()
 
-		log.Infof("GetFundStatus calling AddFundStatus addresses=%v", unConfirmedAddresses)
 		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
 		if err != nil {
 			return nil, err
 		}
-
-		log.Infof("GetFundStatus return result = %v", statusesMap)
 
 		var hasUnconfirmed bool
 		for addr, status := range statusesMap.Statuses {
@@ -312,16 +311,18 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 			}
 		}
 		if hasUnconfirmed {
+			log.Infof("GetFundStatus return status 'waiting confirmation")
 			return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 		}
 	}
 
+	log.Infof("GetFundStatus return status 'no funds")
 	return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 }
 
 func watchFundTransfers() {
 	go watchSettledSwapAddresses()
-	go settlePendingTransfers()
+	go watchSettlePendingTransfers()
 	go watchSwapAddressConfirmations()
 }
 
@@ -387,15 +388,15 @@ func watchSwapAddressConfirmations() {
 }
 
 func updateUnspentAmount(address string) (bool, error) {
-	log.Infof("Updating unspend amount for address %v", address)
 	return updateSwapAddress(address, func(swapInfo *SwapAddressInfo) error {
 		unspentResponse, err := lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
 		}
-		log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
+
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
 		if len(unspentResponse.Utxos) > 0 {
+			log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
 			swapInfo.LockHeight = uint32(unspentResponse.LockHeight + unspentResponse.Utxos[0].BlockHeight)
 		}
 
@@ -471,7 +472,7 @@ func watchSettledSwapAddresses() {
 //   that the funds are confirmred
 //2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
 //   remove funds flow
-func settlePendingTransfers() error {
+func watchSettlePendingTransfers() error {
 	log.Infof("askForIncomingTransfers started")
 	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
 	if err != nil {
@@ -489,10 +490,14 @@ func settlePendingTransfers() error {
 		}
 
 		if notification.PubKey == cfg.RoutingNodePubKey && notification.Connected {
-			go getPaymentsForConfirmedTransactions()
-			go redeemAllRemovedFunds()
+			settlePendingTransfers()
 		}
 	}
+}
+
+func settlePendingTransfers() {
+	go getPaymentsForConfirmedTransactions()
+	go redeemAllRemovedFunds()
 }
 
 func getPaymentsForConfirmedTransactions() {
@@ -506,7 +511,10 @@ func getPaymentsForConfirmedTransactions() {
 	}
 	log.Infof("getPaymentsForConfirmedTransactions: confirmedAddresses length = %v", len(confirmedAddresses))
 	for _, address := range confirmedAddresses {
-		retryGetPayment(address, 3)
+		getPaymentGroup.Do(fmt.Sprintf("getPayment - %v", address), func() (interface{}, error) {
+			retryGetPayment(address, 3)
+			return nil, nil
+		})
 	}
 }
 
