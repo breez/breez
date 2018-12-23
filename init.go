@@ -192,6 +192,9 @@ OnResume recalculate things we might missed when we were idle.
 func OnResume() {
 	if atomic.LoadInt32(&isReady) == 1 {
 		calculateAccountAndNotify()
+		if isConnectedToRoutingNode() {
+			settlePendingTransfers()
+		}
 	}
 }
 
