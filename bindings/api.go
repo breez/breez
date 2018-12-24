@@ -269,6 +269,13 @@ func RegisterReceivePaymentReadyNotification(token string) error {
 }
 
 /*
+RegisterChannelOpenedNotification is part of the binding inteface which is delegated to breez.RegisterChannelOpenedNotification
+*/
+func RegisterChannelOpenedNotification(token string) error {
+	return breez.RegisterChannelOpenedNotification(token)
+}
+
+/*
 CreateRatchetSession is part of the binding inteface which is delegated to breez.CreateRatchetSession
 */
 func CreateRatchetSession(request []byte) ([]byte, error) {
