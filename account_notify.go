@@ -56,6 +56,13 @@ func setUserNotificationRequest(token string, notificationType int) error {
 
 func registerPendingChannelConfirmation() error {
 
+	subscriptionsSync.Lock()
+	currentRequest := notification
+	subscriptionsSync.Unlock()
+	if currentRequest == nil {
+		return nil
+	}
+
 	pendingChannelPoint, err := getPendingBreezChannelPoint()
 	if err != nil {
 		return err
@@ -66,10 +73,6 @@ func registerPendingChannelConfirmation() error {
 
 	c, ctx, cancel := getFundManager()
 	defer cancel()
-
-	subscriptionsSync.Lock()
-	currentRequest := notification
-	subscriptionsSync.Unlock()
 
 	log.Infof("registerPendingChannelConfirmation for token %v and notification type = %v", currentRequest.token, currentRequest.notificationType)
 
