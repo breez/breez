@@ -45,6 +45,8 @@ message Payment {
     string redeemTxID = 7;
     string paymentHash = 8;
     string destination = 9;
+    uint32 PendingExpirationHeight = 10;
+    int64 PendingExpirationTimestamp = 11;
 }
 
 message PaymentsList {
