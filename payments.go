@@ -29,18 +29,20 @@ const (
 )
 
 type paymentInfo struct {
-	Type              paymentType
-	Amount            int64
-	CreationTimestamp int64
-	Description       string
-	PayeeName         string
-	PayeeImageURL     string
-	PayerName         string
-	PayerImageURL     string
-	TransferRequest   bool
-	PaymentHash       string
-	RedeemTxID        string
-	Destination       string
+	Type                       paymentType
+	Amount                     int64
+	CreationTimestamp          int64
+	Description                string
+	PayeeName                  string
+	PayeeImageURL              string
+	PayerName                  string
+	PayerImageURL              string
+	TransferRequest            bool
+	PaymentHash                string
+	RedeemTxID                 string
+	Destination                string
+	PendingExpirationHeight    uint32
+	PendingExpirationTimestamp int64
 }
 
 func serializePaymentInfo(s *paymentInfo) ([]byte, error) {
@@ -63,6 +65,13 @@ func GetPayments() (*data.PaymentsList, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	pendingPayments, err := getPendingPayments()
+	if err != nil {
+		return nil, err
+	}
+	rawPayments = append(rawPayments, pendingPayments...)
+
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
 		paymentItem := &data.Payment{
@@ -80,6 +89,8 @@ func GetPayments() (*data.PaymentsList, error) {
 				PayerName:       payment.PayerName,
 				TransferRequest: payment.TransferRequest,
 			},
+			PendingExpirationHeight:    payment.PendingExpirationHeight,
+			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
 		}
 		switch payment.Type {
 		case sentPayment:
@@ -94,9 +105,11 @@ func GetPayments() (*data.PaymentsList, error) {
 
 		paymentsList = append(paymentsList, paymentItem)
 	}
+
 	sort.Slice(paymentsList, func(i, j int) bool {
 		return paymentsList[i].CreationTimestamp > paymentsList[j].CreationTimestamp
 	})
+
 	resultPayments := &data.PaymentsList{PaymentsList: paymentsList}
 	return resultPayments, nil
 }
@@ -376,6 +389,92 @@ func syncSentPayments() error {
 	return nil
 
 	//TODO delete history of payment requests after the new payments API stablized.
+}
+
+func getPendingPayments() ([]*paymentInfo, error) {
+	var payments []*paymentInfo
+
+	if DaemonReady() {
+		channelsRes, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			return nil, err
+		}
+
+		chainInfo, chainErr := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+		if chainErr != nil {
+			log.Errorf("Failed get chain info", chainErr)
+			return nil, chainErr
+		}
+
+		for _, ch := range channelsRes.Channels {
+			for _, htlc := range ch.PendingHtlcs {
+				pendingItem, err := createPendingPayment(htlc, chainInfo.BlockHeight)
+				if err != nil {
+					return nil, err
+				}
+				payments = append(payments, pendingItem)
+			}
+		}
+	}
+
+	return payments, nil
+}
+
+func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*paymentInfo, error) {
+	paymentType := sentPayment
+	if htlc.Incoming {
+		paymentType = receivedPayment
+	}
+
+	var paymentRequest string
+	if htlc.Incoming {
+		invoice, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
+		if err != nil {
+			log.Errorf("createPendingPayment - failed to call LookupInvoice %v", err)
+			return nil, err
+		}
+		paymentRequest = invoice.PaymentRequest
+	} else {
+		payReqBytes, err := fetchPaymentRequest(string(htlc.HashLock))
+		if err != nil {
+			log.Errorf("createPendingPayment - failed to call fetchPaymentRequest %v", err)
+			return nil, err
+		}
+		paymentRequest = string(payReqBytes)
+	}
+
+	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
+	paymentData := &paymentInfo{
+		Type:                       paymentType,
+		Amount:                     htlc.Amount,
+		CreationTimestamp:          time.Now().Unix(),
+		PendingExpirationHeight:    htlc.ExpirationHeight,
+		PendingExpirationTimestamp: time.Now().Add(minutesToExpire * time.Minute).Unix(),
+	}
+
+	if paymentRequest != "" {
+		decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+		if err != nil {
+			return nil, err
+		}
+
+		invoiceMemo, err := DecodePaymentRequest(paymentRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		paymentData.Description = invoiceMemo.Description
+		paymentData.PayeeImageURL = invoiceMemo.PayeeImageURL
+		paymentData.PayeeName = invoiceMemo.PayeeName
+		paymentData.PayerImageURL = invoiceMemo.PayerImageURL
+		paymentData.PayerName = invoiceMemo.PayerName
+		paymentData.TransferRequest = invoiceMemo.TransferRequest
+		paymentData.PaymentHash = decodedReq.PaymentHash
+		paymentData.Destination = decodedReq.Destination
+		paymentData.CreationTimestamp = decodedReq.Timestamp
+	}
+
+	return paymentData, nil
 }
 
 func onNewSentPayment(paymentItem *lnrpc.Payment) error {
