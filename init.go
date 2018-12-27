@@ -265,7 +265,6 @@ func startBreez() {
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
-	go generateBlankInvoiceWithRetry()
 	watchFundTransfers()
 	go func() {
 		onAccountChanged()

@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"os"
-	"path"
 	"sort"
 	"strings"
 
@@ -207,82 +205,6 @@ func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err e
 }
 
 /*
-generateBlankInvoiceWithRetry calls generateBlankInvoice in 10 second intervals until it succeeds
-*/
-func generateBlankInvoiceWithRetry() {
-	blankInvoiceGroup.Do("blankinvoice", func() (interface{}, error) {
-		for {
-			res, err := generateBlankInvoice()
-			if err == nil {
-				return res, nil
-			}
-			log.Errorf("Error generating invoice, retrying...", err)
-			time.Sleep(10 * time.Second)
-		}
-	})
-}
-
-/*
-generateBlankInvoice issues a blank invoice with no amount and saves it to disk. This is later used by the NFC subsystem for P2P payments
-*/
-func generateBlankInvoice() (string, error) {
-	f, err := os.Create(path.Join(appWorkingDir, "blank_invoice.txt"))
-	if err != nil {
-		return "", err
-	}
-
-	defer f.Close()
-
-	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
-	})
-	if err != nil {
-		log.Errorf("generateBlankInvoice: failed to call ListChannels: %v", err)
-		return "", err
-	}
-
-	if len(channels.Channels) < 1 {
-		return "", errors.New("no channels to route through")
-	}
-
-	if !channels.Channels[0].Active {
-		return "", errors.New("channel is not active")
-	}
-
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Private: true, Expiry: 60 * 60 * 24 * 30})
-	if err != nil {
-		log.Criticalf("Failed to call AddInvoice %v", err)
-		return "", err
-	}
-
-	lookup, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: response.RHash})
-	if err != nil {
-		log.Criticalf("Failed to call LookupInvoice %v", err)
-		return "", err
-	}
-
-	if len(lookup.RouteHints) < 1 {
-		return "", errors.New("not enough route hints")
-	}
-
-	n, err := f.WriteString(response.PaymentRequest)
-	if err != nil {
-		return "", err
-	}
-
-	log.Infof("Wrote %d bytes of blank invoice!\n", n)
-	log.Infof("generateBlankInvoice - paymentRequest = %v", response.PaymentRequest)
-
-	if f.Sync() != nil {
-		log.Criticalf("Couldn't flush blank invoice to disk!")
-		return "", errors.New("couldn't flush to disk")
-	}
-
-	return response.PaymentRequest, nil
-
-}
-
-/*
 DecodeInvoice is used by the payer to decode the payment request and read the invoice details.
 */
 func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
@@ -357,10 +279,6 @@ func watchPayments() {
 				return
 			}
 			if invoice.Settled {
-				if invoice.Value == 0 {
-					os.Remove(path.Join(appWorkingDir, "blank_invoice.txt"))
-					go generateBlankInvoiceWithRetry()
-				}
 				log.Infof("watchPayments adding a received payment")
 				if err = onNewReceivedPayment(invoice); err != nil {
 					log.Criticalf("Failed to update received payment : %v", err)
