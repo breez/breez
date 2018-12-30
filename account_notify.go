@@ -31,7 +31,7 @@ func RegisterReceivePaymentReadyNotification(token string) error {
 //of an existing pending channel. If there is not channels and no pending channels then this function waits for
 //for a channel to be opened.
 func RegisterChannelOpenedNotification(token string) error {
-	log.Infof("RegisterChannelOpenedNotification *****")
+	log.Infof("RegisterChannelOpenedNotification called")
 	return setUserNotificationRequest(token, notificationTypeChannelOpened)
 }
 
@@ -46,28 +46,30 @@ func setUserNotificationRequest(token string, notificationType int) error {
 	}
 
 	subscriptionsSync.Lock()
-	defer subscriptionsSync.Unlock()
 	notification = &notificationRequest{
 		token:            token,
 		notificationType: notificationType}
-
+	subscriptionsSync.Unlock()
 	return registerPendingChannelConfirmation()
 }
 
 func registerPendingChannelConfirmation() error {
-
+	log.Infof("registerPendingChannelConfirmation checking for pending channel")
 	subscriptionsSync.Lock()
 	currentRequest := notification
 	subscriptionsSync.Unlock()
 	if currentRequest == nil {
+		log.Infof("registerPendingChannelConfirmation not request to process")
 		return nil
 	}
 
 	pendingChannelPoint, err := getPendingBreezChannelPoint()
 	if err != nil {
+		log.Infof("registerPendingChannelConfirmation error in querying for pending channels %v", err)
 		return err
 	}
 	if pendingChannelPoint == "" {
+		log.Infof("registerPendingChannelConfirmation no pending channel found")
 		return nil
 	}
 
