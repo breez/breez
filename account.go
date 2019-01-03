@@ -57,21 +57,31 @@ func updateNodeChannelPolicy(pubkey string) {
 createChannel is responsible for creating a new channel
 */
 func ensureRoutingChannelOpened() {
-	log.Infof("ensureRoutingChannelOpened started...")
-	channelPoints, err := getBreezOpenChannelsPoints()
-	if err != nil {
-		log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannelsPoints %v", err)
-	}
-
-	if len(channelPoints) > 0 {
-		log.Infof("ensureRoutingChannelOpened already has a channel with breez, doing nothing")
-	}
-
+	log.Info("ensureRoutingChannelOpened started...")
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 			lnInfo, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if IsConnectedToRoutingNode() {
+					channelPoints, err := getBreezOpenChannelsPoints()
+					if err != nil {
+						log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannelsPoints %v", err)
+					}
+
+					if len(channelPoints) > 0 {
+						log.Infof("ensureRoutingChannelOpened already has a channel with breez, doing nothing")
+						return nil, nil
+					}
+					pendingChannels, err := getPendingBreezChannelPoint()
+					if err != nil {
+						log.Errorf("ensureRoutingChannelOpened got error in getPendingBreezChannelPoint %v", err)
+					}
+
+					if len(pendingChannels) > 0 {
+						log.Infof("ensureRoutingChannelOpened already has a pending channel with breez, doing nothing")
+						return nil, nil
+					}
+
 					c, ctx, cancel := getFundManager()
 					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
 					cancel()
@@ -150,8 +160,32 @@ func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 	return maxAllowedToReceive, maxAllowedToPay, nil
 }
 
-func getBreezOpenChannelsPoints() ([]string, error) {
-	var channelPoints []string
+func getRoutingNodeFeeRate(ourKey string) (int64, error) {
+	chanIDs, err := getBreezOpenChannelsPoints()
+	if err != nil {
+		log.Errorf("Failed to get breez channels %v", err)
+		return 0, err
+	}
+
+	if len(chanIDs) == 0 {
+		return 0, nil
+	}
+
+	edge, err := lightningClient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{ChanId: chanIDs[0]})
+	if err != nil {
+		log.Errorf("Failed to get breez channel info %v", err)
+		return 0, err
+	}
+
+	if ourKey == edge.Node1Pub {
+		return edge.Node2Policy.FeeBaseMsat / 1000, nil
+	}
+
+	return edge.Node1Policy.FeeBaseMsat / 1000, nil
+}
+
+func getBreezOpenChannelsPoints() ([]uint64, error) {
+	var channelPoints []uint64
 	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
@@ -161,7 +195,7 @@ func getBreezOpenChannelsPoints() ([]string, error) {
 
 	for _, c := range channels.Channels {
 		if c.RemotePubkey == cfg.RoutingNodePubKey {
-			channelPoints = append(channelPoints, c.ChannelPoint)
+			channelPoints = append(channelPoints, c.ChanId)
 			log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
 		}
 	}
@@ -213,6 +247,12 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
+	routingNodeFeeRate, err := getRoutingNodeFeeRate(lnInfo.IdentityPubkey)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
+
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
@@ -222,6 +262,7 @@ func calculateAccount() (*data.Account, error) {
 		MaxPaymentAmount:    maxPaymentAllowedSat,
 		Status:              accStatus,
 		WalletBalance:       onChainBalance,
+		RoutingNodeFee:      routingNodeFeeRate,
 	}, nil
 }
 
