@@ -27,7 +27,10 @@ message Account {
     int64 maxAllowedToPay = 6;
 
     //The lightning absolute payment amount
-    int64 maxPaymentAmount = 7;    
+    int64 maxPaymentAmount = 7;   
+
+    //The routing node fee as reflected in the node policy
+    int64 routingNodeFee = 8; 
 }
 
 message Payment {
