@@ -3,7 +3,6 @@ package breez
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"sort"
 	"strings"
@@ -11,47 +10,15 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/singleflight"
 )
 
-type paymentType byte
-
 const (
 	defaultInvoiceExpiry int64 = 3600
-	sentPayment                = paymentType(0)
-	receivedPayment            = paymentType(1)
-	depositPayment             = paymentType(2)
-	withdrawalPayment          = paymentType(3)
 )
-
-type paymentInfo struct {
-	Type                       paymentType
-	Amount                     int64
-	CreationTimestamp          int64
-	Description                string
-	PayeeName                  string
-	PayeeImageURL              string
-	PayerName                  string
-	PayerImageURL              string
-	TransferRequest            bool
-	PaymentHash                string
-	RedeemTxID                 string
-	Destination                string
-	PendingExpirationHeight    uint32
-	PendingExpirationTimestamp int64
-}
-
-func serializePaymentInfo(s *paymentInfo) ([]byte, error) {
-	return json.Marshal(s)
-}
-
-func deserializePaymentInfo(paymentBytes []byte) (*paymentInfo, error) {
-	var payment paymentInfo
-	err := json.Unmarshal(paymentBytes, &payment)
-	return &payment, err
-}
 
 var blankInvoiceGroup singleflight.Group
 
@@ -59,7 +26,7 @@ var blankInvoiceGroup singleflight.Group
 GetPayments is responsible for retrieving the payment were made in this account
 */
 func GetPayments() (*data.PaymentsList, error) {
-	rawPayments, err := fetchAllAccountPayments()
+	rawPayments, err := breezDB.FetchAllAccountPayments()
 	if err != nil {
 		return nil, err
 	}
@@ -91,13 +58,13 @@ func GetPayments() (*data.PaymentsList, error) {
 			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
 		}
 		switch payment.Type {
-		case sentPayment:
+		case db.SentPayment:
 			paymentItem.Type = data.Payment_SENT
-		case receivedPayment:
+		case db.ReceivedPayment:
 			paymentItem.Type = data.Payment_RECEIVED
-		case depositPayment:
+		case db.DepositPayment:
 			paymentItem.Type = data.Payment_DEPOSIT
-		case withdrawalPayment:
+		case db.WithdrawalPayment:
 			paymentItem.Type = data.Payment_WITHDRAWAL
 		}
 
@@ -121,7 +88,7 @@ func SendPaymentForRequest(paymentRequest string) error {
 	if err != nil {
 		return err
 	}
-	if err := savePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
+	if err := breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
 		return err
 	}
 	log.Infof("sendPaymentForRequest: before sending payment...")
@@ -147,7 +114,7 @@ func PayBlankInvoice(paymentRequest string, amountSatoshi int64) error {
 	if err != nil {
 		return err
 	}
-	if err := savePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
+	if err := breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
 		return err
 	}
 	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
@@ -263,7 +230,7 @@ func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 
 func watchPayments() {
 	syncSentPayments()
-	_, lastInvoiceSettledIndex := fetchPaymentsSyncInfo()
+	_, lastInvoiceSettledIndex := breezDB.FetchPaymentsSyncInfo()
 	log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
 	stream, err := lightningClient.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
 	if err != nil {
@@ -295,7 +262,7 @@ func syncSentPayments() error {
 	if err != nil {
 		return err
 	}
-	lastPaymentTime, _ := fetchPaymentsSyncInfo()
+	lastPaymentTime, _ := breezDB.FetchPaymentsSyncInfo()
 	for _, paymentItem := range lightningPayments.Payments {
 		if paymentItem.CreationDate <= lastPaymentTime {
 			continue
@@ -309,8 +276,8 @@ func syncSentPayments() error {
 	//TODO delete history of payment requests after the new payments API stablized.
 }
 
-func getPendingPayments() ([]*paymentInfo, error) {
-	var payments []*paymentInfo
+func getPendingPayments() ([]*db.PaymentInfo, error) {
+	var payments []*db.PaymentInfo
 
 	if DaemonReady() {
 		channelsRes, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -338,10 +305,10 @@ func getPendingPayments() ([]*paymentInfo, error) {
 	return payments, nil
 }
 
-func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*paymentInfo, error) {
-	paymentType := sentPayment
+func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*db.PaymentInfo, error) {
+	paymentType := db.SentPayment
 	if htlc.Incoming {
-		paymentType = receivedPayment
+		paymentType = db.ReceivedPayment
 	}
 
 	var paymentRequest string
@@ -353,7 +320,7 @@ func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*payment
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		payReqBytes, err := fetchPaymentRequest(string(htlc.HashLock))
+		payReqBytes, err := breezDB.FetchPaymentRequest(string(htlc.HashLock))
 		if err != nil {
 			log.Errorf("createPendingPayment - failed to call fetchPaymentRequest %v", err)
 			return nil, err
@@ -362,7 +329,7 @@ func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*payment
 	}
 
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
-	paymentData := &paymentInfo{
+	paymentData := &db.PaymentInfo{
 		Type:                       paymentType,
 		Amount:                     htlc.Amount,
 		CreationTimestamp:          time.Now().Unix(),
@@ -396,7 +363,7 @@ func createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*payment
 }
 
 func onNewSentPayment(paymentItem *lnrpc.Payment) error {
-	paymentRequest, err := fetchPaymentRequest(paymentItem.PaymentHash)
+	paymentRequest, err := breezDB.FetchPaymentRequest(paymentItem.PaymentHash)
 	if err != nil {
 		return err
 	}
@@ -407,16 +374,16 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		}
 	}
 
-	paymentType := sentPayment
+	paymentType := db.SentPayment
 	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentRequest)})
 	if err != nil {
 		return err
 	}
 	if decodedReq.Destination == cfg.RoutingNodePubKey {
-		paymentType = withdrawalPayment
+		paymentType = db.WithdrawalPayment
 	}
 
-	paymentData := &paymentInfo{
+	paymentData := &db.PaymentInfo{
 		Type:              paymentType,
 		Amount:            paymentItem.Value,
 		CreationTimestamp: paymentItem.CreationDate,
@@ -430,7 +397,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		Destination:       decodedReq.Destination,
 	}
 
-	err = addAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
+	err = breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
 	go func() {
 		time.Sleep(2 * time.Second)
 		extractBackupPaths()
@@ -448,12 +415,12 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		}
 	}
 
-	paymentType := receivedPayment
+	paymentType := db.ReceivedPayment
 	if invoiceMemo.TransferRequest {
-		paymentType = depositPayment
+		paymentType = db.DepositPayment
 	}
 
-	paymentData := &paymentInfo{
+	paymentData := &db.PaymentInfo{
 		Type:              paymentType,
 		Amount:            invoice.AmtPaidSat,
 		CreationTimestamp: invoice.SettleDate,
@@ -466,7 +433,7 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		PaymentHash:       hex.EncodeToString(invoice.RHash),
 	}
 
-	err = addAccountPayment(paymentData, invoice.SettleIndex, 0)
+	err = breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
 	if err != nil {
 		log.Criticalf("Unable to add reveived payment : %v", err)
 		return err

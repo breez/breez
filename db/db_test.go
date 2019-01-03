@@ -1,4 +1,4 @@
-package breez
+package db
 
 import (
 	"strings"

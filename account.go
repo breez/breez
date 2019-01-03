@@ -27,7 +27,7 @@ var (
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
 */
 func GetAccountInfo() (*data.Account, error) {
-	accBuf, err := fetchAccount()
+	accBuf, err := breezDB.FetchAccount()
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func calculateAccountAndNotify() (*data.Account, error) {
 		log.Errorf("failed to marshal account, change event wasn't propagated")
 		return nil, err
 	}
-	saveAccount(accBuf)
+	breezDB.SaveAccount(accBuf)
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
 	return acc, nil
 }
