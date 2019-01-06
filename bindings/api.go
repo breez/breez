@@ -183,20 +183,12 @@ func GetPayments() ([]byte, error) {
 }
 
 /*
-SendPaymentForRequest is part of the binding inteface which is delegated to breez.SendPaymentForRequest
-*/
-func SendPaymentForRequest(paymentRequest string) error {
-	//return marshalResponse(account.SendPaymentForRequest())
-	return breez.SendPaymentForRequest(paymentRequest)
-}
-
-/*
 PayBlankInvoice is part of the binding inteface which is delegated to breez.PayBlankInvoice
 */
-func PayBlankInvoice(payInvoiceRequest []byte) error {
+func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	return breez.PayBlankInvoice(decodedRequest.PaymentRequest, decodedRequest.Amount)
+	return breez.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*

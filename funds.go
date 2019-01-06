@@ -197,7 +197,7 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	addRedeemablePaymentHash(payreq.PaymentHash)
 
 	log.Infof("RemoveFunds: Sending payment...")
-	err = SendPaymentForRequest(reply.PaymentRequest)
+	err = SendPaymentForRequest(reply.PaymentRequest, 0)
 	if err != nil {
 		log.Errorf("SendPaymentForRequest failed: %v", err)
 		return nil, err

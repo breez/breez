@@ -116,7 +116,8 @@ func GetPayments() (*data.PaymentsList, error) {
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func SendPaymentForRequest(paymentRequest string) error {
+func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
+	log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		return err
@@ -125,7 +126,7 @@ func SendPaymentForRequest(paymentRequest string) error {
 		return err
 	}
 	log.Infof("sendPaymentForRequest: before sending payment...")
-	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest})
+	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	if err != nil {
 		log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return err
@@ -135,28 +136,6 @@ func SendPaymentForRequest(paymentRequest string) error {
 		return errors.New(response.PaymentError)
 	}
 
-	syncSentPayments()
-	return nil
-}
-
-/*
-PayBlankInvoice send a P2P payment to the amount and the details specified in the bolt 11 payment request
-*/
-func PayBlankInvoice(paymentRequest string, amountSatoshi int64) error {
-	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
-	if err != nil {
-		return err
-	}
-	if err := savePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
-		return err
-	}
-	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
-	if err != nil {
-		return err
-	}
-	if len(response.PaymentError) > 0 {
-		return errors.New(response.PaymentError)
-	}
 	syncSentPayments()
 	return nil
 }
