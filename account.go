@@ -177,11 +177,12 @@ func getRoutingNodeFeeRate(ourKey string) (int64, error) {
 		return 0, err
 	}
 
-	if ourKey == edge.Node1Pub {
+	if ourKey == edge.Node1Pub && edge.Node2Policy != nil {
 		return edge.Node2Policy.FeeBaseMsat / 1000, nil
+	} else if edge.Node1Policy != nil {
+		return edge.Node1Policy.FeeBaseMsat / 1000, nil
 	}
-
-	return edge.Node1Policy.FeeBaseMsat / 1000, nil
+	return 0, nil
 }
 
 func getBreezOpenChannelsPoints() ([]uint64, error) {
