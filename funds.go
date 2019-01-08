@@ -270,18 +270,14 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	var hasMempool bool
 	for _, a := range addresses {
 
-		if len(a.ConfirmedTransactionIds) > 0 {
+		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
+		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
 			confirmedAddresses = append(confirmedAddresses, a.Address)
 			log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
 		} else {
 			hasMempool = hasMempool || a.EnteredMempool
 			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
 		}
-	}
-
-	if len(confirmedAddresses) > 0 {
-		log.Infof("GetFundStatus return status 'confirmed'")
-		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
 	if hasMempool {
@@ -314,6 +310,11 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 			log.Infof("GetFundStatus return status 'waiting confirmation")
 			return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 		}
+	}
+
+	if len(confirmedAddresses) > 0 {
+		log.Infof("GetFundStatus return status 'confirmed'")
+		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
 	log.Infof("GetFundStatus return status 'no funds")
