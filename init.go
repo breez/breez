@@ -75,6 +75,9 @@ var (
 	quitChan                     chan struct{}
 )
 
+/*
+Config holds the breez configuration
+*/
 type Config struct {
 	RoutingNodeHost   string `long:"routingnodehost"`
 	RoutingNodePubKey string `long:"routingnodepubkey"`
@@ -82,6 +85,19 @@ type Config struct {
 	Network           string `long:"network"`
 	GrpcKeepAlive     bool   `long:"grpckeepalive"`
 	BootstrapURL      string `long:"bootstrap"`
+
+	//Job Options
+	JobCfg JobConfig `group:"Job Options"`
+}
+
+/*
+JobConfig hodls the job configuration
+*/
+type JobConfig struct {
+	MaxPeers       int      `long:"maxpeers"`
+	BanDuration    int      `long:"banduration"`
+	ConnectTimeout int      `long:"connecttimeout"`
+	ConnectedPeers []string `long:"peer"`
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
