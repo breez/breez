@@ -25,6 +25,7 @@ JobCanceler is the interface to return when scheuling a job to allow the caller 
 any time
 */
 type JobController interface {
+	Start() error
 	Stop() error
 	WaitForShutdown()
 }
@@ -46,7 +47,7 @@ func Start(workingDir string, tempDir string, notifier BreezNotifier) (err error
 StartSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
-func StartSyncJob(workingDir string) (JobController, error) {
+func NewSyncJob(workingDir string) (JobController, error) {
 	job, err := sync.NewJob(workingDir)
 	if err != nil {
 		return nil, err
