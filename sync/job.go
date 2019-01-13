@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"log"
 	"sync/atomic"
 	"time"
 
@@ -17,14 +16,15 @@ func (s *Job) Start() error {
 		return nil
 	}
 
-	db, neutrino, err := newNeutrino(s.workingDir, s.network, &s.config)
+	db, chainService, err := newNeutrino(s.workingDir, s.network, &s.config)
 	if err != nil {
-		log.Printf("Error creating ChainService: %s", err)
+		s.log.Errorf("Error creating ChainService: %s", err)
 		return err
 	}
+	neutrino.UseLogger(s.log)
 
 	s.db = db
-	s.neutrino = neutrino
+	s.neutrino = chainService
 
 	s.wg.Add(1)
 	go func() {
@@ -33,7 +33,7 @@ func (s *Job) Start() error {
 
 		err := s.syncFilters()
 		if err != nil {
-			log.Printf("sync finished with error %v", err)
+			s.log.Infof("sync finished with error %v", err)
 		}
 	}()
 
@@ -86,10 +86,8 @@ func (s *Job) syncFilters() error {
 
 	//must wait for neutrino to connect to a peer and download the best
 	//block before starting the filters download loop.
-	for i := 0; i < 50; i++ {
-		if chainService.IsCurrent() {
-			time.Sleep(time.Millisecond * 100)
-		}
+	for i := 0; i < 50 && chainService.IsCurrent(); i++ {
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	//get the best block after letting neutrino some time
@@ -99,10 +97,20 @@ func (s *Job) syncFilters() error {
 		return err
 	}
 
-	log.Printf("Starting sync job from height: %v to height: %v", startBlock.Height, bestBlock.Height)
+	s.log.Infof("Starting sync job from height: %v", startBlock.Height)
 
 	//save last block in db
 	for currentHeight := startBlock.Height; currentHeight <= bestBlock.Height; currentHeight++ {
+		h, err := chainService.GetBlockHash(int64(currentHeight))
+		if err != nil {
+			s.log.Errorf("fail to fetch block hash", err)
+			return err
+		}
+		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
+		if err != nil {
+			s.log.Errorf("fail to download block filter", err)
+			return err
+		}
 
 		//wait for the backend to sync if needed
 		for currentHeight == bestBlock.Height && !chainService.IsCurrent() {
@@ -111,17 +119,6 @@ func (s *Job) syncFilters() error {
 			if err != nil {
 				return err
 			}
-		}
-
-		h, err := chainService.GetBlockHash(int64(currentHeight))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
-		if err != nil {
-			log.Println(err)
-			return err
 		}
 	}
 	return nil

@@ -2,7 +2,6 @@ package sync
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/breez/breez"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino"
 )
@@ -38,11 +36,6 @@ func newNeutrino(workingDir string, network string, jobConfig *breez.JobConfig) 
 		return nil, nil, fmt.Errorf("Unrecognized network %v", network)
 	}
 
-	logger := btclog.NewBackend(os.Stdout)
-	chainLogger := logger.Logger("CHAIN")
-	chainLogger.SetLevel(btclog.LevelDebug)
-	neutrino.UseLogger(chainLogger)
-
 	//if neutrino directory or wallet directory do not exit then
 	//We exit silently.
 	dataPath := strings.Replace(directoryPattern, "{{network}}", network, -1)
@@ -54,7 +47,6 @@ func newNeutrino(workingDir string, network string, jobConfig *breez.JobConfig) 
 	//os.MkdirAll(path.Join(workingDir, dataPath), os.ModePerm)
 	db, err := walletdb.Create("bdb", neutrinoDB)
 	if err != nil {
-		log.Printf("Error opening DB: %s\n", err)
 		return nil, nil, err
 	}
 
