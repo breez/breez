@@ -85,6 +85,8 @@ github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe0
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
+github.com/breez/neutrino v0.0.0-20190114145151-3b06e2d8a6dd h1:3GbAtH4RxgYzCdSWMy4Loz9dHyc63BTwZsipFRSaRAI=
+github.com/breez/neutrino v0.0.0-20190114145151-3b06e2d8a6dd/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/btcsuite/btcd v0.0.0-20180706232521-fdfc19097e7a/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btcd v0.0.0-20180824064422-79e00513b101/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc h1:nLRj+ULuRYb0qTAOnuayFXRnLjYXBots5CSp5zH4RqU=
