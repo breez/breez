@@ -29,8 +29,6 @@ func (s *Job) Start() error {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		defer s.terminate()
-
 		err := s.syncFilters()
 		if err != nil {
 			s.log.Infof("sync finished with error %v", err)
@@ -45,6 +43,7 @@ Stop stops neutrino instance and wait for the syncFitlers to complete
 */
 func (s *Job) Stop() error {
 	if err := s.terminate(); err != nil {
+		s.log.Error("Error terminating job")
 		return err
 	}
 	s.WaitForShutdown()
@@ -64,16 +63,19 @@ func (s *Job) terminate() error {
 	}
 
 	if err := s.neutrino.Stop(); err != nil {
-		return err
+		s.log.Error("Failed to stop neutrino from job")
 	}
 	if err := s.db.Close(); err != nil {
+		s.log.Error("Failed close db from job")
 		return err
 	}
 
+	s.wg.Done()
+	s.log.Infof("Job terminated succesfully")
 	return nil
 }
 
-func (s *Job) syncFilters() error {
+func (s *Job) syncFilters() (err error) {
 	chainService := s.neutrino
 
 	//get the best block before starting neutrino
@@ -83,6 +85,9 @@ func (s *Job) syncFilters() error {
 		return err
 	}
 	chainService.Start()
+	defer func() {
+		err = chainService.Stop()
+	}()
 
 	//must wait for neutrino to connect to a peer and download the best
 	//block before starting the filters download loop.
