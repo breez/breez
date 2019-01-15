@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/breez/breez"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -57,9 +56,6 @@ func newNeutrino(workingDir string, network string, jobConfig *breez.JobConfig) 
 		ConnectPeers: jobConfig.ConnectedPeers,
 	}
 
-	neutrino.MaxPeers = jobConfig.MaxPeers
-	neutrino.BanDuration = time.Duration(jobConfig.BanDuration) * time.Second
-	neutrino.QueryPeerConnectTimeout = time.Duration(jobConfig.ConnectTimeout) * time.Second
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
 	return db, chainService, err
 }
