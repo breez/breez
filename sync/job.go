@@ -33,6 +33,7 @@ func (s *Job) Start() error {
 		if err != nil {
 			s.log.Infof("sync finished with error %v", err)
 		}
+		s.terminate()
 	}()
 
 	return nil
@@ -70,7 +71,6 @@ func (s *Job) terminate() error {
 		return err
 	}
 
-	s.wg.Done()
 	s.log.Infof("Job terminated succesfully")
 	return nil
 }
