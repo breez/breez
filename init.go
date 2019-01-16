@@ -94,9 +94,6 @@ type Config struct {
 JobConfig hodls the job configuration
 */
 type JobConfig struct {
-	MaxPeers       int      `long:"maxpeers"`
-	BanDuration    int      `long:"banduration"`
-	ConnectTimeout int      `long:"connecttimeout"`
 	ConnectedPeers []string `long:"peer"`
 }
 
