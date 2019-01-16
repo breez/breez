@@ -250,7 +250,7 @@ func calculateAccount() (*data.Account, error) {
 
 	routingNodeFeeRate, err := getRoutingNodeFeeRate(lnInfo.IdentityPubkey)
 	if err != nil {
-		return nil, err
+		log.Infof("Failed to get routing node fee %v", err)
 	}
 	log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
 
