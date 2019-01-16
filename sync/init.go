@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"io"
 	"os"
 	"sync"
 
@@ -17,15 +16,8 @@ func initJobLogger(workingDir, network string) (btclog.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
-	reader, writer := io.Pipe()
-	if err != nil {
-		return nil, err
-	}
 
-	go io.Copy(os.Stdout, reader)
-	go io.Copy(f, reader)
-
-	logger := btclog.NewBackend(writer)
+	logger := btclog.NewBackend(f)
 	log := logger.Logger("SYNC")
 	log.SetLevel(btclog.LevelDebug)
 	return log, nil
