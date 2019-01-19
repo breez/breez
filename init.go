@@ -211,7 +211,7 @@ func OnResume() {
 	}
 }
 
-func startLightningDaemon(onReady func()) error {
+func startLightningDaemon(onReady func()) {
 	readyChan := make(chan interface{})
 	go func() {
 		<-readyChan
@@ -226,14 +226,12 @@ func startLightningDaemon(onReady func()) error {
 	}()
 	var err error
 	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, readyChan)
-
 	if err != nil {
 		fmt.Println("Error starting breez", err)
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
-		return err
 	}
+	stopLightningDaemon()
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 	close(quitChan)
-	return nil
 }
 
 func stopLightningDaemon() {
