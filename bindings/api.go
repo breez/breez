@@ -9,6 +9,7 @@ import (
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/sync"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -17,6 +18,16 @@ BreezNotifier is the interface that is used to send notifications to the user of
 */
 type BreezNotifier interface {
 	Notify(notificationEvent []byte)
+}
+
+/*
+JobCanceler is the interface to return when scheuling a job to allow the caller to cancel at
+any time
+*/
+type JobController interface {
+	Start() error
+	Stop() error
+	WaitForShutdown()
 }
 
 /*
@@ -36,9 +47,12 @@ func Start(workingDir string, tempDir string, notifier BreezNotifier) (err error
 StartSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
-func StartSyncJob(workingDir string) error {
-	_, err := breez.Start(workingDir, true)
-	return err
+func NewSyncJob(workingDir string) (JobController, error) {
+	job, err := sync.NewJob(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	return job, nil
 }
 
 /*
@@ -183,20 +197,12 @@ func GetPayments() ([]byte, error) {
 }
 
 /*
-SendPaymentForRequest is part of the binding inteface which is delegated to breez.SendPaymentForRequest
-*/
-func SendPaymentForRequest(paymentRequest string) error {
-	//return marshalResponse(account.SendPaymentForRequest())
-	return breez.SendPaymentForRequest(paymentRequest)
-}
-
-/*
 PayBlankInvoice is part of the binding inteface which is delegated to breez.PayBlankInvoice
 */
-func PayBlankInvoice(payInvoiceRequest []byte) error {
+func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	return breez.PayBlankInvoice(decodedRequest.PaymentRequest, decodedRequest.Amount)
+	return breez.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*

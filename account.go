@@ -177,11 +177,12 @@ func getRoutingNodeFeeRate(ourKey string) (int64, error) {
 		return 0, err
 	}
 
-	if ourKey == edge.Node1Pub {
+	if ourKey == edge.Node1Pub && edge.Node2Policy != nil {
 		return edge.Node2Policy.FeeBaseMsat / 1000, nil
+	} else if edge.Node1Policy != nil {
+		return edge.Node1Policy.FeeBaseMsat / 1000, nil
 	}
-
-	return edge.Node1Policy.FeeBaseMsat / 1000, nil
+	return 0, nil
 }
 
 func getBreezOpenChannelsPoints() ([]uint64, error) {
@@ -249,7 +250,7 @@ func calculateAccount() (*data.Account, error) {
 
 	routingNodeFeeRate, err := getRoutingNodeFeeRate(lnInfo.IdentityPubkey)
 	if err != nil {
-		return nil, err
+		log.Infof("Failed to get routing node fee %v", err)
 	}
 	log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
 

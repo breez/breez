@@ -83,7 +83,8 @@ func GetPayments() (*data.PaymentsList, error) {
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func SendPaymentForRequest(paymentRequest string) error {
+func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
+	log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		return err
@@ -92,7 +93,7 @@ func SendPaymentForRequest(paymentRequest string) error {
 		return err
 	}
 	log.Infof("sendPaymentForRequest: before sending payment...")
-	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest})
+	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	if err != nil {
 		log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return err
@@ -102,28 +103,6 @@ func SendPaymentForRequest(paymentRequest string) error {
 		return errors.New(response.PaymentError)
 	}
 
-	syncSentPayments()
-	return nil
-}
-
-/*
-PayBlankInvoice send a P2P payment to the amount and the details specified in the bolt 11 payment request
-*/
-func PayBlankInvoice(paymentRequest string, amountSatoshi int64) error {
-	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
-	if err != nil {
-		return err
-	}
-	if err := breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
-		return err
-	}
-	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
-	if err != nil {
-		return err
-	}
-	if len(response.PaymentError) > 0 {
-		return errors.New(response.PaymentError)
-	}
 	syncSentPayments()
 	return nil
 }
@@ -181,6 +160,37 @@ func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 		log.Errorf("DecodePaymentRequest error: %v", err)
 		return nil, err
 	}
+	invoiceMemo := extractMemo(decodedPayReq)
+	return invoiceMemo, nil
+}
+
+/*
+GetRelatedInvoice is used by the payee to fetch the related invoice of its sent payment request so he can see if it is settled.
+*/
+func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
+	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	if err != nil {
+		log.Infof("Can't decode payment request: %v", paymentRequest)
+		return nil, err
+	}
+
+	invoiceMemo := extractMemo(decodedPayReq)
+
+	lookup, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
+	if err != nil {
+		return nil, err
+	}
+
+	invoice := &data.Invoice{
+		Memo:    invoiceMemo,
+		AmtPaid: lookup.AmtPaidSat,
+		Settled: lookup.Settled,
+	}
+
+	return invoice, nil
+}
+
+func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
 	invoiceMemo := &data.InvoiceMemo{}
 	if err := proto.Unmarshal([]byte(decodedPayReq.Description), invoiceMemo); err != nil {
 		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
@@ -196,36 +206,7 @@ func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 		}
 		invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	}
-
-	return invoiceMemo, nil
-}
-
-/*
-GetRelatedInvoice is used by the payee to fetch the related invoice of its sent payment request so he can see if it is settled.
-*/
-func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
-	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
-	if err != nil {
-		return nil, err
-	}
-
-	invoiceMemo := &data.InvoiceMemo{}
-	if err := proto.Unmarshal([]byte(decodedPayReq.Description), invoiceMemo); err != nil {
-		return nil, err
-	}
-
-	lookup, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
-	if err != nil {
-		return nil, err
-	}
-
-	invoice := &data.Invoice{
-		Memo:    invoiceMemo,
-		AmtPaid: lookup.AmtPaidSat,
-		Settled: lookup.Settled,
-	}
-
-	return invoice, nil
+	return invoiceMemo
 }
 
 func watchPayments() {

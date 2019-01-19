@@ -77,6 +77,9 @@ var (
 	breezDB                      *db.DB
 )
 
+/*
+Config holds the breez configuration
+*/
 type Config struct {
 	RoutingNodeHost   string `long:"routingnodehost"`
 	RoutingNodePubKey string `long:"routingnodepubkey"`
@@ -84,6 +87,16 @@ type Config struct {
 	Network           string `long:"network"`
 	GrpcKeepAlive     bool   `long:"grpckeepalive"`
 	BootstrapURL      string `long:"bootstrap"`
+
+	//Job Options
+	JobCfg JobConfig `group:"Job Options"`
+}
+
+/*
+JobConfig hodls the job configuration
+*/
+type JobConfig struct {
+	ConnectedPeers []string `long:"peer"`
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
@@ -129,7 +142,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 		return nil, errors.New("Daemon already started")
 	}
 	quitChan = make(chan struct{})
-	fmt.Println("Breez daemon started syncJobMode ", syncJobMode)
+	fmt.Println("Breez daemon started")
 	appWorkingDir = workingDir
 	if err := initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)
@@ -154,11 +167,7 @@ func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, er
 			fmt.Println("Error connecting to breez", err)
 		}
 		defer breezClientConnection.Close()
-		if syncJobMode {
-			startLightningDaemon(syncAndStop)
-		} else {
-			startLightningDaemon(startBreez)
-		}
+		startLightningDaemon(startBreez)
 	}()
 
 	return notificationsChan, nil
@@ -202,29 +211,31 @@ func OnResume() {
 	}
 }
 
-func startLightningDaemon(onReady func()) error {
+func startLightningDaemon(onReady func()) {
 	readyChan := make(chan interface{})
 	go func() {
-		<-readyChan
-		atomic.StoreInt32(&isReady, 1)
+		select {
+		case <-readyChan:
+			atomic.StoreInt32(&isReady, 1)
 
-		//initialize lightning client
-		if err := initLightningClient(); err != nil {
-			stopLightningDaemon()
+			//initialize lightning client
+			if err := initLightningClient(); err != nil {
+				stopLightningDaemon()
+				return
+			}
+			onReady()
+		case <-quitChan:
 			return
 		}
-		onReady()
 	}()
 	var err error
 	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, readyChan)
-
 	if err != nil {
 		fmt.Println("Error starting breez", err)
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
-		return err
 	}
+	stopLightningDaemon()
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 	close(quitChan)
-	return nil
 }
 
 func stopLightningDaemon() {
@@ -232,33 +243,6 @@ func stopLightningDaemon() {
 	log.Infof("stopLightningDaemon called, stopping breez daemon alive=%v", alive)
 	if alive {
 		signal.RequestShutdown()
-	}
-}
-
-//syncAndStop just wait for the chan to sync.
-//It first waits a pre-defined interval for the best block to retrieve
-//After that it just poll untill syncTocChain=true and then stop the daemon.
-func syncAndStop() {
-	//give it some time to get the best block and then sync.
-	timeToWait := waitBestBlockDuration
-	for {
-		select {
-		case <-time.After(timeToWait):
-			//after first iteration switch to faster interval
-			timeToWait = syncToChainFastPollingInterval
-			chainInfo, chainErr := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-			if chainErr != nil {
-				log.Errorf("failed to call GetInfo %v", chainErr)
-				continue
-			}
-			log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
-			if chainInfo.SyncedToChain {
-				stopLightningDaemon()
-				return
-			}
-		case <-quitChan:
-			return
-		}
 	}
 }
 
