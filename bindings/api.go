@@ -31,11 +31,18 @@ type JobController interface {
 }
 
 /*
+Init initialize lightning client
+*/
+func Init(workingDir string) error {
+	return breez.Init(workingDir)
+}
+
+/*
 Start the lightning client
 */
-func Start(workingDir string, tempDir string, notifier BreezNotifier) (err error) {
+func Start(tempDir string, notifier BreezNotifier) (err error) {
 	os.Setenv("TMPDIR", tempDir)
-	notificationsChan, err := breez.Start(workingDir, false)
+	notificationsChan, err := breez.Start()
 	if err != nil {
 		return err
 	}

@@ -71,6 +71,7 @@ var (
 	connectionMu                 sync.Mutex
 	notificationsChan            = make(chan data.NotificationEvent)
 	appWorkingDir                string
+	initialized                  int32
 	isReady                      int32
 	started                      int32
 	quitChan                     chan struct{}
@@ -137,36 +138,15 @@ func initBreezClientConnection() error {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start(workingDir string, syncJobMode bool) (ntfnChan chan data.NotificationEvent, err error) {
+func Start() (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
-	appWorkingDir = workingDir
-	if err = initConfig(); err != nil {
-		fmt.Println("Warning initConfig", err)
-		return nil, err
-	}
-
-	breezDB, err = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
-	if err != nil {
-		return nil, err
-	}
-
-	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
-		return nil, err
-	}
 	go func() {
-		defer breezDB.CloseDB()
-		defer doubleratchet.Stop()
 		defer atomic.StoreInt32(&started, 0)
 		defer atomic.StoreInt32(&isReady, 0)
-		err := initBreezClientConnection()
-		if err != nil {
-			fmt.Println("Error connecting to breez", err)
-		}
-		defer breezClientConnection.Close()
 		startLightningDaemon(startBreez)
 	}()
 
@@ -174,9 +154,46 @@ func Start(workingDir string, syncJobMode bool) (ntfnChan chan data.Notification
 }
 
 /*
+Init is a required function to be called before Start.
+Its main purpose is to make breez services available like:
+offline queries and doubleratchet encryption.
+*/
+func Init(workingDir string) (err error) {
+	if atomic.SwapInt32(&initialized, 1) == 1 {
+		return errors.New("Breez already initialized")
+	}
+	appWorkingDir = workingDir
+	if err = initConfig(); err != nil {
+		fmt.Println("Warning initConfig", err)
+		return err
+	}
+	err = initBreezClientConnection()
+	if err != nil {
+		fmt.Println("Error connecting to breez", err)
+		return err
+	}
+
+	breezDB, err = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
+	if err != nil {
+		return err
+	}
+
+	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
 Stop is responsible for stopping the ligtning daemon.
 */
 func Stop() {
+	breezDB.CloseDB()
+	doubleratchet.Stop()
+	connectionMu.Lock()
+	breezClientConnection.Close()
+	connectionMu.Unlock()
 	stopLightningDaemon()
 }
 
