@@ -15,6 +15,7 @@ import (
 
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
 	"github.com/breez/lightninglib/daemon"
@@ -73,6 +74,7 @@ var (
 	isReady                      int32
 	started                      int32
 	quitChan                     chan struct{}
+	breezDB                      *db.DB
 )
 
 /*
@@ -135,26 +137,28 @@ func initBreezClientConnection() error {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start(workingDir string, syncJobMode bool) (chan data.NotificationEvent, error) {
+func Start(workingDir string, syncJobMode bool) (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
 	appWorkingDir = workingDir
-	if err := initConfig(); err != nil {
+	if err = initConfig(); err != nil {
 		fmt.Println("Warning initConfig", err)
 		return nil, err
 	}
 
-	if err := openDB(path.Join(appWorkingDir, "breez.db")); err != nil {
+	breezDB, err = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
+	if err != nil {
 		return nil, err
 	}
-	if err := doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
+
+	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
 		return nil, err
 	}
 	go func() {
-		defer closeDB()
+		defer breezDB.CloseDB()
 		defer doubleratchet.Stop()
 		defer atomic.StoreInt32(&started, 0)
 		defer atomic.StoreInt32(&isReady, 0)

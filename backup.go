@@ -20,7 +20,7 @@ func breezdbCopy() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return backupDb(dir)
+	return breezDB.BackupDb(dir)
 }
 
 func extractBackupPaths() error {

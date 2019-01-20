@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/singleflight"
@@ -20,42 +21,6 @@ import (
 var (
 	getPaymentGroup singleflight.Group
 )
-
-//SwapAddressInfo contains all the infromation regarding
-//a submarine swap address.
-type SwapAddressInfo struct {
-	Address string
-
-	//client side data
-	PaymentHash []byte
-	Preimage    []byte
-	PrivateKey  []byte
-	PublicKey   []byte
-
-	//tracked data
-	ConfirmedTransactionIds []string
-	ConfirmedAmount         int64
-	PaidAmount              int64
-	LockHeight              uint32
-
-	//address script
-	Script         []byte
-	ErrorMessage   string
-	EnteredMempool bool
-
-	//refund
-	LastRefundTxID string
-}
-
-func serializeSwapAddressInfo(s *SwapAddressInfo) ([]byte, error) {
-	return json.Marshal(s)
-}
-
-func deserializeSwapAddressInfo(addressBytes []byte) (*SwapAddressInfo, error) {
-	var addressInfo SwapAddressInfo
-	err := json.Unmarshal(addressBytes, &addressInfo)
-	return &addressInfo, err
-}
 
 /*
 AddFundsInit is responsible for topping up an existing channel
@@ -101,7 +66,7 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, errors.New("address mismatch")
 	}
 
-	swapInfo := &SwapAddressInfo{
+	swapInfo := &db.SwapAddressInfo{
 		Address:     r.Address,
 		PaymentHash: swap.Hash,
 		Preimage:    swap.Preimage,
@@ -110,7 +75,7 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		Script:      client.Script,
 	}
 	log.Infof("Saving new swap info %v", swapInfo)
-	saveSwapAddressInfo(swapInfo)
+	breezDB.SaveSwapAddressInfo(swapInfo)
 
 	// Create JSON with the script and our private key (in case user wants to do the refund by himself)
 	type ScriptBackup struct {
@@ -127,13 +92,13 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 }
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
-func GetRefundableAddresses() ([]*SwapAddressInfo, error) {
+func GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	refundable, err := fetchSwapAddresses(func(a *SwapAddressInfo) bool {
+	refundable, err := breezDB.FetchSwapAddresses(func(a *db.SwapAddressInfo) bool {
 		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0
 		if refundable {
 			log.Infof("found refundable address: %v lockHeight=%v, amount=%v, currentHeight=%v", a.Address, a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
@@ -156,7 +121,7 @@ func Refund(address, refundAddress string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = updateSwapAddress(address, func(a *SwapAddressInfo) error {
+	_, err = breezDB.UpdateSwapAddress(address, func(a *db.SwapAddressInfo) error {
 		a.LastRefundTxID = res.Txid
 		return nil
 	})
@@ -194,7 +159,7 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	}
 
 	//mark this payment request as redeemable
-	addRedeemablePaymentHash(payreq.PaymentHash)
+	breezDB.AddRedeemablePaymentHash(payreq.PaymentHash)
 
 	log.Infof("RemoveFunds: Sending payment...")
 	err = SendPaymentForRequest(reply.PaymentRequest, 0)
@@ -214,7 +179,7 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 
 func redeemAllRemovedFunds() error {
 	log.Infof("redeemAllRemovedFunds")
-	hashes, err := fetchRedeemablePaymentHashes()
+	hashes, err := breezDB.FetchRedeemablePaymentHashes()
 	if err != nil {
 		log.Errorf("failed to fetchRedeemablePaymentHashes, %v", err)
 		return err
@@ -239,7 +204,7 @@ func redeemRemovedFundsForHash(hash string) (string, error) {
 		log.Errorf("RedeemRemovedFunds failed for hash: %v,   %v", hash, err)
 		return "", err
 	}
-	return redeemReply.Txid, updateRedeemTxForPayment(hash, redeemReply.Txid)
+	return redeemReply.Txid, breezDB.UpdateRedeemTxForPayment(hash, redeemReply.Txid)
 }
 
 func getFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc) {
@@ -255,7 +220,7 @@ GetFundStatus gets a notification token and does two things:
 2. Fetch the current status for the saved addresses from the server
 */
 func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
-	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
+	addresses, err := breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.PaidAmount == 0
 	})
 	if err != nil {
@@ -300,7 +265,7 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 			log.Infof("GetFundStatus - got status for address %v", status)
 			if !status.Confirmed && status.Tx != "" {
 				hasUnconfirmed = true
-				updateSwapAddress(addr, func(swapInfo *SwapAddressInfo) error {
+				breezDB.UpdateSwapAddress(addr, func(swapInfo *db.SwapAddressInfo) error {
 					swapInfo.EnteredMempool = true
 					return nil
 				})
@@ -341,7 +306,7 @@ func watchSwapAddressConfirmations() {
 	}
 
 	//then initiate an update for all swap addresses in the db
-	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
+	addresses, err := breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return true
 	})
 	log.Infof("watchSwapAddressConfirmations got these addresses to check: %v", addresses)
@@ -365,7 +330,7 @@ func watchSwapAddressConfirmations() {
 			log.Errorf("watchSwapAddressConfirmations - Failed to call SubscribeTransactions %v, %v", stream, err)
 			return
 		}
-		addresses, err := fetchAllSwapAddresses()
+		addresses, err := breezDB.FetchAllSwapAddresses()
 		if err != nil {
 			log.Errorf("watchSwapAddressConfirmations - Failed to call fetchAllSwapAddresses %v", err)
 			return
@@ -389,7 +354,7 @@ func watchSwapAddressConfirmations() {
 }
 
 func updateUnspentAmount(address string) (bool, error) {
-	return updateSwapAddress(address, func(swapInfo *SwapAddressInfo) error {
+	return breezDB.UpdateSwapAddress(address, func(swapInfo *db.SwapAddressInfo) error {
 		unspentResponse, err := lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
@@ -419,7 +384,7 @@ func watchSettledSwapAddresses() {
 	}
 
 	//then initiate an update for all swap addresses in the db
-	addresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
+	addresses, err := breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.PaidAmount == 0
 	})
 	log.Infof("watchSettledSwapAddresses got these addresses to check: %v", addresses)
@@ -435,7 +400,7 @@ func watchSettledSwapAddresses() {
 			continue
 		}
 		if invoice != nil && invoice.Settled {
-			_, err := updateSwapAddress(a.Address, func(a *SwapAddressInfo) error {
+			_, err := breezDB.UpdateSwapAddress(a.Address, func(a *db.SwapAddressInfo) error {
 				a.PaidAmount = invoice.AmtPaidSat
 				return nil
 			})
@@ -456,7 +421,7 @@ func watchSettledSwapAddresses() {
 		}
 		if invoice.Settled {
 			log.Infof("watchSettledSwapAddresses - removing paid SwapAddressInfo")
-			_, err := updateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *SwapAddressInfo) error {
+			_, err := breezDB.UpdateSwapAddressByPaymentHash(invoice.RHash, func(addressInfo *db.SwapAddressInfo) error {
 				addressInfo.PaidAmount = invoice.AmtPaidSat
 				return nil
 			})
@@ -503,7 +468,7 @@ func settlePendingTransfers() {
 
 func getPaymentsForConfirmedTransactions() {
 	log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
-	confirmedAddresses, err := fetchSwapAddresses(func(addr *SwapAddressInfo) bool {
+	confirmedAddresses, err := breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0
 	})
 	if err != nil {
@@ -519,7 +484,7 @@ func getPaymentsForConfirmedTransactions() {
 	}
 }
 
-func retryGetPayment(addressInfo *SwapAddressInfo, retries int) {
+func retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) {
 	for i := 0; i < retries; i++ {
 		err := getPayment(addressInfo)
 		if err == nil {
@@ -531,7 +496,7 @@ func retryGetPayment(addressInfo *SwapAddressInfo, retries int) {
 	}
 }
 
-func getPayment(addressInfo *SwapAddressInfo) error {
+func getPayment(addressInfo *db.SwapAddressInfo) error {
 	invoiceData := &data.InvoiceMemo{TransferRequest: true}
 	memo, err := proto.Marshal(invoiceData)
 	if err != nil {
@@ -543,7 +508,7 @@ func getPayment(addressInfo *SwapAddressInfo) error {
 	if invoice != nil {
 		if invoice.Value != addressInfo.ConfirmedAmount {
 			errorMsg := "Money was added after the invoice was created"
-			_, err = updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
+			_, err = breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 				a.ErrorMessage = errorMsg
 				return nil
 			})
@@ -568,7 +533,7 @@ func getPayment(addressInfo *SwapAddressInfo) error {
 		paymentError = reply.PaymentError
 	}
 	if paymentError != "" {
-		updateSwapAddress(addressInfo.Address, func(a *SwapAddressInfo) error {
+		breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 			a.ErrorMessage = paymentError
 			return nil
 		})

@@ -1,4 +1,4 @@
-package breez
+package db
 
 import (
 	"strings"
@@ -6,17 +6,18 @@ import (
 )
 
 func TestAddresses(t *testing.T) {
-	if err := openDB("testDB"); err != nil {
+	db, err := OpenDB("testDB")
+	if err != nil {
 		t.Error(err)
 	}
-	defer deleteDB()
-	if err := saveSwapAddressInfo(&SwapAddressInfo{Address: "addr1", PaymentHash: []byte{1, 2, 3}}); err != nil {
+	defer db.DeleteDB()
+	if err := db.SaveSwapAddressInfo(&SwapAddressInfo{Address: "addr1", PaymentHash: []byte{1, 2, 3}}); err != nil {
 		t.Error(err)
 	}
-	if err := saveSwapAddressInfo(&SwapAddressInfo{Address: "addr2", PaymentHash: []byte{4, 5, 6}}); err != nil {
+	if err := db.SaveSwapAddressInfo(&SwapAddressInfo{Address: "addr2", PaymentHash: []byte{4, 5, 6}}); err != nil {
 		t.Error(err)
 	}
-	addresses, err := fetchAllSwapAddresses()
+	addresses, err := db.FetchAllSwapAddresses()
 
 	if len(addresses) != 2 {
 		t.Error("addresses length is ", len(addresses))
@@ -25,7 +26,7 @@ func TestAddresses(t *testing.T) {
 		t.Error("addresses from db are ", addresses[0].Address)
 	}
 
-	found, err := updateSwapAddressByPaymentHash([]byte{1, 2, 3}, func(a *SwapAddressInfo) error {
+	found, err := db.UpdateSwapAddressByPaymentHash([]byte{1, 2, 3}, func(a *SwapAddressInfo) error {
 		a.ConfirmedAmount = 100
 		return nil
 	})
@@ -33,7 +34,7 @@ func TestAddresses(t *testing.T) {
 		t.Errorf("failed to update swap address found=%v, error = %v", found, err)
 	}
 
-	found, err = updateSwapAddress("addr2", func(a *SwapAddressInfo) error {
+	found, err = db.UpdateSwapAddress("addr2", func(a *SwapAddressInfo) error {
 		a.ConfirmedAmount = 200
 		return nil
 	})
@@ -41,7 +42,7 @@ func TestAddresses(t *testing.T) {
 		t.Errorf("failed to update swap address found=%v, error = %v", found, err)
 	}
 
-	addresses, err = fetchAllSwapAddresses()
+	addresses, err = db.FetchAllSwapAddresses()
 	if len(addresses) != 2 {
 		t.Error("addresses length is ", len(addresses))
 	}
@@ -57,19 +58,19 @@ func TestAddresses(t *testing.T) {
 
 func TestAddPayments(t *testing.T) {
 	var err error
-	openDB("testdb")
-	defer deleteDB()
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h1"}, 1, 0)
+	db, err := OpenDB("testdb")
+	defer db.DeleteDB()
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 1, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h2"}, 0, 11)
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 0, 11)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	timestamp, settledIndex := fetchPaymentsSyncInfo()
+	timestamp, settledIndex := db.FetchPaymentsSyncInfo()
 	if timestamp != 11 {
 		t.Error("timestamp should be 11 and it is: ", timestamp)
 	}
@@ -80,27 +81,27 @@ func TestAddPayments(t *testing.T) {
 
 func TestPaymentsSyncInfo(t *testing.T) {
 	var err error
-	openDB("testdb")
-	defer deleteDB()
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h1"}, 5, 0)
+	db, err := OpenDB("testdb")
+	defer db.DeleteDB()
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 5, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h2"}, 4, 0)
-	if err != nil {
-		t.Error("failed to add payment", err)
-	}
-
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h3"}, 0, 13)
-	if err != nil {
-		t.Error("failed to add payment", err)
-	}
-	err = addAccountPayment(&paymentInfo{PaymentHash: "h4"}, 0, 0)
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 4, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	timestamp, settledIndex := fetchPaymentsSyncInfo()
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h3"}, 0, 13)
+	if err != nil {
+		t.Error("failed to add payment", err)
+	}
+	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h4"}, 0, 0)
+	if err != nil {
+		t.Error("failed to add payment", err)
+	}
+
+	timestamp, settledIndex := db.FetchPaymentsSyncInfo()
 	if timestamp != 13 {
 		t.Error("timestamp should be 13 and it is: ", timestamp)
 	}
@@ -111,9 +112,9 @@ func TestPaymentsSyncInfo(t *testing.T) {
 
 func TestAccount(t *testing.T) {
 	var err error
-	openDB("testdb")
-	defer deleteDB()
-	acc, err := fetchAccount()
+	db, err := OpenDB("testdb")
+	defer db.DeleteDB()
+	acc, err := db.FetchAccount()
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
