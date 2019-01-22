@@ -15,6 +15,7 @@ import (
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
@@ -111,7 +112,8 @@ ChainService returns a neutrino.ChainService to be used from both sync job and
 LND running daemon
 */
 func (d *Dependencies) ChainService() *neutrino.ChainService {
-	return nil
+	cs, _ := chainservice.GetInstance(d.workingDir)
+	return cs
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
