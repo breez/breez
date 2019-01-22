@@ -14,6 +14,7 @@ import (
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
+	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
@@ -21,14 +22,12 @@ import (
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
-	"github.com/jessevdk/go-flags"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 )
 
 const (
-	configFile      = "breez.conf"
 	letsencryptCert = `-----BEGIN CERTIFICATE-----
 MIIEkjCCA3qgAwIBAgIQCgFBQgAAAVOFc2oLheynCDANBgkqhkiG9w0BAQsFADA/
 MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT
@@ -64,7 +63,7 @@ const (
 )
 
 var (
-	cfg                          *Config
+	cfg                          *config.Config
 	lightningClient              lnrpc.LightningClient
 	breezClientConnection        *grpc.ClientConn
 	breezClientConnectionFailure int32
@@ -77,28 +76,6 @@ var (
 	quitChan                     chan struct{}
 	breezDB                      *db.DB
 )
-
-/*
-Config holds the breez configuration
-*/
-type Config struct {
-	RoutingNodeHost   string `long:"routingnodehost"`
-	RoutingNodePubKey string `long:"routingnodepubkey"`
-	BreezServer       string `long:"breezserver"`
-	Network           string `long:"network"`
-	GrpcKeepAlive     bool   `long:"grpckeepalive"`
-	BootstrapURL      string `long:"bootstrap"`
-
-	//Job Options
-	JobCfg JobConfig `group:"Job Options"`
-}
-
-/*
-JobConfig hodls the job configuration
-*/
-type JobConfig struct {
-	ConnectedPeers []string `long:"peer"`
-}
 
 func getBreezClientConnection() *grpc.ClientConn {
 	log.Infof("getBreezClientConnection - before Ping;")
@@ -163,7 +140,7 @@ func Init(workingDir string) (err error) {
 		return errors.New("Breez already initialized")
 	}
 	appWorkingDir = workingDir
-	if err = initConfig(); err != nil {
+	if cfg, err = config.GetConfig(workingDir); err != nil {
 		fmt.Println("Warning initConfig", err)
 		return err
 	}
@@ -172,12 +149,10 @@ func Init(workingDir string) (err error) {
 		fmt.Println("Error connecting to breez", err)
 		return err
 	}
-
 	breezDB, err = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
 	if err != nil {
 		return err
 	}
-
 	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
 		return err
 	}
@@ -280,31 +255,6 @@ func startBreez() {
 		go connectOnStartup()
 		go watchOnChainState()
 	}()
-}
-
-func initConfig() error {
-	c := &Config{}
-	if err := flags.IniParse(path.Join(appWorkingDir, configFile), c); err != nil {
-		return err
-	}
-	if len(c.RoutingNodeHost) == 0 || len(c.RoutingNodePubKey) == 0 {
-		return errors.New("Breez must have routing node defined in the configuration file")
-	}
-
-	cfg = c
-	return nil
-}
-
-// GetConfig returns the config object
-func GetConfig(workingDir string) (*Config, error) {
-	if cfg == nil {
-		appWorkingDir = workingDir
-		err := initConfig()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return cfg, nil
 }
 
 func initLightningClient() error {

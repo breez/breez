@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/breez/breez"
+	"github.com/breez/breez/config"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino"
@@ -29,7 +29,7 @@ Job contains a running job info.
 type Job struct {
 	workingDir string
 	network    string
-	config     breez.JobConfig
+	config     config.JobConfig
 	neutrino   *neutrino.ChainService
 	db         walletdb.DB
 	started    int32
@@ -43,7 +43,7 @@ NewJob crates a new SyncJob and given a directory for this job.
 It is assumed that a config file exists in this directory.
 */
 func NewJob(workingDir string) (*Job, error) {
-	config, err := breez.GetConfig(workingDir)
+	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return nil, err
 	}

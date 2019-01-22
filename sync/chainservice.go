@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/breez/breez"
+	"github.com/breez/breez/config"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino"
@@ -20,7 +20,7 @@ const (
 NewChainService creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
 */
-func newNeutrino(workingDir string, network string, jobConfig *breez.JobConfig) (walletdb.DB, *neutrino.ChainService, error) {
+func newNeutrino(workingDir string, network string, jobConfig *config.JobConfig) (walletdb.DB, *neutrino.ChainService, error) {
 	var chainParams *chaincfg.Params
 	switch network {
 	case "testnet":
