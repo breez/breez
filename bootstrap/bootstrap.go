@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/breez/breez"
+	"github.com/breez/breez/config"
 )
 
 var (
@@ -41,7 +41,7 @@ func copyFile(src, dest string) error {
 // PutFiles restore each received files in the right directory
 // before lightninglib starts
 func PutFiles(workingDir string, files []string) error {
-	c, err := breez.GetConfig(workingDir)
+	c, err := config.GetConfig(workingDir)
 	if err != nil {
 		return err
 	}
