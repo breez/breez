@@ -1,11 +1,5 @@
 package breez
 
-import (
-	"github.com/breez/lightninglib/daemon"
-)
-
-var log = daemon.BackendLog().Logger("BRUI")
-
 /*
 Log a message to lightninglib's logging system
 */
@@ -30,6 +24,9 @@ func Log(msg string, lvl string) {
 	}
 }
 
+/*
+GetLogPath returns the log file path.
+*/
 func GetLogPath() string {
 	return appWorkingDir + "/logs/bitcoin/" + cfg.Network + "/lnd.log"
 }

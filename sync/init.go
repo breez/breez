@@ -1,27 +1,14 @@
 package sync
 
 import (
-	"os"
 	"sync"
 
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino"
 )
-
-func initJobLogger(workingDir, network string) (btclog.Logger, error) {
-	filename := workingDir + "/logs/bitcoin/" + network + "/lnd.log"
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		return nil, err
-	}
-
-	logger := btclog.NewBackend(f)
-	log := logger.Logger("SYNC")
-	log.SetLevel(btclog.LevelDebug)
-	return log, nil
-}
 
 /*
 Job contains a running job info.
@@ -47,11 +34,11 @@ func NewJob(workingDir string) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log, err := initJobLogger(workingDir, config.Network)
+	logBackend, err := log.GetLogBackend(workingDir)
 	if err != nil {
 		return nil, err
 	}
+	log := logBackend.Logger("SYNC")
 
 	return &Job{
 		log:        log,
