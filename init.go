@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 	"sync"
@@ -19,9 +20,11 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
+	breezlog "github.com/breez/breez/log"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
+	"github.com/lightninglabs/neutrino"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -75,7 +78,41 @@ var (
 	started                      int32
 	quitChan                     chan struct{}
 	breezDB                      *db.DB
+	log                          = daemon.BackendLog().Logger("BRUI")
 )
+
+/*
+Dependencies is an implementation of interface daemon.Dependencies
+used for injecting breez deps int LND running as library
+*/
+type Dependencies struct {
+	workingDir string
+	readyChan  chan interface{}
+}
+
+/*
+ReadyChan returns the channel passed to LND for getting ready signal
+*/
+func (d *Dependencies) ReadyChan() chan interface{} {
+	return d.readyChan
+}
+
+/*
+LogPipeWriter returns the io.PipeWriter streamed to the log file.
+This will be passed as dependency to LND so breez will have a shared log file
+*/
+func (d *Dependencies) LogPipeWriter() *io.PipeWriter {
+	writer, _ := breezlog.GetLogWriter(d.workingDir)
+	return writer
+}
+
+/*
+ChainService returns a neutrino.ChainService to be used from both sync job and
+LND running daemon
+*/
+func (d *Dependencies) ChainService() *neutrino.ChainService {
+	return nil
+}
 
 func getBreezClientConnection() *grpc.ClientConn {
 	log.Infof("getBreezClientConnection - before Ping;")
@@ -140,6 +177,11 @@ func Init(workingDir string) (err error) {
 		return errors.New("Breez already initialized")
 	}
 	appWorkingDir = workingDir
+	logBackend, err := breezlog.GetLogBackend(workingDir)
+	if err != nil {
+		return err
+	}
+	log = logBackend.Logger("BRUI")
 	if cfg, err = config.GetConfig(workingDir); err != nil {
 		fmt.Println("Warning initConfig", err)
 		return err
@@ -221,7 +263,8 @@ func startLightningDaemon(onReady func()) {
 		}
 	}()
 	var err error
-	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, readyChan)
+	deps := &Dependencies{workingDir: appWorkingDir, readyChan: readyChan}
+	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, deps)
 	if err != nil {
 		fmt.Println("Error starting breez", err)
 	}
