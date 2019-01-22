@@ -6,8 +6,6 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
-	"github.com/btcsuite/btcwallet/walletdb"
-	"github.com/lightninglabs/neutrino"
 )
 
 /*
@@ -17,12 +15,10 @@ type Job struct {
 	workingDir string
 	network    string
 	config     config.JobConfig
-	neutrino   *neutrino.ChainService
-	db         walletdb.DB
-	started    int32
 	shutdown   int32
 	log        btclog.Logger
 	wg         sync.WaitGroup
+	quit       chan struct{}
 }
 
 /*
@@ -45,5 +41,6 @@ func NewJob(workingDir string) (*Job, error) {
 		workingDir: workingDir,
 		network:    config.Network,
 		config:     config.JobCfg,
+		quit:       make(chan struct{}),
 	}, nil
 }
