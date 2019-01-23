@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"path"
 	"sync/atomic"
 	"time"
 
@@ -55,36 +56,31 @@ func (s *Job) syncFilters() (err error) {
 		s.log.Errorf("Error creating ChainService: %s", err)
 		return err
 	}
-	//get the best block before starting neutrino
-	//this will be the start point of the filters sync
-	startBlock, err := chainService.BestBlock()
+	jobDB, err := openJobDB(path.Join(s.workingDir, "job.db"))
 	if err != nil {
 		return err
 	}
-	chainService.Start()
+	defer jobDB.close()
 
-	//must wait for neutrino to connect to a peer and download the best
-	//block before starting the filters download loop.
-	for i := 0; i < 50 && chainService.IsCurrent(); i++ {
-		select {
-		case <-time.After(time.Millisecond * 100):
-			continue
-		case <-s.quit:
-			return nil
-		}
+	startSyncHeight, err := jobDB.fetchCFilterSyncHeight()
+	if err != nil {
+		return err
 	}
-
-	//get the best block after letting neutrino some time
-	//to connect to its peers.
+	//get the best block before starting neutrino
 	bestBlock, err := chainService.BestBlock()
 	if err != nil {
 		return err
 	}
+	bestBlockHeight := uint64(bestBlock.Height)
+	if startSyncHeight == 0 {
+		startSyncHeight = bestBlockHeight
+	}
 
-	s.log.Infof("Starting sync job from height: %v", startBlock.Height)
+	chainService.Start()
+	s.log.Infof("Starting sync job from height: %v", startSyncHeight)
 
 	//save last block in db
-	for currentHeight := startBlock.Height; currentHeight <= bestBlock.Height; currentHeight++ {
+	for currentHeight := startSyncHeight; currentHeight <= bestBlockHeight; currentHeight++ {
 		if s.terminated() {
 			return nil
 		}
@@ -105,18 +101,24 @@ func (s *Job) syncFilters() (err error) {
 			s.log.Errorf("fail to download block filter", err)
 			return err
 		}
+		err = jobDB.setCFilterSyncHeight(currentHeight)
+		if err != nil {
+			return err
+		}
+
 		if s.terminated() {
 			return nil
 		}
 
 		//wait for the backend to sync if needed
-		for currentHeight == bestBlock.Height && !chainService.IsCurrent() {
+		for currentHeight == bestBlockHeight && !chainService.IsCurrent() {
 			select {
 			case <-time.After(time.Millisecond * 100):
 				bestBlock, err = chainService.BestBlock()
 				if err != nil {
 					return err
 				}
+				bestBlockHeight = uint64(bestBlock.Height)
 			case <-s.quit:
 				return nil
 			}

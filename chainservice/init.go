@@ -52,6 +52,7 @@ func GetInstance(workingDir string) (*neutrino.ChainService, error) {
 		logger := logBackend.Logger("CHAIN")
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)
+		neutrino.QueryTimeout = time.Second * 10
 	}
 	return chainService, err
 }
