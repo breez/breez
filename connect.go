@@ -2,8 +2,11 @@ package breez
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
@@ -11,7 +14,33 @@ import (
 
 var (
 	connectedToRoutingNode int32
+	waitConnectTimeout     = time.Second * 10
+	nodeOnlineNotifier     onlineNotifier
 )
+
+type onlineNotifier struct {
+	sync.Mutex
+	ntfnChan chan struct{}
+}
+
+func (n *onlineNotifier) setOffline() {
+	n.Lock()
+	defer n.Unlock()
+	n.ntfnChan = make(chan struct{})
+}
+
+func (n *onlineNotifier) setOnline() {
+	n.Lock()
+	ntfnChan := n.ntfnChan
+	n.Unlock()
+	if ntfnChan != nil {
+		close(ntfnChan)
+	}
+}
+
+func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
+	return n.ntfnChan
+}
 
 /*
 ConnectAccount force connect to the routing node.
@@ -34,6 +63,7 @@ func isConnectedToRoutingNode() bool {
 
 func watchRoutingNodeConnection() error {
 	log.Infof("watchRoutingNodeConnection started")
+	nodeOnlineNotifier.setOffline()
 	subscription, err := lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
 	if err != nil {
 		log.Errorf("Failed to subscribe peers %v", err)
@@ -66,9 +96,12 @@ func onRoutingNodeConnectionChanged(connected bool) {
 
 	// BREEZ-377: When there is no channel request one from Breez
 	if connected {
+		nodeOnlineNotifier.setOnline()
 		accData, _ := calculateAccount()
 		go updateNodeChannelPolicy(accData.Id)
 		ensureRoutingChannelOpened()
+	} else {
+		nodeOnlineNotifier.setOffline()
 	}
 }
 
@@ -90,4 +123,13 @@ func disconnectRoutingNode() error {
 		PubKey: cfg.RoutingNodePubKey,
 	})
 	return err
+}
+
+func waitRoutingNodeConnected() error {
+	select {
+	case <-nodeOnlineNotifier.notifyWhenOnline():
+		return nil
+	case <-time.After(waitConnectTimeout):
+		return fmt.Errorf("timeout in waiting for routing node connection")
+	}
 }
