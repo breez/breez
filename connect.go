@@ -14,7 +14,7 @@ import (
 
 var (
 	connectedToRoutingNode int32
-	waitConnectTimeout     = time.Second * 10
+	waitConnectTimeout     = time.Second * 20
 	nodeOnlineNotifier     onlineNotifier
 )
 
@@ -130,6 +130,6 @@ func waitRoutingNodeConnected() error {
 	case <-nodeOnlineNotifier.notifyWhenOnline():
 		return nil
 	case <-time.After(waitConnectTimeout):
-		return fmt.Errorf("timeout in waiting for routing node connection")
+		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
 	}
 }
