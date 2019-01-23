@@ -85,6 +85,9 @@ If the payment was failed an error is returned
 */
 func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 	log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
+	if err := waitRoutingNodeConnected(); err != nil {
+		return err
+	}
 	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		return err
@@ -122,7 +125,9 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	} else {
 		invoiceExpiry = invoice.Expiry
 	}
-
+	if err := waitRoutingNodeConnected(); err != nil {
+		return "", err
+	}
 	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Value: invoice.Amount, Expiry: invoiceExpiry})
 	if err != nil {
 		return "", err
@@ -141,7 +146,9 @@ func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err e
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-
+	if err := waitRoutingNodeConnected(); err != nil {
+		return "", err
+	}
 	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
 	if err != nil {
 		return "", err
