@@ -8,6 +8,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/btcsuite/btcutil"
 )
@@ -65,6 +66,23 @@ GetDefaultSatPerByteFee returns the default sat per byte fee for on chain transa
 */
 func GetDefaultSatPerByteFee() int64 {
 	return defaultSatPerByteFee
+}
+
+/*
+RegisterPeriodicSync registeres this token for periodic sync notifications.
+*/
+func RegisterPeriodicSync(token string) error {
+	con := getBreezClientConnection()
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	c := breezservice.NewSyncNotifierClient(con)
+	defer cancel()
+	_, err := c.RegisterPeriodicSync(ctx, &breezservice.RegisterPeriodicSyncRequest{NotificationToken: token})
+	if err != nil {
+		log.Errorf("fail to register for periodic sync: %v", err)
+	} else {
+		log.Info("registered successfuly for periodic sync")
+	}
+	return err
 }
 
 func syncToChain(pollInterval time.Duration) error {

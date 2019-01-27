@@ -288,6 +288,13 @@ func RegisterChannelOpenedNotification(token string) error {
 }
 
 /*
+RegisterPeriodicSync is part of the binding inteface which is delegated to breez.RegisterPeriodicSync
+*/
+func RegisterPeriodicSync(token string) error {
+	return breez.RegisterPeriodicSync(token)
+}
+
+/*
 CreateRatchetSession is part of the binding inteface which is delegated to breez.CreateRatchetSession
 */
 func CreateRatchetSession(request []byte) ([]byte, error) {

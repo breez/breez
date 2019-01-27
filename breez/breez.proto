@@ -25,6 +25,10 @@ service FundManager {
     rpc RegisterTransactionConfirmation(RegisterTransactionConfirmationRequest) returns (RegisterTransactionConfirmationResponse) {}
 }
 
+service SyncNotifier {
+  rpc RegisterPeriodicSync(RegisterPeriodicSyncRequest) returns (RegisterPeriodicSyncResponse) {}
+}
+
 message OpenChannelRequest {
    string pubKey = 1;
    string notificationToken = 2;
@@ -127,3 +131,9 @@ message PingRequest {
 message PingReply {
   string version = 1;
 }
+
+message RegisterPeriodicSyncRequest {
+  string notificationToken = 1;
+}
+
+message RegisterPeriodicSyncResponse {}
