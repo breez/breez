@@ -211,8 +211,8 @@ func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
 		} else {
 			invoiceMemo.Description = decodedPayReq.Description
 		}
-		invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	}
+	invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	return invoiceMemo
 }
 
