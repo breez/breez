@@ -69,11 +69,11 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 	if err != nil {
 		return nil, err
 	}
-	logBackend, err := log.GetLogBackend(workingDir)
-	if err != nil {
-		return nil, err
-	}
 	if logger == nil {
+		logBackend, err := log.GetLogBackend(workingDir)
+		if err != nil {
+			return nil, err
+		}
 		logger = logBackend.Logger("CHAIN")
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)

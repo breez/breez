@@ -51,11 +51,12 @@ func (s *Job) terminated() bool {
 
 func (s *Job) syncFilters() (err error) {
 	s.log.Info("syncFilters started...")
-	chainService, err := chainservice.GetInstance(s.workingDir)
+	chainService, cleanFn, err := chainservice.NewService(s.workingDir)
 	if err != nil {
 		s.log.Errorf("Error creating ChainService: %s", err)
 		return err
 	}
+	defer cleanFn()
 	jobDB, err := openJobDB(path.Join(s.workingDir, "job.db"))
 	if err != nil {
 		return err
