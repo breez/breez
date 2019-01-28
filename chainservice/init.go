@@ -34,7 +34,7 @@ Internally it handles a reference count so callers will be able to use the same
 ChainService and won't have to deal with synchronization problems.
 The responsiblity of the caller is to call "release" when done using the service.
 */
-func NewService(workingDir string) (cs *neutrino.ChainService, release func(), err error) {
+func NewService(workingDir string) (cs *neutrino.ChainService, cleanupFn func(), err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if refCount == 0 {
