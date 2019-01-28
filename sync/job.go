@@ -67,20 +67,36 @@ func (s *Job) syncFilters() (err error) {
 	if err != nil {
 		return err
 	}
-	//get the best block before starting neutrino
-	bestBlock, err := chainService.BestBlock()
-	if err != nil {
-		return err
-	}
-	bestBlockHeight := uint64(bestBlock.Height)
-	if startSyncHeight == 0 {
-		startSyncHeight = bestBlockHeight
-	}
 
 	chainService.Start()
 	s.log.Infof("Starting sync job from height: %v", startSyncHeight)
 
-	//save last block in db
+	bestBlockHeight, err := s.waitForHeaders(chainService, startSyncHeight)
+	if err != nil {
+		return err
+	}
+
+	if startSyncHeight == 0 {
+		startSyncHeight = bestBlockHeight
+	}
+
+	//must wait for neutrino to connect to a peer and download the best
+	//block before starting the filters download loop.
+	for i := 0; i < 50 && startSyncHeight == bestBlockHeight; i++ {
+		select {
+		case <-time.After(time.Millisecond * 100):
+			bestBlockHeight, err = s.waitForHeaders(chainService, startSyncHeight)
+			if err != nil {
+				return err
+			}
+			continue
+		case <-s.quit:
+			return nil
+		}
+	}
+
+	s.log.Infof("Finished waiting for neutrino to sync best block: %v", bestBlockHeight)
+
 	for currentHeight := startSyncHeight; currentHeight <= bestBlockHeight; currentHeight++ {
 		if s.terminated() {
 			return nil
@@ -112,19 +128,35 @@ func (s *Job) syncFilters() (err error) {
 		}
 
 		//wait for the backend to sync if needed
-		for currentHeight == bestBlockHeight && !chainService.IsCurrent() {
-			select {
-			case <-time.After(time.Millisecond * 100):
-				bestBlock, err = chainService.BestBlock()
-				if err != nil {
-					return err
-				}
-				bestBlockHeight = uint64(bestBlock.Height)
-			case <-s.quit:
-				return nil
-			}
+		bestBlockHeight, err = s.waitForHeaders(chainService, currentHeight)
+		if err != nil {
+			return err
 		}
 	}
 	s.log.Info("syncFilters completed succesfully")
 	return nil
+}
+
+func (s *Job) waitForHeaders(chainService *neutrino.ChainService, currentHeight uint64) (uint64, error) {
+	s.log.Infof("Waiting for headers from height: %v", currentHeight)
+	bestBlock, err := chainService.BestBlock()
+	if err != nil {
+		return 0, err
+	}
+	bestBlockHeight := uint64(bestBlock.Height)
+
+	for currentHeight == bestBlockHeight && !chainService.IsCurrent() {
+		s.log.Infof("Waiting for headers bestBlockHeight=%v", bestBlockHeight)
+		select {
+		case <-time.After(time.Millisecond * 100):
+			bestBlock, err := chainService.BestBlock()
+			if err != nil {
+				return 0, err
+			}
+			bestBlockHeight = uint64(bestBlock.Height)
+		case <-s.quit:
+			return 0, nil
+		}
+	}
+	return bestBlockHeight, nil
 }
