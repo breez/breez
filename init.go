@@ -87,8 +87,9 @@ Dependencies is an implementation of interface daemon.Dependencies
 used for injecting breez deps int LND running as library
 */
 type Dependencies struct {
-	workingDir string
-	readyChan  chan interface{}
+	workingDir   string
+	chainService *neutrino.ChainService
+	readyChan    chan interface{}
 }
 
 /*
@@ -112,8 +113,7 @@ ChainService returns a neutrino.ChainService to be used from both sync job and
 LND running daemon
 */
 func (d *Dependencies) ChainService() *neutrino.ChainService {
-	cs, _ := chainservice.GetInstance(d.workingDir)
-	return cs
+	return d.chainService
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
@@ -265,7 +265,13 @@ func startLightningDaemon(onReady func()) {
 		}
 	}()
 	var err error
-	deps := &Dependencies{workingDir: appWorkingDir, readyChan: readyChan}
+	chainSevice, cleanupFn, err := chainservice.NewService(appWorkingDir)
+	if err != nil {
+		fmt.Println("Error starting breez", err)
+		return
+	}
+	defer cleanupFn()
+	deps := &Dependencies{workingDir: appWorkingDir, chainService: chainSevice, readyChan: readyChan}
 	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, deps)
 	if err != nil {
 		fmt.Println("Error starting breez", err)
