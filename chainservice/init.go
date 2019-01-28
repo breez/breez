@@ -21,54 +21,77 @@ const (
 )
 
 var (
-	chainService *neutrino.ChainService
-	db           walletdb.DB
-	mu           sync.Mutex
+	mu       sync.Mutex
+	refCount uint32
+	service  *neutrino.ChainService
+	db       walletdb.DB
+	logger   btclog.Logger
 )
 
 /*
-GetInstance returns the singleton instance of the neutrino chain service.
-This instance is used from both sync job and application.
+NewService returns a new ChainService, either newly created or existing one.
+Internally it handles a reference count so callers will be able to use the same
+ChainService and won't have to deal with synchronization problems.
+The responsiblity of the caller is to call "release" when done using the service.
 */
-func GetInstance(workingDir string) (*neutrino.ChainService, error) {
+func NewService(workingDir string) (cs *neutrino.ChainService, release func(), err error) {
 	mu.Lock()
 	defer mu.Unlock()
+	if refCount == 0 {
+		cs, err := createService(workingDir)
+		if err != nil {
+			return nil, nil, err
+		}
+		service = cs
+	}
+	refCount++
+	return service, release, nil
+}
+
+func release() {
+	mu.Lock()
+	defer mu.Unlock()
+	refCount--
+	if refCount == 0 {
+		stopService()
+	}
+}
+
+func createService(workingDir string) (*neutrino.ChainService, error) {
 	var err error
-	if chainService == nil {
-		neutrino.MaxPeers = 8
-		neutrino.BanDuration = 5 * time.Second
-		config, err := config.GetConfig(workingDir)
-		if err != nil {
-			return nil, err
-		}
-		chainService, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
-		if err != nil {
-			return nil, err
-		}
-		logBackend, err := log.GetLogBackend(workingDir)
-		if err != nil {
-			return nil, err
-		}
-		logger := logBackend.Logger("CHAIN")
+	neutrino.MaxPeers = 8
+	neutrino.BanDuration = 5 * time.Second
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	service, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
+	if err != nil {
+		return nil, err
+	}
+	logBackend, err := log.GetLogBackend(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	if logger == nil {
+		logger = logBackend.Logger("CHAIN")
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)
 		neutrino.QueryTimeout = time.Second * 10
 	}
-	return chainService, err
+
+	logger.Infof("chain service was created successfuly")
+	return service, err
 }
 
-/*
-Shutdown stops the chain service and clean its resources
-*/
-func Shutdown() {
-	mu.Lock()
-	defer mu.Unlock()
+func stopService() {
+
 	if db != nil {
 		db.Close()
 	}
-	if chainService != nil {
-		chainService.Stop()
-		chainService = nil
+	if service != nil {
+		service.Stop()
+		service = nil
 	}
 }
 
