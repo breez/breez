@@ -6,18 +6,30 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// PaymentType is the type of payment
 type PaymentType byte
 
 const (
-	SentPayment       = PaymentType(0)
-	ReceivedPayment   = PaymentType(1)
-	DepositPayment    = PaymentType(2)
+	//SentPayment is type for sent payments
+	SentPayment = PaymentType(0)
+
+	//ReceivedPayment is type for received payments
+	ReceivedPayment = PaymentType(1)
+
+	//DepositPayment is type for payment got from add funds
+	DepositPayment = PaymentType(2)
+
+	//WithdrawalPayment is type for payment got from remove funds
 	WithdrawalPayment = PaymentType(3)
 )
 
+/*
+PaymentInfo is the structure that holds the data for a payment in breez
+*/
 type PaymentInfo struct {
 	Type                       PaymentType
 	Amount                     int64
+	Fee                        int64
 	CreationTimestamp          int64
 	Description                string
 	PayeeName                  string
@@ -32,6 +44,9 @@ type PaymentInfo struct {
 	PendingExpirationTimestamp int64
 }
 
+/*
+AddAccountPayment adds a payment to the database
+*/
 func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, sentTime uint64) error {
 	log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
 	return db.Update(func(tx *bolt.Tx) error {
@@ -82,6 +97,9 @@ func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, s
 	})
 }
 
+/*
+FetchAllAccountPayments fetches all payments in the database sorted by date
+*/
 func (db *DB) FetchAllAccountPayments() ([]*PaymentInfo, error) {
 	var payments []*PaymentInfo
 	err := db.View(func(tx *bolt.Tx) error {
@@ -107,6 +125,10 @@ func (db *DB) FetchAllAccountPayments() ([]*PaymentInfo, error) {
 	return payments, err
 }
 
+/*
+FetchPaymentsSyncInfo returns the last payment time and last invoice settled index.
+This is used for callers to understand when needs to be synchronized into the db
+*/
 func (db *DB) FetchPaymentsSyncInfo() (lastTime int64, lastSetteledIndex uint64) {
 	lastPaymentTime := int64(0)
 	lastInvoiceSettledIndex := uint64(0)
