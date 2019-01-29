@@ -50,6 +50,7 @@ message Payment {
     string destination = 9;
     uint32 PendingExpirationHeight = 10;
     int64 PendingExpirationTimestamp = 11;
+    int64 fee = 12;
 }
 
 message PaymentsList {
