@@ -41,6 +41,7 @@ func GetPayments() (*data.PaymentsList, error) {
 	for _, payment := range rawPayments {
 		paymentItem := &data.Payment{
 			Amount:            payment.Amount,
+			Fee:               payment.Fee,
 			CreationTimestamp: payment.CreationTimestamp,
 			RedeemTxID:        payment.RedeemTxID,
 			PaymentHash:       payment.PaymentHash,
@@ -158,7 +159,7 @@ func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err e
 }
 
 /*
-DecodeInvoice is used by the payer to decode the payment request and read the invoice details.
+DecodePaymentRequest is used by the payer to decode the payment request and read the invoice details.
 */
 func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 	log.Infof("DecodePaymentRequest %v", paymentRequest)
@@ -374,6 +375,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	paymentData := &db.PaymentInfo{
 		Type:              paymentType,
 		Amount:            paymentItem.Value,
+		Fee:               paymentItem.Fee,
 		CreationTimestamp: paymentItem.CreationDate,
 		Description:       invoiceMemo.Description,
 		PayeeImageURL:     invoiceMemo.PayeeImageURL,
