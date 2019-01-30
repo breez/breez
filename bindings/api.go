@@ -9,7 +9,9 @@ import (
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/sync"
+	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -18,6 +20,38 @@ BreezNotifier is the interface that is used to send notifications to the user of
 */
 type BreezNotifier interface {
 	Notify(notificationEvent []byte)
+}
+
+// Logger is an interface that is used to log to the central log file.
+type Logger interface {
+	Log(msg string, lvl string)
+}
+
+// BreezLogger is the implementation of Logger
+type BreezLogger struct {
+	log btclog.Logger
+}
+
+// Log writs to the centeral log file
+func (l *BreezLogger) Log(msg string, lvl string) {
+	switch lvl {
+	case "FINEST":
+	case "FINER":
+	case "FINE":
+		l.log.Tracef(msg)
+	case "CONFIG":
+		l.log.Debugf(msg)
+	case "INFO":
+		l.log.Infof(msg)
+	case "WARNING":
+		l.log.Warnf(msg)
+	case "SEVERE":
+		l.log.Errorf(msg)
+	case "SHOUT":
+		l.log.Criticalf(msg)
+	default:
+		l.log.Infof(msg)
+	}
 }
 
 /*
@@ -50,7 +84,7 @@ func Start(tempDir string, notifier BreezNotifier) (err error) {
 }
 
 /*
-StartSyncJob starts breez only to reach synchronized state.
+NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
 func NewSyncJob(workingDir string) (JobController, error) {
@@ -59,6 +93,18 @@ func NewSyncJob(workingDir string) (JobController, error) {
 		return nil, err
 	}
 	return job, nil
+}
+
+/*
+GetLogger creates a logger that logs to the same breez central log file
+*/
+func GetLogger(appDir string) (Logger, error) {
+	backend, err := breezlog.GetLogBackend(appDir)
+	if err != nil {
+		return nil, err
+	}
+	logger := backend.Logger("BIND")
+	return &BreezLogger{logger}, nil
 }
 
 /*
