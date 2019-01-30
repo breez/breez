@@ -65,10 +65,6 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
-	if err != nil {
-		return nil, err
-	}
 	if logger == nil {
 		logBackend, err := log.GetLogBackend(workingDir)
 		if err != nil {
@@ -78,6 +74,11 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)
 		neutrino.QueryTimeout = time.Second * 10
+	}
+	logger.Infof("creating shared chain service.")
+	service, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	logger.Infof("chain service was created successfuly")
@@ -134,7 +135,7 @@ func newNeutrino(workingDir string, network string, jobConfig *config.JobConfig)
 		ChainParams:  *chainParams,
 		ConnectPeers: jobConfig.ConnectedPeers,
 	}
-
+	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
 	return chainService, db, err
 }
