@@ -176,7 +176,7 @@ offline queries and doubleratchet encryption.
 */
 func Init(workingDir string) (err error) {
 	if atomic.SwapInt32(&initialized, 1) == 1 {
-		return errors.New("Breez already initialized")
+		return nil
 	}
 	appWorkingDir = workingDir
 	logBackend, err := breezlog.GetLogBackend(workingDir)
@@ -214,6 +214,7 @@ func Stop() {
 	breezClientConnection.Close()
 	connectionMu.Unlock()
 	stopLightningDaemon()
+	atomic.StoreInt32(&initialized, 0)
 }
 
 /*
@@ -268,6 +269,7 @@ func startLightningDaemon(onReady func()) {
 	chainSevice, cleanupFn, err := chainservice.NewService(appWorkingDir)
 	if err != nil {
 		fmt.Println("Error starting breez", err)
+		stopLightningDaemon()
 		return
 	}
 	defer cleanupFn()
@@ -277,8 +279,6 @@ func startLightningDaemon(onReady func()) {
 		fmt.Println("Error starting breez", err)
 	}
 	stopLightningDaemon()
-	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
-	close(quitChan)
 }
 
 func stopLightningDaemon() {
@@ -287,6 +287,8 @@ func stopLightningDaemon() {
 	if alive {
 		signal.RequestShutdown()
 	}
+	close(quitChan)
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 }
 
 func startBreez() {
