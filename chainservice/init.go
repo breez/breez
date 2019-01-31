@@ -1,6 +1,7 @@
 package chainservice
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -40,6 +41,7 @@ func NewService(workingDir string) (cs *neutrino.ChainService, cleanupFn func(),
 	if refCount == 0 {
 		cs, err := createService(workingDir)
 		if err != nil {
+			stopService()
 			return nil, nil, err
 		}
 		service = cs
@@ -78,6 +80,7 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 	logger.Infof("creating shared chain service.")
 	service, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
 	if err != nil {
+		logger.Errorf("failed to create chain service %v", err)
 		return nil, err
 	}
 
@@ -121,9 +124,9 @@ func newNeutrino(workingDir string, network string, jobConfig *config.JobConfig)
 	neutrinoDataDir := path.Join(workingDir, dataPath)
 	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
 	if _, err := os.Stat(neutrinoDB); os.IsNotExist(err) {
-		return nil, nil, nil
+		return nil, nil, errors.New("neutrino db does not exist")
 	}
-	//os.MkdirAll(path.Join(workingDir, dataPath), os.ModePerm)
+
 	db, err := walletdb.Create("bdb", neutrinoDB)
 	if err != nil {
 		return nil, nil, err
