@@ -88,6 +88,7 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 		return nil, err
 	}
 
+	RequestBackup()
 	return &data.AddFundInitReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
 }
 
