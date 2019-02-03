@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
@@ -30,6 +31,11 @@ type Logger interface {
 // BreezLogger is the implementation of Logger
 type BreezLogger struct {
 	log btclog.Logger
+}
+
+// BackupService is an service to this libary for backup execution.
+type BackupService interface {
+	Backup(files string, nodeID, backupID string) error
 }
 
 // Log writs to the centeral log file
@@ -84,6 +90,17 @@ func Start(tempDir string, notifier BreezNotifier) (err error) {
 }
 
 /*
+SetBackupService sets the backup service.
+This service will be called when backup files upload is needed
+*/
+func SetBackupService(backupService BackupService) {
+	backupFunc := func(files []string, nodeID, backupID string) error {
+		return backupService.Backup(strings.Join(files, ","), nodeID, backupID)
+	}
+	breez.SetBackupFn(backupFunc)
+}
+
+/*
 NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
@@ -115,10 +132,10 @@ func Stop() {
 }
 
 /*
-Backup triggers breez backup
+RequestBackup triggers breez RequestBackup
 */
-func Backup() error {
-	return breez.Backup()
+func RequestBackup() {
+	breez.RequestBackup()
 }
 
 /*
