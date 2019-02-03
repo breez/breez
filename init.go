@@ -158,6 +158,7 @@ func Start() (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
+	watchBackupRequests()
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
 	go func() {
