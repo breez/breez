@@ -28,6 +28,9 @@ const (
 
 	//encrypted sessions
 	encryptedSessionsBucket = "encrypted_sessions"
+
+	//backup
+	backupBucket = "buckup"
 )
 
 //var log = breez.Logger()
@@ -87,6 +90,11 @@ func OpenDB(dbPath string) (*DB, error) {
 			return err
 		}
 
+		_, err = tx.CreateBucketIfNotExists([]byte(backupBucket))
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -127,6 +135,13 @@ func (db *DB) saveItem(bucket []byte, key []byte, value []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		return b.Put(key, value)
+	})
+}
+
+func (db *DB) deleteItem(bucket []byte, key []byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		return b.Delete(key)
 	})
 }
 
