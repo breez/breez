@@ -2,9 +2,11 @@ package breez
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
@@ -12,7 +14,7 @@ import (
 )
 
 var (
-	backupChan chan interface{}
+	backupChan = make(chan interface{}, 10)
 )
 
 type backupFn func(files []string, nodeID, backupID string) error
@@ -22,15 +24,27 @@ type setBackupFn struct {
 	backupFn func(files []string, nodeID, backupID string) error
 }
 
-// go routine message to do backup now
+// go routine message to execute backup now
 type backupNow struct {
+	pendingID uint64
 }
 
 /*
 RequestBackup push a request for the backup files of breez
 */
 func RequestBackup() {
-	backupChan <- backupNow{}
+	select {
+	case <-time.After(time.Second * 2):
+	case <-quitChan:
+		return
+	}
+	pendingID, err := breezDB.SetPendingBackup()
+	if err != nil {
+		log.Errorf("failed to set pending backup %v", err)
+		notifyBackupFailed()
+		return
+	}
+	backupChan <- backupNow{pendingID: pendingID}
 }
 
 /*
@@ -44,7 +58,6 @@ func SetBackupFn(backup backupFn) {
 
 func watchBackupRequests() {
 	var backupService backupFn
-	backupChan = make(chan interface{})
 	go func() {
 		for {
 			select {
@@ -55,14 +68,17 @@ func watchBackupRequests() {
 				case backupNow:
 					paths, nodeID, backupID, err := extractBackupInfo()
 					if err != nil || backupService == nil {
-						notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
+						log.Errorf("error in backup %v", err)
+						notifyBackupFailed()
 						continue
 					}
 					if err := backupService(paths, nodeID, backupID); err != nil {
-						notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
+						log.Errorf("error in backup %v", err)
+						notifyBackupFailed()
 						continue
 					}
-					//db.CompleteBackup()
+					breezDB.ComitPendingBackup(msg.pendingID)
+					log.Infof("backup finished succesfully")
 					notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
 				}
 			case <-quitChan:
@@ -70,6 +86,23 @@ func watchBackupRequests() {
 			}
 		}
 	}()
+
+	go runPendingBackup()
+}
+
+func runPendingBackup() {
+	pendingID, err := breezDB.PendingBackup()
+	if err != nil {
+		notifyBackupFailed()
+		return
+	}
+	if pendingID > 0 {
+		backupChan <- backupNow{pendingID: pendingID}
+	}
+}
+
+func notifyBackupFailed() {
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
 }
 
 func breezdbCopy() (string, error) {
@@ -81,6 +114,7 @@ func breezdbCopy() (string, error) {
 }
 
 func extractBackupInfo() (paths []string, nodeID string, backupID string, err error) {
+	log.Infof("extractBackupInfo started")
 	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		log.Errorf("Couldn't get backup: %v", err)
@@ -101,6 +135,7 @@ func extractBackupInfo() (paths []string, nodeID string, backupID string, err er
 		return nil, "", "", err
 	}
 	files := append(response.Files, f)
+	log.Infof("extractBackupInfo completd")
 	return files, info.IdentityPubkey, backupIdentifier, nil
 }
 
@@ -124,5 +159,5 @@ func getBackupIdentifier() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return "backup-id-" + string(id), nil
+	return "backup-id-" + hex.EncodeToString(id), nil
 }
