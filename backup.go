@@ -33,22 +33,27 @@ type backupNow struct {
 RequestBackup push a request for the backup files of breez
 */
 func RequestBackup() {
-	select {
-	case <-time.After(time.Second * 2):
-	case <-quitChan:
-		return
-	}
+
+	// first thing push a pending backup request to the database so we
+	// can recover in case of error.
 	pendingID, err := breezDB.SetPendingBackup()
 	if err != nil {
 		log.Errorf("failed to set pending backup %v", err)
 		notifyBackupFailed()
 		return
 	}
+
+	select {
+	case <-time.After(time.Second * 2):
+	case <-quitChan:
+		return
+	}
 	backupChan <- backupNow{pendingID: pendingID}
 }
 
 /*
-SetBackupFn sets the backup service that executes the backup
+SetBackupFn sets the external backup service that is responsible for uploading
+the files
 */
 func SetBackupFn(backup backupFn) {
 	backupChan <- setBackupFn{
@@ -56,6 +61,10 @@ func SetBackupFn(backup backupFn) {
 	}
 }
 
+// watchBackupRequests is the main go routine that listens to messages and update its state.
+// basically there are two messages:
+// 1. setBackupFn - to set the external backup service
+// 2. backupNow - a request to backup.
 func watchBackupRequests() {
 	var backupService backupFn
 	go func() {
@@ -87,9 +96,13 @@ func watchBackupRequests() {
 		}
 	}()
 
+	// execute recovery if needed.
 	go runPendingBackup()
 }
 
+// runPendingBackup is responsible for running any pending backup requests that haven't
+// been completed successfuly. We do that first thing on startup to ensure we don't miss any
+// critical backups.
 func runPendingBackup() {
 	pendingID, err := breezDB.PendingBackup()
 	if err != nil {
@@ -113,6 +126,10 @@ func breezdbCopy() (string, error) {
 	return breezDB.BackupDb(dir)
 }
 
+// extractBackupInfo extracts the information that is needed for the external backup service:
+// 1. paths - the files need to be backed up.
+// 2. nodeID - the current lightning node id.
+// 3. backupID - an identifier for this instance of breez. It is needed for conflict detection.
 func extractBackupInfo() (paths []string, nodeID string, backupID string, err error) {
 	log.Infof("extractBackupInfo started")
 	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
@@ -139,6 +156,11 @@ func extractBackupInfo() (paths []string, nodeID string, backupID string, err er
 	return files, info.IdentityPubkey, backupIdentifier, nil
 }
 
+// getBackupIdentifier retrieves an identifier that is unique for this instance of breez.
+// We use is as a mechanism for conflict detection, in case a restore was done on some
+// other device.
+// The identifier is generated once and save in a file, we can't save it in the db as it
+// is backed up and would cause the restored node to have the same identifier...
 func getBackupIdentifier() (string, error) {
 	backupDir := path.Join(appWorkingDir, "backup")
 	if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
