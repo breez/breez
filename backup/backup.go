@@ -1,4 +1,4 @@
-package breez
+package backup
 
 import (
 	"crypto/rand"
@@ -12,29 +12,49 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
+	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"golang.org/x/net/context"
 )
 
-// BackupUploader defines the methods needs to be implemented by an external service
+var (
+	log = daemon.BackendLog().Logger("BCKP")
+)
+
+// Uploader defines the methods needs to be implemented by an external service
 // in order to save the backuped up files.
-type BackupUploader interface {
+type Uploader interface {
 	UploadBackupFiles(files string, nodeID, backupID string) error
 }
 
-// BackupManager holds the data needed for the backup to execute its work.
-type BackupManager struct {
+// Manager holds the data needed for the backup to execute its work.
+type Manager struct {
 	started           int32
 	stopped           int32
-	uploader          BackupUploader
+	workingDir        string
+	db                *db.DB
+	uploader          Uploader
 	backupRequestChan chan uint64
+	lightningClient   lnrpc.LightningClient
+	ntfnChan          chan data.NotificationEvent
 	quitChan          chan struct{}
 	wg                sync.WaitGroup
 }
 
-// NewBackupService creates a new BackupService
-func NewBackupManager(uploader BackupUploader) *BackupManager {
-	return &BackupManager{
+// NewManager creates a new Manager
+func NewManager(
+	uploader Uploader,
+	db *db.DB,
+	ntfnChan chan data.NotificationEvent,
+	lightningClient lnrpc.LightningClient,
+	workingDir string) *Manager {
+
+	return &Manager{
+		db:                db,
+		workingDir:        workingDir,
+		lightningClient:   lightningClient,
+		ntfnChan:          ntfnChan,
 		uploader:          uploader,
 		backupRequestChan: make(chan uint64, 10),
 		quitChan:          make(chan struct{}),
@@ -44,11 +64,11 @@ func NewBackupManager(uploader BackupUploader) *BackupManager {
 /*
 RequestBackup push a request for the backup files of breez
 */
-func (b *BackupManager) RequestBackup() {
+func (b *Manager) RequestBackup() {
 
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
-	pendingID, err := breezDB.SetPendingBackup()
+	pendingID, err := b.db.SetPendingBackup()
 	if err != nil {
 		log.Errorf("failed to set pending backup %v", err)
 		b.notifyBackupFailed()
@@ -64,12 +84,12 @@ func (b *BackupManager) RequestBackup() {
 }
 
 // GetBackupIdentifier returns the backup identifier unique for this breez instance
-func (b *BackupManager) GetBackupIdentifier() (string, error) {
+func (b *Manager) GetBackupIdentifier() (string, error) {
 	return b.getBackupIdentifier()
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
-func (b *BackupManager) Start() {
+func (b *Manager) Start() {
 	if atomic.SwapInt32(&b.started, 1) == 1 {
 		return
 	}
@@ -92,9 +112,9 @@ func (b *BackupManager) Start() {
 					b.notifyBackupFailed()
 					continue
 				}
-				breezDB.ComitPendingBackup(pendingID)
+				b.db.ComitPendingBackup(pendingID)
 				log.Infof("backup finished succesfully")
-				notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
+				b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
 			case <-b.quitChan:
 				return
 			}
@@ -106,22 +126,22 @@ func (b *BackupManager) Start() {
 }
 
 // Stop stops the BackupService and wait for complete shutdown.
-func (b *BackupManager) Stop() {
+func (b *Manager) Stop() {
 	if atomic.SwapInt32(&b.stopped, 1) == 1 {
 		return
 	}
 
-	close(quitChan)
+	close(b.quitChan)
 	b.wg.Wait()
 }
 
 // runPendingBackup is responsible for running any pending backup requests that haven't
 // been completed successfuly. We do that first thing on startup to ensure we don't miss any
 // critical backups.
-func (b *BackupManager) runPendingBackup() {
+func (b *Manager) runPendingBackup() {
 	defer b.wg.Done()
 
-	pendingID, err := breezDB.PendingBackup()
+	pendingID, err := b.db.PendingBackup()
 	if err != nil {
 		b.notifyBackupFailed()
 		return
@@ -131,30 +151,30 @@ func (b *BackupManager) runPendingBackup() {
 	}
 }
 
-func (b *BackupManager) notifyBackupFailed() {
-	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
+func (b *Manager) notifyBackupFailed() {
+	b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
 }
 
-func (b *BackupManager) breezdbCopy() (string, error) {
+func (b *Manager) breezdbCopy() (string, error) {
 	dir, err := ioutil.TempDir("", "backup")
 	if err != nil {
 		return "", err
 	}
-	return breezDB.BackupDb(dir)
+	return b.db.BackupDb(dir)
 }
 
 // extractBackupInfo extracts the information that is needed for the external backup service:
 // 1. paths - the files need to be backed up.
 // 2. nodeID - the current lightning node id.
 // 3. backupID - an identifier for this instance of breez. It is needed for conflict detection.
-func (b *BackupManager) prepareBackupInfo() (paths []string, nodeID string, backupID string, err error) {
+func (b *Manager) prepareBackupInfo() (paths []string, nodeID string, backupID string, err error) {
 	log.Infof("extractBackupInfo started")
-	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
+	response, err := b.lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		log.Errorf("Couldn't get backup: %v", err)
 		return nil, "", "", err
 	}
-	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	info, err := b.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -178,8 +198,8 @@ func (b *BackupManager) prepareBackupInfo() (paths []string, nodeID string, back
 // other device.
 // The identifier is generated once and save in a file, we can't save it in the db as it
 // is backed up and would cause the restored node to have the same identifier...
-func (b *BackupManager) getBackupIdentifier() (string, error) {
-	backupDir := path.Join(appWorkingDir, "backup")
+func (b *Manager) getBackupIdentifier() (string, error) {
+	backupDir := path.Join(b.workingDir, "backup")
 	if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
 		return "", err
 	}

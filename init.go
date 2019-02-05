@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/breez/breez/backup"
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
@@ -71,7 +72,7 @@ var (
 	appServices AppServices
 
 	// backup manager system in breez
-	backupManager *BackupManager
+	backupManager *backup.Manager
 
 	cfg                          *config.Config
 	lightningClient              lnrpc.LightningClient
@@ -309,7 +310,7 @@ func stopLightningDaemon() {
 func startBreez() {
 	//start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-	backupManager = NewBackupManager(appServices)
+	backupManager = backup.NewManager(appServices, breezDB, notificationsChan, lightningClient, appWorkingDir)
 	backupManager.Start()
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
