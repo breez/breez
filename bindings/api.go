@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
@@ -16,11 +15,11 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-/*
-BreezNotifier is the interface that is used to send notifications to the user of this library
-*/
-type BreezNotifier interface {
+// AppServices defined the interface needed in Breez library in order to functional
+// right.
+type AppServices interface {
 	Notify(notificationEvent []byte)
+	UploadBackupFiles(files string, nodeID, backupID string) error
 }
 
 // Logger is an interface that is used to log to the central log file.
@@ -79,25 +78,14 @@ func Init(workingDir string) error {
 /*
 Start the lightning client
 */
-func Start(tempDir string, notifier BreezNotifier) (err error) {
+func Start(tempDir string, appServices AppServices) (err error) {
 	os.Setenv("TMPDIR", tempDir)
-	notificationsChan, err := breez.Start()
+	notificationsChan, err := breez.Start(appServices)
 	if err != nil {
 		return err
 	}
-	go deliverNotifications(notificationsChan, notifier)
+	go deliverNotifications(notificationsChan, appServices)
 	return nil
-}
-
-/*
-SetBackupService sets the backup service.
-This service will be called when backup files upload is needed
-*/
-func SetBackupService(backupService BackupService) {
-	backupFunc := func(files []string, nodeID, backupID string) error {
-		return backupService.Backup(strings.Join(files, ","), nodeID, backupID)
-	}
-	breez.SetBackupFn(backupFunc)
 }
 
 /*
@@ -136,6 +124,13 @@ RequestBackup triggers breez RequestBackup
 */
 func RequestBackup() {
 	breez.RequestBackup()
+}
+
+/*
+GetBackupIdentifier triggers breez GetBackupIdentifier
+*/
+func GetBackupIdentifier() (string, error) {
+	return breez.GetBackupIdentifier()
 }
 
 /*
@@ -448,14 +443,14 @@ func BootstrapFiles(request []byte) error {
 	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
 }
 
-func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
+func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
 		res, err := proto.Marshal(&notification)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error in marshaing notification", err)
 		}
-		notifier.Notify(res)
+		appServices.Notify(res)
 	}
 }
 

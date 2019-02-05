@@ -67,6 +67,12 @@ const (
 )
 
 var (
+	// services passed to breez from the application layer
+	appServices AppServices
+
+	// backup manager system in breez
+	backupManager *BackupManager
+
 	cfg                          *config.Config
 	lightningClient              lnrpc.LightningClient
 	breezClientConnection        *grpc.ClientConn
@@ -81,6 +87,12 @@ var (
 	breezDB                      *db.DB
 	log                          = daemon.BackendLog().Logger("BRUI")
 )
+
+// AppServices defined the interface needed in Breez library in order to functional
+// right.
+type AppServices interface {
+	UploadBackupFiles(files string, nodeID, backupID string) error
+}
 
 /*
 Dependencies is an implementation of interface daemon.Dependencies
@@ -154,10 +166,12 @@ func initBreezClientConnection() error {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start() (ntfnChan chan data.NotificationEvent, err error) {
+func Start(services AppServices) (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
+
+	appServices = services
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
 	go func() {
@@ -288,13 +302,15 @@ func stopLightningDaemon() {
 		signal.RequestShutdown()
 	}
 	close(quitChan)
+	backupManager.Stop()
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 }
 
 func startBreez() {
 	//start the go routings
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-	watchBackupRequests()
+	backupManager = NewBackupManager(appServices)
+	backupManager.Start()
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()

@@ -23,6 +23,17 @@ var (
 	createChannelGroup singleflight.Group
 )
 
+// RequestBackup is used to add a request for backup
+func RequestBackup() {
+	backupManager.RequestBackup()
+}
+
+// GetBackupIdentifier returns the backup indentifier that is unique for this
+// instance of breez
+func GetBackupIdentifier() (string, error) {
+	return backupManager.GetBackupIdentifier()
+}
+
 /*
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
 */

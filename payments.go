@@ -388,7 +388,7 @@ func onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 
 	err = breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
-	RequestBackup()
+	backupManager.RequestBackup()
 	onAccountChanged()
 	return err
 }
@@ -426,7 +426,7 @@ func onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		return err
 	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INVOICE_PAID}
-	RequestBackup()
+	backupManager.RequestBackup()
 	onAccountChanged()
 	return nil
 }
