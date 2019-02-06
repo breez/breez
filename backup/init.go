@@ -26,7 +26,7 @@ type Manager struct {
 	workingDir        string
 	db                *db.DB
 	uploader          Uploader
-	backupRequestChan chan uint64
+	backupRequestChan chan struct{}
 	lightningClient   lnrpc.LightningClient
 	ntfnChan          chan data.NotificationEvent
 	quitChan          chan struct{}
@@ -47,7 +47,7 @@ func NewManager(
 		lightningClient:   lightningClient,
 		ntfnChan:          ntfnChan,
 		uploader:          uploader,
-		backupRequestChan: make(chan uint64, 10),
+		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}
 }

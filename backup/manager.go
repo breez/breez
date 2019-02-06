@@ -22,7 +22,7 @@ func (b *Manager) RequestBackup() {
 
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
-	pendingID, err := b.db.SetPendingBackup()
+	err := b.db.AddBackupRequest()
 	if err != nil {
 		log.Errorf("failed to set pending backup %v", err)
 		b.notifyBackupFailed()
@@ -34,7 +34,7 @@ func (b *Manager) RequestBackup() {
 	case <-b.quitChan:
 		return
 	}
-	b.backupRequestChan <- pendingID
+	b.backupRequestChan <- struct{}{}
 }
 
 // GetBackupIdentifier returns the backup identifier unique for this breez instance
@@ -48,13 +48,19 @@ func (b *Manager) Start() {
 		return
 	}
 
-	b.wg.Add(2)
+	b.wg.Add(1)
 	go func() {
 		defer b.wg.Done()
 
 		for {
 			select {
-			case pendingID := <-b.backupRequestChan:
+			case <-b.backupRequestChan:
+				//First get the last pending request in the database
+				pendingID, err := b.db.LastBackupRequest()
+				if pendingID == 0 {
+					continue
+				}
+
 				paths, nodeID, backupID, err := b.prepareBackupInfo()
 				if err != nil {
 					log.Errorf("error in backup %v", err)
@@ -66,7 +72,7 @@ func (b *Manager) Start() {
 					b.notifyBackupFailed()
 					continue
 				}
-				b.db.ComitPendingBackup(pendingID)
+				b.db.MarkBackupRequestCompleted(pendingID)
 				log.Infof("backup finished succesfully")
 				b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
 			case <-b.quitChan:
@@ -76,7 +82,7 @@ func (b *Manager) Start() {
 	}()
 
 	// execute recovery if needed.
-	go b.runPendingBackup()
+	b.backupRequestChan <- struct{}{}
 }
 
 // Stop stops the BackupService and wait for complete shutdown.
@@ -87,22 +93,6 @@ func (b *Manager) Stop() {
 
 	close(b.quitChan)
 	b.wg.Wait()
-}
-
-// runPendingBackup is responsible for running any pending backup requests that haven't
-// been completed successfuly. We do that first thing on startup to ensure we don't miss any
-// critical backups.
-func (b *Manager) runPendingBackup() {
-	defer b.wg.Done()
-
-	pendingID, err := b.db.PendingBackup()
-	if err != nil {
-		b.notifyBackupFailed()
-		return
-	}
-	if pendingID > 0 {
-		b.backupRequestChan <- pendingID
-	}
 }
 
 func (b *Manager) notifyBackupFailed() {
