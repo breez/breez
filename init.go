@@ -309,9 +309,9 @@ func stopLightningDaemon() {
 
 func startBreez() {
 	//start the go routings
-	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 	backupManager = backup.NewManager(appServices, breezDB, notificationsChan, lightningClient, appWorkingDir)
 	backupManager.Start()
+
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
@@ -325,6 +325,8 @@ func startBreez() {
 		go connectOnStartup()
 		go watchOnChainState()
 	}()
+
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 }
 
 func initLightningClient() error {
