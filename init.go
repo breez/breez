@@ -321,7 +321,8 @@ func stopLightningDaemon() {
 func startBreez() {
 	//start the go routings
 	bProviderName := appServices.BackupProviderName()
-	backupManager, err := backup.NewManager(
+	var err error
+	backupManager, err = backup.NewManager(
 		bProviderName,
 		&AuthService{appServices: appServices},
 		breezDB,
@@ -335,7 +336,6 @@ func startBreez() {
 		return
 	}
 	backupManager.Start()
-
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
