@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/breez/breez/data"
@@ -13,19 +14,13 @@ var (
 	log = daemon.BackendLog().Logger("BCKP")
 )
 
-// Uploader defines the methods needs to be implemented by an external service
-// in order to save the backuped up files.
-type Uploader interface {
-	UploadBackupFiles(files string, nodeID, backupID string) error
-}
-
 // Manager holds the data needed for the backup to execute its work.
 type Manager struct {
 	started           int32
 	stopped           int32
 	workingDir        string
 	db                *db.DB
-	uploader          Uploader
+	provider          Provider
 	backupRequestChan chan struct{}
 	lightningClient   lnrpc.LightningClient
 	ntfnChan          chan data.NotificationEvent
@@ -35,19 +30,34 @@ type Manager struct {
 
 // NewManager creates a new Manager
 func NewManager(
-	uploader Uploader,
+	providerName string,
+	authService AuthService,
 	db *db.DB,
 	ntfnChan chan data.NotificationEvent,
 	lightningClient lnrpc.LightningClient,
-	workingDir string) *Manager {
+	workingDir string) (*Manager, error) {
+
+	provider, err := createBackupProvider(providerName, authService)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Manager{
 		db:                db,
 		workingDir:        workingDir,
 		lightningClient:   lightningClient,
 		ntfnChan:          ntfnChan,
-		uploader:          uploader,
+		provider:          provider,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
+	}, nil
+}
+
+func createBackupProvider(providerName string, authService AuthService) (Provider, error) {
+	switch providerName {
+	case "gdrive":
+		return NewGoogleDriveProvider(authService)
+	default:
+		return nil, fmt.Errorf("provider not found for %v", providerName)
 	}
 }

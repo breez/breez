@@ -92,7 +92,18 @@ var (
 // AppServices defined the interface needed in Breez library in order to functional
 // right.
 type AppServices interface {
-	UploadBackupFiles(files string, nodeID, backupID string) error
+	BackupProviderName() string
+	BackupProviderSignIn() (string, error)
+}
+
+// AuthService is a Specific implementation for backup.Manager
+type AuthService struct {
+	appServices AppServices
+}
+
+// SignIn is the interface function implementation needed for backup.Manager
+func (a *AuthService) SignIn() (string, error) {
+	return appServices.BackupProviderSignIn()
 }
 
 /*
@@ -309,7 +320,20 @@ func stopLightningDaemon() {
 
 func startBreez() {
 	//start the go routings
-	backupManager = backup.NewManager(appServices, breezDB, notificationsChan, lightningClient, appWorkingDir)
+	bProviderName := appServices.BackupProviderName()
+	backupManager, err := backup.NewManager(
+		bProviderName,
+		&AuthService{appServices: appServices},
+		breezDB,
+		notificationsChan,
+		lightningClient,
+		appWorkingDir,
+	)
+	if err != nil {
+		fmt.Println("Error creating backup manager", err)
+		stopLightningDaemon()
+		return
+	}
 	backupManager.Start()
 
 	go trackOpenedChannel()
