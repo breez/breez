@@ -11,7 +11,7 @@ type SnapshotInfo struct {
 // These functions will be used from the application layer.
 type Service interface {
 	RequestBackup()
-	Restore() error
+	Restore(nodeID string) error
 	AvailableSnapshots() ([]SnapshotInfo, error)
 }
 

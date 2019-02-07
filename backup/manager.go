@@ -42,7 +42,11 @@ func (b *Manager) RequestBackup() {
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
-func (b *Manager) Restore(nodeID, backupID string) error {
+func (b *Manager) Restore(nodeID string) error {
+	backupID, err := b.getBackupIdentifier()
+	if err != nil {
+		return err
+	}
 	files, err := b.provider.DownloadBackupFiles(nodeID, backupID)
 	if err != nil {
 		return err
