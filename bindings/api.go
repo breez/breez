@@ -19,7 +19,8 @@ import (
 // right.
 type AppServices interface {
 	Notify(notificationEvent []byte)
-	UploadBackupFiles(files string, nodeID, backupID string) error
+	BackupProviderName() string
+	BackupProviderSignIn() (string, error)
 }
 
 // Logger is an interface that is used to log to the central log file.
