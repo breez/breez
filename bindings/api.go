@@ -2,6 +2,7 @@ package bindings
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -124,14 +125,29 @@ func Stop() {
 RequestBackup triggers breez RequestBackup
 */
 func RequestBackup() {
-	breez.RequestBackup()
+	breez.BackupService().RequestBackup()
 }
 
 /*
-GetBackupIdentifier triggers breez GetBackupIdentifier
+RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func GetBackupIdentifier() (string, error) {
-	return breez.GetBackupIdentifier()
+func RestoreBackup(nodeID string) error {
+	return breez.BackupService().Restore(nodeID)
+}
+
+/*
+AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
+*/
+func AvailableSnapshots(nodeID string) (string, error) {
+	snapshots, err := breez.BackupService().AvailableSnapshots()
+	if err != nil {
+		return "", err
+	}
+	bytes, err := json.Marshal(snapshots)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 /*
