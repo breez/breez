@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/breez/breez/backup"
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/lnwallet"
@@ -23,15 +24,10 @@ var (
 	createChannelGroup singleflight.Group
 )
 
-// RequestBackup is used to add a request for backup
-func RequestBackup() {
-	backupManager.RequestBackup()
-}
-
-// GetBackupIdentifier returns the backup indentifier that is unique for this
-// instance of breez
-func GetBackupIdentifier() (string, error) {
-	return backupManager.GetBackupIdentifier()
+// BackupService encapsulate all the needed backup functionality for the
+// application/binding layer
+func BackupService() backup.Service {
+	return backupManager
 }
 
 /*
