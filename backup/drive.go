@@ -129,19 +129,39 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 	if err != nil {
 		return err
 	}
+
+	successChan := make(chan struct{})
+	defer close(successChan)
+	errorChan := make(chan error)
+	defer close(errorChan)
+
 	// Upload the files
 	for _, fPath := range files {
-		fileName := path.Base(fPath)
-		file, err := os.Open(fPath)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		_, err = p.driveService.Files.Create(&drive.File{
-			Name:    fileName,
-			Parents: []string{newBackupFolder.Id}},
-		).Media(file).Do()
-		if err != nil {
+		go func(filePath string) {
+			fileName := path.Base(filePath)
+			file, err := os.Open(filePath)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			defer file.Close()
+			_, err = p.driveService.Files.Create(&drive.File{
+				Name:    fileName,
+				Parents: []string{newBackupFolder.Id}},
+			).Media(file).Do()
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			successChan <- struct{}{}
+		}(fPath)
+	}
+
+	for i := 0; i < len(files); i++ {
+		select {
+		case <-successChan:
+			continue
+		case err := <-errorChan:
 			return err
 		}
 	}
@@ -179,14 +199,32 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	if err != nil {
 		return nil, err
 	}
-	// Download all the files
+	// Download all the files in parallel
 	var downloaded []string
+
+	successChan := make(chan string)
+	defer close(successChan)
+	errorChan := make(chan error)
+	defer close(errorChan)
+
 	for _, f := range r.Files {
-		path, err := p.downloadFile(f, dir)
-		if err != nil {
+		go func(file *drive.File) {
+			path, err := p.downloadFile(file, dir)
+			if err != nil {
+				errorChan <- err
+			} else {
+				successChan <- path
+			}
+		}(f)
+	}
+
+	for i := 0; i < len(r.Files); i++ {
+		select {
+		case path := <-successChan:
+			downloaded = append(downloaded, path)
+		case err := <-errorChan:
 			return nil, err
 		}
-		downloaded = append(downloaded, path)
 	}
 
 	// Upate this backup as restored by this instance.
