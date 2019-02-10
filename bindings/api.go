@@ -130,21 +130,21 @@ func Stop() {
 RequestBackup triggers breez RequestBackup
 */
 func RequestBackup() {
-	breez.BackupService().RequestBackup()
+	breez.RequestBackup()
 }
 
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
 func RestoreBackup(nodeID string) error {
-	return breez.BackupService().Restore(nodeID)
+	return breez.Restore(nodeID)
 }
 
 /*
 AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
 */
 func AvailableSnapshots(nodeID string) (string, error) {
-	snapshots, err := breez.BackupService().AvailableSnapshots()
+	snapshots, err := breez.AvailableSnapshots()
 	if err != nil {
 		return "", err
 	}

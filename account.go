@@ -3,10 +3,12 @@ package breez
 import (
 	"context"
 	"math"
+	"path"
 	"time"
 
 	"github.com/breez/breez/backup"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/lnwallet"
 	"github.com/golang/protobuf/proto"
@@ -24,10 +26,22 @@ var (
 	createChannelGroup singleflight.Group
 )
 
-// BackupService encapsulate all the needed backup functionality for the
-// application/binding layer
-func BackupService() backup.Service {
-	return backupManager
+func RequestBackup() {
+	backupManager.RequestBackup()
+}
+
+func Restore(nodeID string) error {
+	if err := breezDB.Close(); err != nil {
+		return err
+	}
+	defer func() {
+		breezDB, _ = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
+	}()
+	return backupManager.Restore(nodeID)
+}
+
+func AvailableSnapshots() ([]backup.SnapshotInfo, error) {
+	return backupManager.AvailableSnapshots()
 }
 
 /*
