@@ -27,7 +27,7 @@ func (b *Manager) RequestBackup() {
 	err := b.db.AddBackupRequest()
 	if err != nil {
 		log.Errorf("failed to set pending backup %v", err)
-		b.notifyBackupFailed()
+		b.notifyBackupFailed(err)
 		return
 	}
 
@@ -118,12 +118,12 @@ func (b *Manager) Start() {
 				paths, nodeID, err := b.prepareBackupInfo()
 				if err != nil {
 					log.Errorf("error in backup %v", err)
-					b.notifyBackupFailed()
+					b.notifyBackupFailed(err)
 					continue
 				}
 				if err := b.provider.UploadBackupFiles(paths, nodeID); err != nil {
 					log.Errorf("error in backup %v", err)
-					b.notifyBackupFailed()
+					b.notifyBackupFailed(err)
 					continue
 				}
 				b.db.MarkBackupRequestCompleted(pendingID)
@@ -149,7 +149,13 @@ func (b *Manager) Stop() {
 	b.wg.Wait()
 }
 
-func (b *Manager) notifyBackupFailed() {
+func (b *Manager) notifyBackupFailed(err error) {
+	if ferr, ok := err.(ProviderError); ok {
+		if ferr.IsAuthError() {
+			b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_AUTH_FAILED}
+			return
+		}
+	}
 	b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
 }
 
