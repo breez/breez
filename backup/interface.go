@@ -23,6 +23,13 @@ type Provider interface {
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
 }
 
+// ProviderError is the error that is used by the Provider to tell the BackupService
+// about the error happened and if there was an error in the authentication.
+type ProviderError interface {
+	Error() string
+	IsAuthError() bool
+}
+
 // AuthService is the interface that the backup provider needs in order to function.
 // Because the authentication can be in many forms (also multiple platforms) it can't be
 // implemented as part of the backup provider but rather should be passed from the
