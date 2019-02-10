@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"golang.org/x/oauth2"
 	drive "google.golang.org/api/drive/v3"
@@ -17,6 +18,22 @@ const (
 	backupIDProperty           = "backupID"
 	activeBackupFolderProperty = "activeBackupFolder"
 )
+
+// driveServiceError is the type of error this provider returns in case
+// of API error. It also implements the ProviderError interface
+type driveServiceError struct {
+	err error
+}
+
+func (d *driveServiceError) Error() string {
+	return d.err.Error()
+}
+func (d *driveServiceError) IsAuthError() bool {
+	if ferr, ok := d.err.(*googleapi.Error); ok {
+		return ferr.Code == 401 || ferr.Code == 403
+	}
+	return false
+}
 
 // TokenSource is a structure that implements the auth2.TokenSource interface to be used by
 // GoogleDriveBackupProvider
@@ -32,6 +49,7 @@ func (s *TokenSource) Token() (*oauth2.Token, error) {
 	}
 	return &oauth2.Token{
 		AccessToken: token,
+		Expiry:      time.Now().Add(time.Second),
 	}, nil
 }
 
@@ -62,11 +80,7 @@ type GoogleDriveProvider struct {
 // It implements the backup.Provider interface by using google drive as storage.
 func NewGoogleDriveProvider(authService AuthService) (*GoogleDriveProvider, error) {
 	tokenSource := &TokenSource{authService: authService}
-	token, err := tokenSource.Token()
-	if err != nil {
-		return nil, err
-	}
-	httpClient := oauth2.NewClient(context.Background(), oauth2.ReuseTokenSource(token, tokenSource))
+	httpClient := oauth2.NewClient(context.Background(), tokenSource)
 	driveService, err := drive.New(httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating drive service, %v", err)
@@ -82,12 +96,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 		Q("'appDataFolder' in parents and name contains 'snapshot-'").
 		Do()
 	if err != nil {
-		if ferr, ok := err.(*googleapi.Error); ok {
-			if ferr.Code == 404 {
-				return []SnapshotInfo{}, nil
-			}
-		}
-		return nil, err
+		return nil, &driveServiceError{err}
 	}
 	var backups []SnapshotInfo
 
@@ -121,13 +130,13 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 	// Fetch the node folder
 	nodeFolder, err := p.nodeFolder(nodeID)
 	if err != nil {
-		return err
+		return &driveServiceError{err}
 	}
 
 	// Create the backup folder
 	newBackupFolder, err := p.createFolder(nodeFolder.Id, "backup")
 	if err != nil {
-		return err
+		return &driveServiceError{err}
 	}
 
 	successChan := make(chan struct{})
@@ -150,25 +159,33 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 				Parents: []string{newBackupFolder.Id}},
 			).Media(file).Do()
 			if err != nil {
-				errorChan <- err
+				errorChan <- &driveServiceError{err}
 				return
 			}
 			successChan <- struct{}{}
 		}(fPath)
 	}
 
+	var uploadErr error
 	for i := 0; i < len(files); i++ {
 		select {
 		case <-successChan:
 			continue
-		case err := <-errorChan:
-			return err
+		case uploadErr = <-errorChan:
+			continue
 		}
+	}
+
+	if uploadErr != nil {
+		return uploadErr
 	}
 	// Update active backup folder for this specific node folder
 	folderUpdate := &drive.File{AppProperties: map[string]string{activeBackupFolderProperty: newBackupFolder.Id}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
-	return err
+	if err != nil {
+		return &driveServiceError{err}
+	}
+	return nil
 }
 
 // DownloadBackupFiles is responsible for download a specific node backup and updating.
@@ -177,7 +194,7 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	// fetch the node folder
 	nodeFolder, err := p.nodeFolder(nodeID)
 	if err != nil {
-		return nil, err
+		return nil, &driveServiceError{err}
 	}
 
 	// Fetch thte backup folder
@@ -192,7 +209,7 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	// Query all the files under the backup folder
 	r, err := p.driveService.Files.List().Spaces("appDataFolder").Q(fmt.Sprintf("'%v' in parents", folderID)).Do()
 	if err != nil {
-		return nil, fmt.Errorf("could not query backup folder: %v", err)
+		return nil, &driveServiceError{err}
 	}
 
 	dir, err := ioutil.TempDir("", "gdrive")
@@ -211,29 +228,37 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 		go func(file *drive.File) {
 			path, err := p.downloadFile(file, dir)
 			if err != nil {
-				errorChan <- err
+				errorChan <- &driveServiceError{err}
 			} else {
 				successChan <- path
 			}
 		}(f)
 	}
 
+	var downloadErr error
 	for i := 0; i < len(r.Files); i++ {
 		select {
 		case path := <-successChan:
 			downloaded = append(downloaded, path)
-		case err := <-errorChan:
-			return nil, err
+		case downloadErr = <-errorChan:
+			continue
 		}
+	}
+	if downloadErr != nil {
+		return nil, downloadErr
 	}
 
 	// Upate this backup as restored by this instance.
 	folderUpdate := &drive.File{AppProperties: map[string]string{backupIDProperty: backupID}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
-		return nil, err
+		return nil, &driveServiceError{err}
 	}
-	return downloaded, p.deleteStaleSnapshots(nodeFolder.Id, folderID)
+	err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
+	if err != nil {
+		return nil, &driveServiceError{err}
+	}
+	return downloaded, nil
 }
 
 // nodeFolder is responsible for fetching the node folder. If it doesn't exist it creates it.
