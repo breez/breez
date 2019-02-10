@@ -16,6 +16,10 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	appServices AppServices
+)
+
 // AppServices defined the interface needed in Breez library in order to functional
 // right.
 type AppServices interface {
@@ -73,16 +77,17 @@ type JobController interface {
 /*
 Init initialize lightning client
 */
-func Init(workingDir string) error {
-	return breez.Init(workingDir)
+func Init(tempDir string, workingDir string, services AppServices) error {
+	os.Setenv("TMPDIR", tempDir)
+	appServices = services
+	return breez.Init(workingDir, services)
 }
 
 /*
 Start the lightning client
 */
-func Start(tempDir string, appServices AppServices) (err error) {
-	os.Setenv("TMPDIR", tempDir)
-	notificationsChan, err := breez.Start(appServices)
+func Start() (err error) {
+	notificationsChan, err := breez.Start()
 	if err != nil {
 		return err
 	}

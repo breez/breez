@@ -178,12 +178,10 @@ func initBreezClientConnection() error {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start(services AppServices) (ntfnChan chan data.NotificationEvent, err error) {
+func Start() (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
-
-	appServices = services
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
 	go func() {
@@ -200,11 +198,12 @@ Init is a required function to be called before Start.
 Its main purpose is to make breez services available like:
 offline queries and doubleratchet encryption.
 */
-func Init(workingDir string) (err error) {
+func Init(workingDir string, services AppServices) (err error) {
 	if atomic.SwapInt32(&initialized, 1) == 1 {
 		return nil
 	}
 	appWorkingDir = workingDir
+	appServices = services
 	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return err
@@ -224,6 +223,18 @@ func Init(workingDir string) (err error) {
 		return err
 	}
 	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
+		return err
+	}
+
+	bProviderName := appServices.BackupProviderName()
+	backupManager, err = backup.NewManager(
+		bProviderName,
+		&AuthService{appServices: appServices},
+		breezDB,
+		notificationsChan,
+		appWorkingDir,
+	)
+	if err != nil {
 		return err
 	}
 
@@ -322,22 +333,7 @@ func stopLightningDaemon() {
 
 func startBreez() {
 	//start the go routings
-	bProviderName := appServices.BackupProviderName()
-	var err error
-	backupManager, err = backup.NewManager(
-		bProviderName,
-		&AuthService{appServices: appServices},
-		breezDB,
-		notificationsChan,
-		lightningClient,
-		appWorkingDir,
-	)
-	if err != nil {
-		fmt.Println("Error creating backup manager", err)
-		stopLightningDaemon()
-		return
-	}
-	backupManager.Start()
+	backupManager.Start(lightningClient)
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
