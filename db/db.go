@@ -28,9 +28,6 @@ const (
 
 	//encrypted sessions
 	encryptedSessionsBucket = "encrypted_sessions"
-
-	//backup
-	backupBucket = "backup"
 )
 
 // DB is the structure for breez database
@@ -86,11 +83,6 @@ func OpenDB(dbPath string) (*DB, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(encryptedSessionsBucket))
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.CreateBucketIfNotExists([]byte(backupBucket))
 		if err != nil {
 			return err
 		}
