@@ -7,7 +7,6 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/daemon"
-	"github.com/breez/lightninglib/lnrpc"
 )
 
 var (
@@ -22,7 +21,6 @@ type Manager struct {
 	db                *db.DB
 	provider          Provider
 	backupRequestChan chan struct{}
-	lightningClient   lnrpc.LightningClient
 	ntfnChan          chan data.NotificationEvent
 	quitChan          chan struct{}
 	wg                sync.WaitGroup
@@ -34,7 +32,6 @@ func NewManager(
 	authService AuthService,
 	db *db.DB,
 	ntfnChan chan data.NotificationEvent,
-	lightningClient lnrpc.LightningClient,
 	workingDir string) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService)
@@ -45,7 +42,6 @@ func NewManager(
 	return &Manager{
 		db:                db,
 		workingDir:        workingDir,
-		lightningClient:   lightningClient,
 		ntfnChan:          ntfnChan,
 		provider:          provider,
 		backupRequestChan: make(chan struct{}, 10),

@@ -97,11 +97,10 @@ func (b *Manager) GetBackupIdentifier() (string, error) {
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
-func (b *Manager) Start() {
+func (b *Manager) Start(lightningClient lnrpc.LightningClient) {
 	if atomic.SwapInt32(&b.started, 1) == 1 {
 		return
 	}
-
 	b.wg.Add(1)
 	go func() {
 		defer b.wg.Done()
@@ -115,7 +114,7 @@ func (b *Manager) Start() {
 					continue
 				}
 
-				paths, nodeID, err := b.prepareBackupInfo()
+				paths, nodeID, err := b.prepareBackupInfo(lightningClient)
 				if err != nil {
 					log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
@@ -171,14 +170,14 @@ func (b *Manager) breezdbCopy() (string, error) {
 // 1. paths - the files need to be backed up.
 // 2. nodeID - the current lightning node id.
 // 3. backupID - an identifier for this instance of breez. It is needed for conflict detection.
-func (b *Manager) prepareBackupInfo() (paths []string, nodeID string, err error) {
+func (b *Manager) prepareBackupInfo(lightningClient lnrpc.LightningClient) (paths []string, nodeID string, err error) {
 	log.Infof("extractBackupInfo started")
-	response, err := b.lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
+	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		log.Errorf("Couldn't get backup: %v", err)
 		return nil, "", err
 	}
-	info, err := b.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, "", err
 	}
