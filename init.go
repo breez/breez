@@ -314,7 +314,9 @@ func stopLightningDaemon() {
 		signal.RequestShutdown()
 	}
 	close(quitChan)
-	backupManager.Stop()
+	if backupManager != nil {
+		backupManager.Stop()
+	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 }
 
