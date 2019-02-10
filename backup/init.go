@@ -2,10 +2,10 @@ package backup
 
 import (
 	"fmt"
+	"path"
 	"sync"
 
 	"github.com/breez/breez/data"
-	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/daemon"
 )
 
@@ -18,7 +18,7 @@ type Manager struct {
 	started           int32
 	stopped           int32
 	workingDir        string
-	db                *db.DB
+	db                *backupDB
 	provider          Provider
 	backupRequestChan chan struct{}
 	ntfnChan          chan data.NotificationEvent
@@ -30,11 +30,15 @@ type Manager struct {
 func NewManager(
 	providerName string,
 	authService AuthService,
-	db *db.DB,
 	ntfnChan chan data.NotificationEvent,
 	workingDir string) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := openDB(path.Join(workingDir, "backup.db"))
 	if err != nil {
 		return nil, err
 	}

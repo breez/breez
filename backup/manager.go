@@ -14,6 +14,7 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
 )
 
@@ -24,7 +25,7 @@ func (b *Manager) RequestBackup() {
 
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
-	err := b.db.AddBackupRequest()
+	err := b.db.addBackupRequest()
 	if err != nil {
 		log.Errorf("failed to set pending backup %v", err)
 		b.notifyBackupFailed(err)
@@ -97,7 +98,7 @@ func (b *Manager) GetBackupIdentifier() (string, error) {
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
-func (b *Manager) Start(lightningClient lnrpc.LightningClient) {
+func (b *Manager) Start(lightningClient lnrpc.LightningClient, breezDB *db.DB) {
 	if atomic.SwapInt32(&b.started, 1) == 1 {
 		return
 	}
@@ -109,12 +110,12 @@ func (b *Manager) Start(lightningClient lnrpc.LightningClient) {
 			select {
 			case <-b.backupRequestChan:
 				//First get the last pending request in the database
-				pendingID, err := b.db.LastBackupRequest()
+				pendingID, err := b.db.lastBackupRequest()
 				if pendingID == 0 {
 					continue
 				}
 
-				paths, nodeID, err := b.prepareBackupInfo(lightningClient)
+				paths, nodeID, err := b.prepareBackupInfo(lightningClient, breezDB)
 				if err != nil {
 					log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
@@ -125,7 +126,7 @@ func (b *Manager) Start(lightningClient lnrpc.LightningClient) {
 					b.notifyBackupFailed(err)
 					continue
 				}
-				b.db.MarkBackupRequestCompleted(pendingID)
+				b.db.markBackupRequestCompleted(pendingID)
 				log.Infof("backup finished succesfully")
 				b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
 			case <-b.quitChan:
@@ -158,19 +159,19 @@ func (b *Manager) notifyBackupFailed(err error) {
 	b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
 }
 
-func (b *Manager) breezdbCopy() (string, error) {
+func (b *Manager) breezdbCopy(breezDB *db.DB) (string, error) {
 	dir, err := ioutil.TempDir("", "backup")
 	if err != nil {
 		return "", err
 	}
-	return b.db.BackupDb(dir)
+	return breezDB.BackupDb(dir)
 }
 
 // extractBackupInfo extracts the information that is needed for the external backup service:
 // 1. paths - the files need to be backed up.
 // 2. nodeID - the current lightning node id.
 // 3. backupID - an identifier for this instance of breez. It is needed for conflict detection.
-func (b *Manager) prepareBackupInfo(lightningClient lnrpc.LightningClient) (paths []string, nodeID string, err error) {
+func (b *Manager) prepareBackupInfo(lightningClient lnrpc.LightningClient, breezDB *db.DB) (paths []string, nodeID string, err error) {
 	log.Infof("extractBackupInfo started")
 	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
@@ -182,7 +183,7 @@ func (b *Manager) prepareBackupInfo(lightningClient lnrpc.LightningClient) (path
 		return nil, "", err
 	}
 
-	f, err := b.breezdbCopy()
+	f, err := b.breezdbCopy(breezDB)
 	if err != nil {
 		log.Errorf("Couldn't get breez backup file: %v", err)
 		return nil, "", err

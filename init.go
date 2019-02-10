@@ -230,7 +230,6 @@ func Init(workingDir string, services AppServices) (err error) {
 	backupManager, err = backup.NewManager(
 		bProviderName,
 		&AuthService{appServices: appServices},
-		breezDB,
 		notificationsChan,
 		appWorkingDir,
 	)
@@ -333,7 +332,7 @@ func stopLightningDaemon() {
 
 func startBreez() {
 	//start the go routings
-	backupManager.Start(lightningClient)
+	backupManager.Start(lightningClient, breezDB)
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
