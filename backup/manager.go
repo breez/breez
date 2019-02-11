@@ -150,6 +150,7 @@ func (b *Manager) Stop() {
 }
 
 func (b *Manager) notifyBackupFailed(err error) {
+	log.Infof("notifyBackupFailed %v", err)
 	if ferr, ok := err.(ProviderError); ok {
 		if ferr.IsAuthError() {
 			b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_AUTH_FAILED}

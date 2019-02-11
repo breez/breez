@@ -26,11 +26,15 @@ var (
 	createChannelGroup singleflight.Group
 )
 
+// RequestBackup is the breez API for asking the system to backup now.
 func RequestBackup() {
 	backupManager.RequestBackup()
 }
 
+// Restore is the breez API for restoring a specific nodeID using the configured
+// backup backend provider.
 func Restore(nodeID string) error {
+	log.Infof("Restore nodeID = %v", nodeID)
 	if err := breezDB.Close(); err != nil {
 		return err
 	}
@@ -40,6 +44,8 @@ func Restore(nodeID string) error {
 	return backupManager.Restore(nodeID)
 }
 
+// AvailableSnapshots is thte breez API for fetching all available backuped up
+// snapshot. One snapshot per node that is backed up.
 func AvailableSnapshots() ([]backup.SnapshotInfo, error) {
 	return backupManager.AvailableSnapshots()
 }
