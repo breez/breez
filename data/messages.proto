@@ -94,7 +94,9 @@ message NotificationEvent {
         ROUTING_NODE_CONNECTION_CHANGED = 4;
         LIGHTNING_SERVICE_DOWN = 5;
         FUND_ADDRESS_UNSPENT_CHANGED = 6;
-        BACKUP_FILES_AVAILABLE = 7;
+        BACKUP_SUCCESS = 7;
+        BACKUP_FAILED = 8;
+        BACKUP_AUTH_FAILED = 9;
     }
 
     NotificationType type = 1;

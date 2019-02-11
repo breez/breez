@@ -2,6 +2,7 @@ package bindings
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -15,11 +16,16 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-/*
-BreezNotifier is the interface that is used to send notifications to the user of this library
-*/
-type BreezNotifier interface {
+var (
+	appServices AppServices
+)
+
+// AppServices defined the interface needed in Breez library in order to functional
+// right.
+type AppServices interface {
 	Notify(notificationEvent []byte)
+	BackupProviderName() string
+	BackupProviderSignIn() (string, error)
 }
 
 // Logger is an interface that is used to log to the central log file.
@@ -30,6 +36,11 @@ type Logger interface {
 // BreezLogger is the implementation of Logger
 type BreezLogger struct {
 	log btclog.Logger
+}
+
+// BackupService is an service to this libary for backup execution.
+type BackupService interface {
+	Backup(files string, nodeID, backupID string) error
 }
 
 // Log writs to the centeral log file
@@ -66,20 +77,21 @@ type JobController interface {
 /*
 Init initialize lightning client
 */
-func Init(workingDir string) error {
-	return breez.Init(workingDir)
+func Init(tempDir string, workingDir string, services AppServices) error {
+	os.Setenv("TMPDIR", tempDir)
+	appServices = services
+	return breez.Init(workingDir, services)
 }
 
 /*
 Start the lightning client
 */
-func Start(tempDir string, notifier BreezNotifier) (err error) {
-	os.Setenv("TMPDIR", tempDir)
+func Start() (err error) {
 	notificationsChan, err := breez.Start()
 	if err != nil {
 		return err
 	}
-	go deliverNotifications(notificationsChan, notifier)
+	go deliverNotifications(notificationsChan, appServices)
 	return nil
 }
 
@@ -115,10 +127,32 @@ func Stop() {
 }
 
 /*
-Backup triggers breez backup
+RequestBackup triggers breez RequestBackup
 */
-func Backup() error {
-	return breez.Backup()
+func RequestBackup() {
+	breez.RequestBackup()
+}
+
+/*
+RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
+*/
+func RestoreBackup(nodeID string) error {
+	return breez.Restore(nodeID)
+}
+
+/*
+AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
+*/
+func AvailableSnapshots(nodeID string) (string, error) {
+	snapshots, err := breez.AvailableSnapshots()
+	if err != nil {
+		return "", err
+	}
+	bytes, err := json.Marshal(snapshots)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 /*
@@ -431,14 +465,14 @@ func BootstrapFiles(request []byte) error {
 	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
 }
 
-func deliverNotifications(notificationsChan chan data.NotificationEvent, notifier BreezNotifier) {
+func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
 		res, err := proto.Marshal(&notification)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error in marshaing notification", err)
 		}
-		notifier.Notify(res)
+		appServices.Notify(res)
 	}
 }
 
