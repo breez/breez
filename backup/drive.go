@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -31,6 +32,9 @@ func (d *driveServiceError) Error() string {
 func (d *driveServiceError) IsAuthError() bool {
 	if ferr, ok := d.err.(*googleapi.Error); ok {
 		return ferr.Code == 401 || ferr.Code == 403
+	}
+	if strings.Contains(d.err.Error(), "AuthError") {
+		return true
 	}
 	return false
 }
@@ -111,7 +115,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 			}
 		}
 		backups = append(backups, SnapshotInfo{
-			NodeID:       f.Name,
+			NodeID:       string(f.Name[9:]),
 			ModifiedTime: f.ModifiedTime,
 			BackupID:     backupID,
 		})
