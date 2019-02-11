@@ -2,6 +2,7 @@ package bindings
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -15,11 +16,16 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	appServices AppServices
+)
+
 // AppServices defined the interface needed in Breez library in order to functional
 // right.
 type AppServices interface {
 	Notify(notificationEvent []byte)
-	UploadBackupFiles(files string, nodeID, backupID string) error
+	BackupProviderName() string
+	BackupProviderSignIn() (string, error)
 }
 
 // Logger is an interface that is used to log to the central log file.
@@ -71,16 +77,17 @@ type JobController interface {
 /*
 Init initialize lightning client
 */
-func Init(workingDir string) error {
-	return breez.Init(workingDir)
+func Init(tempDir string, workingDir string, services AppServices) error {
+	os.Setenv("TMPDIR", tempDir)
+	appServices = services
+	return breez.Init(workingDir, services)
 }
 
 /*
 Start the lightning client
 */
-func Start(tempDir string, appServices AppServices) (err error) {
-	os.Setenv("TMPDIR", tempDir)
-	notificationsChan, err := breez.Start(appServices)
+func Start() (err error) {
+	notificationsChan, err := breez.Start()
 	if err != nil {
 		return err
 	}
@@ -127,10 +134,25 @@ func RequestBackup() {
 }
 
 /*
-GetBackupIdentifier triggers breez GetBackupIdentifier
+RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func GetBackupIdentifier() (string, error) {
-	return breez.GetBackupIdentifier()
+func RestoreBackup(nodeID string) error {
+	return breez.Restore(nodeID)
+}
+
+/*
+AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
+*/
+func AvailableSnapshots(nodeID string) (string, error) {
+	snapshots, err := breez.AvailableSnapshots()
+	if err != nil {
+		return "", err
+	}
+	bytes, err := json.Marshal(snapshots)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 /*

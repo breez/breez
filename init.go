@@ -92,7 +92,18 @@ var (
 // AppServices defined the interface needed in Breez library in order to functional
 // right.
 type AppServices interface {
-	UploadBackupFiles(files string, nodeID, backupID string) error
+	BackupProviderName() string
+	BackupProviderSignIn() (string, error)
+}
+
+// AuthService is a Specific implementation for backup.Manager
+type AuthService struct {
+	appServices AppServices
+}
+
+// SignIn is the interface function implementation needed for backup.Manager
+func (a *AuthService) SignIn() (string, error) {
+	return appServices.BackupProviderSignIn()
 }
 
 /*
@@ -167,12 +178,10 @@ func initBreezClientConnection() error {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func Start(services AppServices) (ntfnChan chan data.NotificationEvent, err error) {
+func Start() (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
 		return nil, errors.New("Daemon already started")
 	}
-
-	appServices = services
 	quitChan = make(chan struct{})
 	fmt.Println("Breez daemon started")
 	go func() {
@@ -189,11 +198,12 @@ Init is a required function to be called before Start.
 Its main purpose is to make breez services available like:
 offline queries and doubleratchet encryption.
 */
-func Init(workingDir string) (err error) {
+func Init(workingDir string, services AppServices) (err error) {
 	if atomic.SwapInt32(&initialized, 1) == 1 {
 		return nil
 	}
 	appWorkingDir = workingDir
+	appServices = services
 	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return err
@@ -213,6 +223,17 @@ func Init(workingDir string) (err error) {
 		return err
 	}
 	if err = doubleratchet.Start(path.Join(appWorkingDir, "sessions_encryption.db")); err != nil {
+		return err
+	}
+
+	bProviderName := appServices.BackupProviderName()
+	backupManager, err = backup.NewManager(
+		bProviderName,
+		&AuthService{appServices: appServices},
+		notificationsChan,
+		appWorkingDir,
+	)
+	if err != nil {
 		return err
 	}
 
@@ -303,15 +324,15 @@ func stopLightningDaemon() {
 		signal.RequestShutdown()
 	}
 	close(quitChan)
-	backupManager.Stop()
+	if backupManager != nil {
+		backupManager.Stop()
+	}
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 }
 
 func startBreez() {
 	//start the go routings
-	backupManager = backup.NewManager(appServices, breezDB, notificationsChan, lightningClient, appWorkingDir)
-	backupManager.Start()
-
+	backupManager.Start(lightningClient, breezDB)
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()

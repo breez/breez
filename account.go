@@ -3,9 +3,12 @@ package breez
 import (
 	"context"
 	"math"
+	"path"
 	"time"
 
+	"github.com/breez/breez/backup"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/lnwallet"
 	"github.com/golang/protobuf/proto"
@@ -23,15 +26,28 @@ var (
 	createChannelGroup singleflight.Group
 )
 
-// RequestBackup is used to add a request for backup
+// RequestBackup is the breez API for asking the system to backup now.
 func RequestBackup() {
 	backupManager.RequestBackup()
 }
 
-// GetBackupIdentifier returns the backup indentifier that is unique for this
-// instance of breez
-func GetBackupIdentifier() (string, error) {
-	return backupManager.GetBackupIdentifier()
+// Restore is the breez API for restoring a specific nodeID using the configured
+// backup backend provider.
+func Restore(nodeID string) error {
+	log.Infof("Restore nodeID = %v", nodeID)
+	if err := breezDB.Close(); err != nil {
+		return err
+	}
+	defer func() {
+		breezDB, _ = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
+	}()
+	return backupManager.Restore(nodeID)
+}
+
+// AvailableSnapshots is thte breez API for fetching all available backuped up
+// snapshot. One snapshot per node that is backed up.
+func AvailableSnapshots() ([]backup.SnapshotInfo, error) {
+	return backupManager.AvailableSnapshots()
 }
 
 /*
