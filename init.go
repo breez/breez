@@ -285,6 +285,9 @@ func OnResume() {
 }
 
 func startLightningDaemon(onReady func()) {
+	defer func() {
+		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+	}()
 	readyChan := make(chan interface{})
 	go func() {
 		select {
@@ -323,16 +326,21 @@ func stopLightningDaemon() {
 	if alive {
 		signal.RequestShutdown()
 	}
-	close(quitChan)
+	if quitChan != nil {
+		close(quitChan)
+		quitChan = nil
+	}
 	if backupManager != nil {
 		backupManager.Stop()
 	}
-	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
 }
 
 func startBreez() {
 	//start the go routings
 	backupManager.Start(lightningClient, breezDB)
+	if !ensureSafeToRunNode() {
+		return
+	}
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
@@ -379,4 +387,25 @@ func connectOnStartup() {
 	}
 
 	connectRoutingNode()
+}
+
+func ensureSafeToRunNode() bool {
+	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
+		return true
+	}
+	safe, err := backupManager.IsSafeToRunNode(info.IdentityPubkey)
+	if err != nil {
+		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
+		return true
+	}
+	if !safe {
+		log.Errorf("ensureSafeToRunNode detected remote restore! stopping breez since it is not safe to run")
+		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT}
+		stopLightningDaemon()
+		return false
+	}
+	log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
+	return true
 }
