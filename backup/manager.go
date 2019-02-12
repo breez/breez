@@ -92,9 +92,24 @@ func (b *Manager) AvailableSnapshots() ([]SnapshotInfo, error) {
 	return b.provider.AvailableSnapshots()
 }
 
-// GetBackupIdentifier returns the backup identifier unique for this breez instance
-func (b *Manager) GetBackupIdentifier() (string, error) {
-	return b.getBackupIdentifier()
+// IsSafeToRunNode checks if it is safe for this breez instance to run a specific node.
+// It is considered safe if we don't know of another instance which is the last to restore
+// this node (nodeID)
+func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
+	snapshots, err := b.provider.AvailableSnapshots()
+	if err != nil {
+		return false, err
+	}
+	backupID, err := b.getBackupIdentifier()
+	if err != nil {
+		return false, err
+	}
+	for _, s := range snapshots {
+		if s.NodeID == nodeID && backupID != s.BackupID {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
