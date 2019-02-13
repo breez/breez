@@ -32,12 +32,14 @@ func (b *Manager) RequestBackup() {
 		return
 	}
 
-	select {
-	case <-time.After(time.Second * 2):
-	case <-b.quitChan:
-		return
-	}
-	b.backupRequestChan <- struct{}{}
+	go func() {
+		select {
+		case <-time.After(time.Second * 2):
+		case <-b.quitChan:
+			return
+		}
+		b.backupRequestChan <- struct{}{}
+	}()
 }
 
 // Restore handles all the restoring process:
