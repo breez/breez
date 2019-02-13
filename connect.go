@@ -21,14 +21,14 @@ var (
 type onlineNotifier struct {
 	sync.Mutex
 	ntfnChan chan struct{}
-	isOnline int32
+	isOnline bool
 }
 
 func (n *onlineNotifier) setOffline() {
 	n.Lock()
 	defer n.Unlock()
 	n.ntfnChan = make(chan struct{})
-	atomic.StoreInt32(&n.isOnline, 0)
+	n.isOnline = false
 }
 
 func (n *onlineNotifier) setOnline() {
@@ -36,9 +36,10 @@ func (n *onlineNotifier) setOnline() {
 	// prevent calling multiple times to setOnline and causing panic of closing a closed
 	// channel.
 	var ntfnChan chan struct{}
-	if atomic.SwapInt32(&n.isOnline, 1) == 0 {
+	if !n.isOnline {
 		ntfnChan = n.ntfnChan
 	}
+	n.isOnline = true
 	n.Unlock()
 	if ntfnChan != nil {
 		close(ntfnChan)
@@ -46,6 +47,8 @@ func (n *onlineNotifier) setOnline() {
 }
 
 func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
+	n.Lock()
+	defer n.Unlock()
 	return n.ntfnChan
 }
 
