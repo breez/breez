@@ -102,10 +102,12 @@ func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 		log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return err
 	}
-	log.Infof("sendPaymentForRequest finished successfully")
+
 	if len(response.PaymentError) > 0 {
+		log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
 		return errors.New(response.PaymentError)
 	}
+	log.Infof("sendPaymentForRequest finished successfully")
 
 	syncSentPayments()
 	return nil
