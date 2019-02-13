@@ -19,7 +19,7 @@ import (
 
 const (
 	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout      = 2
+	endpointTimeout      = 5
 )
 
 var (
@@ -106,6 +106,7 @@ func ensureRoutingChannelOpened() {
 
 					if len(pendingChannels) > 0 {
 						log.Infof("ensureRoutingChannelOpened already has a pending channel with breez, doing nothing")
+						onRoutingNodePendingChannel()
 						return nil, nil
 					}
 
