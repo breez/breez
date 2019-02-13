@@ -105,7 +105,9 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 		return false, err
 	}
 	for _, s := range snapshots {
-		if s.NodeID == nodeID && backupID != s.BackupID {
+		if s.NodeID == nodeID && s.BackupID != "" && backupID != s.BackupID {
+			log.Errorf("remote restore was found for node %v.", nodeID)
+			log.Errorf("current backupID=%v, remote backupID-%v", backupID, s.BackupID)
 			return false, nil
 		}
 	}
