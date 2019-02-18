@@ -144,7 +144,13 @@ AddStandardInvoice encapsulate a given amount and description in a payment reque
 */
 func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	// Format the standard invoice memo
-	memo := invoice.Description + " | " + invoice.PayeeName + " | " + invoice.PayeeImageURL
+	memo := invoice.Description
+	if invoice.PayeeName != "" {
+		memo += (" | " + invoice.PayeeName)
+	}
+	if invoice.PayeeImageURL != "" {
+		memo += (" | " + invoice.PayeeImageURL)
+	}
 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
