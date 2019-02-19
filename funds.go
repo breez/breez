@@ -453,6 +453,9 @@ func watchSettlePendingTransfers() error {
 		}
 		if err != nil {
 			log.Errorf("askForIncomingTransfers - subscribe peers Failed to get notification %v", err)
+			// in case of unexpected error, we will wait a bit so we won't get
+			// into infinite loop.
+			time.Sleep(2 * time.Second)
 			continue
 		}
 
