@@ -109,26 +109,6 @@ func (db *DB) DeleteDB() error {
 	return os.Remove(db.Path())
 }
 
-// SaveAccount saves an account information to the database
-func (db *DB) SaveAccount(account []byte) error {
-	return db.saveItem([]byte(accountBucket), []byte("account"), account)
-}
-
-// FetchAccount fetches the cached account info from the database
-func (db *DB) FetchAccount() ([]byte, error) {
-	return db.fetchItem([]byte(accountBucket), []byte("account"))
-}
-
-// SavePaymentRequest saves a payment request into the database
-func (db *DB) SavePaymentRequest(payReqHash string, payReq []byte) error {
-	return db.saveItem([]byte(incmoingPayReqBucket), []byte(payReqHash), payReq)
-}
-
-// FetchPaymentRequest fetches a payment request by a payment hash
-func (db *DB) FetchPaymentRequest(payReqHash string) ([]byte, error) {
-	return db.fetchItem([]byte(incmoingPayReqBucket), []byte(payReqHash))
-}
-
 func (db *DB) saveItem(bucket []byte, key []byte, value []byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
