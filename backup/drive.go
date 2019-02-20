@@ -2,6 +2,9 @@ package backup
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -158,12 +161,21 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 				return
 			}
 			defer file.Close()
-			_, err = p.driveService.Files.Create(&drive.File{
+			uploadedFile, err := p.driveService.Files.Create(&drive.File{
 				Name:    fileName,
 				Parents: []string{newBackupFolder.Id}},
-			).Media(file).Do()
+			).Media(file).Fields("md5Checksum").Do()
 			if err != nil {
 				errorChan <- &driveServiceError{err}
+				return
+			}
+			checksum, err := fileChecksum(filePath)
+			if err != nil {
+				errorChan <- errors.New("failed to calculate checksum")
+				return
+			}
+			if uploadedFile.Md5Checksum != checksum {
+				errorChan <- errors.New("uploaded file checksum doesn't match")
 				return
 			}
 			successChan <- struct{}{}
@@ -326,4 +338,19 @@ func (p *GoogleDriveProvider) deleteStaleSnapshots(nodeFolderID, activeBackupFol
 		}
 	}
 	return nil
+}
+
+func fileChecksum(filePath string) (string, error) {
+	hash := md5.New()
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return "", err
+	}
+	checksum := hash.Sum(nil)
+	return hex.EncodeToString(checksum), nil
 }
