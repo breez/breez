@@ -232,14 +232,19 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 	}
 
-	var confirmedAddresses, unConfirmedAddresses []string
+	var confirmedAddresses, transferErrors, unConfirmedAddresses []string
 	var hasMempool bool
 	for _, a := range addresses {
 
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
 		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
-			confirmedAddresses = append(confirmedAddresses, a.Address)
-			log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
+			if a.ErrorMessage != "" {
+				transferErrors = append(transferErrors, a.ErrorMessage)
+				log.Infof("GetFundStatus adding transfer error for address %v", a.Address)
+			} else {
+				confirmedAddresses = append(confirmedAddresses, a.Address)
+				log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
+			}
 		} else {
 			hasMempool = hasMempool || a.EnteredMempool
 			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
@@ -281,6 +286,13 @@ func GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
 	if len(confirmedAddresses) > 0 {
 		log.Infof("GetFundStatus return status 'confirmed'")
 		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
+	}
+
+	if len(transferErrors) > 0 {
+		return &data.FundStatusReply{
+			Status:       data.FundStatusReply_TRANSFER_ERROR,
+			ErrorMessage: transferErrors[0],
+		}, nil
 	}
 
 	log.Infof("GetFundStatus return status 'no funds")
@@ -483,6 +495,7 @@ func getPaymentsForConfirmedTransactions() {
 	for _, address := range confirmedAddresses {
 		getPaymentGroup.Do(fmt.Sprintf("getPayment - %v", address), func() (interface{}, error) {
 			retryGetPayment(address, 3)
+			onUnspentChanged()
 			return nil, nil
 		})
 	}
