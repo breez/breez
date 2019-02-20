@@ -18,6 +18,10 @@ import (
 	"github.com/breez/lightninglib/lnrpc"
 )
 
+var (
+	backupDelay = time.Duration(time.Second * 2)
+)
+
 /*
 RequestBackup push a request for the backup files of breez
 */
@@ -34,7 +38,7 @@ func (b *Manager) RequestBackup() {
 
 	go func() {
 		select {
-		case <-time.After(time.Second * 2):
+		case <-time.After(backupDelay):
 		case <-b.quitChan:
 			return
 		}
