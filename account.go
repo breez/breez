@@ -2,6 +2,7 @@ package breez
 
 import (
 	"context"
+	"io/ioutil"
 	"math"
 	"path"
 	"time"
@@ -41,7 +42,8 @@ func Restore(nodeID string) error {
 	defer func() {
 		breezDB, _ = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
 	}()
-	return backupManager.Restore(nodeID)
+	_, err := backupManager.Restore(nodeID)
+	return err
 }
 
 // AvailableSnapshots is thte breez API for fetching all available backuped up
@@ -315,4 +317,37 @@ func calculateAccountAndNotify() (*data.Account, error) {
 	breezDB.SaveAccount(accBuf)
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_ACCOUNT_CHANGED}
 	return acc, nil
+}
+
+// extractBackupInfo extracts the information that is needed for the external backup service:
+// 1. paths - the files need to be backed up.
+// 2. nodeID - the current lightning node id.
+func prepareBackupInfo() (paths []string, nodeID string, err error) {
+	log.Infof("extractBackupInfo started")
+	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
+	if err != nil {
+		log.Errorf("Couldn't get backup: %v", err)
+		return nil, "", err
+	}
+	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		return nil, "", err
+	}
+
+	f, err := breezdbCopy(breezDB)
+	if err != nil {
+		log.Errorf("Couldn't get breez backup file: %v", err)
+		return nil, "", err
+	}
+	files := append(response.Files, f)
+	log.Infof("extractBackupInfo completd")
+	return files, info.IdentityPubkey, nil
+}
+
+func breezdbCopy(breezDB *db.DB) (string, error) {
+	dir, err := ioutil.TempDir("", "backup")
+	if err != nil {
+		return "", err
+	}
+	return breezDB.BackupDb(dir)
 }
