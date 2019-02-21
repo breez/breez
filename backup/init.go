@@ -5,6 +5,7 @@ import (
 	"path"
 	"sync"
 
+	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/daemon"
 )
@@ -30,6 +31,8 @@ type Manager struct {
 	workingDir        string
 	db                *backupDB
 	provider          Provider
+	prepareBackupData DataPreparer
+	config            *config.Config
 	backupRequestChan chan struct{}
 	ntfnChan          chan data.NotificationEvent
 	quitChan          chan struct{}
@@ -41,6 +44,8 @@ func NewManager(
 	providerName string,
 	authService AuthService,
 	ntfnChan chan data.NotificationEvent,
+	prepareData DataPreparer,
+	config *config.Config,
 	workingDir string) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService)
@@ -58,6 +63,8 @@ func NewManager(
 		workingDir:        workingDir,
 		ntfnChan:          ntfnChan,
 		provider:          provider,
+		prepareBackupData: prepareData,
+		config:            config,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil
