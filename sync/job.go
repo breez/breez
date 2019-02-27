@@ -11,6 +11,10 @@ import (
 	"github.com/lightninglabs/neutrino"
 )
 
+const (
+	rateLimitJobInterval = time.Duration(time.Minute * 10)
+)
+
 /*
 Run executes the download filter operation synchronousely
 */
@@ -62,6 +66,16 @@ func (s *Job) syncFilters() (err error) {
 		return err
 	}
 	defer jobDB.close()
+
+	// ensure job is rate limited.
+	lastRun, err := jobDB.lastSuccessRunDate()
+	if err != nil {
+		return err
+	}
+	if time.Now().Sub(lastRun) < rateLimitJobInterval {
+		s.log.Infof("job was not running due to rate limit, last run was at %v", lastRun)
+		return nil
+	}
 
 	startSyncHeight, err := jobDB.fetchCFilterSyncHeight()
 	if err != nil {
@@ -134,7 +148,7 @@ func (s *Job) syncFilters() (err error) {
 		}
 	}
 	s.log.Info("syncFilters completed succesfully")
-	return nil
+	return jobDB.setLastSuccessRunDate(time.Now())
 }
 
 func (s *Job) waitForHeaders(chainService *neutrino.ChainService, currentHeight uint64) (uint64, error) {
