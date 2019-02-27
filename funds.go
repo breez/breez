@@ -89,7 +89,14 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 	}
 
 	backupManager.RequestBackup()
-	return &data.AddFundInitReply{Address: r.Address, MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage, BackupJson: string(jsonBytes[:])}, nil
+	log.Infof("r.RequiredReserve = %v ", r.RequiredReserve)
+	return &data.AddFundInitReply{
+		Address:           r.Address,
+		MaxAllowedDeposit: r.MaxAllowedDeposit,
+		ErrorMessage:      r.ErrorMessage,
+		BackupJson:        string(jsonBytes[:]),
+		RequiredReserve:   r.RequiredReserve,
+	}, nil
 }
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
