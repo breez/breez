@@ -38,3 +38,7 @@ type ProviderError interface {
 type AuthService interface {
 	SignIn() (string, error)
 }
+
+// DataPreparer should be responsible to prepare the data needed to
+// be backed up. The data contains the file paths and the nodeID.
+type DataPreparer func() (paths []string, nodeID string, err error)

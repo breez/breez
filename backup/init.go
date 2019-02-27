@@ -5,12 +5,23 @@ import (
 	"path"
 	"sync"
 
+	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/lightninglib/daemon"
 )
 
+// ProviderFactory is a factory for create a specific provider.
+// This is the function needed to be implemented for a new provider
+// to be registered and used.
+type ProviderFactory func(authService AuthService) (Provider, error)
+
 var (
-	log = daemon.BackendLog().Logger("BCKP")
+	log              = daemon.BackendLog().Logger("BCKP")
+	providersFactory = map[string]ProviderFactory{
+		"gdrive": func(authService AuthService) (Provider, error) {
+			return NewGoogleDriveProvider(authService)
+		},
+	}
 )
 
 // Manager holds the data needed for the backup to execute its work.
@@ -20,6 +31,8 @@ type Manager struct {
 	workingDir        string
 	db                *backupDB
 	provider          Provider
+	prepareBackupData DataPreparer
+	config            *config.Config
 	backupRequestChan chan struct{}
 	ntfnChan          chan data.NotificationEvent
 	quitChan          chan struct{}
@@ -31,6 +44,8 @@ func NewManager(
 	providerName string,
 	authService AuthService,
 	ntfnChan chan data.NotificationEvent,
+	prepareData DataPreparer,
+	config *config.Config,
 	workingDir string) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService)
@@ -48,16 +63,22 @@ func NewManager(
 		workingDir:        workingDir,
 		ntfnChan:          ntfnChan,
 		provider:          provider,
+		prepareBackupData: prepareData,
+		config:            config,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil
 }
 
+// RegisterProvider registers a backup provider with a unique name
+func RegisterProvider(providerName string, factory ProviderFactory) {
+	providersFactory[providerName] = factory
+}
+
 func createBackupProvider(providerName string, authService AuthService) (Provider, error) {
-	switch providerName {
-	case "gdrive":
-		return NewGoogleDriveProvider(authService)
-	default:
+	factory, ok := providersFactory[providerName]
+	if !ok {
 		return nil, fmt.Errorf("provider not found for %v", providerName)
 	}
+	return factory(authService)
 }

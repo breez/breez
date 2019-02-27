@@ -1,7 +1,6 @@
 package backup
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -12,10 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
-	"github.com/breez/breez/db"
-	"github.com/breez/lightninglib/lnrpc"
+)
+
+var (
+	backupDelay = time.Duration(time.Second * 2)
 )
 
 /*
@@ -34,7 +34,7 @@ func (b *Manager) RequestBackup() {
 
 	go func() {
 		select {
-		case <-time.After(time.Second * 2):
+		case <-time.After(backupDelay):
 		case <-b.quitChan:
 			return
 		}
@@ -45,21 +45,17 @@ func (b *Manager) RequestBackup() {
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
-func (b *Manager) Restore(nodeID string) error {
+func (b *Manager) Restore(nodeID string) ([]string, error) {
 	backupID, err := b.getBackupIdentifier()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	files, err := b.provider.DownloadBackupFiles(nodeID, backupID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(files) != 3 {
-		return fmt.Errorf("wrong number of backup files %v", len(files))
-	}
-	c, err := config.GetConfig(b.workingDir)
-	if err != nil {
-		return err
+		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
 	}
 
 	paths := map[string]string{
@@ -67,25 +63,27 @@ func (b *Manager) Restore(nodeID string) error {
 		"channel.db": "data/graph/{{network}}",
 		"breez.db":   "",
 	}
+	var targetFiles []string
 	for _, f := range files {
 		basename := path.Base(f)
 		p, ok := paths[basename]
 		if !ok {
-			return err
+			return nil, err
 		}
-		destDir := path.Join(b.workingDir, strings.Replace(p, "{{network}}", c.Network, -1))
+		destDir := path.Join(b.workingDir, strings.Replace(p, "{{network}}", b.config.Network, -1))
 		if destDir != b.workingDir {
 			err = os.MkdirAll(destDir, 0700)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		err = os.Rename(f, path.Join(destDir, basename))
 		if err != nil {
-			return err
+			return nil, err
 		}
+		targetFiles = append(targetFiles, path.Join(destDir, basename))
 	}
-	return nil
+	return targetFiles, nil
 }
 
 // AvailableSnapshots returns a list of snsapshot that the backup provider reports
@@ -117,7 +115,7 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
-func (b *Manager) Start(lightningClient lnrpc.LightningClient, breezDB *db.DB) {
+func (b *Manager) Start() {
 	if atomic.SwapInt32(&b.started, 1) == 1 {
 		return
 	}
@@ -134,7 +132,7 @@ func (b *Manager) Start(lightningClient lnrpc.LightningClient, breezDB *db.DB) {
 					continue
 				}
 
-				paths, nodeID, err := b.prepareBackupInfo(lightningClient, breezDB)
+				paths, nodeID, err := b.prepareBackupData()
 				if err != nil {
 					log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
@@ -163,9 +161,18 @@ func (b *Manager) Stop() {
 	if atomic.SwapInt32(&b.stopped, 1) == 1 {
 		return
 	}
-
+	b.db.close()
 	close(b.quitChan)
 	b.wg.Wait()
+}
+
+// destroy is intended to use internally for testing purpose.
+func (b *Manager) destroy() error {
+	b.Stop()
+	if err := os.RemoveAll(path.Join(b.workingDir, "backup")); err != nil {
+		return err
+	}
+	return os.Remove(path.Join(b.workingDir, "backup.db"))
 }
 
 func (b *Manager) notifyBackupFailed(err error) {
@@ -177,40 +184,6 @@ func (b *Manager) notifyBackupFailed(err error) {
 		}
 	}
 	b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
-}
-
-func (b *Manager) breezdbCopy(breezDB *db.DB) (string, error) {
-	dir, err := ioutil.TempDir("", "backup")
-	if err != nil {
-		return "", err
-	}
-	return breezDB.BackupDb(dir)
-}
-
-// extractBackupInfo extracts the information that is needed for the external backup service:
-// 1. paths - the files need to be backed up.
-// 2. nodeID - the current lightning node id.
-// 3. backupID - an identifier for this instance of breez. It is needed for conflict detection.
-func (b *Manager) prepareBackupInfo(lightningClient lnrpc.LightningClient, breezDB *db.DB) (paths []string, nodeID string, err error) {
-	log.Infof("extractBackupInfo started")
-	response, err := lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
-	if err != nil {
-		log.Errorf("Couldn't get backup: %v", err)
-		return nil, "", err
-	}
-	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		return nil, "", err
-	}
-
-	f, err := b.breezdbCopy(breezDB)
-	if err != nil {
-		log.Errorf("Couldn't get breez backup file: %v", err)
-		return nil, "", err
-	}
-	files := append(response.Files, f)
-	log.Infof("extractBackupInfo completd")
-	return files, info.IdentityPubkey, nil
 }
 
 // getBackupIdentifier retrieves an identifier that is unique for this instance of breez.

@@ -231,6 +231,8 @@ func Init(workingDir string, services AppServices) (err error) {
 		bProviderName,
 		&AuthService{appServices: appServices},
 		notificationsChan,
+		prepareBackupInfo,
+		cfg,
 		appWorkingDir,
 	)
 	if err != nil {
@@ -337,7 +339,7 @@ func stopLightningDaemon() {
 
 func startBreez() {
 	//start the go routings
-	backupManager.Start(lightningClient, breezDB)
+	backupManager.Start()
 	if !ensureSafeToRunNode() {
 		return
 	}
