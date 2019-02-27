@@ -55,6 +55,7 @@ message AddFundInitReply {
     int64 lockHeight = 3;
     int64 maxAllowedDeposit = 4;
     string errorMessage = 5;
+    int64 requiredReserve = 6;
 }
 
 message AddFundStatusRequest {
