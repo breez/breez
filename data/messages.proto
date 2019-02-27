@@ -109,6 +109,7 @@ message AddFundInitReply {
     int64 maxAllowedDeposit = 2;
     string errorMessage = 3;
     string backupJson = 4;
+    int64 requiredReserve = 5;
 }
 
 message AddFundReply {
