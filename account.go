@@ -11,7 +11,6 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/lnwallet"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/singleflight"
 
@@ -166,11 +165,7 @@ func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 	var maxAllowedToReceive int64
 	var maxAllowedToPay int64
 	for _, b := range channels.Channels {
-		accountMinAmount := b.Capacity / 100
-		if accountMinAmount < int64(lnwallet.DefaultDustLimit()) {
-			accountMinAmount = int64(lnwallet.DefaultDustLimit())
-		}
-		thisChannelCanReceive := b.RemoteBalance - accountMinAmount
+		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserve
 		if thisChannelCanReceive < 0 {
 			thisChannelCanReceive = 0
 		}
@@ -178,7 +173,7 @@ func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 			maxAllowedToReceive = thisChannelCanReceive
 		}
 
-		thisChannelCanPay := b.LocalBalance - accountMinAmount
+		thisChannelCanPay := b.LocalBalance - b.LocalChanReserve
 		if thisChannelCanPay < 0 {
 			thisChannelCanPay = 0
 		}
