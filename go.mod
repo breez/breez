@@ -28,4 +28,4 @@ replace github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d => github.co
 
 replace github.com/lightninglabs/neutrino v0.0.0-20190115022559-351f5f06c6af => github.com/breez/neutrino v0.0.0-20190217133150-08c3c9e7d6d5
 
-replace github.com/btcsuite/btcwallet v0.0.0-20190123033236-ba03278a64bc => github.com/breez/btcwallet v0.0.0-20190217161832-505bba602ae1
+replace github.com/btcsuite/btcwallet v0.0.0-20190123033236-ba03278a64bc => github.com/breez/btcwallet v0.0.0-20190303130849-eba47a0b4881
