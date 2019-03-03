@@ -131,7 +131,8 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	if err := waitRoutingNodeConnected(); err != nil {
 		return "", err
 	}
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: string(memo), Private: true, Value: invoice.Amount, Expiry: invoiceExpiry})
+	hexMemo := hex.EncodeToString(memo)
+	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: hexMemo, Private: true, Value: invoice.Amount, Expiry: invoiceExpiry})
 	if err != nil {
 		return "", err
 	}
@@ -208,21 +209,32 @@ func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 
 func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
 	invoiceMemo := &data.InvoiceMemo{}
-	if err := proto.Unmarshal([]byte(decodedPayReq.Description), invoiceMemo); err != nil {
-		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
-		if strings.Count(decodedPayReq.Description, " | ") == 2 {
-			// There is also the 'description | payee | logo' encoding
-			// meant to encode breez metadata in a way that's human readable
-			invoiceData := strings.Split(decodedPayReq.Description, " | ")
-			invoiceMemo.Description = invoiceData[0]
-			invoiceMemo.PayeeName = invoiceData[1]
-			invoiceMemo.PayeeImageURL = invoiceData[2]
-		} else {
-			invoiceMemo.Description = decodedPayReq.Description
-		}
-	}
 	invoiceMemo.Amount = decodedPayReq.NumSatoshis
+
+	memoBytes, err := hex.DecodeString(decodedPayReq.Description)
+	if err != nil {
+		fillTextMemo(decodedPayReq.Description, invoiceMemo)
+		return invoiceMemo
+	}
+
+	if err = proto.Unmarshal(memoBytes, invoiceMemo); err != nil {
+		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
+		fillTextMemo(decodedPayReq.Description, invoiceMemo)
+	}
 	return invoiceMemo
+}
+
+func fillTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
+	if strings.Count(memo, " | ") == 2 {
+		// There is also the 'description | payee | logo' encoding
+		// meant to encode breez metadata in a way that's human readable
+		invoiceData := strings.Split(memo, " | ")
+		invoiceMemo.Description = invoiceData[0]
+		invoiceMemo.PayeeName = invoiceData[1]
+		invoiceMemo.PayeeImageURL = invoiceData[2]
+	} else {
+		invoiceMemo.Description = memo
+	}
 }
 
 func watchPayments() {
