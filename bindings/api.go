@@ -301,15 +301,6 @@ func AddInvoice(invoice []byte) (paymentRequest string, err error) {
 }
 
 /*
-AddStandardInvoice is part of the binding inteface which is delegated to breez.AddStandardInvoice
-*/
-func AddStandardInvoice(invoice []byte) (paymentRequest string, err error) {
-	decodedStandardInvoiceMemo := &data.InvoiceMemo{}
-	proto.Unmarshal(invoice, decodedStandardInvoiceMemo)
-	return breez.AddStandardInvoice(decodedStandardInvoiceMemo)
-}
-
-/*
 DecodePaymentRequest is part of the binding inteface which is delegated to breez.DecodePaymentRequest
 */
 func DecodePaymentRequest(paymentRequest string) ([]byte, error) {

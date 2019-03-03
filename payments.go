@@ -12,7 +12,6 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -114,43 +113,18 @@ func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 }
 
 /*
-AddInvoice encapsulate a given invoice information in a payment request
+AddInvoice encapsulate a given amount and description in a payment request
 */
 func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
-	memo, err := proto.Marshal(invoice)
-	if err != nil {
-		return "", err
-	}
-
-	var invoiceExpiry int64
-	if invoice.Expiry <= 0 {
-		invoiceExpiry = defaultInvoiceExpiry
-	} else {
-		invoiceExpiry = invoice.Expiry
-	}
-	if err := waitRoutingNodeConnected(); err != nil {
-		return "", err
-	}
-	hexMemo := hex.EncodeToString(memo)
-	response, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: hexMemo, Private: true, Value: invoice.Amount, Expiry: invoiceExpiry})
-	if err != nil {
-		return "", err
-	}
-	log.Infof("Generated Invoice: %v", response.PaymentRequest)
-	return response.PaymentRequest, nil
-}
-
-/*
-AddStandardInvoice encapsulate a given amount and description in a payment request
-*/
-func AddStandardInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	// Format the standard invoice memo
 	memo := invoice.Description
-	if invoice.PayeeName != "" {
-		memo += (" | " + invoice.PayeeName)
-	}
-	if invoice.PayeeImageURL != "" {
-		memo += (" | " + invoice.PayeeImageURL)
+	formatPayeeData := invoice.PayeeName != "" && invoice.PayeeImageURL != ""
+	if formatPayeeData {
+		memo += (" | " + invoice.PayeeName + " | " + invoice.PayeeImageURL)
+		formatPayerData := invoice.PayerName != "" && invoice.PayerImageURL != ""
+		if formatPayerData {
+			memo += (" | " + invoice.PayerName + " | " + invoice.PayerImageURL)
+		}
 	}
 
 	if invoice.Expiry <= 0 {
@@ -210,28 +184,37 @@ func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
 	invoiceMemo := &data.InvoiceMemo{}
 	invoiceMemo.Amount = decodedPayReq.NumSatoshis
-
-	memoBytes, err := hex.DecodeString(decodedPayReq.Description)
-	if err != nil {
-		fillTextMemo(decodedPayReq.Description, invoiceMemo)
-		return invoiceMemo
-	}
-
-	if err = proto.Unmarshal(memoBytes, invoiceMemo); err != nil {
-		// In case we cannot unmarshal the description we are probably dealing with a standard invoice
-		fillTextMemo(decodedPayReq.Description, invoiceMemo)
-	}
+	parseTextMemo(decodedPayReq.Description, invoiceMemo)
 	return invoiceMemo
 }
 
-func fillTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
-	if strings.Count(memo, " | ") == 2 {
+func formatTextMemo(invoice *data.InvoiceMemo) string {
+	memo := invoice.Description
+	formatPayeeData := invoice.PayeeName != "" && invoice.PayeeImageURL != ""
+	if formatPayeeData {
+		memo += (" | " + invoice.PayeeName + " | " + invoice.PayeeImageURL)
+		formatPayerData := invoice.PayerName != "" && invoice.PayerImageURL != ""
+		if formatPayerData {
+			memo += (" | " + invoice.PayerName + " | " + invoice.PayerImageURL)
+		}
+	}
+	return memo
+}
+
+func parseTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
+	if strings.Count(memo, " | ") >= 2 {
 		// There is also the 'description | payee | logo' encoding
 		// meant to encode breez metadata in a way that's human readable
 		invoiceData := strings.Split(memo, " | ")
 		invoiceMemo.Description = invoiceData[0]
 		invoiceMemo.PayeeName = invoiceData[1]
 		invoiceMemo.PayeeImageURL = invoiceData[2]
+
+		// If we also have the payer data, grap it.
+		if len(invoiceData) == 5 {
+			invoiceMemo.PayerName = invoiceData[3]
+			invoiceMemo.PayerImageURL = invoiceData[4]
+		}
 	} else {
 		invoiceMemo.Description = memo
 	}
