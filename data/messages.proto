@@ -30,7 +30,11 @@ message Account {
     int64 maxPaymentAmount = 7;   
 
     //The routing node fee as reflected in the node policy
-    int64 routingNodeFee = 8; 
+    int64 routingNodeFee = 8;
+
+    //the state of the account, if not enabled then no automatic
+    //attempt to open a channel with breez node will be made.
+    bool enabled = 9;
 }
 
 message Payment {
