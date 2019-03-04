@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	defaultInvoiceExpiry int64 = 3600
+	defaultInvoiceExpiry       int64 = 3600
+	invoiceCustomPartDelimiter       = "|\n"
 )
 
 var blankInvoiceGroup singleflight.Group
@@ -192,31 +193,30 @@ func formatTextMemo(invoice *data.InvoiceMemo) string {
 	memo := invoice.Description
 	formatPayeeData := invoice.PayeeName != "" && invoice.PayeeImageURL != ""
 	if formatPayeeData {
-		memo += (" | " + invoice.PayeeName + " | " + invoice.PayeeImageURL)
+		memo += invoiceCustomPartDelimiter
+		customParts := []string{invoice.PayeeName, invoice.PayeeImageURL}
 		formatPayerData := invoice.PayerName != "" && invoice.PayerImageURL != ""
 		if formatPayerData {
-			memo += (" | " + invoice.PayerName + " | " + invoice.PayerImageURL)
+			customParts = append(customParts, invoice.PayerName, invoice.PayerImageURL)
 		}
+		memo += strings.Join(customParts, " | ")
 	}
 	return memo
 }
 
 func parseTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
-	if strings.Count(memo, " | ") >= 2 {
-		// There is also the 'description | payee | logo' encoding
-		// meant to encode breez metadata in a way that's human readable
-		invoiceData := strings.Split(memo, " | ")
-		invoiceMemo.Description = invoiceData[0]
-		invoiceMemo.PayeeName = invoiceData[1]
-		invoiceMemo.PayeeImageURL = invoiceData[2]
-
-		// If we also have the payer data, grap it.
-		if len(invoiceData) == 5 {
-			invoiceMemo.PayerName = invoiceData[3]
-			invoiceMemo.PayerImageURL = invoiceData[4]
+	invoiceMemo.Description = memo
+	invoiceParts := strings.Split(memo, invoiceCustomPartDelimiter)
+	if len(invoiceParts) == 2 {
+		invoiceMemo.Description = invoiceParts[0]
+		customData := invoiceParts[1]
+		customDataParts := strings.Split(customData, " | ")
+		invoiceMemo.PayeeName = customDataParts[0]
+		invoiceMemo.PayeeImageURL = customDataParts[1]
+		if len(customDataParts) == 4 {
+			invoiceMemo.PayerName = customDataParts[2]
+			invoiceMemo.PayerImageURL = customDataParts[3]
 		}
-	} else {
-		invoiceMemo.Description = memo
 	}
 }
 
