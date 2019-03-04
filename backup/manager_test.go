@@ -148,7 +148,7 @@ func TestMultipleRequestBackup(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		manager.RequestBackup()
 	}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	if tester.uploadCounter > 2 {
 		t.Error("Backup was called too much times")
 	}
