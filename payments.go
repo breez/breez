@@ -118,15 +118,7 @@ AddInvoice encapsulate a given amount and description in a payment request
 */
 func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	// Format the standard invoice memo
-	memo := invoice.Description
-	formatPayeeData := invoice.PayeeName != "" && invoice.PayeeImageURL != ""
-	if formatPayeeData {
-		memo += (" | " + invoice.PayeeName + " | " + invoice.PayeeImageURL)
-		formatPayerData := invoice.PayerName != "" && invoice.PayerImageURL != ""
-		if formatPayerData {
-			memo += (" | " + invoice.PayerName + " | " + invoice.PayerImageURL)
-		}
-	}
+	memo := formatTextMemo(invoice)
 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
