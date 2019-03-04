@@ -17,7 +17,7 @@ import (
 
 const (
 	defaultInvoiceExpiry       int64 = 3600
-	invoiceCustomPartDelimiter       = "|\n"
+	invoiceCustomPartDelimiter       = " |\n"
 )
 
 var blankInvoiceGroup singleflight.Group
