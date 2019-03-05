@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"math"
 	"path"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/breez/breez/backup"
@@ -60,29 +58,7 @@ func EnableAccount(enabled bool) error {
 		log.Infof("Error in enabling account (enabled = %v) %v", enabled, err)
 		return err
 	}
-	if !enabled {
-		_, channelPoints, err := getBreezOpenChannels()
-		if err != nil {
-			return err
-		}
-		for _, c := range channelPoints {
-			txAndOutput := strings.Split(c, ":")
-			index, err := strconv.ParseUint(txAndOutput[1], 10, 32)
-			if err != nil {
-				return err
-			}
-			cp := &lnrpc.ChannelPoint{
-				FundingTxid: &lnrpc.ChannelPoint_FundingTxidStr{
-					FundingTxidStr: txAndOutput[0],
-				},
-				OutputIndex: uint32(index),
-			}
-			_, err = lightningClient.CloseChannel(context.Background(), &lnrpc.CloseChannelRequest{ChannelPoint: cp})
-			if err != nil {
-				return err
-			}
-		}
-	} else {
+	if enabled {
 		go ensureRoutingChannelOpened()
 	}
 
