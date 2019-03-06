@@ -51,6 +51,21 @@ func AvailableSnapshots() ([]backup.SnapshotInfo, error) {
 	return backupManager.AvailableSnapshots()
 }
 
+// EnableAccount controls whether the account will be enabled or disabled.
+// When disbled, no attempt will be made to open a channel with breez node.
+func EnableAccount(enabled bool) error {
+	if err := breezDB.EnableAccount(enabled); err != nil {
+		log.Infof("Error in enabling account (enabled = %v) %v", enabled, err)
+		return err
+	}
+	if enabled {
+		go ensureRoutingChannelOpened()
+	}
+
+	onAccountChanged()
+	return nil
+}
+
 /*
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
 */
@@ -88,12 +103,19 @@ func ensureRoutingChannelOpened() {
 	log.Info("ensureRoutingChannelOpened started...")
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
+			enabled, err := breezDB.AccountEnabled()
+			if err != nil {
+				return nil, err
+			}
+			if !enabled {
+				return nil, nil
+			}
 			lnInfo, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if IsConnectedToRoutingNode() {
-					channelPoints, err := getBreezOpenChannelsPoints()
+					channelPoints, _, err := getBreezOpenChannels()
 					if err != nil {
-						log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannelsPoints %v", err)
+						log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannels %v", err)
 					}
 
 					if len(channelPoints) > 0 {
@@ -129,7 +151,7 @@ func ensureRoutingChannelOpened() {
 }
 
 func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
-	channelPoints, err := getBreezOpenChannelsPoints()
+	channelPoints, _, err := getBreezOpenChannels()
 	if err != nil {
 		return -1, err
 	}
@@ -186,7 +208,7 @@ func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
 }
 
 func getRoutingNodeFeeRate(ourKey string) (int64, error) {
-	chanIDs, err := getBreezOpenChannelsPoints()
+	chanIDs, _, err := getBreezOpenChannels()
 	if err != nil {
 		log.Errorf("Failed to get breez channels %v", err)
 		return 0, err
@@ -210,22 +232,24 @@ func getRoutingNodeFeeRate(ourKey string) (int64, error) {
 	return 0, nil
 }
 
-func getBreezOpenChannelsPoints() ([]uint64, error) {
-	var channelPoints []uint64
+func getBreezOpenChannels() ([]uint64, []string, error) {
+	var channelPoints []string
+	var channelIds []uint64
 	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, c := range channels.Channels {
 		if c.RemotePubkey == cfg.RoutingNodePubKey {
-			channelPoints = append(channelPoints, c.ChanId)
+			channelPoints = append(channelPoints, c.ChannelPoint)
+			channelIds = append(channelIds, c.ChanId)
 			log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
 		}
 	}
-	return channelPoints, nil
+	return channelIds, channelPoints, nil
 }
 
 func getPendingBreezChannelPoint() (string, error) {
@@ -279,6 +303,11 @@ func calculateAccount() (*data.Account, error) {
 	}
 	log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
 
+	enabled, err := breezDB.AccountEnabled()
+	if err != nil {
+		return nil, err
+	}
+
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
@@ -289,6 +318,7 @@ func calculateAccount() (*data.Account, error) {
 		Status:              accStatus,
 		WalletBalance:       onChainBalance,
 		RoutingNodeFee:      routingNodeFeeRate,
+		Enabled:             enabled,
 	}, nil
 }
 

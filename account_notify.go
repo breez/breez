@@ -37,7 +37,7 @@ func RegisterChannelOpenedNotification(token string) error {
 
 func setUserNotificationRequest(token string, notificationType int) error {
 	log.Infof("setUserNotificationRequest notificationType = %v", notificationType)
-	channelPoints, err := getBreezOpenChannelsPoints()
+	channelPoints, _, err := getBreezOpenChannels()
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func trackOpenedChannel() {
 	for {
 		select {
 		case <-ticker.C:
-			channelPoints, err := getBreezOpenChannelsPoints()
+			channelPoints, _, err := getBreezOpenChannels()
 			if err == nil && len(channelPoints) > 0 {
 				ticker.Stop()
 				onRoutingNodeOpenedChannel()

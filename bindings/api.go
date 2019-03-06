@@ -198,6 +198,13 @@ func ConnectAccount() error {
 }
 
 /*
+EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
+*/
+func EnableAccount(enabled bool) error {
+	return breez.EnableAccount(enabled)
+}
+
+/*
 IsConnectedToRoutingNode is part of the binding inteface which is delegated to breez.IsConnectedToRoutingNode
 */
 func IsConnectedToRoutingNode() bool {
