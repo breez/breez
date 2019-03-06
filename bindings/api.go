@@ -8,6 +8,7 @@ import (
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
+	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
 	breezlog "github.com/breez/breez/log"
@@ -101,6 +102,18 @@ The daemon closes itself automatically when reaching this state.
 */
 func NewSyncJob(workingDir string) (JobController, error) {
 	job, err := sync.NewJob(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	return job, nil
+}
+
+/*
+NewClosedChannelsJob starts a job to download the list of closed channels.
+The daemon closes itself automatically when reaching this state.
+*/
+func NewClosedChannelsJob(workingDir string) (JobController, error) {
+	job, err := closedchannels.NewJob(workingDir)
 	if err != nil {
 		return nil, err
 	}

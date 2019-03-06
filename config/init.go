@@ -35,6 +35,7 @@ type Config struct {
 	Network           string `long:"network"`
 	GrpcKeepAlive     bool   `long:"grpckeepalive"`
 	BootstrapURL      string `long:"bootstrap"`
+	ClosedChannelsURL string `long:"closedchannelsurl"`
 
 	//Job Options
 	JobCfg JobConfig `group:"Job Options"`
