@@ -3,9 +3,11 @@ package closedchannels
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"sync/atomic"
 )
@@ -95,7 +97,7 @@ func firstFileNumberToDownload(dirname string) (uint, error) {
 	return n, nil
 }
 
-func downloadFile(filepath string, url string) (int, error) {
+func downloadFile(filename string, url string) (int, error) {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
@@ -108,14 +110,19 @@ func downloadFile(filepath string, url string) (int, error) {
 		return resp.StatusCode, nil
 	}
 
-	// Create the file
-	out, err := os.Create(filepath)
+	// Create a temporary file
+	out, err := ioutil.TempFile(filepath.Dir(filename), "")
 	if err != nil {
 		return 0, err
 	}
+	defer os.Remove(out.Name())
 	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return http.StatusOK, err
+	}
+	err = os.Rename(out.Name(), filename)
 	return http.StatusOK, err
 }
