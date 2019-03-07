@@ -66,9 +66,12 @@ func (s *Job) downloadClosedChannels() error {
 	}
 	var filename string
 	statusCode := http.StatusOK
-	for ; err != nil && statusCode == http.StatusOK && !s.terminated(); f++ {
+	s.log.Infof("Downloading: %v", f)
+	for ; err == nil && statusCode == http.StatusOK && !s.terminated(); f++ {
 		filename = strconv.Itoa(int(f))
+		s.log.Infof("Downloading: %v from %v", path.Join(directory, filename), s.config.ClosedChannelsURL+"/"+filename)
 		statusCode, err = downloadFile(path.Join(directory, filename), s.config.ClosedChannelsURL+"/"+filename)
+		s.log.Infof("Download result: %v %v", statusCode, err)
 	}
 
 	return err
