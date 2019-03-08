@@ -12,10 +12,13 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
+)
+
+const (
+	transferFundsRequest = "Bitcoin Transfer"
 )
 
 var (
@@ -521,11 +524,6 @@ func retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) {
 }
 
 func getPayment(addressInfo *db.SwapAddressInfo) error {
-	invoiceData := &data.InvoiceMemo{TransferRequest: true}
-	memo, err := proto.Marshal(invoiceData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal invoice data, err = %v", err)
-	}
 	//first lookup for an existing invoice
 	var paymentRequest string
 	invoice, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
@@ -540,7 +538,7 @@ func getPayment(addressInfo *db.SwapAddressInfo) error {
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		addInvoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: string(memo), Private: true, Expiry: 60 * 60 * 24 * 30})
+		addInvoice, err := lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
 		if err != nil {
 			return fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}

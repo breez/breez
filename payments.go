@@ -178,6 +178,9 @@ func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
 	invoiceMemo := &data.InvoiceMemo{}
 	invoiceMemo.Amount = decodedPayReq.NumSatoshis
 	parseTextMemo(decodedPayReq.Description, invoiceMemo)
+	if invoiceMemo.Description == transferFundsRequest {
+		invoiceMemo.TransferRequest = true
+	}
 	return invoiceMemo
 }
 
