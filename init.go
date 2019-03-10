@@ -343,6 +343,7 @@ func startBreez() {
 	if !ensureSafeToRunNode() {
 		return
 	}
+	go watchBackupEvents()
 	go trackOpenedChannel()
 	go watchRoutingNodeConnection()
 	go watchPayments()
