@@ -116,6 +116,13 @@ func onRoutingNodeConnectionChanged(connected bool) {
 		go ensureSafeToRunNode()
 	} else {
 		nodeOnlineNotifier.setOffline()
+
+		// in case we don't have a channel yet, we will try to connect
+		// again so we can keep trying to get an opened channel.
+		_, channels, _ := getBreezOpenChannels()
+		if len(channels) == 0 {
+			connectRoutingNode()
+		}
 	}
 }
 
