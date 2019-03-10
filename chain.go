@@ -126,6 +126,6 @@ func watchOnChainState() {
 		}
 		log.Infof("watchOnChainState sending account change notification")
 		onAccountChanged()
-		ensureRoutingChannelOpened()
+		go ensureRoutingChannelOpened()
 	}
 }

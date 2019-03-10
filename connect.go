@@ -112,8 +112,8 @@ func onRoutingNodeConnectionChanged(connected bool) {
 		nodeOnlineNotifier.setOnline()
 		accData, _ := calculateAccount()
 		go updateNodeChannelPolicy(accData.Id)
-		ensureRoutingChannelOpened()
-		ensureSafeToRunNode()
+		go ensureRoutingChannelOpened()
+		go ensureSafeToRunNode()
 	} else {
 		nodeOnlineNotifier.setOffline()
 	}
