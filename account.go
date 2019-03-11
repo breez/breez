@@ -176,35 +176,51 @@ func getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_
 	return data.Account_WAITING_DEPOSIT, nil
 }
 
-func getRecievePayLimit() (maxReceive int64, maxPay int64, err error) {
-	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
-	})
+func getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
+	channels, err := lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
+	}
+
+	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		return 0, 0, 0, err
 	}
 
 	var maxAllowedToReceive int64
 	var maxAllowedToPay int64
-	for _, b := range channels.Channels {
-		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserve
-		if thisChannelCanReceive < 0 {
-			thisChannelCanReceive = 0
+	var maxChanReserve int64
+
+	processChannel := func(canReceive, canPay, chanReserve int64) {
+		if canReceive < 0 {
+			canReceive = 0
 		}
-		if maxAllowedToReceive < thisChannelCanReceive {
-			maxAllowedToReceive = thisChannelCanReceive
+		if maxAllowedToReceive < canReceive {
+			maxAllowedToReceive = canReceive
 		}
 
-		thisChannelCanPay := b.LocalBalance - b.LocalChanReserve
-		if thisChannelCanPay < 0 {
-			thisChannelCanPay = 0
+		if canPay < 0 {
+			canPay = 0
 		}
-		if maxAllowedToPay < thisChannelCanPay {
-			maxAllowedToPay = thisChannelCanPay
+		if maxAllowedToPay < canPay {
+			maxAllowedToPay = canPay
+		}
+		if maxChanReserve < chanReserve {
+			maxChanReserve = chanReserve
 		}
 	}
 
-	return maxAllowedToReceive, maxAllowedToPay, nil
+	for _, b := range channels.Channels {
+		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserve
+		thisChannelCanPay := b.LocalBalance - b.LocalChanReserve
+		processChannel(thisChannelCanReceive, thisChannelCanPay, b.LocalChanReserve)
+	}
+
+	for _, b := range pendingChannels.PendingOpenChannels {
+		processChannel(0, 0, b.Channel.LocalChanReserve)
+	}
+
+	return maxAllowedToReceive, maxAllowedToPay, maxChanReserve, nil
 }
 
 func getRoutingNodeFeeRate(ourKey string) (int64, error) {
@@ -292,7 +308,7 @@ func calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	maxAllowedToReceive, maxAllowedToPay, err := getRecievePayLimit()
+	maxAllowedToReceive, maxAllowedToPay, maxChanReserve, err := getRecievePayLimit()
 	if err != nil {
 		return nil, err
 	}
@@ -315,6 +331,7 @@ func calculateAccount() (*data.Account, error) {
 		MaxAllowedToReceive: maxAllowedToReceive,
 		MaxAllowedToPay:     maxAllowedToPay,
 		MaxPaymentAmount:    maxPaymentAllowedSat,
+		MaxChanReserve:      maxChanReserve,
 		Status:              accStatus,
 		WalletBalance:       onChainBalance,
 		RoutingNodeFee:      routingNodeFeeRate,
