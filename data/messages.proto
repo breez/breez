@@ -35,6 +35,9 @@ message Account {
     //the state of the account, if not enabled then no automatic
     //attempt to open a channel with breez node will be made.
     bool enabled = 9;
+
+    //maximum chan reserve accross all channels of this account.
+    int64 maxChanReserve = 10;
 }
 
 message Payment {
