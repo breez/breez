@@ -89,6 +89,7 @@ func (s *Job) importAndPruneClosedChannels(workingDir string) error {
 	defer chanDBCleanUp()
 
 	dirname := path.Join(s.workingDir, "pruned")
+	channelPruned := false
 	for !s.terminated() {
 		last, err := lastImportedFile(chanDB)
 		if err != nil {
@@ -101,9 +102,11 @@ func (s *Job) importAndPruneClosedChannels(workingDir string) error {
 		if file == 0 {
 			break
 		}
-
+		channelPruned = true
 		importClosedChannels(chanDB, dirname, file)
-
+	}
+	if !s.terminated() && channelPruned {
+		return chanDB.ChannelGraph().PruneGraphNodes()
 	}
 
 	return nil
