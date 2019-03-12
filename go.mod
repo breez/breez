@@ -2,11 +2,12 @@ module github.com/breez/breez
 
 require (
 	github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e
-	github.com/breez/lightninglib v0.0.0-20190311141537-26390f4923cb
+	github.com/breez/lightninglib v0.0.0-20190312132503-a02d61ff5e17
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190112041146-bf1e1be93589
 	github.com/btcsuite/btcwallet v0.0.0-20190123033236-ba03278a64bc
+	github.com/coreos/bbolt v1.3.2
 	github.com/golang/protobuf v1.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 // indirect
 	github.com/jessevdk/go-flags v1.4.0

@@ -1,6 +1,8 @@
 package closedchannels
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,10 +12,25 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/breez/breez/channeldbservice"
+	"github.com/breez/lightninglib/channeldb"
+	"github.com/coreos/bbolt"
 )
 
 const (
 	firstFileNumber = 5655
+)
+
+var (
+	edgeBucket            = []byte("graph-edge")
+	edgeIndexBucket       = []byte("edge-index")
+	edgeUpdateIndexBucket = []byte("edge-update-index")
+	closedBucket          = []byte("closed")
+	lastImportedKey       = []byte("last-imported-file")
+	closedIndexBucket     = []byte("closed-index")
+
+	byteOrder = binary.BigEndian
 )
 
 /*
@@ -23,9 +40,17 @@ func (s *Job) Run() error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	err := s.downloadClosedChannels()
+	var err error
+	err = s.downloadClosedChannels()
 	if err != nil {
 		return fmt.Errorf("download closed channels finished with error %v", err)
+	}
+
+	if !s.terminated() {
+		err = s.importAndPruneClosedChannels(s.workingDir)
+		if err != nil {
+			return fmt.Errorf("An error occured when importing & prunning closed channels %v", err)
+		}
 	}
 
 	s.terminate()
@@ -53,6 +78,89 @@ func (s *Job) terminated() bool {
 	default:
 		return false
 	}
+}
+
+func (s *Job) importAndPruneClosedChannels(workingDir string) error {
+	chanDB, chanDBCleanUp, err := channeldbservice.NewService(workingDir)
+	if err != nil {
+		fmt.Printf("Error creating channeldbservice: %v", err)
+		return err
+	}
+	defer chanDBCleanUp()
+
+	dirname := path.Join(s.workingDir, "pruned")
+	for !s.terminated() {
+		last, err := lastImportedFile(chanDB)
+		if err != nil {
+			return err
+		}
+		file, err := fileToImport(last, dirname)
+		if err != nil {
+			return err
+		}
+		if file == 0 {
+			break
+		}
+
+		importClosedChannels(chanDB, dirname, file)
+
+	}
+
+	return nil
+}
+
+func lastImportedFile(chanDB *channeldb.DB) (uint, error) {
+	var last uint
+	err := chanDB.View(func(tx *bbolt.Tx) error {
+		edges := tx.Bucket(edgeBucket)
+		if edges == nil {
+			return nil
+		}
+		closed := edges.Bucket(closedBucket)
+		if closed == nil {
+			return nil
+		}
+		lastB := closed.Get(lastImportedKey)
+		if lastB == nil {
+			return nil
+		}
+		r := bytes.NewReader(lastB)
+		err := binary.Read(r, byteOrder, &last)
+		return err
+	})
+	return last, err
+}
+
+func fileToImport(moreThan uint, dirname string) (uint, error) {
+	var toImport uint
+	f, err := os.Open(dirname)
+	if err != nil {
+		return 0, err
+	}
+	list, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return 0, err
+	}
+	for _, f := range list {
+		if !f.IsDir() {
+			if s, err := strconv.ParseUint(f.Name(), 10, 64); err == nil {
+				if uint(s) > moreThan && (toImport == 0 || uint(s) < toImport) {
+					toImport = uint(s)
+				}
+			}
+		}
+	}
+	return toImport, nil
+}
+
+func importClosedChannels(chanDB *channeldb.DB, dirname string, file uint) error {
+	fileContent, err := ioutil.ReadFile(path.Join(dirname, strconv.Itoa(int(file))))
+	if err != nil {
+		return err
+	}
+	_, err = chanDB.ChannelGraph().PruneClosedChannels(fileContent, file)
+	return err
 }
 
 func (s *Job) downloadClosedChannels() error {
