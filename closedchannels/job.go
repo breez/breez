@@ -1,8 +1,6 @@
 package closedchannels
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,22 +13,10 @@ import (
 
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/lightninglib/channeldb"
-	"github.com/coreos/bbolt"
 )
 
 const (
 	firstFileNumber = 5655
-)
-
-var (
-	edgeBucket            = []byte("graph-edge")
-	edgeIndexBucket       = []byte("edge-index")
-	edgeUpdateIndexBucket = []byte("edge-update-index")
-	closedBucket          = []byte("closed")
-	lastImportedKey       = []byte("last-imported-file")
-	closedIndexBucket     = []byte("closed-index")
-
-	byteOrder = binary.BigEndian
 )
 
 /*
@@ -91,7 +77,7 @@ func (s *Job) importAndPruneClosedChannels(workingDir string) error {
 	dirname := path.Join(s.workingDir, "pruned")
 	channelPruned := false
 	for !s.terminated() {
-		last, err := lastImportedFile(chanDB)
+		last, err := chanDB.ChannelGraph().LastImportedClosedChanIDs()
 		if err != nil {
 			return err
 		}
@@ -110,28 +96,6 @@ func (s *Job) importAndPruneClosedChannels(workingDir string) error {
 	}
 
 	return nil
-}
-
-func lastImportedFile(chanDB *channeldb.DB) (uint, error) {
-	var last uint
-	err := chanDB.View(func(tx *bbolt.Tx) error {
-		edges := tx.Bucket(edgeBucket)
-		if edges == nil {
-			return nil
-		}
-		closed := edges.Bucket(closedBucket)
-		if closed == nil {
-			return nil
-		}
-		lastB := closed.Get(lastImportedKey)
-		if lastB == nil {
-			return nil
-		}
-		r := bytes.NewReader(lastB)
-		err := binary.Read(r, byteOrder, &last)
-		return err
-	})
-	return last, err
 }
 
 func fileToImport(moreThan uint, dirname string) (uint, error) {
