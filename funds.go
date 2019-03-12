@@ -90,7 +90,7 @@ func AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_FUND_ADDRESS_CREATED}
 	backupManager.RequestBackup()
 	log.Infof("r.RequiredReserve = %v ", r.RequiredReserve)
 	return &data.AddFundInitReply{
