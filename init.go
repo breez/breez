@@ -17,12 +17,14 @@ import (
 	"github.com/breez/breez/backup"
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/chainservice"
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
 	breezlog "github.com/breez/breez/log"
+	"github.com/breez/lightninglib/channeldb"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
@@ -114,6 +116,7 @@ type Dependencies struct {
 	workingDir   string
 	chainService *neutrino.ChainService
 	readyChan    chan interface{}
+	chanDB       *channeldb.DB
 }
 
 /*
@@ -138,6 +141,10 @@ LND running daemon
 */
 func (d *Dependencies) ChainService() *neutrino.ChainService {
 	return d.chainService
+}
+
+func (d *Dependencies) ChanDB() *channeldb.DB {
+	return d.chanDB
 }
 
 func getBreezClientConnection() *grpc.ClientConn {
@@ -314,7 +321,14 @@ func startLightningDaemon(onReady func()) {
 		return
 	}
 	defer cleanupFn()
-	deps := &Dependencies{workingDir: appWorkingDir, chainService: chainSevice, readyChan: readyChan}
+	chanDB, chanDBCleanUp, err := channeldbservice.NewService(appWorkingDir)
+	if err != nil {
+		fmt.Println("Error starting breez", err)
+		stopLightningDaemon()
+		return
+	}
+	defer chanDBCleanUp()
+	deps := &Dependencies{workingDir: appWorkingDir, chainService: chainSevice, readyChan: readyChan, chanDB: chanDB}
 	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, deps)
 	if err != nil {
 		fmt.Println("Error starting breez", err)

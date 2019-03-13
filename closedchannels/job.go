@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/breez/breez/channeldbservice"
+	"github.com/breez/lightninglib/channeldb"
 )
 
 const (
@@ -23,9 +26,17 @@ func (s *Job) Run() error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	err := s.downloadClosedChannels()
+	var err error
+	err = s.downloadClosedChannels()
 	if err != nil {
 		return fmt.Errorf("download closed channels finished with error %v", err)
+	}
+
+	if !s.terminated() {
+		err = s.importAndPruneClosedChannels(s.workingDir)
+		if err != nil {
+			return fmt.Errorf("An error occured when importing & prunning closed channels %v", err)
+		}
 	}
 
 	s.terminate()
@@ -55,6 +66,75 @@ func (s *Job) terminated() bool {
 	}
 }
 
+func (s *Job) importAndPruneClosedChannels(workingDir string) error {
+	chanDB, chanDBCleanUp, err := channeldbservice.NewService(workingDir)
+	if err != nil {
+		s.log.Infof("Error creating channeldbservice: %v", err)
+		return err
+	}
+	defer chanDBCleanUp()
+
+	dirname := path.Join(s.workingDir, "pruned")
+	channelPruned := false
+	for !s.terminated() {
+		last, err := chanDB.ChannelGraph().LastImportedClosedChanIDs()
+		s.log.Infof("Result of LastImportedClosedChanIDs %v %v", last, err)
+		if err != nil {
+			return err
+		}
+		file, err := fileToImport(last, dirname)
+		s.log.Infof("Result of fileToImport %v %v", file, err)
+		if err != nil {
+			return err
+		}
+		if file == 0 {
+			break
+		}
+		channelPruned = true
+		err = s.importClosedChannels(chanDB, dirname, file)
+		s.log.Infof("Result of importClosedChannels %v", err)
+	}
+	if !s.terminated() && channelPruned {
+		return chanDB.ChannelGraph().PruneGraphNodes()
+	}
+
+	return nil
+}
+
+func fileToImport(moreThan uint64, dirname string) (uint64, error) {
+	var toImport uint64
+	f, err := os.Open(dirname)
+	if err != nil {
+		return 0, err
+	}
+	list, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return 0, err
+	}
+	for _, f := range list {
+		if !f.IsDir() {
+			if s, err := strconv.ParseUint(f.Name(), 10, 64); err == nil {
+				if s > moreThan && (toImport == 0 || s < toImport) {
+					toImport = s
+				}
+			}
+		}
+	}
+	return toImport, nil
+}
+
+func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file uint64) error {
+	fileContent, err := ioutil.ReadFile(path.Join(dirname, strconv.Itoa(int(file))))
+	s.log.Infof("Result of ReadFile %v %v", len(fileContent), err)
+	if err != nil {
+		return err
+	}
+	c, err := chanDB.ChannelGraph().PruneClosedChannels(fileContent, file)
+	s.log.Infof("Result of PruneClosedChannels %v %v", len(c), err)
+	return err
+}
+
 func (s *Job) downloadClosedChannels() error {
 
 	directory := path.Join(s.workingDir, "pruned")
@@ -77,7 +157,7 @@ func (s *Job) downloadClosedChannels() error {
 	return err
 }
 
-func firstFileNumberToDownload(dirname string) (uint, error) {
+func firstFileNumberToDownload(dirname string) (uint64, error) {
 	f, err := os.Open(dirname)
 	if err != nil {
 		return 0, err
@@ -87,12 +167,12 @@ func firstFileNumberToDownload(dirname string) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-	n := uint(firstFileNumber)
+	n := uint64(firstFileNumber)
 	for _, f := range list {
 		if !f.IsDir() {
 			if s, err := strconv.ParseUint(f.Name(), 10, 64); err == nil {
-				if uint(s) >= n {
-					n = uint(s) + 1
+				if s >= n {
+					n = s + 1
 				}
 			}
 		}
