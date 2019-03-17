@@ -2,7 +2,7 @@ module github.com/breez/breez
 
 require (
 	github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e
-	github.com/breez/lightninglib v0.0.0-20190317153258-6faa810843c2
+	github.com/breez/lightninglib v0.0.0-20190317201905-467a792e1cdd
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190112041146-bf1e1be93589
