@@ -131,7 +131,7 @@ func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file ui
 		return err
 	}
 	c, err := chanDB.ChannelGraph().PruneClosedChannels(fileContent, file)
-	s.log.Infof("Result of PruneClosedChannels %v %v", len(c), err)
+	s.log.Infof("Result of PruneClosedChannels %v %v", c, err)
 	return err
 }
 

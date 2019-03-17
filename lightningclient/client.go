@@ -19,6 +19,12 @@ const (
 	defaultMacaroonFilename = "admin.macaroon"
 )
 
+var (
+	// maxMsgRecvSize is the largest message our client will receive. We
+	// set this to ~50Mb atm.
+	maxMsgRecvSize = grpc.MaxCallRecvMsgSize(1 * 1024 * 1024 * 50)
+)
+
 // NewLightningClient returns an instance of lnrpc.LightningClient
 func NewLightningClient(tlsDir, macaroonDir string) (lnrpc.LightningClient, error) {
 	tlsCertPath := filepath.Join(tlsDir, defaultTLSCertFilename)
@@ -30,6 +36,7 @@ func NewLightningClient(tlsDir, macaroonDir string) (lnrpc.LightningClient, erro
 	// Create a dial options array.
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(maxMsgRecvSize),
 	}
 
 	macPath := filepath.Join(macaroonDir, defaultMacaroonFilename)
