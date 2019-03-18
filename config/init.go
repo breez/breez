@@ -29,6 +29,7 @@ type JobConfig struct {
 Config holds the breez configuration
 */
 type Config struct {
+	WorkingDir        string
 	RoutingNodeHost   string `long:"routingnodehost"`
 	RoutingNodePubKey string `long:"routingnodepubkey"`
 	BreezServer       string `long:"breezserver"`
@@ -50,7 +51,7 @@ func GetConfig(workingDir string) (*Config, error) {
 }
 
 func initConfig(workingDir string) error {
-	c := &Config{}
+	c := &Config{WorkingDir: workingDir}
 	if err := flags.IniParse(path.Join(workingDir, configFile), c); err != nil {
 		return err
 	}
