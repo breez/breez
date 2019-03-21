@@ -122,18 +122,21 @@ func saveRespJSON(resp proto.Message, filename string) {
 		returnBuffer = "unable to decode response: " + err.Error()
 		return
 	}
-	err = os.MkdirAll(filepath.Dir(filename), 0744)
+	directory := filepath.Dir(filename)
+	err = os.MkdirAll(directory, 0777)
 	if err != nil {
-		fmt.Printf("Error in MkdirAll: %v", err)
+		fmt.Printf("Error in MkdirAll %v %v", directory, err)
+		returnBuffer = fmt.Sprintf("Error creating directory: %v: %v", directory, err)
+		return
 	}
 	err = ioutil.WriteFile(filename, jsonOut.Bytes(), 0666)
 	if err != nil {
-		fmt.Printf("Error in WriteFile: %v", err)
+		fmt.Printf("Error in WriteFile %v %v", filename, err)
+		returnBuffer = fmt.Sprintf("Error writing file: %v: %v", filename, err)
+		return
 	}
 
-	out := fmt.Sprintf("Graph written to %s", filename)
-
-	returnBuffer = out
+	returnBuffer = fmt.Sprintf("Graph written to %s", filename)
 }
 
 func printRespJSON(resp proto.Message) {
