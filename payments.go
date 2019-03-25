@@ -1,6 +1,7 @@
 package breez
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -168,14 +169,14 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 		"routes":          queryResponse.Routes,
 	}
 
-	respnose, err := json.MarshalIndent(responseMap, "", "  ")
+	response, err := json.MarshalIndent(responseMap, "", "  ")
 	if err != nil {
 		fmt.Println("unable to marshal response to json: ", err)
 		return err
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", cfg.BugReportURL+"/paymentfailure", nil)
+	req, err := http.NewRequest("POST", cfg.BugReportURL+"/paymentfailure", bytes.NewBuffer(response))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("PF-Key", cfg.BugReportURLSecret)
 	_, err = client.Do(req)
@@ -183,7 +184,7 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 		log.Errorf("Error in sending bug report: ", err)
 		return err
 	}
-	log.Infof(string(respnose))
+	log.Infof(string(response))
 	return nil
 }
 
