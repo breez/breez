@@ -148,6 +148,12 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 		return err
 	}
 
+	lnInfo, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		log.Errorf("GetInfo error: %v", err)
+		return err
+	}
+
 	if amount == 0 {
 		amount = decodedPayReq.NumSatoshis
 	}
@@ -161,6 +167,7 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 		return err
 	}
 	requestJSON := map[string]interface{}{
+		"source_node":     lnInfo.IdentityPubkey,
 		"amount":          amount,
 		"payment_request": decodedPayReq,
 	}
