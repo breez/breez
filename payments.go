@@ -3,7 +3,10 @@ package breez
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 
@@ -132,6 +135,56 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 	}
 	log.Infof("Generated Invoice: %v", response.PaymentRequest)
 	return response.PaymentRequest, nil
+}
+
+// SendPaymentFailureBugReport is used for investigating payment failures.
+// It should be used if the user agrees to send his payment details and the response of
+// QueryRoutes running in his node. The information is sent to the "bugreporturl" service.
+func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
+	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	if err != nil {
+		log.Errorf("DecodePaymentRequest error: %v", err)
+		return err
+	}
+
+	if amount == 0 {
+		amount = decodedPayReq.NumSatoshis
+	}
+	queryResponse, err := lightningClient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+		Amt:       amount,
+		NumRoutes: 5,
+		PubKey:    decodedPayReq.Destination,
+	})
+	if err != nil {
+		log.Errorf("QueryRoutes error: %v", err)
+		return err
+	}
+	requestJSON := map[string]interface{}{
+		"amount":          amount,
+		"payment_request": decodedPayReq,
+	}
+	responseMap := map[string]interface{}{
+		"request_details": requestJSON,
+		"routes":          queryResponse.Routes,
+	}
+
+	respnose, err := json.MarshalIndent(responseMap, "", "  ")
+	if err != nil {
+		fmt.Println("unable to marshal response to json: ", err)
+		return err
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", cfg.BugReportURL+"/paymentfailure", nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("PF-Key", cfg.BugReportURLSecret)
+	_, err = client.Do(req)
+	if err != nil {
+		log.Errorf("Error in sending bug report: ", err)
+		return err
+	}
+	log.Infof(string(respnose))
+	return nil
 }
 
 /*

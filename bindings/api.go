@@ -312,6 +312,15 @@ func SendPaymentForRequest(payInvoiceRequest []byte) error {
 }
 
 /*
+SendPaymentFailureBugReport is part of the binding inteface which is delegated to breez.SendPaymentFailureBugReport
+*/
+func SendPaymentFailureBugReport(payInvoiceRequest []byte) error {
+	decodedRequest := &data.PayInvoiceRequest{}
+	proto.Unmarshal(payInvoiceRequest, decodedRequest)
+	return breez.SendPaymentFailureBugReport(decodedRequest.PaymentRequest, decodedRequest.Amount)
+}
+
+/*
 AddInvoice is part of the binding inteface which is delegated to breez.AddInvoice
 */
 func AddInvoice(invoice []byte) (paymentRequest string, err error) {
