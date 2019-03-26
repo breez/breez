@@ -157,23 +157,26 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 	if amount == 0 {
 		amount = decodedPayReq.NumSatoshis
 	}
+
+	responseMap := map[string]interface{}{
+		"request_details": map[string]interface{}{
+			"source_node":     lnInfo.IdentityPubkey,
+			"amount":          amount,
+			"payment_request": decodedPayReq,
+		},
+	}
+
 	queryResponse, err := lightningClient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
 		Amt:       amount,
 		NumRoutes: 5,
 		PubKey:    decodedPayReq.Destination,
 	})
 	if err != nil {
+		responseMap["query_routes_error"] = err
 		log.Errorf("QueryRoutes error: %v", err)
-		return err
 	}
-	requestJSON := map[string]interface{}{
-		"source_node":     lnInfo.IdentityPubkey,
-		"amount":          amount,
-		"payment_request": decodedPayReq,
-	}
-	responseMap := map[string]interface{}{
-		"request_details": requestJSON,
-		"routes":          queryResponse.Routes,
+	if queryResponse != nil {
+		responseMap["routes"] = queryResponse.Routes
 	}
 
 	response, err := json.MarshalIndent(responseMap, "", "  ")
