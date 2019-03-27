@@ -169,13 +169,6 @@ func AvailableSnapshots(nodeID string) (string, error) {
 }
 
 /*
-WaitDaemonShutdown blocks untill the daemon shutdown
-*/
-func WaitDaemonShutdown() {
-	breez.WaitDaemonShutdown()
-}
-
-/*
 DaemonReady returns the status of the daemon
 */
 func DaemonReady() bool {

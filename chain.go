@@ -72,9 +72,7 @@ func GetDefaultSatPerByteFee() int64 {
 RegisterPeriodicSync registeres this token for periodic sync notifications.
 */
 func RegisterPeriodicSync(token string) error {
-	con := getBreezClientConnection()
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	c := breezservice.NewSyncNotifierClient(con)
+	c, ctx, cancel := servicesClient.NewSyncNotifierClient()
 	defer cancel()
 	_, err := c.RegisterPeriodicSync(ctx, &breezservice.RegisterPeriodicSyncRequest{NotificationToken: token})
 	if err != nil {

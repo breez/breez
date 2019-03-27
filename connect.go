@@ -154,3 +154,41 @@ func waitRoutingNodeConnected() error {
 		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
 	}
 }
+
+func connectOnStartup() {
+	channelPoints, _, err := getBreezOpenChannels()
+	if err != nil {
+		log.Errorf("connectOnStartup: error in getBreezOpenChannels", err)
+		return
+	}
+	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		log.Errorf("connectOnStartup: error in PendingChannels", err)
+		return
+	}
+	if len(channelPoints) > 0 || len(pendingChannels.PendingOpenChannels) > 0 {
+		log.Infof("connectOnStartup: already has a channel, ignoring manual connection")
+		return
+	}
+
+	connectRoutingNode()
+}
+
+func ensureSafeToRunNode() bool {
+	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
+		return true
+	}
+	safe, err := backupManager.IsSafeToRunNode(info.IdentityPubkey)
+	if err != nil {
+		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
+		return true
+	}
+	if !safe {
+		log.Errorf("ensureSafeToRunNode detected remote restore! stopping breez since it is not safe to run")
+		return false
+	}
+	log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
+	return true
+}

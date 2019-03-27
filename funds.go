@@ -219,10 +219,7 @@ func redeemRemovedFundsForHash(hash string) (string, error) {
 }
 
 func getFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc) {
-	con := getBreezClientConnection()
-	log.Infof("getFundManager - connection state = %v", con.GetState())
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
-	return breezservice.NewFundManagerClient(con), ctx, cancel
+	return servicesClient.NewFundManager()
 }
 
 /*

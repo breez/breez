@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/breez/lightninglib/daemon"
@@ -26,8 +27,9 @@ var (
 )
 
 // NewLightningClient returns an instance of lnrpc.LightningClient
-func NewLightningClient(tlsDir, macaroonDir string) (lnrpc.LightningClient, error) {
-	tlsCertPath := filepath.Join(tlsDir, defaultTLSCertFilename)
+func NewLightningClient(appWorkingDir, network string) (lnrpc.LightningClient, error) {
+	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", network}, "/")
+	tlsCertPath := filepath.Join(appWorkingDir, defaultTLSCertFilename)
 	creds, err := credentials.NewClientTLSFromFile(tlsCertPath, "")
 	if err != nil {
 		return nil, err

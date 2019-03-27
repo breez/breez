@@ -3,35 +3,25 @@
 package breez
 
 import (
-	"context"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"path"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/breez/breez/backup"
-	breezservice "github.com/breez/breez/breez"
-	"github.com/breez/breez/chainservice"
-	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lightningclient"
+	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
-	"github.com/breez/lightninglib/channeldb"
+	"github.com/breez/breez/services"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/signal"
-	"github.com/lightninglabs/neutrino"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -76,6 +66,8 @@ var (
 	// backup manager system in breez
 	backupManager *backup.Manager
 
+	lnDaemon                     *lnnode.Daemon
+	servicesClient               *services.Client
 	cfg                          *config.Config
 	lightningClient              lnrpc.LightningClient
 	breezClientConnection        *grpc.ClientConn
@@ -109,95 +101,42 @@ func (a *AuthService) SignIn() (string, error) {
 }
 
 /*
-Dependencies is an implementation of interface daemon.Dependencies
-used for injecting breez deps int LND running as library
-*/
-type Dependencies struct {
-	workingDir   string
-	chainService *neutrino.ChainService
-	readyChan    chan interface{}
-	chanDB       *channeldb.DB
-}
-
-/*
-ReadyChan returns the channel passed to LND for getting ready signal
-*/
-func (d *Dependencies) ReadyChan() chan interface{} {
-	return d.readyChan
-}
-
-/*
-LogPipeWriter returns the io.PipeWriter streamed to the log file.
-This will be passed as dependency to LND so breez will have a shared log file
-*/
-func (d *Dependencies) LogPipeWriter() *io.PipeWriter {
-	writer, _ := breezlog.GetLogWriter(d.workingDir)
-	return writer
-}
-
-/*
-ChainService returns a neutrino.ChainService to be used from both sync job and
-LND running daemon
-*/
-func (d *Dependencies) ChainService() *neutrino.ChainService {
-	return d.chainService
-}
-
-func (d *Dependencies) ChanDB() *channeldb.DB {
-	return d.chanDB
-}
-
-func getBreezClientConnection() *grpc.ClientConn {
-	log.Infof("getBreezClientConnection - before Ping;")
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	ic := breezservice.NewInformationClient(breezClientConnection)
-	_, err := ic.Ping(ctx, &breezservice.PingRequest{})
-	log.Infof("getBreezClientConnection - after Ping; err: %v", err)
-	if grpc.Code(err) == codes.DeadlineExceeded {
-		connectionMu.Lock()
-		defer connectionMu.Unlock()
-		breezClientConnection.Close()
-		err = dial()
-		log.Infof("getBreezClientConnection - new connection; err: %v", err)
-	}
-	return breezClientConnection
-}
-
-func dial() (err error) {
-	cp := x509.NewCertPool()
-	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
-		return fmt.Errorf("credentials: failed to append certificates")
-	}
-	creds := credentials.NewClientTLSFromCert(cp, "")
-	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
-	breezClientConnection, err = grpc.Dial(cfg.BreezServer, dialOptions...)
-
-	return
-}
-
-func initBreezClientConnection() error {
-	connectionMu.Lock()
-	defer connectionMu.Unlock()
-	return dial()
-}
-
-/*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
 func Start() (ntfnChan chan data.NotificationEvent, err error) {
 	if atomic.SwapInt32(&started, 1) == 1 {
-		return nil, errors.New("Daemon already started")
+		return nil, errors.New("Breez already started")
 	}
-	quitChan = make(chan struct{})
-	fmt.Println("Breez daemon started")
-	go func() {
-		defer atomic.StoreInt32(&started, 0)
-		defer atomic.StoreInt32(&isReady, 0)
-		startLightningDaemon(startBreez)
-	}()
 
+	quitChan = make(chan struct{})
+	lightningClient, err = lightningclient.NewLightningClient(appWorkingDir, cfg.Network)
+	if err != nil {
+		return nil, fmt.Errorf("Error in initializing lightning client: %v", err)
+	}
+
+	if err := lnDaemon.Start(); err != nil {
+		return nil, fmt.Errorf("Error starting lnnode.Daemon: %v", err)
+	}
+	log.Infof("Breez daemon started")
+	go watchDeamonState()
 	return notificationsChan, nil
+}
+
+func watchDeamonState() {
+	for {
+		select {
+		case <-lnDaemon.ReadyChan():
+			atomic.StoreInt32(&isReady, 1)
+			startBreezServices()
+		case <-lnDaemon.QuitChan():
+			atomic.StoreInt32(&started, 0)
+			atomic.StoreInt32(&isReady, 0)
+			close(quitChan)
+			quitChan = nil
+			notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+			return
+		}
+	}
 }
 
 /*
@@ -205,12 +144,12 @@ Init is a required function to be called before Start.
 Its main purpose is to make breez services available like:
 offline queries and doubleratchet encryption.
 */
-func Init(workingDir string, services AppServices) (err error) {
+func Init(workingDir string, applicationServices AppServices) (err error) {
 	if atomic.SwapInt32(&initialized, 1) == 1 {
 		return nil
 	}
 	appWorkingDir = workingDir
-	appServices = services
+	appServices = applicationServices
 	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return err
@@ -220,11 +159,11 @@ func Init(workingDir string, services AppServices) (err error) {
 		fmt.Println("Warning initConfig", err)
 		return err
 	}
-	err = initBreezClientConnection()
+	servicesClient, err = services.NewClient(cfg)
 	if err != nil {
-		fmt.Println("Error connecting to breez", err)
-		return err
+		return fmt.Errorf("Error creating services.Client: %v", err)
 	}
+
 	breezDB, err = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
 	if err != nil {
 		return err
@@ -246,6 +185,15 @@ func Init(workingDir string, services AppServices) (err error) {
 		return err
 	}
 
+	lnDaemon, err = lnnode.NewDaemon(cfg)
+	if err != nil {
+		return fmt.Errorf("Error creating lnnode.Daemon: %v", err)
+	}
+
+	if err := servicesClient.Start(); err != nil {
+		return fmt.Errorf("Error starting servicesClient: %v", err)
+	}
+
 	return nil
 }
 
@@ -259,20 +207,8 @@ func Stop() {
 	connectionMu.Lock()
 	breezClientConnection.Close()
 	connectionMu.Unlock()
-	stopLightningDaemon()
+	lnDaemon.Stop()
 	atomic.StoreInt32(&initialized, 0)
-}
-
-/*
-WaitDaemonShutdown blocks untill daemon shutdown.
-*/
-func WaitDaemonShutdown() {
-	if atomic.LoadInt32(&started) == 0 {
-		return
-	}
-	select {
-	case <-quitChan:
-	}
 }
 
 /*
@@ -294,65 +230,12 @@ func OnResume() {
 	}
 }
 
-func startLightningDaemon(onReady func()) {
-	defer func() {
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
-	}()
-	readyChan := make(chan interface{})
-	go func() {
-		select {
-		case <-readyChan:
-			atomic.StoreInt32(&isReady, 1)
-
-			//initialize lightning client
-			if err := initLightningClient(); err != nil {
-				stopLightningDaemon()
-				return
-			}
-			onReady()
-		case <-quitChan:
-			return
-		}
-	}()
-	var err error
-	chainSevice, cleanupFn, err := chainservice.NewService(appWorkingDir)
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-		stopLightningDaemon()
-		return
-	}
-	defer cleanupFn()
-	chanDB, chanDBCleanUp, err := channeldbservice.NewService(appWorkingDir)
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-		stopLightningDaemon()
-		return
-	}
-	defer chanDBCleanUp()
-	deps := &Dependencies{workingDir: appWorkingDir, chainService: chainSevice, readyChan: readyChan, chanDB: chanDB}
-	err = daemon.LndMain([]string{"lightning-libs", "--lnddir", appWorkingDir, "--bitcoin." + cfg.Network}, deps)
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-	}
-	stopLightningDaemon()
-}
-
-func stopLightningDaemon() {
-	alive := signal.Alive()
-	log.Infof("stopLightningDaemon called, stopping breez daemon alive=%v", alive)
-	if alive {
-		signal.RequestShutdown()
-	}
-	if quitChan != nil {
-		close(quitChan)
-		quitChan = nil
-	}
-}
-
-func startBreez() {
+func startBreezServices() {
 	//start the go routings
 	backupManager.Start()
 	if !ensureSafeToRunNode() {
+		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT}
+		lnDaemon.Stop()
 		return
 	}
 	go watchBackupEvents()
@@ -371,56 +254,4 @@ func startBreez() {
 	}()
 
 	notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-}
-
-func initLightningClient() error {
-	var clientError error
-	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", cfg.Network}, "/")
-	lightningClient, clientError = lightningclient.NewLightningClient(appWorkingDir, macaroonDir)
-	if clientError != nil {
-		log.Errorf("Error in creating client", clientError)
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_INITIALIZATION_FAILED}
-		return clientError
-	}
-	return nil
-}
-
-func connectOnStartup() {
-	channelPoints, _, err := getBreezOpenChannels()
-	if err != nil {
-		log.Errorf("connectOnStartup: error in getBreezOpenChannels", err)
-		return
-	}
-	pendingChannels, err := lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
-	if err != nil {
-		log.Errorf("connectOnStartup: error in PendingChannels", err)
-		return
-	}
-	if len(channelPoints) > 0 || len(pendingChannels.PendingOpenChannels) > 0 {
-		log.Infof("connectOnStartup: already has a channel, ignoring manual connection")
-		return
-	}
-
-	connectRoutingNode()
-}
-
-func ensureSafeToRunNode() bool {
-	info, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
-		return true
-	}
-	safe, err := backupManager.IsSafeToRunNode(info.IdentityPubkey)
-	if err != nil {
-		log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
-		return true
-	}
-	if !safe {
-		log.Errorf("ensureSafeToRunNode detected remote restore! stopping breez since it is not safe to run")
-		notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT}
-		stopLightningDaemon()
-		return false
-	}
-	log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
-	return true
 }
