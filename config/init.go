@@ -29,14 +29,16 @@ type JobConfig struct {
 Config holds the breez configuration
 */
 type Config struct {
-	WorkingDir        string
-	RoutingNodeHost   string `long:"routingnodehost"`
-	RoutingNodePubKey string `long:"routingnodepubkey"`
-	BreezServer       string `long:"breezserver"`
-	Network           string `long:"network"`
-	GrpcKeepAlive     bool   `long:"grpckeepalive"`
-	BootstrapURL      string `long:"bootstrap"`
-	ClosedChannelsURL string `long:"closedchannelsurl"`
+	WorkingDir         string
+	RoutingNodeHost    string `long:"routingnodehost"`
+	RoutingNodePubKey  string `long:"routingnodepubkey"`
+	BreezServer        string `long:"breezserver"`
+	Network            string `long:"network"`
+	GrpcKeepAlive      bool   `long:"grpckeepalive"`
+	BootstrapURL       string `long:"bootstrap"`
+	ClosedChannelsURL  string `long:"closedchannelsurl"`
+	BugReportURL       string `long:"bugreporturl"`
+	BugReportURLSecret string `long:"bugreporturlsecret"`
 
 	//Job Options
 	JobCfg JobConfig `group:"Job Options"`

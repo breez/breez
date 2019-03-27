@@ -254,6 +254,7 @@ Stop is responsible for stopping the ligtning daemon.
 */
 func Stop() {
 	breezDB.CloseDB()
+	backupManager.Stop()
 	doubleratchet.Stop()
 	connectionMu.Lock()
 	breezClientConnection.Close()
@@ -345,9 +346,6 @@ func stopLightningDaemon() {
 	if quitChan != nil {
 		close(quitChan)
 		quitChan = nil
-	}
-	if backupManager != nil {
-		backupManager.Stop()
 	}
 }
 

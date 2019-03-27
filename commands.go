@@ -12,6 +12,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -107,6 +108,35 @@ func printJSON(resp interface{}) {
 	// Both print and return to caller (for easy ADB access)
 	out.WriteTo(os.Stdout)
 	returnBuffer = out.String()
+}
+
+func saveRespJSON(resp proto.Message, filename string) {
+	jsonMarshaler := &jsonpb.Marshaler{
+		EmitDefaults: true,
+		Indent:       "    ",
+	}
+	var jsonOut bytes.Buffer
+	err := jsonMarshaler.Marshal(&jsonOut, resp)
+	if err != nil {
+		fmt.Println("unable to decode response: ", err)
+		returnBuffer = "unable to decode response: " + err.Error()
+		return
+	}
+	directory := filepath.Dir(filename)
+	err = os.MkdirAll(directory, 0777)
+	if err != nil {
+		fmt.Printf("Error in MkdirAll %v %v", directory, err)
+		returnBuffer = fmt.Sprintf("Error creating directory: %v: %v", directory, err)
+		return
+	}
+	err = ioutil.WriteFile(filename, jsonOut.Bytes(), 0666)
+	if err != nil {
+		fmt.Printf("Error in WriteFile %v %v", filename, err)
+		returnBuffer = fmt.Sprintf("Error writing file: %v: %v", filename, err)
+		return
+	}
+
+	returnBuffer = fmt.Sprintf("Graph written to %s", filename)
 }
 
 func printRespJSON(resp proto.Message) {
@@ -2006,6 +2036,16 @@ func describeGraph(ctx *cli.Context) error {
 
 	req := &lnrpc.ChannelGraphRequest{}
 
+	filepath := ""
+	switch {
+	case ctx.IsSet("out"):
+		filepath = ctx.String("out")
+	case ctx.Args().Present():
+		filepath = ctx.Args().First()
+	default:
+		return fmt.Errorf("out argument missing")
+	}
+
 	graph, err := client.DescribeGraph(context.Background(), req)
 	if err != nil {
 		return err
@@ -2017,7 +2057,7 @@ func describeGraph(ctx *cli.Context) error {
 		return drawChannelGraph(graph)
 	}
 
-	printRespJSON(graph)
+	saveRespJSON(graph, filepath)
 	return nil
 }
 
