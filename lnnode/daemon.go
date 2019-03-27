@@ -35,10 +35,11 @@ func (d *Daemon) Start() error {
 
 	d.wg.Add(1)
 	go func() {
+		defer d.wg.Done()
+
 		d.runLightningDaemon(d.cfg, deps)
 		chanDBCleanUp()
 		cleanupFn()
-		d.wg.Done()
 	}()
 
 	return nil
@@ -46,15 +47,20 @@ func (d *Daemon) Start() error {
 
 // Stop is used to stop the lightning network daemon.
 func (d *Daemon) Stop() error {
+	d.stop()
+	d.wg.Wait()
+	return nil
+}
+
+func (d *Daemon) stop() {
 	if atomic.SwapInt32(&d.stopped, 1) == 0 {
 		alive := signal.Alive()
 		d.log.Infof("stopLightningDaemon called, stopping breez daemon alive=%v", alive)
 		if alive {
 			signal.RequestShutdown()
 		}
+		close(d.quitChan)
 	}
-	d.wg.Wait()
-	return nil
 }
 
 func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
@@ -69,11 +75,10 @@ func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
 	)
 
 	if err != nil {
-		d.log.Errorf("Error starting breez", err)
+		d.log.Errorf("Breez failed with error: %v", err)
 	}
-	signal.RequestShutdown()
-	close(d.quitChan)
 	d.stateNotifier <- DaemonStopped
+	d.stop()
 }
 
 func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
