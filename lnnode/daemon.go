@@ -52,6 +52,17 @@ func (d *Daemon) Stop() error {
 	return nil
 }
 
+// ReadyChan is a channel that is closed when the daemon is ready to
+// receive RPC requests.
+func (d *Daemon) ReadyChan() chan interface{} {
+	return d.rpcReadyChan
+}
+
+// QuitChan is a channel that is closed when the daemon is down.
+func (d *Daemon) QuitChan() chan interface{} {
+	return d.quitChan
+}
+
 func (d *Daemon) stop() {
 	if atomic.SwapInt32(&d.stopped, 1) == 0 {
 		alive := signal.Alive()
@@ -77,7 +88,6 @@ func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
 	if err != nil {
 		d.log.Errorf("Breez failed with error: %v", err)
 	}
-	d.stateNotifier <- DaemonStopped
 	d.stop()
 }
 
@@ -87,7 +97,7 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	select {
 	case <-readyChan:
 		atomic.StoreInt32(&d.ready, 1)
-		d.stateNotifier <- DaemonReady
+		close(d.rpcReadyChan)
 	case <-d.quitChan:
 	}
 }
