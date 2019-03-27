@@ -16,6 +16,7 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/lightninglib/lnrpc"
+	"github.com/breez/lightninglib/zpay32"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -203,7 +204,7 @@ DecodePaymentRequest is used by the payer to decode the payment request and read
 */
 func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 	log.Infof("DecodePaymentRequest %v", paymentRequest)
-	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	decodedPayReq, err := zpay32.Decode(paymentRequest, chainParams(cfg.Network))
 	if err != nil {
 		log.Errorf("DecodePaymentRequest error: %v", err)
 		return nil, err
@@ -216,7 +217,7 @@ func DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 GetRelatedInvoice is used by the payee to fetch the related invoice of its sent payment request so he can see if it is settled.
 */
 func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
-	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	decodedPayReq, err := zpay32.Decode(paymentRequest, chainParams(cfg.Network))
 	if err != nil {
 		log.Infof("Can't decode payment request: %v", paymentRequest)
 		return nil, err
@@ -224,7 +225,12 @@ func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 
 	invoiceMemo := extractMemo(decodedPayReq)
 
-	lookup, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
+	paymentHash := ""
+	if decodedPayReq.DescriptionHash != nil {
+		paymentHash = hex.EncodeToString(decodedPayReq.DescriptionHash[:])
+	}
+
+	lookup, err := lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: paymentHash})
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +244,9 @@ func GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 	return invoice, nil
 }
 
-func extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
+func extractMemo(decodedPayReq *zpay32.Invoice) *data.InvoiceMemo {
 	invoiceMemo := &data.InvoiceMemo{}
-	invoiceMemo.Amount = decodedPayReq.NumSatoshis
+	invoiceMemo.Amount = int64(decodedPayReq.MilliSat.ToSatoshis())
 	parseTextMemo(decodedPayReq.Description, invoiceMemo)
 	if invoiceMemo.Description == transferFundsRequest {
 		invoiceMemo.TransferRequest = true
@@ -263,7 +269,11 @@ func formatTextMemo(invoice *data.InvoiceMemo) string {
 	return memo
 }
 
-func parseTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
+func parseTextMemo(memoPtr *string, invoiceMemo *data.InvoiceMemo) {
+	if memoPtr == nil {
+		return
+	}
+	memo := *memoPtr
 	invoiceMemo.Description = memo
 	invoiceParts := strings.Split(memo, invoiceCustomPartDelimiter)
 	if len(invoiceParts) == 2 {

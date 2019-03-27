@@ -129,3 +129,16 @@ func watchOnChainState() {
 		go ensureRoutingChannelOpened()
 	}
 }
+
+func chainParams(network string) *chaincfg.Params {
+	switch network {
+	case "testnet":
+		return &chaincfg.TestNet3Params
+	case "simnet":
+		return &chaincfg.SimNetParams
+	case "mainnet":
+		return &chaincfg.MainNetParams
+	}
+
+	return nil
+}
