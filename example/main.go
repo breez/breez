@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/config"
@@ -33,17 +32,18 @@ func (a *AppServicesImpl) BackupProviderSignIn() (string, error) {
 func main() {
 	workingDir := os.Getenv("LND_DIR")
 	for {
-		notifier := make(chan lnnode.DaemonState)
-		d := newDaemon(workingDir, notifier)
-		go func() {
-			time.Sleep(4 * time.Second)
-			fmt.Println("Stopping daemon*******")
-			err := d.Stop()
-			if err != nil {
-				fmt.Println("Error in stopping daemon*******")
-			}
-		}()
-		runDaemon(d, notifier)
+
+		d := newDaemon(workingDir)
+		// go func() {
+		// 	time.Sleep(4 * time.Second)
+		// 	fmt.Println("Stopping daemon*******")
+		// 	err := d.Stop()
+		// 	if err != nil {
+		// 		fmt.Println("Error in stopping daemon*******")
+		// 	}
+		// }()
+		runDaemon(d)
+		return
 	}
 	return
 	if err := breez.Init(workingDir, &AppServicesImpl{}); err != nil {
@@ -60,10 +60,10 @@ func main() {
 			<-notifChannel
 		}
 	}()
-	breez.WaitDaemonShutdown()
+	//breez.WaitDaemonShutdown()
 }
 
-func newDaemon(workingDir string, notifier chan lnnode.DaemonState) *lnnode.Daemon {
+func newDaemon(workingDir string) *lnnode.Daemon {
 
 	cfg, err := config.GetConfig(workingDir)
 	if err != nil {
@@ -71,7 +71,7 @@ func newDaemon(workingDir string, notifier chan lnnode.DaemonState) *lnnode.Daem
 		os.Exit(1)
 	}
 
-	d, err := lnnode.NewDaemon(cfg, notifier)
+	d, err := lnnode.NewDaemon(cfg)
 	if err != nil {
 		fmt.Println("Error starting breez", err)
 		os.Exit(1)
@@ -79,7 +79,7 @@ func newDaemon(workingDir string, notifier chan lnnode.DaemonState) *lnnode.Daem
 	return d
 }
 
-func runDaemon(d *lnnode.Daemon, notifier chan lnnode.DaemonState) {
+func runDaemon(d *lnnode.Daemon) {
 
 	err := d.Start()
 	if err != nil {
@@ -92,11 +92,9 @@ func runDaemon(d *lnnode.Daemon, notifier chan lnnode.DaemonState) {
 		defer wg.Done()
 		for {
 			select {
-			case n := <-notifier:
+			case n := <-d.QuitChan():
 				fmt.Println("got daemon notification: ", n)
-				if n == lnnode.DaemonStopped {
-					return
-				}
+				return
 			}
 		}
 	}()
