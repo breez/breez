@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/lnnode"
 	"github.com/breez/lightninglib/lnrpc"
 )
 
@@ -35,7 +36,6 @@ func (a *App) Start() error {
 
 	services := []Service{
 		a.lnDaemon,
-		a.nodeNotifier,
 		a.servicesClient,
 		a.swapService,
 		a.accountService,
@@ -54,7 +54,7 @@ func (a *App) Start() error {
 
 	a.wg.Add(2)
 	go a.watchBackupEvents()
-	go a.watchDeamonState()
+	go a.watchDaemonEvents()
 
 	return nil
 }
@@ -73,7 +73,6 @@ func (a *App) Stop() error {
 	a.swapService.Stop()
 	a.accountService.Stop()
 	a.servicesClient.Stop()
-	a.nodeNotifier.Stop()
 	a.lnDaemon.Stop()
 	a.breezDB.CloseDB()
 
@@ -98,8 +97,12 @@ OnResume recalculate things we might missed when we were idle.
 */
 func (a *App) OnResume() {
 	if atomic.LoadInt32(&a.isReady) == 1 {
-		a.nodeNotifier.OnResume()
+		a.accountService.OnResume()
 	}
+}
+
+func (a *App) RestartDaemon() error {
+	return a.lnDaemon.Start()
 }
 
 func (a *App) startAppServices() error {
@@ -109,20 +112,28 @@ func (a *App) startAppServices() error {
 	return nil
 }
 
-func (a *App) watchDeamonState() {
+func (a *App) watchDaemonEvents() error {
+	defer a.wg.Done()
+
+	client, err := a.lnDaemon.SubscribeEvents()
+	defer client.Cancel()
+
+	if err != nil {
+		return err
+	}
 	for {
 		select {
-		case <-a.lnDaemon.ReadyChan():
-			atomic.StoreInt32(&a.isReady, 1)
-			a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
-		case <-a.lnDaemon.QuitChan():
-			// atomic.StoreInt32(&a.started, 0)
-			// atomic.StoreInt32(&a.isReady, 0)
-			// close(a.quitChan)
-			// a.quitChan = nil
-			a.Stop()
-			a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
-			return
+		case u := <-client.Updates():
+			switch notification := u.(type) {
+			case lnnode.DaemonReadyEvent:
+				atomic.StoreInt32(&a.isReady, 1)
+				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
+			case lnnode.DaemonDownEvent:
+				atomic.StoreInt32(&a.isReady, 0)
+				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+			}
+		case <-client.Quit():
+			return nil
 		}
 	}
 }

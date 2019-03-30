@@ -11,9 +11,7 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/breez/breez/lightningclient"
 	"github.com/breez/breez/lnnode"
-	"github.com/breez/breez/lnnotifier"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
 	"github.com/breez/breez/swapfunds"
@@ -32,7 +30,7 @@ type App struct {
 	quitChan     chan struct{}
 	log          btclog.Logger
 	cfg          *config.Config
-	nodeNotifier *lnnotifier.LNNodeNotifier
+	breezDB      *db.DB
 
 	// services passed to breez from the application layer
 	//appServices AppServices
@@ -44,7 +42,6 @@ type App struct {
 	lnDaemon        *lnnode.Daemon
 	servicesClient  *services.Client
 	lightningClient lnrpc.LightningClient
-	breezDB         *db.DB
 
 	//channel for external binding events
 	notificationsChan chan data.NotificationEvent
@@ -86,7 +83,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.lightningClient, err = lightningclient.NewLightningClient(workingDir, app.cfg.Network)
+	app.lightningClient, err = lnnode.NewLightningClient(app.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Error in initializing lightning client: %v", err)
 	}
@@ -106,11 +103,6 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, fmt.Errorf("Error creating lnnode.Daemon: %v", err)
 	}
 
-	app.nodeNotifier, err = lnnotifier.NewLNNotifier(
-		app.cfg,
-		app.lightningClient,
-		app.lnDaemon,
-	)
 	if err != nil {
 		return nil, err
 	}
@@ -121,28 +113,29 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.onServiceEvent,
 		app.prepareBackupInfo,
 		app.cfg,
-		workingDir,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	app.accountService = account.NewService(
+	app.accountService, err = account.NewService(
 		app.cfg,
 		app.breezDB,
 		app.servicesClient,
-		app.lightningClient,
+		app.lnDaemon,
 		app.onServiceEvent,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	app.swapService, err = swapfunds.NewService(
 		app.cfg,
 		app.breezDB,
 		app.servicesClient,
-		app.lightningClient,
+		app.lnDaemon,
 		app.accountService.SendPaymentForRequest,
 		app.onServiceEvent,
-		app.nodeNotifier,
 	)
 	if err != nil {
 		return nil, err

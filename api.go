@@ -20,7 +20,7 @@ func (a *App) Restore(nodeID string) error {
 		return err
 	}
 	defer func() {
-		a.breezDB, _ = db.OpenDB(path.Join(appWorkingDir, "breez.db"))
+		a.breezDB, _ = db.OpenDB(path.Join(a.cfg.WorkingDir, "breez.db"))
 	}()
 	_, err := a.backupManager.Restore(nodeID)
 	return err
