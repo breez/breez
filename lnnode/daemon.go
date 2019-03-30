@@ -13,8 +13,8 @@ import (
 
 // Start is used to start the lightning network daemon.
 func (d *Daemon) Start() error {
-	if atomic.SwapInt32(&d.started, 1) == 1 {
-		return errors.New("Daemon already started")
+	if atomic.SwapInt32(&d.running, 1) == 1 {
+		return errors.New("Daemon already running")
 	}
 
 	readyChan := make(chan interface{})
@@ -33,13 +33,15 @@ func (d *Daemon) Start() error {
 		readyChan:    readyChan,
 		chanDB:       chanDB}
 
-	d.wg.Add(1)
+	d.wg.Add(2)
+	go d.notifyWhenReady(readyChan)
 	go func() {
 		defer d.wg.Done()
-
 		d.runLightningDaemon(d.cfg, deps)
 		chanDBCleanUp()
 		cleanupFn()
+		d.ntfnServer.SendUpdate(DaemonDownEvent{})
+		atomic.StoreInt32(&d.running, 0)
 	}()
 
 	return nil
@@ -48,19 +50,9 @@ func (d *Daemon) Start() error {
 // Stop is used to stop the lightning network daemon.
 func (d *Daemon) Stop() error {
 	d.stop()
+	d.ntfnServer.Stop()
 	d.wg.Wait()
 	return nil
-}
-
-// ReadyChan is a channel that is closed when the daemon is ready to
-// receive RPC requests.
-func (d *Daemon) ReadyChan() chan interface{} {
-	return d.rpcReadyChan
-}
-
-// QuitChan is a channel that is closed when the daemon is down.
-func (d *Daemon) QuitChan() chan interface{} {
-	return d.quitChan
 }
 
 func (d *Daemon) stop() {
@@ -75,8 +67,6 @@ func (d *Daemon) stop() {
 }
 
 func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
-	d.wg.Add(1)
-	go d.notifyWhenReady(deps.readyChan)
 
 	err := daemon.LndMain(
 		[]string{"lightning-libs", "--lnddir",
@@ -97,7 +87,7 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	select {
 	case <-readyChan:
 		atomic.StoreInt32(&d.ready, 1)
-		close(d.rpcReadyChan)
+		d.startSubscriptions()
 	case <-d.quitChan:
 	}
 }

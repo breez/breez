@@ -5,19 +5,22 @@ import (
 
 	"github.com/breez/breez/config"
 	breezlog "github.com/breez/breez/log"
+	"github.com/breez/lightninglib/lnrpc"
+	"github.com/breez/lightninglib/subscribe"
 	"github.com/btcsuite/btclog"
 )
 
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
-	cfg          *config.Config
-	started      int32
-	ready        int32
-	stopped      int32
-	wg           sync.WaitGroup
-	log          btclog.Logger
-	rpcReadyChan chan interface{}
-	quitChan     chan interface{}
+	cfg             *config.Config
+	running         int32
+	ready           int32
+	stopped         int32
+	wg              sync.WaitGroup
+	log             btclog.Logger
+	lightningClient lnrpc.LightningClient
+	ntfnServer      *subscribe.Server
+	quitChan        chan interface{}
 }
 
 //Events
@@ -44,10 +47,14 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	lightningClient, err := NewLightningClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Daemon{
-		cfg:          cfg,
-		log:          logBackend.Logger("DAEM"),
-		rpcReadyChan: make(chan interface{}),
-		quitChan:     make(chan interface{}),
+		cfg:             cfg,
+		lightningClient: lightningClient,
+		log:             logBackend.Logger("DAEM"),
 	}, nil
 }
