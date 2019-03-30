@@ -30,6 +30,7 @@ import (
 )
 
 var returnBuffer string
+var lightningClient lnrpc.LightningClient
 
 func (a *App) SendCommand(command string) (string, error) {
 	app := cli.NewApp()
@@ -73,6 +74,7 @@ func (a *App) SendCommand(command string) (string, error) {
 		updateChannelPolicyCommand,
 		forwardingHistoryCommand,
 	}
+	lightningClient = a.lightningClient
 
 	commandArguments := strings.Split(command, " ")
 
