@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/breez/breez/lnnotifier"
+	"github.com/breez/breez/lnnode"
 )
 
 const (
@@ -18,10 +18,8 @@ func (a *Service) Start() error {
 		return errors.New("Account service has already started")
 	}
 
-	a.wg.Add(3)
+	a.wg.Add(1)
 	go a.watchDaemonEvents()
-	go a.trackOpenedChannel()
-	go a.watchPayments()
 	return nil
 }
 
@@ -35,6 +33,10 @@ func (a *Service) Stop() error {
 	return nil
 }
 
+func (a *Service) OnResume() {
+	a.calculateAccountAndNotify()
+}
+
 func (a *Service) daemonRPCReady() bool {
 	return atomic.LoadInt32(&a.daemonReady) == 1
 }
@@ -42,7 +44,7 @@ func (a *Service) daemonRPCReady() bool {
 func (a *Service) watchDaemonEvents() error {
 	defer a.wg.Done()
 
-	client, err := a.lnNotifier.SubscribeEvents()
+	client, err := a.daemon.SubscribeEvents()
 	defer client.Cancel()
 
 	if err != nil {
@@ -52,19 +54,20 @@ func (a *Service) watchDaemonEvents() error {
 		select {
 		case u := <-client.Updates():
 			switch notification := u.(type) {
-			case lnnotifier.DaemonReadyEvent:
+			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
-			case lnnotifier.PeerConnectionEvent:
+				a.wg.Add(2)
+				go a.trackOpenedChannel()
+				go a.watchPayments()
+			case lnnode.PeerConnectionEvent:
 				if notification.PubKey == a.cfg.RoutingNodePubKey {
 					a.onRoutingNodeConnection(notification.Connected)
 				}
-			case lnnotifier.TransactionEvent:
+			case lnnode.TransactionEvent:
 				a.onAccountChanged()
 				go a.ensureRoutingChannelOpened()
-			case lnnotifier.ChainSyncedEvent:
+			case lnnode.ChainSyncedEvent:
 				a.connectOnStartup()
-			case lnnotifier.ResumeEvent:
-				a.calculateAccountAndNotify()
 			}
 		case <-client.Quit():
 			return nil
