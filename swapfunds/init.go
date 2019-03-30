@@ -6,7 +6,7 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/breez/breez/lnnotifier"
+	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
 	"github.com/breez/lightninglib/lnrpc"
@@ -23,7 +23,7 @@ type Service struct {
 	log                btclog.Logger
 	daemonEventsClient *subscribe.Client
 	breezDB            *db.DB
-	lnNotifier         *lnnotifier.LNNodeNotifier
+	daemon             *lnnode.Daemon
 	lightningClient    lnrpc.LightningClient
 	breezServices      *services.Client
 	sendPayment        func(payreq string, amount int64) error
@@ -36,24 +36,23 @@ func NewService(
 	cfg *config.Config,
 	breezDB *db.DB,
 	breezServices *services.Client,
-	lightningClient lnrpc.LightningClient,
+	daemon *lnnode.Daemon,
 	sendPayment func(payreq string, amount int64) error,
-	onServiceEvent func(data.NotificationEvent),
-	lnNotifier *lnnotifier.LNNodeNotifier) (*Service, error) {
+	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
+
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Service{
-		cfg:             cfg,
-		lightningClient: lightningClient,
-		breezDB:         breezDB,
-		breezServices:   breezServices,
-		sendPayment:     sendPayment,
-		onServiceEvent:  onServiceEvent,
-		log:             logBackend.Logger("FUNDS"),
-		lnNotifier:      lnNotifier,
-		quitChan:        make(chan struct{}),
+		cfg:            cfg,
+		breezDB:        breezDB,
+		breezServices:  breezServices,
+		sendPayment:    sendPayment,
+		onServiceEvent: onServiceEvent,
+		log:            logBackend.Logger("FUNDS"),
+		daemon:         daemon,
+		quitChan:       make(chan struct{}),
 	}, nil
 }

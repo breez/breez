@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync/atomic"
 
-	"github.com/breez/breez/lnnotifier"
+	"github.com/breez/breez/lnnode"
 )
 
 func (s *Service) Start() error {
@@ -29,7 +29,7 @@ func (s *Service) Stop() error {
 }
 
 func (s *Service) watchDaemonEvents() (err error) {
-	s.daemonEventsClient, err = s.lnNotifier.SubscribeEvents()
+	s.daemonEventsClient, err = s.daemon.SubscribeEvents()
 
 	if err != nil {
 		s.log.Errorf("watchDaemonEvents exit with error %v", err)
@@ -41,20 +41,24 @@ func (s *Service) watchDaemonEvents() (err error) {
 		select {
 		case u := <-s.daemonEventsClient.Updates():
 			switch notification := u.(type) {
-			case lnnotifier.DaemonReadyEvent:
+			case lnnode.DaemonReadyEvent:
+				s.lightningClient, err = lnnode.NewLightningClient(s.cfg)
+				if err != nil {
+					return err
+				}
 				s.onDaemonReady()
-			case lnnotifier.PeerConnectionEvent:
+			case lnnode.PeerConnectionEvent:
 				if notification.PubKey == s.cfg.RoutingNodePubKey {
 					routingNodeConnected = notification.Connected
 					if routingNodeConnected {
 						s.settlePendingTransfers()
 					}
 				}
-			case lnnotifier.TransactionEvent:
+			case lnnode.TransactionEvent:
 				s.onTransaction()
-			case lnnotifier.DaemonDownEvent:
+			case lnnode.DaemonDownEvent:
 				return nil
-			case lnnotifier.ResumeEvent:
+			case lnnode.ResumeEvent:
 				if routingNodeConnected {
 					s.settlePendingTransfers()
 				}
