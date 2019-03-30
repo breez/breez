@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
@@ -14,9 +15,21 @@ import (
 
 // Start the client
 func (c *Client) Start() error {
+	if atomic.SwapInt32(&c.started, 1) == 1 {
+		return nil
+	}
 	con, err := dial(c.cfg.BreezServer)
 	c.connection = con
 	return err
+}
+
+func (c *Client) Stop() error {
+	if atomic.SwapInt32(&c.stopped, 1) == 1 {
+		return nil
+	}
+	c.Lock()
+	defer c.Unlock()
+	return c.connection.Close()
 }
 
 //NewFundManager creates a new FundsManager

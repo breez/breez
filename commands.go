@@ -31,7 +31,7 @@ import (
 
 var returnBuffer string
 
-func SendCommand(command string) (string, error) {
+func (a *App) SendCommand(command string) (string, error) {
 	app := cli.NewApp()
 	app.Name = "lncli"
 	app.Commands = []cli.Command{

@@ -107,6 +107,7 @@ message NotificationEvent {
         BACKUP_FAILED = 10;
         BACKUP_AUTH_FAILED = 11;
         BACKUP_NODE_CONFLICT = 12;
+        BACKUP_REQUEST = 13;
     }
 
     NotificationType type = 1;

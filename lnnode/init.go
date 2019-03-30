@@ -5,7 +5,6 @@ import (
 
 	"github.com/breez/breez/config"
 	breezlog "github.com/breez/breez/log"
-	"github.com/breez/lightninglib/subscribe"
 	"github.com/btcsuite/btclog"
 )
 
@@ -17,7 +16,6 @@ type Daemon struct {
 	stopped      int32
 	wg           sync.WaitGroup
 	log          btclog.Logger
-	notifier     subscribe.Server
 	rpcReadyChan chan interface{}
 	quitChan     chan interface{}
 }
@@ -25,7 +23,9 @@ type Daemon struct {
 //Events
 
 // RPCReadyNotification sent when the daeon is ready to receive RPC requests.
-type RPCReadyNotification struct{}
+type RPCReadyNotification struct {
+	nodePubkey string
+}
 
 // DaemonShutdwonNotification sent when the daemon has shut down.
 type DaemonShutdwonNotification struct{}
@@ -47,7 +47,6 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 	return &Daemon{
 		cfg:          cfg,
 		log:          logBackend.Logger("DAEM"),
-		notifier:     *subscribe.NewServer(),
 		rpcReadyChan: make(chan interface{}),
 		quitChan:     make(chan interface{}),
 	}, nil

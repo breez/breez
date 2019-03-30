@@ -3,24 +3,24 @@ package breez
 /*
 Log a message to lightninglib's logging system
 */
-func Log(msg string, lvl string) {
+func (a *App) Log(msg string, lvl string) {
 	switch lvl {
 	case "FINEST":
 	case "FINER":
 	case "FINE":
-		log.Tracef(msg)
+		a.log.Tracef(msg)
 	case "CONFIG":
-		log.Debugf(msg)
+		a.log.Debugf(msg)
 	case "INFO":
-		log.Infof(msg)
+		a.log.Infof(msg)
 	case "WARNING":
-		log.Warnf(msg)
+		a.log.Warnf(msg)
 	case "SEVERE":
-		log.Errorf(msg)
+		a.log.Errorf(msg)
 	case "SHOUT":
-		log.Criticalf(msg)
+		a.log.Criticalf(msg)
 	default:
-		log.Infof(msg)
+		a.log.Infof(msg)
 	}
 }
 
@@ -28,5 +28,5 @@ func Log(msg string, lvl string) {
 GetLogPath returns the log file path.
 */
 func GetLogPath() string {
-	return appWorkingDir + "/logs/bitcoin/" + cfg.Network + "/lnd.log"
+	return a.cfg.workingDir + "/logs/bitcoin/" + a.cfg.Network + "/lnd.log"
 }

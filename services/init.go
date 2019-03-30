@@ -43,6 +43,8 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 // Client represents the client interface to breez services
 type Client struct {
 	sync.Mutex
+	started    int32
+	stopped    int32
 	cfg        *config.Config
 	log        btclog.Logger
 	connection *grpc.ClientConn
