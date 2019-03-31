@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/lightninglib/lnrpc"
@@ -37,12 +38,12 @@ func (a *App) Start() error {
 	services := []Service{
 		a.lnDaemon,
 		a.servicesClient,
-		a.swapService,
-		a.accountService,
-		a.backupManager,
+		a.SwapService,
+		a.AccountService,
+		a.BackupManager,
 	}
 
-	for i, s := range services {
+	for _, s := range services {
 		if err := s.Start(); err != nil {
 			return err
 		}
@@ -53,7 +54,6 @@ func (a *App) Start() error {
 	}
 
 	a.wg.Add(2)
-	go a.watchBackupEvents()
 	go a.watchDaemonEvents()
 
 	return nil
@@ -67,11 +67,11 @@ func (a *App) Stop() error {
 		return errors.New("App already stopped")
 	}
 	close(a.quitChan)
-
-	a.backupManager.Stop()
 	doubleratchet.Stop()
-	a.swapService.Stop()
-	a.accountService.Stop()
+
+	a.BackupManager.Stop()
+	a.SwapService.Stop()
+	a.AccountService.Stop()
 	a.servicesClient.Stop()
 	a.lnDaemon.Stop()
 	a.breezDB.CloseDB()
@@ -97,7 +97,7 @@ OnResume recalculate things we might missed when we were idle.
 */
 func (a *App) OnResume() {
 	if atomic.LoadInt32(&a.isReady) == 1 {
-		a.accountService.OnResume()
+		a.AccountService.OnResume()
 	}
 }
 
@@ -105,8 +105,29 @@ func (a *App) RestartDaemon() error {
 	return a.lnDaemon.Start()
 }
 
+// Restore is the breez API for restoring a specific nodeID using the configured
+// backup backend provider.
+func (a *App) Restore(nodeID string) error {
+	a.log.Infof("Restore nodeID = %v", nodeID)
+	if err := a.breezDB.Close(); err != nil {
+		return err
+	}
+	defer func() {
+		a.breezDB, _ = db.OpenDB(path.Join(a.cfg.WorkingDir, "breez.db"))
+	}()
+	_, err := a.BackupManager.Restore(nodeID)
+	return err
+}
+
+/*
+GetLogPath returns the log file path.
+*/
+func (a *App) GetLogPath() string {
+	return a.cfg.WorkingDir + "/logs/bitcoin/" + a.cfg.Network + "/lnd.log"
+}
+
 func (a *App) startAppServices() error {
-	if err := a.accountService.Start(); err != nil {
+	if err := a.AccountService.Start(); err != nil {
 		return err
 	}
 	return nil
@@ -124,13 +145,15 @@ func (a *App) watchDaemonEvents() error {
 	for {
 		select {
 		case u := <-client.Updates():
-			switch notification := u.(type) {
+			switch u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.isReady, 1)
 				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.isReady, 0)
 				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+			case lnnode.BackupNeededEvent:
+				a.BackupManager.RequestBackup()
 			}
 		case <-client.Quit():
 			return nil
@@ -144,7 +167,7 @@ func (a *App) ensureSafeToRunNode() bool {
 		a.log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
 		return true
 	}
-	safe, err := a.backupManager.IsSafeToRunNode(info.IdentityPubkey)
+	safe, err := a.BackupManager.IsSafeToRunNode(info.IdentityPubkey)
 	if err != nil {
 		a.log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
 		return true
@@ -157,21 +180,4 @@ func (a *App) ensureSafeToRunNode() bool {
 	}
 	a.log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
 	return true
-}
-
-func (a *App) watchBackupEvents() {
-	stream, err := a.lightningClient.SubscribeBackupEvents(context.Background(), &lnrpc.BackupEventSubscription{})
-	if err != nil {
-		a.log.Criticalf("Failed to call SubscribeBackupEvents %v, %v", stream, err)
-	}
-	a.log.Infof("Backup events subscription created")
-	for {
-		_, err := stream.Recv()
-		a.log.Infof("watchBackupEvents received new event")
-		if err != nil {
-			a.log.Errorf("watchBackupEvents failed to receive a new event: %v, %v", stream, err)
-			return
-		}
-		a.RequestBackup()
-	}
 }

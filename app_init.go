@@ -22,26 +22,28 @@ import (
 
 // App represents the breez application
 type App struct {
-	isReady      int32
-	started      int32
-	stopped      int32
-	wg           sync.WaitGroup
-	connectionMu sync.Mutex
-	quitChan     chan struct{}
-	log          btclog.Logger
-	cfg          *config.Config
-	breezDB      *db.DB
+	isReady         int32
+	started         int32
+	stopped         int32
+	wg              sync.WaitGroup
+	connectionMu    sync.Mutex
+	quitChan        chan struct{}
+	log             btclog.Logger
+	cfg             *config.Config
+	breezDB         *db.DB
+	lightningClient lnrpc.LightningClient
 
 	// services passed to breez from the application layer
 	//appServices AppServices
 
-	// sub services
-	accountService  *account.Service
-	backupManager   *backup.Manager
-	swapService     *swapfunds.Service
-	lnDaemon        *lnnode.Daemon
-	servicesClient  *services.Client
-	lightningClient lnrpc.LightningClient
+	//exposed sub services
+	AccountService *account.Service
+	BackupManager  *backup.Manager
+	SwapService    *swapfunds.Service
+
+	//non exposed services
+	lnDaemon       *lnnode.Daemon
+	servicesClient *services.Client
 
 	//channel for external binding events
 	notificationsChan chan data.NotificationEvent
@@ -107,7 +109,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.backupManager, err = backup.NewManager(
+	app.BackupManager, err = backup.NewManager(
 		applicationServices.BackupProviderName(),
 		&AuthService{appServices: applicationServices},
 		app.onServiceEvent,
@@ -118,7 +120,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.accountService, err = account.NewService(
+	app.AccountService, err = account.NewService(
 		app.cfg,
 		app.breezDB,
 		app.servicesClient,
@@ -129,12 +131,12 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.swapService, err = swapfunds.NewService(
+	app.SwapService, err = swapfunds.NewService(
 		app.cfg,
 		app.breezDB,
 		app.servicesClient,
 		app.lnDaemon,
-		app.accountService.SendPaymentForRequest,
+		app.AccountService.SendPaymentForRequest,
 		app.onServiceEvent,
 	)
 	if err != nil {
@@ -147,12 +149,12 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 func (a *App) onServiceEvent(event data.NotificationEvent) {
 	a.notificationsChan <- event
 	if event.Type == data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED {
-		if a.accountService.IsConnectedToRoutingNode() {
+		if a.AccountService.IsConnectedToRoutingNode() {
 			a.ensureSafeToRunNode()
 		}
 	}
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
-		a.backupManager.RequestBackup()
+		a.BackupManager.RequestBackup()
 	}
 }
 
