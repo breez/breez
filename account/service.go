@@ -33,6 +33,10 @@ func (a *Service) Stop() error {
 	return nil
 }
 
+func (a *Service) Connect() error {
+	return a.connectRoutingNode()
+}
+
 func (a *Service) OnResume() {
 	a.calculateAccountAndNotify()
 }
