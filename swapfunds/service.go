@@ -22,24 +22,26 @@ func (s *Service) Stop() error {
 	if atomic.SwapInt32(&s.stopped, 1) == 1 {
 		return errors.New("Service already started")
 	}
-	s.daemonEventsClient.Cancel()
 	close(s.quitChan)
 	s.wg.Wait()
+	s.log.Infof("SwapService shutdown succesfully")
 	return nil
 }
 
 func (s *Service) watchDaemonEvents() (err error) {
-	s.daemonEventsClient, err = s.daemon.SubscribeEvents()
+	defer s.wg.Done()
 
+	client, err := s.daemon.SubscribeEvents()
 	if err != nil {
 		s.log.Errorf("watchDaemonEvents exit with error %v", err)
 		return err
 	}
+	defer client.Cancel()
 
 	var routingNodeConnected bool
 	for {
 		select {
-		case u := <-s.daemonEventsClient.Updates():
+		case u := <-client.Updates():
 			switch notification := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				s.lightningClient, err = lnnode.NewLightningClient(s.cfg)
@@ -63,7 +65,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 					s.settlePendingTransfers()
 				}
 			}
-		case <-s.daemonEventsClient.Quit():
+		case <-s.quitChan:
 			return nil
 		}
 	}
