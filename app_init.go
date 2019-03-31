@@ -85,11 +85,6 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.lightningClient, err = lnnode.NewLightningClient(app.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("Error in initializing lightning client: %v", err)
-	}
-
 	app.servicesClient, err = services.NewClient(app.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating services.Client: %v", err)
@@ -144,18 +139,6 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	}
 
 	return app, nil
-}
-
-func (a *App) onServiceEvent(event data.NotificationEvent) {
-	a.notificationsChan <- event
-	if event.Type == data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED {
-		if a.AccountService.IsConnectedToRoutingNode() {
-			a.ensureSafeToRunNode()
-		}
-	}
-	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
-		a.BackupManager.RequestBackup()
-	}
 }
 
 // extractBackupInfo extracts the information that is needed for the external backup service:

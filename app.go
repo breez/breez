@@ -49,11 +49,7 @@ func (a *App) Start() error {
 		}
 	}
 
-	if !a.ensureSafeToRunNode() {
-		return errors.New("not safe to run a restored node")
-	}
-
-	a.wg.Add(2)
+	a.wg.Add(1)
 	go a.watchDaemonEvents()
 
 	return nil
@@ -77,6 +73,7 @@ func (a *App) Stop() error {
 	a.breezDB.CloseDB()
 
 	a.wg.Wait()
+	a.log.Infof("BreezApp shutdown successfully")
 	return nil
 }
 
@@ -102,7 +99,7 @@ func (a *App) OnResume() {
 }
 
 func (a *App) RestartDaemon() error {
-	return a.lnDaemon.Start()
+	return a.lnDaemon.RestartDaemon()
 }
 
 // Restore is the breez API for restoring a specific nodeID using the configured
@@ -148,10 +145,16 @@ func (a *App) watchDaemonEvents() error {
 			switch u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.isReady, 1)
-				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_READY}
+				a.lightningClient, err = lnnode.NewLightningClient(a.cfg)
+				if err != nil {
+					a.log.Criticalf("Error in initializing lightning client: %v", err)
+					a.Stop()
+				}
+				go a.ensureSafeToRunNode()
+				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_READY})
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.isReady, 0)
-				a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN}
+				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN})
 			case lnnode.BackupNeededEvent:
 				a.BackupManager.RequestBackup()
 			}
@@ -174,10 +177,26 @@ func (a *App) ensureSafeToRunNode() bool {
 	}
 	if !safe {
 		a.log.Errorf("ensureSafeToRunNode detected remote restore! stopping breez since it is not safe to run")
-		a.notificationsChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT}
+		go a.notify(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT})
 		a.lnDaemon.Stop()
 		return false
 	}
 	a.log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
 	return true
+}
+
+func (a *App) onServiceEvent(event data.NotificationEvent) {
+	go a.notify(event)
+	if event.Type == data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED {
+		if a.AccountService.IsConnectedToRoutingNode() {
+			go a.ensureSafeToRunNode()
+		}
+	}
+	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
+		a.BackupManager.RequestBackup()
+	}
+}
+
+func (a *App) notify(event data.NotificationEvent) {
+	a.notificationsChan <- event
 }
