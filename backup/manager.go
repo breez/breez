@@ -165,6 +165,7 @@ func (b *Manager) Stop() error {
 	b.db.close()
 	close(b.quitChan)
 	b.wg.Wait()
+	log.Infof("BackupManager shutdown succesfully")
 	return nil
 }
 
