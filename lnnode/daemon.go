@@ -36,6 +36,7 @@ func (d *Daemon) Stop() error {
 		d.ntfnServer.Stop()
 	}
 	d.wg.Wait()
+	d.log.Infof("Daemon shutdown successfully")
 	return nil
 }
 
