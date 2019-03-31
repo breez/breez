@@ -12,31 +12,16 @@ import (
 
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
+	sync.Mutex
 	cfg             *config.Config
-	running         int32
-	ready           int32
+	started         int32
 	stopped         int32
+	daemonRunning   bool
 	wg              sync.WaitGroup
 	log             btclog.Logger
 	lightningClient lnrpc.LightningClient
 	ntfnServer      *subscribe.Server
-	quitChan        chan interface{}
-}
-
-//Events
-
-// RPCReadyNotification sent when the daeon is ready to receive RPC requests.
-type RPCReadyNotification struct {
-	nodePubkey string
-}
-
-// DaemonShutdwonNotification sent when the daemon has shut down.
-type DaemonShutdwonNotification struct{}
-
-// PeerConnectionChangedNotification is sent when a peer is connected/disconected.
-type PeerConnectionChangedNotification struct {
-	pubKey    string
-	connected bool
+	quitChan        chan struct{}
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning
@@ -47,14 +32,9 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	lightningClient, err := NewLightningClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Daemon{
-		cfg:             cfg,
-		lightningClient: lightningClient,
-		log:             logBackend.Logger("DAEM"),
+		cfg:        cfg,
+		ntfnServer: subscribe.NewServer(),
+		log:        logBackend.Logger("DAEM"),
 	}, nil
 }

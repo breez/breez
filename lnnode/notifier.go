@@ -38,29 +38,43 @@ type ChainSyncedEvent struct{}
 // ResumeEvent is sent when the app resumes.
 type ResumeEvent struct{}
 
+// BackupNeededEvent is sent whwen the node signals backup is needed.
+type BackupNeededEvent struct{}
+
 // SubscribeEvents subscribe to various application events
 func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 	return d.ntfnServer.Subscribe()
 }
 
 func (d *Daemon) startSubscriptions() error {
+	var err error
+	d.lightningClient, err = NewLightningClient(d.cfg)
+	if err != nil {
+		return err
+	}
+
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if chainErr != nil {
 		d.log.Warnf("Failed get chain info", chainErr)
 		return chainErr
 	}
-	if err := d.ntfnServer.SendUpdate(DaemonReadyEvent{IdentityPubkey: info.IdentityPubkey}); err != nil {
-		return err
-	}
-	d.wg.Add(3)
+
+	d.wg.Add(4)
 	go d.subscribePeers()
 	go d.subscribeTransactions()
 	go d.subscribeInvoices()
+	go d.watchBackupEvents()
+
+	if err := d.ntfnServer.SendUpdate(DaemonReadyEvent{IdentityPubkey: info.IdentityPubkey}); err != nil {
+		return err
+	}
+	d.log.Infof("Daemon ready! subscriptions started")
 	return nil
 }
 
 func (d *Daemon) subscribePeers() error {
 	defer d.wg.Done()
+
 	subscription, err := d.lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
 	if err != nil {
 		d.log.Errorf("Failed to subscribe peers %v", err)
@@ -69,8 +83,10 @@ func (d *Daemon) subscribePeers() error {
 	for {
 		notification, err := subscription.Recv()
 		if err == io.EOF {
+			d.log.Errorf("subscribePeers cancelled, shutting down")
 			return err
 		}
+		d.log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
 		if err != nil {
 			d.log.Errorf("subscribe peers Failed to get notification %v", err)
 			// in case of unexpected error, we will wait a bit so we won't get
@@ -78,14 +94,13 @@ func (d *Daemon) subscribePeers() error {
 			time.Sleep(2 * time.Second)
 			continue
 		}
-
-		d.log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
 		d.ntfnServer.SendUpdate(PeerConnectionEvent{notification})
 	}
 }
 
-func (d *Daemon) subscribeTransactions() {
+func (d *Daemon) subscribeTransactions() error {
 	defer d.wg.Done()
+
 	stream, err := d.lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeTransactions %v, %v", stream, err)
@@ -93,11 +108,11 @@ func (d *Daemon) subscribeTransactions() {
 	d.log.Infof("Wallet transactions subscription created")
 	for {
 		notification, err := stream.Recv()
-		d.log.Infof("subscribeTransactions received new transaction")
 		if err == io.EOF {
-			d.log.Errorf("Failed to call SubscribeTransactions %v, %v", stream, err)
-			return
+			d.log.Errorf("subscribeTransactions cancelled, shutting down")
+			return err
 		}
+		d.log.Infof("subscribeTransactions received new transaction")
 		if err != nil {
 			d.log.Errorf("Failed to receive a transaction : %v", err)
 			// in case of unexpected error, we will wait a bit so we won't get
@@ -109,22 +124,50 @@ func (d *Daemon) subscribeTransactions() {
 	}
 }
 
-func (d *Daemon) subscribeInvoices() {
+func (d *Daemon) subscribeInvoices() error {
 	defer d.wg.Done()
 
 	stream, err := d.lightningClient.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeInvoices %v, %v", stream, err)
+		return err
 	}
 
 	for {
 		invoice, err := stream.Recv()
-		d.log.Infof("watchPayments - Invoice received by subscription")
+		if err == io.EOF {
+			d.log.Errorf("subscribeInvoices cancelled, shutting down")
+			return err
+		}
 		if err != nil {
 			d.log.Criticalf("Failed to receive an invoice : %v", err)
-			return
+			return err
 		}
+		d.log.Infof("watchPayments - Invoice received by subscription")
 		d.ntfnServer.SendUpdate(&InvoiceEvent{invoice})
+	}
+}
+
+func (d *Daemon) watchBackupEvents() error {
+	defer d.wg.Done()
+
+	stream, err := d.lightningClient.SubscribeBackupEvents(context.Background(), &lnrpc.BackupEventSubscription{})
+	if err != nil {
+		d.log.Criticalf("Failed to call SubscribeBackupEvents %v, %v", stream, err)
+	}
+	d.log.Infof("Backup events subscription created")
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			d.log.Errorf("watchBackupEvents cancelled, shutting down")
+			return err
+		}
+		d.log.Infof("watchBackupEvents received new event")
+		if err != nil {
+			d.log.Errorf("watchBackupEvents failed to receive a new event: %v, %v", stream, err)
+			return err
+		}
+		d.ntfnServer.SendUpdate(&BackupNeededEvent{})
 	}
 }
 
