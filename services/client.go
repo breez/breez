@@ -23,13 +23,15 @@ func (c *Client) Start() error {
 	return err
 }
 
-func (c *Client) Stop() error {
+func (c *Client) Stop() (err error) {
 	if atomic.SwapInt32(&c.stopped, 1) == 1 {
 		return nil
 	}
 	c.Lock()
 	defer c.Unlock()
-	return c.connection.Close()
+	err = c.connection.Close()
+	c.log.Infof("BreezServicesClient shutdown succesfully")
+	return
 }
 
 //NewFundManager creates a new FundsManager
