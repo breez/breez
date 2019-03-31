@@ -99,14 +99,21 @@ func (a *Service) onRoutingNodeOpenedChannel() {
 
 func (a *Service) trackOpenedChannel() {
 	defer a.wg.Done()
+	defer func() {
+		a.log.Info("trackOpenedChannel stopped")
+	}()
 	ticker := time.NewTicker(time.Second * 10)
 	for {
 		select {
 		case <-ticker.C:
+			if !a.daemonRPCReady() {
+				return
+			}
 			channelPoints, _, err := a.getBreezOpenChannels()
 			if err == nil && len(channelPoints) > 0 {
 				ticker.Stop()
 				a.onRoutingNodeOpenedChannel()
+				return
 			}
 		case <-a.quitChan:
 			ticker.Stop()

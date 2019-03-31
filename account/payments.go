@@ -283,7 +283,8 @@ func (a *Service) watchPayments() {
 	a.syncSentPayments()
 	_, lastInvoiceSettledIndex := a.breezDB.FetchPaymentsSyncInfo()
 	a.log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
-	stream, err := a.lightningClient.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
+	ctx, cancel := context.WithCancel(context.Background())
+	stream, err := a.lightningClient.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
 	if err != nil {
 		a.log.Criticalf("Failed to call SubscribeInvoices %v, %v", stream, err)
 	}
@@ -304,6 +305,12 @@ func (a *Service) watchPayments() {
 				}
 			}
 		}
+	}()
+
+	go func() {
+		<-a.quitChan
+		a.log.Infof("Canceling subscription")
+		cancel()
 	}()
 }
 

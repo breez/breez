@@ -25,11 +25,12 @@ func (a *Service) Start() error {
 
 // Stop stops the account service
 func (a *Service) Stop() error {
-	if atomic.SwapInt32(&a.started, 1) == 1 {
+	if atomic.SwapInt32(&a.stopped, 1) == 1 {
 		return nil
 	}
 	close(a.quitChan)
 	a.wg.Wait()
+	a.log.Infof("AccountService shutdown succesfully")
 	return nil
 }
 
@@ -45,21 +46,25 @@ func (a *Service) daemonRPCReady() bool {
 	return atomic.LoadInt32(&a.daemonReady) == 1
 }
 
-func (a *Service) watchDaemonEvents() error {
+func (a *Service) watchDaemonEvents() (err error) {
 	defer a.wg.Done()
 
-	client, err := a.daemon.SubscribeEvents()
-	defer client.Cancel()
+	a.daemonSubscription, err = a.daemon.SubscribeEvents()
+	defer a.daemonSubscription.Cancel()
 
 	if err != nil {
 		return err
 	}
 	for {
 		select {
-		case u := <-client.Updates():
+		case u := <-a.daemonSubscription.Updates():
 			switch notification := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
+				a.lightningClient, err = lnnode.NewLightningClient(a.cfg)
+				if err != nil {
+					a.log.Criticalf("Failed to create lightningClient: ", err)
+				}
 				a.wg.Add(2)
 				go a.trackOpenedChannel()
 				go a.watchPayments()
@@ -72,8 +77,11 @@ func (a *Service) watchDaemonEvents() error {
 				go a.ensureRoutingChannelOpened()
 			case lnnode.ChainSyncedEvent:
 				a.connectOnStartup()
+			case lnnode.DaemonDownEvent:
+				atomic.StoreInt32(&a.daemonReady, 0)
 			}
-		case <-client.Quit():
+		case <-a.quitChan:
+			a.log.Infof("Cancelling daemon events subscription")
 			return nil
 		}
 	}
