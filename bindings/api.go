@@ -20,6 +20,7 @@ import (
 var (
 	appServices AppServices
 	breezApp    *breez.App
+	appLogger   Logger
 )
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -79,16 +80,21 @@ type JobController interface {
 /*
 Init initialize lightning client
 */
-func Init(tempDir string, workingDir string, services AppServices) (error err) {
+func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	os.Setenv("TMPDIR", tempDir)
 	appServices = services
+	appLogger, err = GetLogger(workingDir)
+	if err != nil {
+		return err
+	}
 	breezApp, err = breez.NewApp(workingDir, services)
+	return err
 }
 
 /*
 Start the lightning client
 */
-func Start() (err error) {
+func Start() error {
 	err := breezApp.Start()
 	if err != nil {
 		return err
@@ -144,7 +150,7 @@ func Stop() {
 RequestBackup triggers breez RequestBackup
 */
 func RequestBackup() {
-	breezApp.RequestBackup()
+	breezApp.BackupManager.RequestBackup()
 }
 
 /*
@@ -158,7 +164,7 @@ func RestoreBackup(nodeID string) error {
 AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
 */
 func AvailableSnapshots(nodeID string) (string, error) {
-	snapshots, err := breezApp.AvailableSnapshots()
+	snapshots, err := breezApp.BackupManager.AvailableSnapshots()
 	if err != nil {
 		return "", err
 	}
@@ -187,42 +193,42 @@ func OnResume() {
 Log is a function that uses the breez logger
 */
 func Log(msg string, lvl string) {
-	breezApp.Log(msg, lvl)
+	appLogger.Log(msg, lvl)
 }
 
 /*
 GetAccountInfo is part of the binding inteface which is delegated to breez.GetAccountInfo
 */
 func GetAccountInfo() ([]byte, error) {
-	return marshalResponse(breezApp.GetAccountInfo())
+	return marshalResponse(breezApp.AccountService.GetAccountInfo())
 }
 
 /*
 ConnectAccount is part of the binding inteface which is delegated to breez.ConnectAccount
 */
 func ConnectAccount() error {
-	return breezApp.ConnectAccount()
+	return breezApp.AccountService.Connect()
 }
 
 /*
 EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
 */
 func EnableAccount(enabled bool) error {
-	return breezApp.EnableAccount(enabled)
+	return breezApp.AccountService.EnableAccount(enabled)
 }
 
 /*
 IsConnectedToRoutingNode is part of the binding inteface which is delegated to breez.IsConnectedToRoutingNode
 */
 func IsConnectedToRoutingNode() bool {
-	return breezApp.IsConnectedToRoutingNode()
+	return breezApp.AccountService.IsConnectedToRoutingNode()
 }
 
 /*
 AddFundsInit is part of the binding inteface which is delegated to breez.AddFundsInit
 */
 func AddFundsInit(breezID string) ([]byte, error) {
-	return marshalResponse(breezApp.AddFundsInit(breezID))
+	return marshalResponse(breezApp.SwapService.AddFundsInit(breezID))
 }
 
 /*
@@ -230,7 +236,7 @@ GetRefundableSwapAddresses returns all addresses that are refundable, e.g expire
 */
 func GetRefundableSwapAddresses() ([]byte, error) {
 	fmt.Println("GetRefundableSwapAddresses in api")
-	refundableAddresses, err := breezApp.GetRefundableAddresses()
+	refundableAddresses, err := breezApp.SwapService.GetRefundableAddresses()
 	if err != nil {
 		fmt.Println("GetRefundableSwapAddresses in api returned error from breez")
 		return nil, err
@@ -263,14 +269,14 @@ func Refund(refundRequest []byte) (string, error) {
 	if err := proto.Unmarshal(refundRequest, request); err != nil {
 		return "", err
 	}
-	return breezApp.Refund(request.Address, request.RefundAddress)
+	return breezApp.SwapService.Refund(request.Address, request.RefundAddress)
 }
 
 /*
 GetFundStatus is part of the binding inteface which is delegated to breez.GetFundStatus
 */
 func GetFundStatus(notificationToken string) ([]byte, error) {
-	return marshalResponse(breezApp.GetFundStatus(notificationToken))
+	return marshalResponse(breezApp.SwapService.GetFundStatus(notificationToken))
 }
 
 /*
@@ -279,7 +285,7 @@ RemoveFund is part of the binding inteface which is delegated to breez.RemoveFun
 func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	request := &data.RemoveFundRequest{}
 	proto.Unmarshal(removeFundRequest, request)
-	return marshalResponse(breezApp.RemoveFund(request.Amount, request.Address))
+	return marshalResponse(breezApp.SwapService.RemoveFund(request.Amount, request.Address))
 }
 
 /*
@@ -293,7 +299,7 @@ func GetLogPath() string {
 GetPayments is part of the binding inteface which is delegated to breez.GetPayments
 */
 func GetPayments() ([]byte, error) {
-	return marshalResponse(breezApp.GetPayments())
+	return marshalResponse(breezApp.AccountService.GetPayments())
 }
 
 /*
@@ -302,7 +308,7 @@ PayBlankInvoice is part of the binding inteface which is delegated to breez.PayB
 func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	return breezApp.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
+	return breezApp.AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*
@@ -311,7 +317,7 @@ SendPaymentFailureBugReport is part of the binding inteface which is delegated t
 func SendPaymentFailureBugReport(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	return breezApp.SendPaymentFailureBugReport(decodedRequest.PaymentRequest, decodedRequest.Amount)
+	return breezApp.AccountService.SendPaymentFailureBugReport(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*
@@ -320,21 +326,21 @@ AddInvoice is part of the binding inteface which is delegated to breez.AddInvoic
 func AddInvoice(invoice []byte) (paymentRequest string, err error) {
 	decodedInvoiceMemo := &data.InvoiceMemo{}
 	proto.Unmarshal(invoice, decodedInvoiceMemo)
-	return breezApp.AddInvoice(decodedInvoiceMemo)
+	return breezApp.AccountService.AddInvoice(decodedInvoiceMemo)
 }
 
 /*
 DecodePaymentRequest is part of the binding inteface which is delegated to breez.DecodePaymentRequest
 */
 func DecodePaymentRequest(paymentRequest string) ([]byte, error) {
-	return marshalResponse(breezApp.DecodePaymentRequest(paymentRequest))
+	return marshalResponse(breezApp.AccountService.DecodePaymentRequest(paymentRequest))
 }
 
 /*
 GetRelatedInvoice is part of the binding inteface which is delegated to breez.GetRelatedInvoice
 */
 func GetRelatedInvoice(paymentRequest string) ([]byte, error) {
-	return marshalResponse(breezApp.GetRelatedInvoice(paymentRequest))
+	return marshalResponse(breezApp.AccountService.GetRelatedInvoice(paymentRequest))
 }
 
 /*
@@ -343,21 +349,21 @@ SendWalletCoins is part of the binding inteface which is delegated to breez.Send
 func SendWalletCoins(sendCoinsRequest []byte) (string, error) {
 	unmarshaledRequest := data.SendWalletCoinsRequest{}
 	proto.Unmarshal(sendCoinsRequest, &unmarshaledRequest)
-	return breezApp.SendWalletCoins(unmarshaledRequest.Address, unmarshaledRequest.Amount, unmarshaledRequest.SatPerByteFee)
+	return breezApp.AccountService.SendWalletCoins(unmarshaledRequest.Address, unmarshaledRequest.Amount, unmarshaledRequest.SatPerByteFee)
 }
 
 /*
 GetDefaultOnChainFeeRate is part of the binding inteface which is delegated to breez.GetDefaultOnChainFeeRate
 */
 func GetDefaultOnChainFeeRate() int64 {
-	return breezApp.GetDefaultSatPerByteFee()
+	return breezApp.AccountService.GetDefaultSatPerByteFee()
 }
 
 /*
 ValidateAddress is part of the binding inteface which is delegated to breez.ValidateAddress
 */
 func ValidateAddress(address string) error {
-	return breezApp.ValidateAddress(address)
+	return breezApp.AccountService.ValidateAddress(address)
 }
 
 /*
@@ -371,21 +377,21 @@ func SendCommand(command string) (string, error) {
 RegisterReceivePaymentReadyNotification is part of the binding inteface which is delegated to breez.RegisterReceivePaymentReadyNotification
 */
 func RegisterReceivePaymentReadyNotification(token string) error {
-	return breezApp.RegisterReceivePaymentReadyNotification(token)
+	return breezApp.AccountService.RegisterReceivePaymentReadyNotification(token)
 }
 
 /*
 RegisterChannelOpenedNotification is part of the binding inteface which is delegated to breez.RegisterChannelOpenedNotification
 */
 func RegisterChannelOpenedNotification(token string) error {
-	return breezApp.RegisterChannelOpenedNotification(token)
+	return breezApp.AccountService.RegisterChannelOpenedNotification(token)
 }
 
 /*
 RegisterPeriodicSync is part of the binding inteface which is delegated to breez.RegisterPeriodicSync
 */
 func RegisterPeriodicSync(token string) error {
-	return breezApp.RegisterPeriodicSync(token)
+	return breezApp.AccountService.RegisterPeriodicSync(token)
 }
 
 /*
