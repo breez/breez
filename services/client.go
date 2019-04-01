@@ -29,7 +29,9 @@ func (c *Client) Stop() (err error) {
 	}
 	c.Lock()
 	defer c.Unlock()
-	err = c.connection.Close()
+	if c.connection != nil {
+		err = c.connection.Close()
+	}
 	c.log.Infof("BreezServicesClient shutdown succesfully")
 	return
 }
