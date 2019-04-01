@@ -9,7 +9,6 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
-	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/subscribe"
 	"github.com/btcsuite/btclog"
 )
@@ -21,6 +20,7 @@ type Service struct {
 	stopped            int32
 	daemonReady        int32
 	wg                 sync.WaitGroup
+	mu                 sync.Mutex
 	cfg                *config.Config
 	breezDB            *db.DB
 	daemonSubscription *subscribe.Client
@@ -28,11 +28,9 @@ type Service struct {
 	log                btclog.Logger
 	daemon             *lnnode.Daemon
 	connectedNotifier  *onlineNotifier
-	lightningClient    lnrpc.LightningClient
 	onServiceEvent     func(data.NotificationEvent)
 
-	subscriptionsSync sync.Mutex
-	notification      *notificationRequest
+	notification *notificationRequest
 
 	quitChan chan struct{}
 }

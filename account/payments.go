@@ -91,7 +91,8 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	if err := a.waitRoutingNodeConnected(); err != nil {
 		return err
 	}
-	decodedReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	lnclient := a.daemon.APIClient()
+	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		return err
 	}
@@ -99,7 +100,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 		return err
 	}
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
-	response, err := a.lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return err
@@ -119,6 +120,8 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 AddInvoice encapsulate a given amount and description in a payment request
 */
 func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
+	lnclient := a.daemon.APIClient()
+
 	// Format the standard invoice memo
 	memo := formatTextMemo(invoice)
 
@@ -128,7 +131,7 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if err := a.waitRoutingNodeConnected(); err != nil {
 		return "", err
 	}
-	response, err := a.lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
+	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
 	if err != nil {
 		return "", err
 	}
@@ -140,13 +143,14 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 // It should be used if the user agrees to send his payment details and the response of
 // QueryRoutes running in his node. The information is sent to the "bugreporturl" service.
 func (a *Service) SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
-	decodedPayReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	lnclient := a.daemon.APIClient()
+	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		a.log.Errorf("DecodePaymentRequest error: %v", err)
 		return err
 	}
 
-	lnInfo, err := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		a.log.Errorf("GetInfo error: %v", err)
 		return err
@@ -164,7 +168,7 @@ func (a *Service) SendPaymentFailureBugReport(paymentRequest string, amount int6
 		},
 	}
 
-	queryResponse, err := a.lightningClient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+	queryResponse, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
 		Amt:       amount,
 		NumRoutes: 5,
 		PubKey:    decodedPayReq.Destination,
@@ -201,7 +205,8 @@ DecodePaymentRequest is used by the payer to decode the payment request and read
 */
 func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo, error) {
 	a.log.Infof("DecodePaymentRequest %v", paymentRequest)
-	decodedPayReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	lnclient := a.daemon.APIClient()
+	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		a.log.Errorf("DecodePaymentRequest error: %v", err)
 		return nil, err
@@ -214,7 +219,8 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 GetRelatedInvoice is used by the payee to fetch the related invoice of its sent payment request so he can see if it is settled.
 */
 func (a *Service) GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
-	decodedPayReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	lnclient := a.daemon.APIClient()
+	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		a.log.Infof("Can't decode payment request: %v", paymentRequest)
 		return nil, err
@@ -222,7 +228,7 @@ func (a *Service) GetRelatedInvoice(paymentRequest string) (*data.Invoice, error
 
 	invoiceMemo := a.extractMemo(decodedPayReq)
 
-	lookup, err := a.lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
+	lookup, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
 	if err != nil {
 		return nil, err
 	}
@@ -279,12 +285,12 @@ func parseTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
 
 func (a *Service) watchPayments() {
 	defer a.wg.Done()
-
+	lnclient := a.daemon.APIClient()
 	a.syncSentPayments()
 	_, lastInvoiceSettledIndex := a.breezDB.FetchPaymentsSyncInfo()
 	a.log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
 	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := a.lightningClient.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
+	stream, err := lnclient.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
 	if err != nil {
 		a.log.Criticalf("Failed to call SubscribeInvoices %v, %v", stream, err)
 	}
@@ -316,7 +322,8 @@ func (a *Service) watchPayments() {
 
 func (a *Service) syncSentPayments() error {
 	a.log.Infof("syncSentPayments")
-	lightningPayments, err := a.lightningClient.ListPayments(context.Background(), &lnrpc.ListPaymentsRequest{})
+	lnclient := a.daemon.APIClient()
+	lightningPayments, err := lnclient.ListPayments(context.Background(), &lnrpc.ListPaymentsRequest{})
 	if err != nil {
 		return err
 	}
@@ -336,14 +343,14 @@ func (a *Service) syncSentPayments() error {
 
 func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 	var payments []*db.PaymentInfo
-
+	lnclient := a.daemon.APIClient()
 	if a.daemonRPCReady() {
-		channelsRes, err := a.lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 		if err != nil {
 			return nil, err
 		}
 
-		chainInfo, chainErr := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+		chainInfo, chainErr := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if chainErr != nil {
 			a.log.Errorf("Failed get chain info", chainErr)
 			return nil, chainErr
@@ -370,8 +377,9 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	}
 
 	var paymentRequest string
+	lnclient := a.daemon.APIClient()
 	if htlc.Incoming {
-		invoice, err := a.lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
+		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
 		if err != nil {
 			a.log.Errorf("createPendingPayment - failed to call LookupInvoice %v", err)
 			return nil, err
@@ -396,7 +404,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	}
 
 	if paymentRequest != "" {
-		decodedReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+		decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 		if err != nil {
 			return nil, err
 		}
@@ -433,7 +441,8 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 
 	paymentType := db.SentPayment
-	decodedReq, err := a.lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentRequest)})
+	lnclient := a.daemon.APIClient()
+	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentRequest)})
 	if err != nil {
 		return err
 	}

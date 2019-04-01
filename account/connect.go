@@ -96,8 +96,9 @@ func (a *Service) onRoutingNodeConnection(connected bool) {
 }
 
 func (a *Service) connectRoutingNode() error {
+	lnclient := a.daemon.APIClient()
 	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
-	_, err := a.lightningClient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
 		Addr: &lnrpc.LightningAddress{
 			Pubkey: a.cfg.RoutingNodePubKey,
 			Host:   a.cfg.RoutingNodeHost,
@@ -108,8 +109,9 @@ func (a *Service) connectRoutingNode() error {
 }
 
 func (a *Service) disconnectRoutingNode() error {
+	lnclient := a.daemon.APIClient()
 	a.log.Infof("Disconnecting from routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
-	_, err := a.lightningClient.DisconnectPeer(context.Background(), &lnrpc.DisconnectPeerRequest{
+	_, err := lnclient.DisconnectPeer(context.Background(), &lnrpc.DisconnectPeerRequest{
 		PubKey: a.cfg.RoutingNodePubKey,
 	})
 	return err
@@ -130,7 +132,8 @@ func (a *Service) connectOnStartup() {
 		a.log.Errorf("connectOnStartup: error in getBreezOpenChannels", err)
 		return
 	}
-	pendingChannels, err := a.lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	lnclient := a.daemon.APIClient()
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		a.log.Errorf("connectOnStartup: error in PendingChannels", err)
 		return

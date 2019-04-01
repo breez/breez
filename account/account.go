@@ -72,6 +72,7 @@ createChannel is responsible for creating a new channel
 */
 func (a *Service) ensureRoutingChannelOpened() {
 	a.log.Info("ensureRoutingChannelOpened started...")
+	lnclient := a.daemon.APIClient()
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 			enabled, err := a.breezDB.AccountEnabled()
@@ -81,7 +82,7 @@ func (a *Service) ensureRoutingChannelOpened() {
 			if !enabled {
 				return nil, nil
 			}
-			lnInfo, err := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if a.IsConnectedToRoutingNode() {
 					channelPoints, _, err := a.getBreezOpenChannels()
@@ -130,7 +131,8 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 		return data.Account_ACTIVE, nil
 	}
 
-	pendingChannels, err := a.lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	lnclient := a.daemon.APIClient()
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		return -1, err
 	}
@@ -148,12 +150,13 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 }
 
 func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
-	channels, err := a.lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	lnclient := a.daemon.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	pendingChannels, err := a.lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -205,7 +208,8 @@ func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
 		return 0, nil
 	}
 
-	edge, err := a.lightningClient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{ChanId: chanIDs[0]})
+	lnclient := a.daemon.APIClient()
+	edge, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{ChanId: chanIDs[0]})
 	if err != nil {
 		a.log.Errorf("Failed to get breez channel info %v", err)
 		return 0, err
@@ -222,7 +226,8 @@ func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
 func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
 	var channelPoints []string
 	var channelIds []uint64
-	channels, err := a.lightningClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+	lnclient := a.daemon.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
 	if err != nil {
@@ -240,7 +245,8 @@ func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
 }
 
 func (a *Service) getPendingBreezChannelPoint() (string, error) {
-	pendingChannels, err := a.lightningClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	lnclient := a.daemon.APIClient()
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		return "", err
 	}
@@ -259,17 +265,18 @@ func (a *Service) getPendingBreezChannelPoint() (string, error) {
 }
 
 func (a *Service) calculateAccount() (*data.Account, error) {
-	lnInfo, err := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	lnclient := a.daemon.APIClient()
+	lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	channelBalance, err := a.lightningClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	channelBalance, err := lnclient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	walletBalance, err := a.lightningClient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
+	walletBalance, err := lnclient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
 	if err != nil {
 		return nil, err
 	}

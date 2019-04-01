@@ -43,7 +43,8 @@ func (a *Service) ValidateAddress(address string) error {
 SendWalletCoins executes a request to send wallet coins to a particular address.
 */
 func (a *Service) SendWalletCoins(address string, satAmount, satPerByteFee int64) (string, error) {
-	res, err := a.lightningClient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: satAmount, SatPerByte: satPerByteFee})
+	lnclient := a.daemon.APIClient()
+	res, err := lnclient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: satAmount, SatPerByte: satPerByteFee})
 	if err != nil {
 		return "", err
 	}

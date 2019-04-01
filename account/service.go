@@ -61,10 +61,6 @@ func (a *Service) watchDaemonEvents() (err error) {
 			switch notification := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
-				a.lightningClient, err = lnnode.NewLightningClient(a.cfg)
-				if err != nil {
-					a.log.Criticalf("Failed to create lightningClient: ", err)
-				}
 				a.wg.Add(2)
 				go a.trackOpenedChannel()
 				go a.watchPayments()

@@ -37,19 +37,19 @@ func (a *Service) setUserNotificationRequest(token string, notificationType int)
 		return nil
 	}
 
-	a.subscriptionsSync.Lock()
+	a.mu.Lock()
 	a.notification = &notificationRequest{
 		token:            token,
 		notificationType: notificationType}
-	a.subscriptionsSync.Unlock()
+	a.mu.Unlock()
 	return a.registerPendingChannelConfirmation()
 }
 
 func (a *Service) registerPendingChannelConfirmation() error {
 	a.log.Infof("registerPendingChannelConfirmation checking for pending channel")
-	a.subscriptionsSync.Lock()
+	a.mu.Lock()
 	currentRequest := a.notification
-	a.subscriptionsSync.Unlock()
+	a.mu.Unlock()
 	if currentRequest == nil {
 		a.log.Infof("registerPendingChannelConfirmation not request to process")
 		return nil
@@ -81,9 +81,9 @@ func (a *Service) registerPendingChannelConfirmation() error {
 			NotificationType:  notificationTypeNeeded,
 		})
 	if err != nil {
-		a.subscriptionsSync.Lock()
+		a.mu.Lock()
 		a.notification = nil
-		a.subscriptionsSync.Unlock()
+		a.mu.Unlock()
 	}
 	return err
 }
