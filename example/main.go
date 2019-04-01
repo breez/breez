@@ -1,13 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/breez/breez"
-	"github.com/breez/breez/config"
-	"github.com/breez/breez/lnnode"
 )
 
 type Auth struct {
@@ -31,73 +29,27 @@ func (a *AppServicesImpl) BackupProviderSignIn() (string, error) {
 
 func main() {
 	workingDir := os.Getenv("LND_DIR")
+	//tag:
+	app, err := breez.NewApp(workingDir, &AppServicesImpl{})
+	if err != nil {
+		fmt.Println("Error creating App", err)
+		os.Exit(1)
+	}
+	if err := app.Start(); err != nil {
+		fmt.Println("Error creating App", err)
+		os.Exit(1)
+	}
+
 	for {
-
-		d := newDaemon(workingDir)
-		// go func() {
-		// 	time.Sleep(4 * time.Second)
-		// 	fmt.Println("Stopping daemon*******")
-		// 	err := d.Stop()
-		// 	if err != nil {
-		// 		fmt.Println("Error in stopping daemon*******")
-		// 	}
-		// }()
-		runDaemon(d)
-		return
-	}
-	return
-	if err := breez.Init(workingDir, &AppServicesImpl{}); err != nil {
-		fmt.Println("Error Init breez", err)
-		os.Exit(1)
-	}
-	notifChannel, err := breez.Start()
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-		os.Exit(1)
-	}
-	go func() {
-		for {
-			<-notifChannel
-		}
-	}()
-	//breez.WaitDaemonShutdown()
-}
-
-func newDaemon(workingDir string) *lnnode.Daemon {
-
-	cfg, err := config.GetConfig(workingDir)
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-		os.Exit(1)
-	}
-
-	d, err := lnnode.NewDaemon(cfg)
-	if err != nil {
-		fmt.Println("Error starting breez", err)
-		os.Exit(1)
-	}
-	return d
-}
-
-func runDaemon(d *lnnode.Daemon) {
-
-	err := d.Start()
-	if err != nil {
-		fmt.Println("Daemon Not Started!")
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case n := <-d.QuitChan():
-				fmt.Println("got daemon notification: ", n)
-				return
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter text: ")
+		str, _ := reader.ReadString('\n')
+		if str == "stop\n" {
+			if err := app.Stop(); err != nil {
+				fmt.Println("App stopped with error: %v", err)
 			}
+			return
 		}
-	}()
-	wg.Wait()
-	fmt.Println("Daemon Stopped!")
+	}
+
 }
