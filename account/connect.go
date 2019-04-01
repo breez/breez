@@ -20,6 +20,13 @@ type onlineNotifier struct {
 	isOnline bool
 }
 
+// NewOnlineNotifier creates a new onlineNotifier
+func newOnlineNotifier() *onlineNotifier {
+	return &onlineNotifier{
+		ntfnChan: make(chan struct{}),
+	}
+}
+
 func (n *onlineNotifier) connected() bool {
 	n.Lock()
 	defer n.Unlock()
@@ -60,11 +67,15 @@ func (a *Service) IsConnectedToRoutingNode() bool {
 }
 
 func (a *Service) onRoutingNodeConnection(connected bool) {
-
+	a.log.Infof("onRoutingNodeConnection connected=%v", connected)
 	// BREEZ-377: When there is no channel request one from Breez
 	if connected {
 		a.connectedNotifier.setOnline()
-		accData, _ := a.calculateAccount()
+		accData, err := a.calculateAccount()
+		if err != nil {
+			a.log.Errorf("Failed to calculate account %v", err)
+			return
+		}
 		go a.updateNodeChannelPolicy(accData.Id)
 		go a.ensureRoutingChannelOpened()
 	} else {
@@ -72,7 +83,11 @@ func (a *Service) onRoutingNodeConnection(connected bool) {
 
 		// in case we don't have a channel yet, we will try to connect
 		// again so we can keep trying to get an opened channel.
-		_, channels, _ := a.getBreezOpenChannels()
+		_, channels, err := a.getBreezOpenChannels()
+		if err != nil {
+			a.log.Errorf("Failed to call getBreezOpenChannels %v", err)
+			return
+		}
 		if len(channels) == 0 {
 			a.connectRoutingNode()
 		}

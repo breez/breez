@@ -27,7 +27,7 @@ type Service struct {
 	breezServices      *services.Client
 	log                btclog.Logger
 	daemon             *lnnode.Daemon
-	connectedNotifier  onlineNotifier
+	connectedNotifier  *onlineNotifier
 	lightningClient    lnrpc.LightningClient
 	onServiceEvent     func(data.NotificationEvent)
 
@@ -56,12 +56,13 @@ func NewService(
 	}
 
 	return &Service{
-		cfg:            cfg,
-		log:            logBackend.Logger("ACCNT"),
-		daemon:         daemon,
-		breezDB:        breezDB,
-		breezServices:  breezServices,
-		onServiceEvent: onServiceEvent,
-		quitChan:       make(chan struct{}),
+		cfg:               cfg,
+		log:               logBackend.Logger("ACCNT"),
+		connectedNotifier: newOnlineNotifier(),
+		daemon:            daemon,
+		breezDB:           breezDB,
+		breezServices:     breezServices,
+		onServiceEvent:    onServiceEvent,
+		quitChan:          make(chan struct{}),
 	}, nil
 }

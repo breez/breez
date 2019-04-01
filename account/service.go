@@ -68,7 +68,9 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.wg.Add(2)
 				go a.trackOpenedChannel()
 				go a.watchPayments()
+				a.onAccountChanged()
 			case lnnode.PeerConnectionEvent:
+				a.log.Infof("PeerConnectionEvent received")
 				if notification.PubKey == a.cfg.RoutingNodePubKey {
 					a.onRoutingNodeConnection(notification.Connected)
 				}
