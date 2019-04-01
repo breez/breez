@@ -39,6 +39,9 @@ func Start(dbpath string) error {
 
 //Stop stops the doubleratchet service and release not needed resources
 func Stop() error {
+	if db == nil {
+		return nil
+	}
 	return closeDB()
 }
 
