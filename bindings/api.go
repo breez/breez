@@ -104,6 +104,13 @@ func Start() error {
 }
 
 /*
+RestartDaemon attempts to restart the daemon service.
+*/
+func RestartDaemon() error {
+	return breezApp.RestartDaemon()
+}
+
+/*
 NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
@@ -156,8 +163,15 @@ func RequestBackup() {
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func RestoreBackup(nodeID string) error {
-	return breezApp.Restore(nodeID)
+func RestoreBackup(nodeID string) (err error) {
+	if err = breezApp.Stop(); err != nil {
+		return err
+	}
+	if _, err = breezApp.BackupManager.Restore(nodeID); err != nil {
+		return err
+	}
+	breezApp, err = breez.NewApp(breezApp.GetWorkingDir(), appServices)
+	return err
 }
 
 /*
