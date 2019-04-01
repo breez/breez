@@ -20,7 +20,7 @@ type Service struct {
 	cfg            *config.Config
 	log            btclog.Logger
 	breezDB        *db.DB
-	daemon         *lnnode.Daemon
+	daemonAPI      lnnode.API
 	breezAPI       services.API
 	sendPayment    func(payreq string, amount int64) error
 	onServiceEvent func(data.NotificationEvent)
@@ -32,7 +32,7 @@ func NewService(
 	cfg *config.Config,
 	breezDB *db.DB,
 	breezAPI services.API,
-	daemon *lnnode.Daemon,
+	daemonAPI lnnode.API,
 	sendPayment func(payreq string, amount int64) error,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
@@ -48,7 +48,7 @@ func NewService(
 		sendPayment:    sendPayment,
 		onServiceEvent: onServiceEvent,
 		log:            logBackend.Logger("FUNDS"),
-		daemon:         daemon,
+		daemonAPI:      daemonAPI,
 		quitChan:       make(chan struct{}),
 	}, nil
 }

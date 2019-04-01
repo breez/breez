@@ -49,7 +49,7 @@ func (a *Service) daemonRPCReady() bool {
 func (a *Service) watchDaemonEvents() (err error) {
 	defer a.wg.Done()
 
-	a.daemonSubscription, err = a.daemon.SubscribeEvents()
+	a.daemonSubscription, err = a.daemonAPI.SubscribeEvents()
 	defer a.daemonSubscription.Cancel()
 
 	if err != nil {

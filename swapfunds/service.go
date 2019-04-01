@@ -31,7 +31,7 @@ func (s *Service) Stop() error {
 func (s *Service) watchDaemonEvents() (err error) {
 	defer s.wg.Done()
 
-	client, err := s.daemon.SubscribeEvents()
+	client, err := s.daemonAPI.SubscribeEvents()
 	if err != nil {
 		s.log.Errorf("watchDaemonEvents exit with error %v", err)
 		return err

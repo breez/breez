@@ -35,7 +35,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		s.log.Errorf("Account is not ready yet")
 	}
 
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	swap, err := lnclient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
 	if err != nil {
 		s.log.Criticalf("Failed to call SubSwapClientInit %v", err)
@@ -188,7 +188,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
 func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	res, err := lnclient.SubSwapClientRefund(context.Background(), &lnrpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
@@ -240,7 +240,7 @@ func (s *Service) onDaemonReady() error {
 		return err
 	}
 
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	for _, a := range addresses {
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: a.PaymentHash})
 		if err != nil {
@@ -324,7 +324,7 @@ func (s *Service) settlePendingTransfers() {
 }
 
 func (s *Service) updateUnspentAmount(address string) (bool, error) {
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	return s.breezDB.UpdateSwapAddress(address, func(swapInfo *db.SwapAddressInfo) error {
 		unspentResponse, err := lnclient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
@@ -380,7 +380,7 @@ func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 	//first lookup for an existing invoice
 	var paymentRequest string
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
 	if invoice != nil {
 		if invoice.Value != addressInfo.ConfirmedAmount {

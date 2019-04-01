@@ -72,7 +72,7 @@ createChannel is responsible for creating a new channel
 */
 func (a *Service) ensureRoutingChannelOpened() {
 	a.log.Info("ensureRoutingChannelOpened started...")
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 			enabled, err := a.breezDB.AccountEnabled()
@@ -131,7 +131,7 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 		return data.Account_ACTIVE, nil
 	}
 
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		return -1, err
@@ -150,7 +150,7 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 }
 
 func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
 		return 0, 0, 0, err
@@ -208,7 +208,7 @@ func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
 		return 0, nil
 	}
 
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	edge, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{ChanId: chanIDs[0]})
 	if err != nil {
 		a.log.Errorf("Failed to get breez channel info %v", err)
@@ -226,7 +226,7 @@ func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
 func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
 	var channelPoints []string
 	var channelIds []uint64
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
@@ -245,7 +245,7 @@ func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
 }
 
 func (a *Service) getPendingBreezChannelPoint() (string, error) {
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
 		return "", err
@@ -265,7 +265,7 @@ func (a *Service) getPendingBreezChannelPoint() (string, error) {
 }
 
 func (a *Service) calculateAccount() (*data.Account, error) {
-	lnclient := a.daemon.APIClient()
+	lnclient := a.daemonAPI.APIClient()
 	lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, err

@@ -28,7 +28,7 @@ func (s *Service) RemoveFund(amount int64, address string) (*data.RemoveFundRepl
 	}
 
 	s.log.Infof("RemoveFunds: got payment request: %v", reply.PaymentRequest)
-	lnclient := s.daemon.APIClient()
+	lnclient := s.daemonAPI.APIClient()
 	payreq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: reply.PaymentRequest})
 	if err != nil {
 		s.log.Errorf("DecodePayReq of server response failed: %v", err)

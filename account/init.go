@@ -26,7 +26,7 @@ type Service struct {
 	daemonSubscription *subscribe.Client
 	breezAPI           services.API
 	log                btclog.Logger
-	daemon             *lnnode.Daemon
+	daemonAPI          lnnode.API
 	connectedNotifier  *onlineNotifier
 	onServiceEvent     func(data.NotificationEvent)
 
@@ -45,7 +45,7 @@ func NewService(
 	cfg *config.Config,
 	breezDB *db.DB,
 	breezAPI services.API,
-	daemon *lnnode.Daemon,
+	daemonAPI lnnode.API,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
@@ -57,7 +57,7 @@ func NewService(
 		cfg:               cfg,
 		log:               logBackend.Logger("ACCNT"),
 		connectedNotifier: newOnlineNotifier(),
-		daemon:            daemon,
+		daemonAPI:         daemonAPI,
 		breezDB:           breezDB,
 		breezAPI:          breezAPI,
 		onServiceEvent:    onServiceEvent,

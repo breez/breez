@@ -10,6 +10,15 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
+// API represents the lnnode exposed functions that are accessible for
+// breez services to use.
+// It is mainly enable the service to subscribe to various daemon events
+// and get an APIClient to query the daemon directly via RPC.
+type API interface {
+	SubscribeEvents() (*subscribe.Client, error)
+	APIClient() lnrpc.LightningClient
+}
+
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
 	sync.Mutex
