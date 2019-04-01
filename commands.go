@@ -74,7 +74,7 @@ func (a *App) SendCommand(command string) (string, error) {
 		updateChannelPolicyCommand,
 		forwardingHistoryCommand,
 	}
-	lightningClient = a.lightningClient
+	lightningClient = a.lnDaemon.APIClient()
 
 	commandArguments := strings.Split(command, " ")
 

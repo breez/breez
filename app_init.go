@@ -22,16 +22,15 @@ import (
 
 // App represents the breez application
 type App struct {
-	isReady         int32
-	started         int32
-	stopped         int32
-	wg              sync.WaitGroup
-	connectionMu    sync.Mutex
-	quitChan        chan struct{}
-	log             btclog.Logger
-	cfg             *config.Config
-	breezDB         *db.DB
-	lightningClient lnrpc.LightningClient
+	isReady      int32
+	started      int32
+	stopped      int32
+	wg           sync.WaitGroup
+	connectionMu sync.Mutex
+	quitChan     chan struct{}
+	log          btclog.Logger
+	cfg          *config.Config
+	breezDB      *db.DB
 
 	// services passed to breez from the application layer
 	//appServices AppServices
@@ -153,12 +152,13 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 // 2. nodeID - the current lightning node id.
 func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 	a.log.Infof("extractBackupInfo started")
-	response, err := a.lightningClient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
+	lnclient := a.lnDaemon.APIClient()
+	response, err := lnclient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		a.log.Errorf("Couldn't get backup: %v", err)
 		return nil, "", err
 	}
-	info, err := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, "", err
 	}

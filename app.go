@@ -148,11 +148,6 @@ func (a *App) watchDaemonEvents() error {
 			switch u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.isReady, 1)
-				a.lightningClient, err = lnnode.NewLightningClient(a.cfg)
-				if err != nil {
-					a.log.Criticalf("Error in initializing lightning client: %v", err)
-					a.Stop()
-				}
 				go a.ensureSafeToRunNode()
 				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_READY})
 			case lnnode.DaemonDownEvent:
@@ -168,7 +163,8 @@ func (a *App) watchDaemonEvents() error {
 }
 
 func (a *App) ensureSafeToRunNode() bool {
-	info, err := a.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	lnclient := a.lnDaemon.APIClient()
+	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		a.log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
 		return true
