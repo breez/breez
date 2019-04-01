@@ -28,7 +28,7 @@ var (
 )
 
 // NewLightningClient returns an instance of lnrpc.LightningClient
-func NewLightningClient(cfg *config.Config) (lnrpc.LightningClient, error) {
+func newLightningClient(cfg *config.Config) (lnrpc.LightningClient, error) {
 	appWorkingDir := cfg.WorkingDir
 	network := cfg.Network
 	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", network}, "/")

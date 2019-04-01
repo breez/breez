@@ -9,6 +9,7 @@ import (
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/lightninglib/daemon"
+	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
 )
 
@@ -40,6 +41,11 @@ func (d *Daemon) Stop() error {
 	return nil
 }
 
+// APIClient returns the interface to query the daemon.
+func (d *Daemon) APIClient() lnrpc.LightningClient {
+	return d.lightningClient
+}
+
 // RestartDaemon is used to restart a daemon that from some reason failed to start
 // or was started and failed at some later point.
 func (d *Daemon) RestartDaemon() error {
@@ -56,29 +62,37 @@ func (d *Daemon) startDaemon() error {
 		return errors.New("Daemon already running")
 	}
 
-	readyChan := make(chan interface{})
-	chanDB, chanDBCleanUp, err := channeldbservice.NewService(d.cfg.WorkingDir)
-	if err != nil {
-		return err
-	}
-	chainSevice, cleanupFn, err := chainservice.NewService(d.cfg.WorkingDir)
-	if err != nil {
-		chanDBCleanUp()
-		return err
-	}
 	d.quitChan = make(chan struct{})
-	deps := &Dependencies{
-		workingDir:   d.cfg.WorkingDir,
-		chainService: chainSevice,
-		readyChan:    readyChan,
-		chanDB:       chanDB}
+	readyChan := make(chan interface{})
 
 	d.wg.Add(2)
 	go d.notifyWhenReady(readyChan)
-	go func() {
-		defer d.wg.Done()
+	d.daemonRunning = true
 
-		err := daemon.LndMain(
+	// Run the daemon
+	go func() {
+		defer func() {
+			defer d.wg.Done()
+			go d.stopDaemon()
+		}()
+
+		chanDB, chanDBCleanUp, err := channeldbservice.NewService(d.cfg.WorkingDir)
+		if err != nil {
+			d.log.Errorf("failed to create channeldbservice", err)
+			return
+		}
+		chainSevice, cleanupFn, err := chainservice.NewService(d.cfg.WorkingDir)
+		if err != nil {
+			chanDBCleanUp()
+			d.log.Errorf("failed to create chainservice", err)
+			return
+		}
+		deps := &Dependencies{
+			workingDir:   d.cfg.WorkingDir,
+			chainService: chainSevice,
+			readyChan:    readyChan,
+			chanDB:       chanDB}
+		err = daemon.LndMain(
 			[]string{"lightning-libs", "--lnddir",
 				deps.workingDir, "--bitcoin." + d.cfg.Network,
 			},
@@ -91,9 +105,7 @@ func (d *Daemon) startDaemon() error {
 
 		chanDBCleanUp()
 		cleanupFn()
-		go d.stopDaemon()
 	}()
-	d.daemonRunning = true
 	return nil
 }
 
@@ -135,7 +147,7 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	case <-readyChan:
 		if err := d.startSubscriptions(); err != nil {
 			d.log.Criticalf("Can't start daemon subscriptions, shutting down: %v", err)
-			d.stopDaemon()
+			go d.stopDaemon()
 		}
 	case <-d.quitChan:
 	}

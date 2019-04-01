@@ -48,7 +48,7 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	d.lightningClient, err = NewLightningClient(d.cfg)
+	d.lightningClient, err = newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
