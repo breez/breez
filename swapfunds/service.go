@@ -44,10 +44,6 @@ func (s *Service) watchDaemonEvents() (err error) {
 		case u := <-client.Updates():
 			switch notification := u.(type) {
 			case lnnode.DaemonReadyEvent:
-				s.lightningClient, err = lnnode.NewLightningClient(s.cfg)
-				if err != nil {
-					return err
-				}
 				s.onDaemonReady()
 			case lnnode.PeerConnectionEvent:
 				if notification.PubKey == s.cfg.RoutingNodePubKey {

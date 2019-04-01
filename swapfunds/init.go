@@ -9,25 +9,23 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
-	"github.com/breez/lightninglib/lnrpc"
 	"github.com/btcsuite/btclog"
 )
 
 type Service struct {
-	started         int32
-	stopped         int32
-	wg              sync.WaitGroup
-	mu              sync.Mutex
-	cfg             *config.Config
-	log             btclog.Logger
-	breezDB         *db.DB
-	daemon          *lnnode.Daemon
-	lightningClient lnrpc.LightningClient
-	breezServices   *services.Client
-	sendPayment     func(payreq string, amount int64) error
-	onServiceEvent  func(data.NotificationEvent)
-	accountPubkey   string
-	quitChan        chan struct{}
+	started        int32
+	stopped        int32
+	wg             sync.WaitGroup
+	mu             sync.Mutex
+	cfg            *config.Config
+	log            btclog.Logger
+	breezDB        *db.DB
+	daemon         *lnnode.Daemon
+	breezServices  *services.Client
+	sendPayment    func(payreq string, amount int64) error
+	onServiceEvent func(data.NotificationEvent)
+	accountPubkey  string
+	quitChan       chan struct{}
 }
 
 func NewService(

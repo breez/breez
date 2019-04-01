@@ -35,7 +35,8 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		s.log.Errorf("Account is not ready yet")
 	}
 
-	swap, err := s.lightningClient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
+	lnclient := s.daemon.APIClient()
+	swap, err := lnclient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
 	if err != nil {
 		s.log.Criticalf("Failed to call SubSwapClientInit %v", err)
 		return nil, err
@@ -56,7 +57,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 	}
 
-	client, err := s.lightningClient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
+	client, err := lnclient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
 		s.log.Criticalf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
@@ -187,7 +188,8 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
 func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
-	info, err := s.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	lnclient := s.daemon.APIClient()
+	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +210,8 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
-	res, err := s.lightningClient.SubSwapClientRefund(context.Background(), &lnrpc.SubSwapClientRefundRequest{
+	lnclient := s.daemon.APIClient()
+	res, err := lnclient.SubSwapClientRefund(context.Background(), &lnrpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
 	})
@@ -237,8 +240,9 @@ func (s *Service) onDaemonReady() error {
 		return err
 	}
 
+	lnclient := s.daemon.APIClient()
 	for _, a := range addresses {
-		invoice, err := s.lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: a.PaymentHash})
+		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: a.PaymentHash})
 		if err != nil {
 			s.log.Errorf("failed to lookup invoice, %v", err)
 			continue
@@ -320,8 +324,9 @@ func (s *Service) settlePendingTransfers() {
 }
 
 func (s *Service) updateUnspentAmount(address string) (bool, error) {
+	lnclient := s.daemon.APIClient()
 	return s.breezDB.UpdateSwapAddress(address, func(swapInfo *db.SwapAddressInfo) error {
-		unspentResponse, err := s.lightningClient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
+		unspentResponse, err := lnclient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
 		}
@@ -375,7 +380,8 @@ func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 	//first lookup for an existing invoice
 	var paymentRequest string
-	invoice, err := s.lightningClient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
+	lnclient := s.daemon.APIClient()
+	invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
 	if invoice != nil {
 		if invoice.Value != addressInfo.ConfirmedAmount {
 			errorMsg := "Money was added after the invoice was created"
@@ -387,7 +393,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		addInvoice, err := s.lightningClient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
+		addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
 		if err != nil {
 			return fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
