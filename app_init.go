@@ -69,7 +69,7 @@ func (a *AuthService) SignIn() (string, error) {
 // NewApp create a new application
 func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	app := &App{
-		//appServices:       applicationServices,
+		quitChan:          make(chan struct{}),
 		notificationsChan: make(chan data.NotificationEvent),
 	}
 
@@ -90,15 +90,21 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, fmt.Errorf("Error creating services.Client: %v", err)
 	}
 
+	app.log.Infof("New Client")
+
 	app.breezDB, err = db.OpenDB(path.Join(workingDir, "breez.db"))
 	if err != nil {
 		return nil, err
 	}
 
+	app.log.Infof("New db")
+
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating lnnode.Daemon: %v", err)
 	}
+
+	app.log.Infof("New daemon")
 
 	if err != nil {
 		return nil, err
@@ -114,6 +120,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	app.log.Infof("New backup")
 
 	app.AccountService, err = account.NewService(
 		app.cfg,

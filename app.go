@@ -29,8 +29,6 @@ func (a *App) Start() error {
 		return errors.New("Breez already started")
 	}
 
-	a.quitChan = make(chan struct{})
-
 	if err := doubleratchet.Start(path.Join(a.cfg.WorkingDir, "sessions_encryption.db")); err != nil {
 		return err
 	}
@@ -60,16 +58,16 @@ Stop is responsible for stopping the ligtning daemon.
 */
 func (a *App) Stop() error {
 	if atomic.SwapInt32(&a.stopped, 1) == 1 {
-		return errors.New("App already stopped")
+		return nil
 	}
-	close(a.quitChan)
-	doubleratchet.Stop()
 
+	close(a.quitChan)
 	a.BackupManager.Stop()
 	a.SwapService.Stop()
 	a.AccountService.Stop()
 	a.servicesClient.Stop()
 	a.lnDaemon.Stop()
+	doubleratchet.Stop()
 	a.breezDB.CloseDB()
 
 	a.wg.Wait()
@@ -121,6 +119,11 @@ GetLogPath returns the log file path.
 */
 func (a *App) GetLogPath() string {
 	return a.cfg.WorkingDir + "/logs/bitcoin/" + a.cfg.Network + "/lnd.log"
+}
+
+// GetWorkingDir returns the working dir.
+func (a *App) GetWorkingDir() string {
+	return a.cfg.WorkingDir
 }
 
 func (a *App) startAppServices() error {
