@@ -73,7 +73,11 @@ func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	config := &config.Config{
 		Network: "mainnet",
 	}
-	manager, err = NewManager("mock", nil, ntfnChan, mp.preparer, config, dir)
+
+	onEvent := func(d data.NotificationEvent) {
+		ntfnChan <- d
+	}
+	manager, err = NewManager("mock", nil, onEvent, mp.preparer, config)
 	if err != nil {
 		return
 	}
@@ -109,7 +113,10 @@ func TestCreateDefaultProvider(t *testing.T) {
 	config := &config.Config{
 		Network: "mainnet",
 	}
-	manager, err := NewManager("gdrive", nil, ntfnChan, prepareBackupData, config, tempDir)
+	onEvent := func(d data.NotificationEvent) {
+		ntfnChan <- d
+	}
+	manager, err := NewManager("gdrive", nil, onEvent, prepareBackupData, config)
 	if err != nil {
 		t.Fatal(err)
 	}
