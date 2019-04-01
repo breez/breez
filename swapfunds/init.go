@@ -21,7 +21,7 @@ type Service struct {
 	log            btclog.Logger
 	breezDB        *db.DB
 	daemon         *lnnode.Daemon
-	breezServices  *services.Client
+	breezAPI       services.API
 	sendPayment    func(payreq string, amount int64) error
 	onServiceEvent func(data.NotificationEvent)
 	accountPubkey  string
@@ -31,7 +31,7 @@ type Service struct {
 func NewService(
 	cfg *config.Config,
 	breezDB *db.DB,
-	breezServices *services.Client,
+	breezAPI services.API,
 	daemon *lnnode.Daemon,
 	sendPayment func(payreq string, amount int64) error,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
@@ -44,7 +44,7 @@ func NewService(
 	return &Service{
 		cfg:            cfg,
 		breezDB:        breezDB,
-		breezServices:  breezServices,
+		breezAPI:       breezAPI,
 		sendPayment:    sendPayment,
 		onServiceEvent: onServiceEvent,
 		log:            logBackend.Logger("FUNDS"),

@@ -1,8 +1,10 @@
 package services
 
 import (
+	"context"
 	"sync"
 
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/config"
 	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
@@ -39,6 +41,12 @@ PfZ+G6Z6h7mjem0Y+iWlkYcV4PIWL1iwBi8saCbGS5jN2p8M+X+Q7UNKEkROb3N6
 KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 -----END CERTIFICATE-----`
 )
+
+// API is the interface for external breez services.
+type API interface {
+	NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc)
+	NewFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc)
+}
 
 // Client represents the client interface to breez services
 type Client struct {

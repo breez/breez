@@ -16,7 +16,7 @@ It is executed in three steps:
 3. Redeem the removed funds from the server
 */
 func (s *Service) RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
-	c, ctx, cancel := s.breezServices.NewFundManager()
+	c, ctx, cancel := s.breezAPI.NewFundManager()
 	defer cancel()
 	reply, err := c.RemoveFund(ctx, &breezservice.RemoveFundRequest{Address: address, Amount: amount})
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *Service) redeemAllRemovedFunds() error {
 }
 
 func (s *Service) redeemRemovedFundsForHash(hash string) (string, error) {
-	fundManager, ctx, cancel := s.breezServices.NewFundManager()
+	fundManager, ctx, cancel := s.breezAPI.NewFundManager()
 	defer cancel()
 	redeemReply, err := fundManager.RedeemRemovedFunds(ctx, &breezservice.RedeemRemovedFundsRequest{Paymenthash: hash})
 	if err != nil {

@@ -24,7 +24,7 @@ type Service struct {
 	cfg                *config.Config
 	breezDB            *db.DB
 	daemonSubscription *subscribe.Client
-	breezServices      *services.Client
+	breezAPI           services.API
 	log                btclog.Logger
 	daemon             *lnnode.Daemon
 	connectedNotifier  *onlineNotifier
@@ -44,7 +44,7 @@ type notificationRequest struct {
 func NewService(
 	cfg *config.Config,
 	breezDB *db.DB,
-	breezServices *services.Client,
+	breezAPI services.API,
 	daemon *lnnode.Daemon,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
@@ -59,7 +59,7 @@ func NewService(
 		connectedNotifier: newOnlineNotifier(),
 		daemon:            daemon,
 		breezDB:           breezDB,
-		breezServices:     breezServices,
+		breezAPI:          breezAPI,
 		onServiceEvent:    onServiceEvent,
 		quitChan:          make(chan struct{}),
 	}, nil

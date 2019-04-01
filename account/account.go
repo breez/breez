@@ -55,7 +55,7 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 func (a *Service) updateNodeChannelPolicy(pubkey string) {
 	for {
 		if a.IsConnectedToRoutingNode() {
-			c, ctx, cancel := a.breezServices.NewFundManager()
+			c, ctx, cancel := a.breezAPI.NewFundManager()
 			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: pubkey})
 			cancel()
 			if err == nil {
@@ -105,7 +105,7 @@ func (a *Service) ensureRoutingChannelOpened() {
 						return nil, nil
 					}
 
-					c, ctx, cancel := a.breezServices.NewFundManager()
+					c, ctx, cancel := a.breezAPI.NewFundManager()
 					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
 					cancel()
 					if err == nil {

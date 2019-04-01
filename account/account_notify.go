@@ -65,7 +65,7 @@ func (a *Service) registerPendingChannelConfirmation() error {
 		return nil
 	}
 
-	c, ctx, cancel := a.breezServices.NewFundManager()
+	c, ctx, cancel := a.breezAPI.NewFundManager()
 	defer cancel()
 
 	a.log.Infof("registerPendingChannelConfirmation for token %v and notification type = %v", currentRequest.token, currentRequest.notificationType)

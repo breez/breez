@@ -42,7 +42,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return nil, err
 	}
 
-	c, ctx, cancel := s.breezServices.NewFundManager()
+	c, ctx, cancel := s.breezAPI.NewFundManager()
 	defer cancel()
 
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
@@ -145,7 +145,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 	s.log.Infof("GetFundStatus checknig unConfirmedAddresses len=%v", len(unConfirmedAddresses))
 	if len(unConfirmedAddresses) > 0 {
-		c, ctx, cancel := s.breezServices.NewFundManager()
+		c, ctx, cancel := s.breezAPI.NewFundManager()
 		defer cancel()
 
 		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
@@ -400,7 +400,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 		paymentRequest = addInvoice.PaymentRequest
 	}
 
-	c, ctx, cancel := s.breezServices.NewFundManager()
+	c, ctx, cancel := s.breezAPI.NewFundManager()
 	defer cancel()
 	var paymentError string
 	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: paymentRequest})
