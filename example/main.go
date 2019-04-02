@@ -46,7 +46,7 @@ func main() {
 		str, _ := reader.ReadString('\n')
 		if str == "stop\n" {
 			if err := app.Stop(); err != nil {
-				fmt.Println("App stopped with error: %v", err)
+				fmt.Println("App stopped with error ", err)
 			}
 			return
 		}
