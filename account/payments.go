@@ -59,6 +59,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			},
 			PendingExpirationHeight:    payment.PendingExpirationHeight,
 			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
+			Preimage:                   payment.Preimage,
 		}
 		switch payment.Type {
 		case db.SentPayment:
@@ -463,6 +464,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		TransferRequest:   invoiceMemo.TransferRequest,
 		PaymentHash:       decodedReq.PaymentHash,
 		Destination:       decodedReq.Destination,
+		Preimage:          paymentItem.PaymentPreimage,
 	}
 
 	err = a.breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
@@ -496,6 +498,7 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		PayerName:         invoiceMemo.PayerName,
 		TransferRequest:   invoiceMemo.TransferRequest,
 		PaymentHash:       hex.EncodeToString(invoice.RHash),
+		Preimage:          hex.EncodeToString(invoice.RPreimage),
 	}
 
 	err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
