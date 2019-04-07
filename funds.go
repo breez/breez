@@ -173,9 +173,9 @@ func RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
 	breezDB.AddRedeemablePaymentHash(payreq.PaymentHash)
 
 	log.Infof("RemoveFunds: Sending payment...")
-	err = SendPaymentForRequest(reply.PaymentRequest, 0)
-	if err != nil {
-		log.Errorf("SendPaymentForRequest failed: %v", err)
+	resp, err := SendPaymentForRequest(reply.PaymentRequest, 0)
+	if err != nil || resp.PaymentError != "" {
+		log.Errorf("SendPaymentForRequest failed: %v, payment error: ", err, resp.PaymentError)
 		return nil, err
 	}
 	log.Infof("SendPaymentForRequest finished successfully")
