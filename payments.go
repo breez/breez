@@ -183,6 +183,8 @@ func createPaymentTraceReport(paymentRequest string, amount int64, paymentRespon
 		},
 	}
 
+	responseMap["payment_error"] = paymentResponse.PaymentError
+
 	if paymentResponse.FailedRoutes != nil {
 		responseMap["routes"] = paymentResponse.FailedRoutes
 	}
