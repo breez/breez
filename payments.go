@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -88,33 +87,37 @@ func GetPayments() (*data.PaymentsList, error) {
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
+func SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (*data.PaymentResponse, error) {
 	log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	if err := waitRoutingNodeConnected(); err != nil {
-		return err
+		return nil, err
 	}
 	decodedReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
-		return err
+		return nil, err
 	}
 	log.Infof("sendPaymentForRequest: before sending payment...")
 	response, err := lightningClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	if err != nil {
 		log.Infof("sendPaymentForRequest: error sending payment %v", err)
-		return err
+		return nil, err
 	}
 
 	if len(response.PaymentError) > 0 {
 		log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-		return errors.New(response.PaymentError)
+		traceReport, err := createPaymentTraceReport(paymentRequest, amountSatoshi, response)
+		if err != nil {
+			log.Errorf("failed to create trace report for failed payment %v", err)
+		}
+		return &data.PaymentResponse{PaymentError: response.PaymentError, TraceReport: traceReport}, nil
 	}
 	log.Infof("sendPaymentForRequest finished successfully")
 
 	syncSentPayments()
-	return nil
+	return &data.PaymentResponse{PaymentError: ""}, nil
 }
 
 /*
@@ -141,17 +144,31 @@ func AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
 // SendPaymentFailureBugReport is used for investigating payment failures.
 // It should be used if the user agrees to send his payment details and the response of
 // QueryRoutes running in his node. The information is sent to the "bugreporturl" service.
-func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
+func SendPaymentFailureBugReport(jsonReport string) error {
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", cfg.BugReportURL+"/paymentfailure", bytes.NewBuffer([]byte(jsonReport)))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("PF-Key", cfg.BugReportURLSecret)
+	_, err = client.Do(req)
+	if err != nil {
+		log.Errorf("Error in sending bug report: ", err)
+		return err
+	}
+	log.Infof(jsonReport)
+	return nil
+}
+
+func createPaymentTraceReport(paymentRequest string, amount int64, paymentResponse *lnrpc.SendResponse) (string, error) {
 	decodedPayReq, err := lightningClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		log.Errorf("DecodePaymentRequest error: %v", err)
-		return err
+		return "", err
 	}
 
 	lnInfo, err := lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if err != nil {
 		log.Errorf("GetInfo error: %v", err)
-		return err
+		return "", err
 	}
 
 	if amount == 0 {
@@ -166,36 +183,17 @@ func SendPaymentFailureBugReport(paymentRequest string, amount int64) error {
 		},
 	}
 
-	queryResponse, err := lightningClient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
-		Amt:       amount,
-		NumRoutes: 5,
-		PubKey:    decodedPayReq.Destination,
-	})
-	if err != nil {
-		responseMap["query_routes_error"] = err
-		log.Errorf("QueryRoutes error: %v", err)
-	}
-	if queryResponse != nil {
-		responseMap["routes"] = queryResponse.Routes
+	if paymentResponse.FailedRoutes != nil {
+		responseMap["routes"] = paymentResponse.FailedRoutes
 	}
 
 	response, err := json.MarshalIndent(responseMap, "", "  ")
 	if err != nil {
 		fmt.Println("unable to marshal response to json: ", err)
-		return err
+		return "", err
 	}
 
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", cfg.BugReportURL+"/paymentfailure", bytes.NewBuffer(response))
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("PF-Key", cfg.BugReportURLSecret)
-	_, err = client.Do(req)
-	if err != nil {
-		log.Errorf("Error in sending bug report: ", err)
-		return err
-	}
-	log.Infof(string(response))
-	return nil
+	return string(response), nil
 }
 
 /*
