@@ -156,6 +156,14 @@ github.com/breez/lightninglib v0.0.0-20190318090656-f688580bdc85 h1:3HoJBsvIew8l
 github.com/breez/lightninglib v0.0.0-20190318090656-f688580bdc85/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
 github.com/breez/lightninglib v0.0.0-20190320151933-d45c275ec42f h1:YwKVj4Ot3Ivklafz4af6UAUqak/AwBC7igT3SGE50xU=
 github.com/breez/lightninglib v0.0.0-20190320151933-d45c275ec42f/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
+github.com/breez/lightninglib v0.0.0-20190327154423-644e3e49d0e5 h1:sAn1QWLOr8nQfTsBf+5FlH9FceZ3MVj8+Cevx2O4H3g=
+github.com/breez/lightninglib v0.0.0-20190327154423-644e3e49d0e5/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
+github.com/breez/lightninglib v0.0.0-20190407112236-05e6dca4711b h1:oqYQQkvTEeYw7mjlYCMR8gP0McJY8EyEcSwGK4XRNsI=
+github.com/breez/lightninglib v0.0.0-20190407112236-05e6dca4711b/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
+github.com/breez/lightninglib v0.0.0-20190407130306-73f8c40cc11d h1:QWkLzHMFnW/xm0pKqhkiZs7SLMVfvQe40w+XaDNoPhE=
+github.com/breez/lightninglib v0.0.0-20190407130306-73f8c40cc11d/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
+github.com/breez/lightninglib v0.0.0-20190407174954-d32d4231e0fc h1:SDiaXD7UF7Gzphk19gOGQaixooaG49zhve0DprzbE5I=
+github.com/breez/lightninglib v0.0.0-20190407174954-d32d4231e0fc/go.mod h1:TobiMK8gxNX9rRz55/4dxRpQTCJQ+0ydGuflUB0mGwM=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804 h1:GPbLS0rSo+fhMQe04V66s2oP6RocdtG6nxRJ1P7M2Xk=
 github.com/breez/neutrino v0.0.0-20181023044851-1943c07c9804/go.mod h1:l720ah/7jc5nqsjW0O4ZjKHj33egitv8TKBHXmphyo8=
 github.com/breez/neutrino v0.0.0-20181025065603-14bd66aff1db h1:m+VblI90ZFNqXdXZFy4O3Z3+a54NPq/oUt47DiU4/40=

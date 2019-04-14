@@ -64,6 +64,11 @@ message PaymentsList {
     repeated Payment paymentsList = 1;
 }
 
+message PaymentResponse {
+    string paymentError = 1;
+    string traceReport = 2;
+}
+
 message SendWalletCoinsRequest {
     string address = 1;
     int64 amount = 2;
