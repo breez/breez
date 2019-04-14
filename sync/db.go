@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	syncInfoBucket        = "syncInfo"
-	lastCFilterHeightKey  = "lastCFilterHeight"
-	lastSuccessRunDateKey = "lastSuccessRunDate"
+	syncInfoBucket         = "syncInfo"
+	lastCFilterHeightKey   = "lastCFilterHeight"
+	breachWatcherHeightKey = "breachWatcherHeightKey"
+	lastSuccessRunDateKey  = "lastSuccessRunDate"
 )
 
 type jobDB struct {
@@ -49,6 +50,35 @@ func (j *jobDB) fetchCFilterSyncHeight() (uint64, error) {
 			return nil
 		}
 		heightBytes := bucket.Get([]byte(lastCFilterHeightKey))
+		if heightBytes == nil {
+			return nil
+		}
+		startSyncHeight = binary.BigEndian.Uint64(heightBytes)
+		return nil
+	})
+	return startSyncHeight, err
+}
+
+func (j *jobDB) setBreachWatcherBlockHeight(height uint64) error {
+	return j.db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte(syncInfoBucket))
+		if err != nil {
+			return err
+		}
+		b := make([]byte, 8)
+		binary.BigEndian.PutUint64(b, height)
+		return bucket.Put([]byte(breachWatcherHeightKey), b)
+	})
+}
+
+func (j *jobDB) fetchBreachWatcherHeight() (uint64, error) {
+	var startSyncHeight uint64
+	err := j.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(syncInfoBucket))
+		if bucket == nil {
+			return nil
+		}
+		heightBytes := bucket.Get([]byte(breachWatcherHeightKey))
 		if heightBytes == nil {
 			return nil
 		}
