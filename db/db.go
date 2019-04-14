@@ -11,7 +11,7 @@ import (
 
 const (
 	versionBucket        = "version"
-	incmoingPayReqBucket = "paymentRequests"
+	incomingPayReqBucket = "paymentRequests"
 
 	//add funds
 	addressesBucket           = "subswap_addresses"
@@ -46,7 +46,7 @@ func OpenDB(dbPath string) (*DB, error) {
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
-		_, err = tx.CreateBucketIfNotExists([]byte(incmoingPayReqBucket))
+		_, err = tx.CreateBucketIfNotExists([]byte(incomingPayReqBucket))
 		if err != nil {
 			return err
 		}
