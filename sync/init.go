@@ -21,6 +21,12 @@ type Job struct {
 	quit       chan struct{}
 }
 
+// JobResult is the interface returned as the result of the
+// Start method.
+type JobResult interface {
+	BreachDetected() bool
+}
+
 /*
 NewJob crates a new SyncJob and given a directory for this job.
 It is assumed that a config file exists in this directory.
