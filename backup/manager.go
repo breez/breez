@@ -115,9 +115,9 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
-func (b *Manager) Start() {
+func (b *Manager) Start() error {
 	if atomic.SwapInt32(&b.started, 1) == 1 {
-		return
+		return nil
 	}
 	b.wg.Add(1)
 	go func() {
@@ -145,7 +145,7 @@ func (b *Manager) Start() {
 				}
 				b.db.markBackupRequestCompleted(pendingID)
 				log.Infof("backup finished succesfully")
-				b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS}
+				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS})
 			case <-b.quitChan:
 				return
 			}
@@ -154,16 +154,19 @@ func (b *Manager) Start() {
 
 	// execute recovery if needed.
 	b.backupRequestChan <- struct{}{}
+	return nil
 }
 
 // Stop stops the BackupService and wait for complete shutdown.
-func (b *Manager) Stop() {
+func (b *Manager) Stop() error {
 	if atomic.SwapInt32(&b.stopped, 1) == 1 {
-		return
+		return nil
 	}
 	b.db.close()
 	close(b.quitChan)
 	b.wg.Wait()
+	log.Infof("BackupManager shutdown succesfully")
+	return nil
 }
 
 // destroy is intended to use internally for testing purpose.
@@ -179,11 +182,11 @@ func (b *Manager) notifyBackupFailed(err error) {
 	log.Infof("notifyBackupFailed %v", err)
 	if ferr, ok := err.(ProviderError); ok {
 		if ferr.IsAuthError() {
-			b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_AUTH_FAILED}
+			b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_AUTH_FAILED})
 			return
 		}
 	}
-	b.ntfnChan <- data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED}
+	b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED})
 }
 
 // getBackupIdentifier retrieves an identifier that is unique for this instance of breez.

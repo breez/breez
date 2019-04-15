@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -27,19 +28,28 @@ func (a *AppServicesImpl) BackupProviderSignIn() (string, error) {
 }
 
 func main() {
-	if err := breez.Init(os.Getenv("LND_DIR"), &AppServicesImpl{}); err != nil {
-		fmt.Println("Error Init breez", err)
-		os.Exit(1)
-	}
-	notifChannel, err := breez.Start()
+	workingDir := os.Getenv("LND_DIR")
+	//tag:
+	app, err := breez.NewApp(workingDir, &AppServicesImpl{})
 	if err != nil {
-		fmt.Println("Error starting breez", err)
+		fmt.Println("Error creating App", err)
 		os.Exit(1)
 	}
-	go func() {
-		for {
-			<-notifChannel
+	if err := app.Start(); err != nil {
+		fmt.Println("Error creating App", err)
+		os.Exit(1)
+	}
+
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter text: ")
+		str, _ := reader.ReadString('\n')
+		if str == "stop\n" {
+			if err := app.Stop(); err != nil {
+				fmt.Println("App stopped with error ", err)
+			}
+			return
 		}
-	}()
-	breez.WaitDaemonShutdown()
+	}
+
 }

@@ -34,7 +34,7 @@ type Manager struct {
 	prepareBackupData DataPreparer
 	config            *config.Config
 	backupRequestChan chan struct{}
-	ntfnChan          chan data.NotificationEvent
+	onServiceEvent    func(event data.NotificationEvent)
 	quitChan          chan struct{}
 	wg                sync.WaitGroup
 }
@@ -43,25 +43,24 @@ type Manager struct {
 func NewManager(
 	providerName string,
 	authService AuthService,
-	ntfnChan chan data.NotificationEvent,
+	onServiceEvent func(event data.NotificationEvent),
 	prepareData DataPreparer,
-	config *config.Config,
-	workingDir string) (*Manager, error) {
+	config *config.Config) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := openDB(path.Join(workingDir, "backup.db"))
+	db, err := openDB(path.Join(config.WorkingDir, "backup.db"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Manager{
 		db:                db,
-		workingDir:        workingDir,
-		ntfnChan:          ntfnChan,
+		workingDir:        config.WorkingDir,
+		onServiceEvent:    onServiceEvent,
 		provider:          provider,
 		prepareBackupData: prepareData,
 		config:            config,

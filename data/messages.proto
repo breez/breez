@@ -58,6 +58,7 @@ message Payment {
     uint32 PendingExpirationHeight = 10;
     int64 PendingExpirationTimestamp = 11;
     int64 fee = 12;
+    string preimage = 13;
 }
 
 message PaymentsList {
@@ -112,6 +113,7 @@ message NotificationEvent {
         BACKUP_FAILED = 10;
         BACKUP_AUTH_FAILED = 11;
         BACKUP_NODE_CONFLICT = 12;
+        BACKUP_REQUEST = 13;
     }
 
     NotificationType type = 1;

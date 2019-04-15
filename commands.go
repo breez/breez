@@ -30,8 +30,9 @@ import (
 )
 
 var returnBuffer string
+var lightningClient lnrpc.LightningClient
 
-func SendCommand(command string) (string, error) {
+func (a *App) SendCommand(command string) (string, error) {
 	app := cli.NewApp()
 	app.Name = "lncli"
 	app.Commands = []cli.Command{
@@ -73,6 +74,7 @@ func SendCommand(command string) (string, error) {
 		updateChannelPolicyCommand,
 		forwardingHistoryCommand,
 	}
+	lightningClient = a.lnDaemon.APIClient()
 
 	commandArguments := strings.Split(command, " ")
 
