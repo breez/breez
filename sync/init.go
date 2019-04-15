@@ -24,7 +24,7 @@ type Job struct {
 // JobResult is the interface returned as the result of the
 // Start method.
 type JobResult interface {
-	BreachDetected() bool
+	ChannelClosedDetected() bool
 }
 
 /*

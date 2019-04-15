@@ -16,11 +16,11 @@ const (
 )
 
 type jobResult struct {
-	breachDetected bool
+	channelClosedDetected bool
 }
 
-func (r *jobResult) BreachDetected() bool {
-	return r.breachDetected
+func (r *jobResult) ChannelClosedDetected() bool {
+	return r.channelClosedDetected
 }
 
 /*
@@ -155,17 +155,17 @@ func (s *Job) syncFilters() (res JobResult, err error) {
 			return nil, err
 		}
 	}
-	s.log.Info("syncFilters completed succesfully, checking for breach...")
-	breachDetector, err := NewBreachWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
+	s.log.Info("syncFilters completed succesfully, checking for close channels...")
+	channelsWatcher, err := NewChannelsWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
 	if err != nil {
 		return nil, err
 	}
-	breachDetected, err := breachDetector.Scan(bestBlockHeight)
+	channelClosedDetected, err := channelsWatcher.Scan(bestBlockHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	return &jobResult{breachDetected: breachDetected}, jobDB.setLastSuccessRunDate(time.Now())
+	return &jobResult{channelClosedDetected: channelClosedDetected}, jobDB.setLastSuccessRunDate(time.Now())
 }
 
 func (s *Job) waitForHeaders(chainService *neutrino.ChainService, currentHeight uint64) (uint64, error) {

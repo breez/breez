@@ -11,30 +11,30 @@ import (
 	"github.com/lightninglabs/neutrino"
 )
 
-// BreachWatcher contains all the data that is needed in order to scan several
+// ChannelsWatcher contains all the data that is needed in order to scan several
 // input scripts using neutrino compact filters download and matching.
 // This is usefull to run as a background job that scans periodically all the user
-// opened channels funding points, detect a possible breach and warn the user if
-// a breach was found.
-type BreachWatcher struct {
+// opened channels funding points, detect a possible closed channel and warn the user if
+// a the channel was ulitirally found.
+type ChannelsWatcher struct {
 	log                     btclog.Logger
 	chainService            *neutrino.ChainService
 	db                      *jobDB
 	quitChan                chan struct{}
 	watchedScripts          []neutrino.InputWithScript
 	firstChannelBlockHeight uint64
-	breachDetected          bool
+	closedChannelDetected   bool
 }
 
-// NewBreachWatcher creates a new BreachWatcher.
+// NewChannelsWatcher creates a new ChannelsWatcher.
 // First it makes sure it has a valid ChainService and then fetches all the
 // input scripts from the user channels needed to be watched.
-func NewBreachWatcher(
+func NewChannelsWatcher(
 	workingDir string,
 	chainService *neutrino.ChainService,
 	log btclog.Logger,
 	db *jobDB,
-	quitChan chan struct{}) (*BreachWatcher, error) {
+	quitChan chan struct{}) (*ChannelsWatcher, error) {
 
 	chandb, cleanup, err := channeldbservice.NewService(workingDir)
 	if err != nil {
@@ -74,7 +74,7 @@ func NewBreachWatcher(
 		watchedScripts = append(watchedScripts, neutrino.InputWithScript{OutPoint: fundingOut, PkScript: pkScript})
 	}
 
-	return &BreachWatcher{
+	return &ChannelsWatcher{
 		chainService:            chainService,
 		db:                      db,
 		log:                     log,
@@ -86,15 +86,15 @@ func NewBreachWatcher(
 
 // Scan scans from the last saved point up to the tipHeight given as parameter.
 // it scans for all watchedScripts and if the ChainService notifies on a filter match
-// this function returns true to reflect that a breach was detected and the user should
-// be warned.
-func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
+// this function returns true to reflect that a closed channel was detected and the
+// user should be warned.
+func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 	if len(b.watchedScripts) == 0 {
 		b.log.Infof("No input scripts to watch, skipping scan")
-		return false, b.db.setBreachWatcherBlockHeight(tipHeight)
+		return false, b.db.setChannelsWatcherBlockHeight(tipHeight)
 	}
 
-	startHeight, err := b.db.fetchBreachWatcherHeight()
+	startHeight, err := b.db.fetchChannelsWatcherBlockHeight()
 	if err != nil {
 		return false, err
 	}
@@ -112,7 +112,7 @@ func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
 		return false, err
 	}
 
-	b.log.Infof("Scanning for breach in range %v-%v", startHeight, tipHeight)
+	b.log.Infof("Scanning for closed channels in range %v-%v", startHeight, tipHeight)
 
 	startStamp := &waddrmgr.BlockStamp{Height: int32(startHeight), Hash: *startHash}
 	tipStamp := &waddrmgr.BlockStamp{Height: int32(tipHeight), Hash: *tipHash}
@@ -132,14 +132,14 @@ func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
 	}
 
 	err = <-rescan.Start()
-	if err == nil && !b.breachDetected {
-		b.db.setBreachWatcherBlockHeight(tipHeight)
+	if err == nil && !b.closedChannelDetected {
+		b.db.setChannelsWatcherBlockHeight(tipHeight)
 	}
-	b.log.Infof("BreachWatcher finished: breach=%v err=%v", b.breachDetected, err)
-	return b.breachDetected, err
+	b.log.Infof("ChannelsWatcher finished: closedChannelDetected=%v err=%v", b.closedChannelDetected, err)
+	return b.closedChannelDetected, err
 }
 
-func (b *BreachWatcher) onFilteredBlockConnected(height int32, header *wire.BlockHeader,
+func (b *ChannelsWatcher) onFilteredBlockConnected(height int32, header *wire.BlockHeader,
 	txs []*btcutil.Tx) {
-	b.breachDetected = b.breachDetected || (len(txs) > 0)
+	b.closedChannelDetected = b.closedChannelDetected || (len(txs) > 0)
 }
