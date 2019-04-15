@@ -78,6 +78,15 @@ type JobController interface {
 }
 
 /*
+ChannelsWatcherJobController is the interface to return when scheuling the channels watcher job to
+allow the caller to cancel at any time
+*/
+type ChannelsWatcherJobController interface {
+	Run() (bool, error)
+	Stop()
+}
+
+/*
 Init initialize lightning client
 */
 func Init(tempDir string, workingDir string, services AppServices) (err error) {
@@ -114,7 +123,7 @@ func RestartDaemon() error {
 NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
-func NewSyncJob(workingDir string) (JobController, error) {
+func NewSyncJob(workingDir string) (ChannelsWatcherJobController, error) {
 	job, err := sync.NewJob(workingDir)
 	if err != nil {
 		return nil, err
