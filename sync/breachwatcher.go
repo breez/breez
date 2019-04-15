@@ -1,8 +1,6 @@
 package sync
 
 import (
-	"fmt"
-
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/lightninglib/lnwallet"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -19,12 +17,13 @@ import (
 // opened channels funding points, detect a possible breach and warn the user if
 // a breach was found.
 type BreachWatcher struct {
-	log            btclog.Logger
-	chainService   *neutrino.ChainService
-	db             *jobDB
-	quitChan       chan struct{}
-	watchedScripts []neutrino.InputWithScript
-	breachDetected bool
+	log                     btclog.Logger
+	chainService            *neutrino.ChainService
+	db                      *jobDB
+	quitChan                chan struct{}
+	watchedScripts          []neutrino.InputWithScript
+	firstChannelBlockHeight uint64
+	breachDetected          bool
 }
 
 // NewBreachWatcher creates a new BreachWatcher.
@@ -49,6 +48,8 @@ func NewBreachWatcher(
 	}
 
 	var watchedScripts []neutrino.InputWithScript
+	var firstChannelBlockHeight uint64
+
 	for _, c := range channels {
 		fundingOut := c.FundingOutpoint
 		localKey := c.LocalChanCfg.MultiSigKey.PubKey.SerializeCompressed()
@@ -64,16 +65,22 @@ func NewBreachWatcher(
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("channel id: ", c.ShortChannelID.String())
+
+		log.Infof("watching channel id: ", c.ShortChannelID.String())
+		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
+		if firstChannelBlockHeight == 0 || channelBlockHeight < firstChannelBlockHeight {
+			firstChannelBlockHeight = channelBlockHeight
+		}
 		watchedScripts = append(watchedScripts, neutrino.InputWithScript{OutPoint: fundingOut, PkScript: pkScript})
 	}
 
 	return &BreachWatcher{
-		chainService:   chainService,
-		db:             db,
-		log:            log,
-		quitChan:       quitChan,
-		watchedScripts: watchedScripts,
+		chainService:            chainService,
+		db:                      db,
+		log:                     log,
+		quitChan:                quitChan,
+		firstChannelBlockHeight: firstChannelBlockHeight,
+		watchedScripts:          watchedScripts,
 	}, nil
 }
 
@@ -82,9 +89,17 @@ func NewBreachWatcher(
 // this function returns true to reflect that a breach was detected and the user should
 // be warned.
 func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
+	if len(b.watchedScripts) == 0 {
+		b.log.Infof("No input scripts to watch, skipping scan")
+		return false, b.db.setBreachWatcherBlockHeight(tipHeight)
+	}
+
 	startHeight, err := b.db.fetchBreachWatcherHeight()
 	if err != nil {
 		return false, err
+	}
+	if startHeight == 0 && b.firstChannelBlockHeight > 0 {
+		startHeight = b.firstChannelBlockHeight
 	}
 
 	startHash, err := b.chainService.GetBlockHash(int64(startHeight))
@@ -96,6 +111,8 @@ func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	b.log.Infof("Scanning for breach in range %v-%v", startHeight, tipHeight)
 
 	startStamp := &waddrmgr.BlockStamp{Height: int32(startHeight), Hash: *startHash}
 	tipStamp := &waddrmgr.BlockStamp{Height: int32(tipHeight), Hash: *tipHash}
@@ -118,11 +135,11 @@ func (b *BreachWatcher) Scan(tipHeight uint64) (bool, error) {
 	if err == nil && !b.breachDetected {
 		b.db.setBreachWatcherBlockHeight(tipHeight)
 	}
+	b.log.Infof("BreachWatcher finished: breach=%v err=%v", b.breachDetected, err)
 	return b.breachDetected, err
 }
 
 func (b *BreachWatcher) onFilteredBlockConnected(height int32, header *wire.BlockHeader,
 	txs []*btcutil.Tx) {
-	b.log.Infof("onFilteredBlockConnected height = %v, txs: %v", height, len(txs))
 	b.breachDetected = b.breachDetected || (len(txs) > 0)
 }
