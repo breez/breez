@@ -66,7 +66,7 @@ func NewChannelsWatcher(
 			return nil, err
 		}
 
-		log.Infof("watching channel id: ", c.ShortChannelID.String())
+		log.Infof("watching channel id: %v", c.ShortChannelID.String())
 		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
 		if firstChannelBlockHeight == 0 || channelBlockHeight < firstChannelBlockHeight {
 			firstChannelBlockHeight = channelBlockHeight
