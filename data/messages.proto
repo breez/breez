@@ -211,3 +211,7 @@ message BootstrapFilesRequest {
     string WorkingDir = 1;
     repeated string FullPaths = 2;
 }
+
+message Peers {
+    repeated string peer = 1;
+}

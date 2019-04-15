@@ -30,7 +30,7 @@ type App struct {
 	quitChan     chan struct{}
 	log          btclog.Logger
 	cfg          *config.Config
-	breezDB      *db.DB
+	BreezDB      *db.DB
 
 	// services passed to breez from the application layer
 	//appServices AppServices
@@ -91,7 +91,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.log.Infof("New Client")
 
-	app.breezDB, err = db.OpenDB(path.Join(workingDir, "breez.db"))
+	app.BreezDB, err = db.OpenDB(path.Join(workingDir, "breez.db"))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.AccountService, err = account.NewService(
 		app.cfg,
-		app.breezDB,
+		app.BreezDB,
 		app.servicesClient,
 		app.lnDaemon,
 		app.onServiceEvent,
@@ -134,7 +134,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.SwapService, err = swapfunds.NewService(
 		app.cfg,
-		app.breezDB,
+		app.BreezDB,
 		app.servicesClient,
 		app.lnDaemon,
 		app.AccountService.SendPaymentForRequest,
@@ -163,7 +163,7 @@ func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 		return nil, "", err
 	}
 
-	f, err := a.breezdbCopy(a.breezDB)
+	f, err := a.breezdbCopy(a.BreezDB)
 	if err != nil {
 		a.log.Errorf("Couldn't get breez backup file: %v", err)
 		return nil, "", err
@@ -178,5 +178,5 @@ func (a *App) breezdbCopy(breezDB *db.DB) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return a.breezDB.BackupDb(dir)
+	return a.BreezDB.BackupDb(dir)
 }

@@ -501,6 +501,25 @@ func BootstrapFiles(request []byte) error {
 	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
 }
 
+func GetPeers() ([]byte, error) {
+	var p data.Peers
+	peers, err := breezApp.BreezDB.GetPeers()
+	if err != nil {
+		return nil, err
+	}
+	p.Peer = peers
+	return marshalResponse(&p, nil)
+}
+
+func SetPeers(request []byte) error {
+	var p data.Peers
+	if err := proto.Unmarshal(request, &p); err != nil {
+		return err
+	}
+	err := breezApp.BreezDB.SetPeers(p.Peer)
+	return err
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
