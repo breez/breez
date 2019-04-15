@@ -25,7 +25,8 @@ func (db *DB) SetPeers(peers []string) error {
 	return err
 }
 
-func (db *DB) GetPeers() (peers []string, err error) {
+func (db *DB) GetPeers(defaults []string) (peers []string, err error) {
+	peers = defaults
 	var b []byte
 	b, err = db.fetchItem([]byte(networkBucket), []byte(peersKey))
 	if err != nil {
@@ -39,6 +40,8 @@ func (db *DB) GetPeers() (peers []string, err error) {
 	if err != nil {
 		return
 	}
-	peers = p.Peer
+	if len(p.Peer) > 0 {
+		peers = p.Peer
+	}
 	return
 }

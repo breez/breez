@@ -7,7 +7,6 @@ import (
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/breez/config"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
@@ -92,12 +91,19 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		err = daemon.LndMain(
-			[]string{"lightning-libs", "--lnddir",
-				deps.workingDir, "--bitcoin." + d.cfg.Network,
-			},
-			deps,
-		)
+		params := []string{"lightning-libs",
+			"--lnddir", deps.workingDir,
+			"--bitcoin." + d.cfg.Network,
+		}
+		peers, err := d.breezDB.GetPeers(d.cfg.JobCfg.ConnectedPeers)
+		if err != nil {
+			d.log.Errorf("peers error: %v", err)
+		}
+		d.log.Debugf("Peers1: %v", peers)
+		for _, peer := range peers {
+			params = append(params, "--neutrino.connect", peer)
+		}
+		err = daemon.LndMain(params, deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
@@ -125,20 +131,6 @@ func (d *Daemon) stopDaemon() {
 	d.wg.Wait()
 	d.daemonRunning = false
 	d.ntfnServer.SendUpdate(DaemonDownEvent{})
-}
-
-func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
-
-	err := daemon.LndMain(
-		[]string{"lightning-libs", "--lnddir",
-			deps.workingDir, "--bitcoin." + cfg.Network,
-		},
-		deps,
-	)
-
-	if err != nil {
-		d.log.Errorf("Breez failed with error: %v", err)
-	}
 }
 
 func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {

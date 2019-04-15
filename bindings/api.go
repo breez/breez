@@ -503,7 +503,7 @@ func BootstrapFiles(request []byte) error {
 
 func GetPeers() ([]byte, error) {
 	var p data.Peers
-	peers, err := breezApp.BreezDB.GetPeers()
+	peers, err := breezApp.BreezDB.GetPeers(nil)
 	if err != nil {
 		return nil, err
 	}
