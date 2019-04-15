@@ -15,19 +15,27 @@ const (
 	rateLimitJobInterval = time.Duration(time.Minute * 10)
 )
 
+type jobResult struct {
+	breachDetected bool
+}
+
+func (r *jobResult) BreachDetected() bool {
+	return r.breachDetected
+}
+
 /*
 Run executes the download filter operation synchronousely
 */
-func (s *Job) Run() error {
+func (s *Job) Run() (r JobResult, err error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	err := s.syncFilters()
+	res, err := s.syncFilters()
 	if err != nil {
-		return fmt.Errorf("sync finished with error %v", err)
+		return nil, fmt.Errorf("sync finished with error %v", err)
 	}
 	s.terminate()
-	return nil
+	return res, nil
 }
 
 /*
@@ -53,33 +61,33 @@ func (s *Job) terminated() bool {
 	}
 }
 
-func (s *Job) syncFilters() (err error) {
+func (s *Job) syncFilters() (res JobResult, err error) {
 	s.log.Info("syncFilters started...")
 	chainService, cleanFn, err := chainservice.NewService(s.workingDir)
 	if err != nil {
 		s.log.Errorf("Error creating ChainService: %s", err)
-		return err
+		return nil, err
 	}
 	defer cleanFn()
 	jobDB, err := openJobDB(path.Join(s.workingDir, "job.db"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer jobDB.close()
 
 	// ensure job is rate limited.
 	lastRun, err := jobDB.lastSuccessRunDate()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if time.Now().Sub(lastRun) < rateLimitJobInterval {
 		s.log.Infof("job was not running due to rate limit, last run was at %v", lastRun)
-		return nil
+		return &jobResult{}, nil
 	}
 
 	startSyncHeight, err := jobDB.fetchCFilterSyncHeight()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	chainService.Start()
@@ -87,7 +95,7 @@ func (s *Job) syncFilters() (err error) {
 
 	bestBlockHeight, err := s.waitForHeaders(chainService, startSyncHeight)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if startSyncHeight == 0 {
@@ -101,11 +109,11 @@ func (s *Job) syncFilters() (err error) {
 		case <-time.After(time.Millisecond * 100):
 			bestBlockHeight, err = s.waitForHeaders(chainService, startSyncHeight)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		case <-s.quit:
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -113,42 +121,51 @@ func (s *Job) syncFilters() (err error) {
 
 	for currentHeight := startSyncHeight; currentHeight <= bestBlockHeight; currentHeight++ {
 		if s.terminated() {
-			return nil
+			return &jobResult{}, nil
 		}
 
 		// Get block hash
 		h, err := chainService.GetBlockHash(int64(currentHeight))
 		if err != nil {
 			s.log.Errorf("fail to fetch block hash", err)
-			return err
+			return nil, err
 		}
 		if s.terminated() {
-			return nil
+			return &jobResult{}, nil
 		}
 
 		// Get filter
 		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
 		if err != nil {
 			s.log.Errorf("fail to download block filter", err)
-			return err
+			return nil, err
 		}
 		err = jobDB.setCFilterSyncHeight(currentHeight)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if s.terminated() {
-			return nil
+			return &jobResult{}, nil
 		}
 
 		//wait for the backend to sync if needed
 		bestBlockHeight, err = s.waitForHeaders(chainService, currentHeight)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	s.log.Info("syncFilters completed succesfully")
-	return jobDB.setLastSuccessRunDate(time.Now())
+	s.log.Info("syncFilters completed succesfully, checking for breach...")
+	breachDetector, err := NewBreachWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
+	if err != nil {
+		return nil, err
+	}
+	breachDetected, err := breachDetector.Scan(bestBlockHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	return &jobResult{breachDetected: breachDetected}, jobDB.setLastSuccessRunDate(time.Now())
 }
 
 func (s *Job) waitForHeaders(chainService *neutrino.ChainService, currentHeight uint64) (uint64, error) {
