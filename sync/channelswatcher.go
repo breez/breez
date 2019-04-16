@@ -51,6 +51,11 @@ func NewChannelsWatcher(
 	var firstChannelBlockHeight uint64
 
 	for _, c := range channels {
+		if c.LocalCommitment.LocalBalance == 0 {
+			log.Infof("Skipping watching channel with zero balance: %v", c.ShortChannelID.String())
+			continue
+		}
+
 		fundingOut := c.FundingOutpoint
 		localKey := c.LocalChanCfg.MultiSigKey.PubKey.SerializeCompressed()
 		remoteKey := c.RemoteChanCfg.MultiSigKey.PubKey.SerializeCompressed()
