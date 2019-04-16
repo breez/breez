@@ -503,7 +503,7 @@ func BootstrapFiles(request []byte) error {
 
 func GetPeers() ([]byte, error) {
 	var p data.Peers
-	peers, err := breezApp.BreezDB.GetPeers(nil)
+	peers, err := breezApp.GetPeers()
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +516,7 @@ func SetPeers(request []byte) error {
 	if err := proto.Unmarshal(request, &p); err != nil {
 		return err
 	}
-	err := breezApp.BreezDB.SetPeers(p.Peer)
+	err := breezApp.SetPeers(p.Peer)
 	return err
 }
 
