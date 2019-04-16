@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	syncInfoBucket        = "syncInfo"
-	lastCFilterHeightKey  = "lastCFilterHeight"
-	lastSuccessRunDateKey = "lastSuccessRunDate"
+	syncInfoBucket           = "syncInfo"
+	lastCFilterHeightKey     = "lastCFilterHeight"
+	channelsWatcherHeightKey = "channelsWatcherHeightKey"
+	lastSuccessRunDateKey    = "lastSuccessRunDate"
 )
 
 type jobDB struct {
@@ -49,6 +50,35 @@ func (j *jobDB) fetchCFilterSyncHeight() (uint64, error) {
 			return nil
 		}
 		heightBytes := bucket.Get([]byte(lastCFilterHeightKey))
+		if heightBytes == nil {
+			return nil
+		}
+		startSyncHeight = binary.BigEndian.Uint64(heightBytes)
+		return nil
+	})
+	return startSyncHeight, err
+}
+
+func (j *jobDB) setChannelsWatcherBlockHeight(height uint64) error {
+	return j.db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte(syncInfoBucket))
+		if err != nil {
+			return err
+		}
+		b := make([]byte, 8)
+		binary.BigEndian.PutUint64(b, height)
+		return bucket.Put([]byte(channelsWatcherHeightKey), b)
+	})
+}
+
+func (j *jobDB) fetchChannelsWatcherBlockHeight() (uint64, error) {
+	var startSyncHeight uint64
+	err := j.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(syncInfoBucket))
+		if bucket == nil {
+			return nil
+		}
+		heightBytes := bucket.Get([]byte(channelsWatcherHeightKey))
 		if heightBytes == nil {
 			return nil
 		}
