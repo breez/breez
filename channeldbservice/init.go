@@ -31,12 +31,12 @@ func Get(workingDir string) (db *channeldb.DB, cleanupFn func() error, err error
 	return service.(*channeldb.DB), release, err
 }
 
-func newService(workingDir string) (*channeldb.DB, refcount.ReleaseFunc, error) {
-	db, err := createService(workingDir)
+func newService(workingDir string) (db *channeldb.DB, rel refcount.ReleaseFunc, err error) {
+	chanDB, err = createService(workingDir)
 	if err != nil {
 		return nil, nil, err
 	}
-	return db, release, err
+	return chanDB, release, err
 }
 
 func release() error {
