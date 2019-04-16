@@ -68,7 +68,7 @@ func (a *App) Stop() error {
 	a.servicesClient.Stop()
 	a.lnDaemon.Stop()
 	doubleratchet.Stop()
-	a.breezDB.CloseDB()
+	a.releaseBreezDB()
 
 	a.wg.Wait()
 	a.log.Infof("BreezApp shutdown successfully")
@@ -104,11 +104,11 @@ func (a *App) RestartDaemon() error {
 // backup backend provider.
 func (a *App) Restore(nodeID string) error {
 	a.log.Infof("Restore nodeID = %v", nodeID)
-	if err := a.breezDB.Close(); err != nil {
+	if err := a.releaseBreezDB(); err != nil {
 		return err
 	}
 	defer func() {
-		a.breezDB, _ = db.OpenDB(path.Join(a.cfg.WorkingDir, "breez.db"))
+		a.breezDB, a.releaseBreezDB, _ = db.Get(a.cfg.WorkingDir)
 	}()
 	_, err := a.BackupManager.Restore(nodeID)
 	return err
