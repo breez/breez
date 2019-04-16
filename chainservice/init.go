@@ -6,11 +6,11 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/log"
+	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -22,41 +22,29 @@ const (
 )
 
 var (
-	mu       sync.Mutex
-	refCount uint32
-	service  *neutrino.ChainService
-	db       walletdb.DB
-	logger   btclog.Logger
+	serviceRefCounter refcount.ReferenceCountable
+	service           *neutrino.ChainService
+	db                walletdb.DB
+	logger            btclog.Logger
 )
 
-/*
-NewService returns a new ChainService, either newly created or existing one.
-Internally it handles a reference count so callers will be able to use the same
-ChainService and won't have to deal with synchronization problems.
-The responsiblity of the caller is to call "release" when done using the service.
-*/
-func NewService(workingDir string) (cs *neutrino.ChainService, cleanupFn func(), err error) {
-	mu.Lock()
-	defer mu.Unlock()
-	if refCount == 0 {
-		cs, err := createService(workingDir)
-		if err != nil {
-			stopService()
-			return nil, nil, err
-		}
-		service = cs
-	}
-	refCount++
-	return service, release, nil
+// Get returned a reusable ChainService
+func Get(workingDir string) (cs *neutrino.ChainService, cleanupFn func() error, err error) {
+	service, release, err := serviceRefCounter.Get(
+		func() (interface{}, refcount.ReleaseFunc, error) {
+			return newService(workingDir)
+		},
+	)
+	return service.(*neutrino.ChainService), release, err
 }
 
-func release() {
-	mu.Lock()
-	defer mu.Unlock()
-	refCount--
-	if refCount == 0 {
-		stopService()
-	}
+/*
+NewService returns a new ChainService.
+The responsiblity of the caller is to call "cleanupFn" when done using the service.
+*/
+func newService(workingDir string) (*neutrino.ChainService, refcount.ReleaseFunc, error) {
+	cs, err := createService(workingDir)
+	return cs, stopService, err
 }
 
 func createService(workingDir string) (*neutrino.ChainService, error) {
@@ -88,15 +76,20 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 	return service, err
 }
 
-func stopService() {
+func stopService() error {
 
 	if db != nil {
-		db.Close()
+		if err := db.Close(); err != nil {
+			return err
+		}
 	}
 	if service != nil {
-		service.Stop()
+		if err := service.Stop(); err != nil {
+			return err
+		}
 		service = nil
 	}
+	return nil
 }
 
 /*
