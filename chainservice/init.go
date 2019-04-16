@@ -35,6 +35,9 @@ func Get(workingDir string) (cs *neutrino.ChainService, cleanupFn func() error, 
 			return newService(workingDir)
 		},
 	)
+	if err != nil {
+		return nil, nil, err
+	}
 	return service.(*neutrino.ChainService), release, err
 }
 

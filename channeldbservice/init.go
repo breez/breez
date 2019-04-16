@@ -28,6 +28,9 @@ func Get(workingDir string) (db *channeldb.DB, cleanupFn func() error, err error
 			return newService(workingDir)
 		},
 	)
+	if err != nil {
+		return nil, nil, err
+	}
 	return service.(*channeldb.DB), release, err
 }
 

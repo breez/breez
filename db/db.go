@@ -48,6 +48,9 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 			return newDB(workingDir)
 		},
 	)
+	if err != nil {
+		return nil, nil, err
+	}
 	return service.(*DB), release, err
 }
 
