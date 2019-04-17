@@ -80,7 +80,8 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
-		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir)
+
+		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
 			chanDBCleanUp()
 			d.log.Errorf("failed to create chainservice", err)
@@ -94,14 +95,6 @@ func (d *Daemon) startDaemon() error {
 		params := []string{"lightning-libs",
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
-		}
-		peers, err := d.breezDB.GetPeers(d.cfg.JobCfg.ConnectedPeers)
-		if err != nil {
-			d.log.Errorf("peers error: %v", err)
-		}
-		d.log.Debugf("Peers1: %v", peers)
-		for _, peer := range peers {
-			params = append(params, "--neutrino.connect", peer)
 		}
 		err = daemon.LndMain(params, deps)
 
