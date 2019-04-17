@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/db"
 	"github.com/breez/breez/lnnode"
 )
 
@@ -17,7 +18,14 @@ func daemonSample() {
 		os.Exit(1)
 	}
 
-	lnDaemon, err := lnnode.NewDaemon(cfg)
+	db, release, err := db.Get(cfg.WorkingDir)
+	if err != nil {
+		fmt.Println("Failed to create breez db", err)
+		os.Exit(1)
+	}
+
+	defer release()
+	lnDaemon, err := lnnode.NewDaemon(cfg, db)
 	if err != nil {
 		fmt.Println("Failed to create daemon", err)
 		os.Exit(1)
