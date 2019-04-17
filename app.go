@@ -204,6 +204,6 @@ func (a *App) SetPeers(peers []string) error {
 	return a.breezDB.SetPeers(peers)
 }
 
-func (a *App) GetPeers() (peers []string, err error) {
-	return a.breezDB.GetPeers(nil)
+func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
+	return a.breezDB.GetPeers(a.cfg.JobCfg.ConnectedPeers)
 }

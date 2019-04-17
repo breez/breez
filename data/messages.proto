@@ -213,5 +213,6 @@ message BootstrapFilesRequest {
 }
 
 message Peers {
-    repeated string peer = 1;
+    bool isDefault = 1;
+    repeated string peer = 2;
 }

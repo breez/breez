@@ -512,11 +512,12 @@ func BootstrapFiles(request []byte) error {
 
 func GetPeers() ([]byte, error) {
 	var p data.Peers
-	peers, err := breezApp.GetPeers()
+	peers, isDefault, err := breezApp.GetPeers()
 	if err != nil {
 		return nil, err
 	}
 	p.Peer = peers
+	p.IsDefault = isDefault
 	return marshalResponse(&p, nil)
 }
 

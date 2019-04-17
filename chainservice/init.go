@@ -62,7 +62,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	}
 	logger.Infof("creating shared chain service.")
 
-	peers, err := breezDB.GetPeers(config.JobCfg.ConnectedPeers)
+	peers, _, err := breezDB.GetPeers(config.JobCfg.ConnectedPeers)
 	if err != nil {
 		logger.Errorf("peers error: %v", err)
 		return nil, nil, err
