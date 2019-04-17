@@ -55,7 +55,7 @@ func (s *Job) terminated() bool {
 
 func (s *Job) syncFilters() (channelClosed bool, err error) {
 	s.log.Info("syncFilters started...")
-	chainService, cleanFn, err := chainservice.NewService(s.workingDir)
+	chainService, cleanFn, err := chainservice.Get(s.workingDir)
 	if err != nil {
 		s.log.Errorf("Error creating ChainService: %s", err)
 		return false, err

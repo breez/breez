@@ -67,7 +67,7 @@ func (s *Job) terminated() bool {
 }
 
 func (s *Job) importAndPruneClosedChannels(workingDir string) error {
-	chanDB, chanDBCleanUp, err := channeldbservice.NewService(workingDir)
+	chanDB, chanDBCleanUp, err := channeldbservice.Get(workingDir)
 	if err != nil {
 		s.log.Infof("Error creating channeldbservice: %v", err)
 		return err

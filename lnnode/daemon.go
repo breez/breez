@@ -75,12 +75,12 @@ func (d *Daemon) startDaemon() error {
 			go d.stopDaemon()
 		}()
 
-		chanDB, chanDBCleanUp, err := channeldbservice.NewService(d.cfg.WorkingDir)
+		chanDB, chanDBCleanUp, err := channeldbservice.Get(d.cfg.WorkingDir)
 		if err != nil {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
-		chainSevice, cleanupFn, err := chainservice.NewService(d.cfg.WorkingDir)
+		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir)
 		if err != nil {
 			chanDBCleanUp()
 			d.log.Errorf("failed to create chainservice", err)

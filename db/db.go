@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/breez/breez/refcount"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -33,14 +34,39 @@ const (
 	networkBucket = "network"
 )
 
+var (
+	serviceRefCounter refcount.ReferenceCountable
+)
+
 // DB is the structure for breez database
 type DB struct {
 	*bolt.DB
 	dbPath string
 }
 
+// Get returns a Ch
+func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
+	service, release, err := serviceRefCounter.Get(
+		func() (interface{}, refcount.ReleaseFunc, error) {
+			return newDB(workingDir)
+		},
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	return service.(*DB), release, err
+}
+
+func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
+	db, err := openDB(path.Join(workingDir, "breez.db"))
+	if err != nil {
+		return nil, nil, err
+	}
+	return db, db.closeDB, err
+}
+
 // OpenDB opens the database and makes it ready to work
-func OpenDB(dbPath string) (*DB, error) {
+func openDB(dbPath string) (*DB, error) {
 	var err error
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -108,7 +134,7 @@ func OpenDB(dbPath string) (*DB, error) {
 }
 
 // CloseDB closed the db
-func (db *DB) CloseDB() error {
+func (db *DB) closeDB() error {
 	return db.Close()
 }
 
