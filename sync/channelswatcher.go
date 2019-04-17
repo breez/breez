@@ -36,7 +36,7 @@ func NewChannelsWatcher(
 	db *jobDB,
 	quitChan chan struct{}) (*ChannelsWatcher, error) {
 
-	chandb, cleanup, err := channeldbservice.NewService(workingDir)
+	chandb, cleanup, err := channeldbservice.Get(workingDir)
 	if err != nil {
 		return nil, err
 	}

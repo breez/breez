@@ -3,10 +3,10 @@ package channeldbservice
 import (
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/log"
+	"github.com/breez/breez/refcount"
 	"github.com/breez/lightninglib/channeldb"
 	"github.com/btcsuite/btclog"
 )
@@ -16,33 +16,34 @@ const (
 )
 
 var (
-	mu       sync.Mutex
-	refCount uint32
-	chanDB   *channeldb.DB
-	logger   btclog.Logger
+	serviceRefCounter refcount.ReferenceCountable
+	chanDB            *channeldb.DB
+	logger            btclog.Logger
 )
 
-func NewService(workingDir string) (*channeldb.DB, func(), error) {
-	mu.Lock()
-	defer mu.Unlock()
-	if refCount == 0 {
-		db, err := createService(workingDir)
-		if err != nil {
-			return nil, nil, err
-		}
-		chanDB = db
+// Get returns a Ch
+func Get(workingDir string) (db *channeldb.DB, cleanupFn func() error, err error) {
+	service, release, err := serviceRefCounter.Get(
+		func() (interface{}, refcount.ReleaseFunc, error) {
+			return newService(workingDir)
+		},
+	)
+	if err != nil {
+		return nil, nil, err
 	}
-	refCount++
-	return chanDB, release, nil
+	return service.(*channeldb.DB), release, err
 }
 
-func release() {
-	mu.Lock()
-	defer mu.Unlock()
-	refCount--
-	if refCount == 0 {
-		chanDB.Close()
+func newService(workingDir string) (db *channeldb.DB, rel refcount.ReleaseFunc, err error) {
+	chanDB, err = createService(workingDir)
+	if err != nil {
+		return nil, nil, err
 	}
+	return chanDB, release, err
+}
+
+func release() error {
+	return chanDB.Close()
 }
 
 func createService(workingDir string) (*channeldb.DB, error) {

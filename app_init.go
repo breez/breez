@@ -3,7 +3,6 @@ package breez
 import (
 	"fmt"
 	"io/ioutil"
-	"path"
 	"sync"
 
 	"github.com/breez/breez/account"
@@ -22,15 +21,16 @@ import (
 
 // App represents the breez application
 type App struct {
-	isReady      int32
-	started      int32
-	stopped      int32
-	wg           sync.WaitGroup
-	connectionMu sync.Mutex
-	quitChan     chan struct{}
-	log          btclog.Logger
-	cfg          *config.Config
-	breezDB      *db.DB
+	isReady        int32
+	started        int32
+	stopped        int32
+	wg             sync.WaitGroup
+	connectionMu   sync.Mutex
+	quitChan       chan struct{}
+	log            btclog.Logger
+	cfg            *config.Config
+	breezDB        *db.DB
+	releaseBreezDB func() error
 
 	// services passed to breez from the application layer
 	//appServices AppServices
@@ -91,7 +91,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.log.Infof("New Client")
 
-	app.breezDB, err = db.OpenDB(path.Join(workingDir, "breez.db"))
+	app.breezDB, app.releaseBreezDB, err = db.Get(workingDir)
 	if err != nil {
 		return nil, err
 	}

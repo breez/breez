@@ -6,7 +6,7 @@ import (
 )
 
 func TestAddresses(t *testing.T) {
-	db, err := OpenDB("testDB")
+	db, err := openDB("testDB")
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +58,7 @@ func TestAddresses(t *testing.T) {
 
 func TestAddPayments(t *testing.T) {
 	var err error
-	db, err := OpenDB("testdb")
+	db, err := openDB("testdb")
 	defer db.DeleteDB()
 	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 1, 0)
 	if err != nil {
@@ -81,7 +81,7 @@ func TestAddPayments(t *testing.T) {
 
 func TestPaymentsSyncInfo(t *testing.T) {
 	var err error
-	db, err := OpenDB("testdb")
+	db, err := openDB("testdb")
 	defer db.DeleteDB()
 	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 5, 0)
 	if err != nil {
@@ -112,7 +112,7 @@ func TestPaymentsSyncInfo(t *testing.T) {
 
 func TestAccount(t *testing.T) {
 	var err error
-	db, err := OpenDB("testdb")
+	db, err := openDB("testdb")
 	defer db.DeleteDB()
 	acc, err := db.FetchAccount()
 	if err != nil {
