@@ -71,7 +71,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	service, walletDB, err = newNeutrino(workingDir, config.Network, peers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
-		return nil, nil, err
+		return nil, stopService, err
 	}
 
 	logger.Infof("chain service was created successfuly")
