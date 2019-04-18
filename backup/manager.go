@@ -22,7 +22,7 @@ var (
 RequestBackup push a request for the backup files of breez
 */
 func (b *Manager) RequestBackup() {
-
+	log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
 	err := b.db.addBackupRequest()
@@ -126,6 +126,7 @@ func (b *Manager) Start() error {
 		for {
 			select {
 			case <-b.backupRequestChan:
+				log.Infof("start processing backup request")
 				//First get the last pending request in the database
 				pendingID, err := b.db.lastBackupRequest()
 				if pendingID == 0 {
