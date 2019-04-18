@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/chainservice"
+	"github.com/breez/breez/db"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightninglabs/neutrino"
 )
@@ -55,7 +56,13 @@ func (s *Job) terminated() bool {
 
 func (s *Job) syncFilters() (channelClosed bool, err error) {
 	s.log.Info("syncFilters started...")
-	chainService, cleanFn, err := chainservice.Get(s.workingDir)
+	breezDB, cleanupDB, err := db.Get(s.workingDir)
+	if err != nil {
+		return false, err
+	}
+	defer cleanupDB()
+
+	chainService, cleanFn, err := chainservice.Get(s.workingDir, breezDB)
 	if err != nil {
 		s.log.Errorf("Error creating ChainService: %s", err)
 		return false, err

@@ -98,7 +98,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.log.Infof("New db")
 
-	app.lnDaemon, err = lnnode.NewDaemon(app.cfg)
+	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating lnnode.Daemon: %v", err)
 	}

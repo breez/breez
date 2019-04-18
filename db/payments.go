@@ -151,12 +151,12 @@ func (db *DB) FetchPaymentsSyncInfo() (lastTime int64, lastSetteledIndex uint64)
 
 // SavePaymentRequest saves a payment request into the database
 func (db *DB) SavePaymentRequest(payReqHash string, payReq []byte) error {
-	return db.saveItem([]byte(incmoingPayReqBucket), []byte(payReqHash), payReq)
+	return db.saveItem([]byte(incomingPayReqBucket), []byte(payReqHash), payReq)
 }
 
 // FetchPaymentRequest fetches a payment request by a payment hash
 func (db *DB) FetchPaymentRequest(payReqHash string) ([]byte, error) {
-	return db.fetchItem([]byte(incmoingPayReqBucket), []byte(payReqHash))
+	return db.fetchItem([]byte(incomingPayReqBucket), []byte(payReqHash))
 }
 
 func serializePaymentInfo(s *PaymentInfo) ([]byte, error) {

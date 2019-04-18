@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/db"
 	"github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -24,15 +25,15 @@ const (
 var (
 	serviceRefCounter refcount.ReferenceCountable
 	service           *neutrino.ChainService
-	db                walletdb.DB
+	walletDB          walletdb.DB
 	logger            btclog.Logger
 )
 
 // Get returned a reusable ChainService
-func Get(workingDir string) (cs *neutrino.ChainService, cleanupFn func() error, err error) {
+func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupFn func() error, err error) {
 	service, release, err := serviceRefCounter.Get(
 		func() (interface{}, refcount.ReleaseFunc, error) {
-			return newService(workingDir)
+			return createService(workingDir, breezDB)
 		},
 	)
 	if err != nil {
@@ -41,27 +42,18 @@ func Get(workingDir string) (cs *neutrino.ChainService, cleanupFn func() error, 
 	return service.(*neutrino.ChainService), release, err
 }
 
-/*
-NewService returns a new ChainService.
-The responsiblity of the caller is to call "cleanupFn" when done using the service.
-*/
-func newService(workingDir string) (*neutrino.ChainService, refcount.ReleaseFunc, error) {
-	cs, err := createService(workingDir)
-	return cs, stopService, err
-}
-
-func createService(workingDir string) (*neutrino.ChainService, error) {
+func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, refcount.ReleaseFunc, error) {
 	var err error
 	neutrino.MaxPeers = 8
 	neutrino.BanDuration = 5 * time.Second
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if logger == nil {
 		logBackend, err := log.GetLogBackend(workingDir)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		logger = logBackend.Logger("CHAIN")
 		logger.SetLevel(btclog.LevelDebug)
@@ -69,20 +61,27 @@ func createService(workingDir string) (*neutrino.ChainService, error) {
 		neutrino.QueryTimeout = time.Second * 10
 	}
 	logger.Infof("creating shared chain service.")
-	service, db, err = newNeutrino(workingDir, config.Network, &config.JobCfg)
+
+	peers, _, err := breezDB.GetPeers(config.JobCfg.ConnectedPeers)
+	if err != nil {
+		logger.Errorf("peers error: %v", err)
+		return nil, nil, err
+	}
+
+	service, walletDB, err = newNeutrino(workingDir, config.Network, peers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
-		return nil, err
+		return nil, stopService, err
 	}
 
 	logger.Infof("chain service was created successfuly")
-	return service, err
+	return service, stopService, err
 }
 
 func stopService() error {
 
-	if db != nil {
-		if err := db.Close(); err != nil {
+	if walletDB != nil {
+		if err := walletDB.Close(); err != nil {
 			return err
 		}
 	}
@@ -99,7 +98,7 @@ func stopService() error {
 newNeutrino creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
 */
-func newNeutrino(workingDir string, network string, jobConfig *config.JobConfig) (*neutrino.ChainService, walletdb.DB, error) {
+func newNeutrino(workingDir string, network string, peers []string) (*neutrino.ChainService, walletdb.DB, error) {
 	var chainParams *chaincfg.Params
 	switch network {
 	case "testnet":
@@ -132,7 +131,7 @@ func newNeutrino(workingDir string, network string, jobConfig *config.JobConfig)
 		DataDir:      neutrinoDataDir,
 		Database:     db,
 		ChainParams:  *chainParams,
-		ConnectPeers: jobConfig.ConnectedPeers,
+		ConnectPeers: peers,
 	}
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)

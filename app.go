@@ -199,3 +199,11 @@ func (a *App) onServiceEvent(event data.NotificationEvent) {
 func (a *App) notify(event data.NotificationEvent) {
 	a.notificationsChan <- event
 }
+
+func (a *App) SetPeers(peers []string) error {
+	return a.breezDB.SetPeers(peers)
+}
+
+func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
+	return a.breezDB.GetPeers(a.cfg.JobCfg.ConnectedPeers)
+}

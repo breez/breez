@@ -7,7 +7,6 @@ import (
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/breez/config"
 	"github.com/breez/lightninglib/daemon"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/signal"
@@ -81,7 +80,8 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
-		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir)
+
+		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
 			chanDBCleanUp()
 			d.log.Errorf("failed to create chainservice", err)
@@ -92,12 +92,11 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		err = daemon.LndMain(
-			[]string{"lightning-libs", "--lnddir",
-				deps.workingDir, "--bitcoin." + d.cfg.Network,
-			},
-			deps,
-		)
+		params := []string{"lightning-libs",
+			"--lnddir", deps.workingDir,
+			"--bitcoin." + d.cfg.Network,
+		}
+		err = daemon.LndMain(params, deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
@@ -125,20 +124,7 @@ func (d *Daemon) stopDaemon() {
 	d.wg.Wait()
 	d.daemonRunning = false
 	d.ntfnServer.SendUpdate(DaemonDownEvent{})
-}
-
-func (d *Daemon) runLightningDaemon(cfg *config.Config, deps *Dependencies) {
-
-	err := daemon.LndMain(
-		[]string{"lightning-libs", "--lnddir",
-			deps.workingDir, "--bitcoin." + cfg.Network,
-		},
-		deps,
-	)
-
-	if err != nil {
-		d.log.Errorf("Breez failed with error: %v", err)
-	}
+	d.log.Infof("Daemon sent down event")
 }
 
 func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {

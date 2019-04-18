@@ -12,7 +12,7 @@ import (
 
 const (
 	versionBucket        = "version"
-	incmoingPayReqBucket = "paymentRequests"
+	incomingPayReqBucket = "paymentRequests"
 
 	//add funds
 	addressesBucket           = "subswap_addresses"
@@ -29,6 +29,9 @@ const (
 
 	//encrypted sessions
 	encryptedSessionsBucket = "encrypted_sessions"
+
+	//Network configuration
+	networkBucket = "network"
 )
 
 var (
@@ -72,7 +75,7 @@ func openDB(dbPath string) (*DB, error) {
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
-		_, err = tx.CreateBucketIfNotExists([]byte(incmoingPayReqBucket))
+		_, err = tx.CreateBucketIfNotExists([]byte(incomingPayReqBucket))
 		if err != nil {
 			return err
 		}
@@ -109,6 +112,11 @@ func openDB(dbPath string) (*DB, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(encryptedSessionsBucket))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(networkBucket))
 		if err != nil {
 			return err
 		}

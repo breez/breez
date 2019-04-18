@@ -510,6 +510,26 @@ func BootstrapFiles(request []byte) error {
 	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
 }
 
+func GetPeers() ([]byte, error) {
+	var p data.Peers
+	peers, isDefault, err := breezApp.GetPeers()
+	if err != nil {
+		return nil, err
+	}
+	p.Peer = peers
+	p.IsDefault = isDefault
+	return marshalResponse(&p, nil)
+}
+
+func SetPeers(request []byte) error {
+	var p data.Peers
+	if err := proto.Unmarshal(request, &p); err != nil {
+		return err
+	}
+	err := breezApp.SetPeers(p.Peer)
+	return err
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

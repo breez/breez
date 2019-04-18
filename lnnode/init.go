@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/lightninglib/lnrpc"
 	"github.com/breez/lightninglib/subscribe"
@@ -23,6 +24,7 @@ type API interface {
 type Daemon struct {
 	sync.Mutex
 	cfg             *config.Config
+	breezDB         *db.DB
 	started         int32
 	stopped         int32
 	daemonRunning   bool
@@ -35,7 +37,7 @@ type Daemon struct {
 
 // NewDaemon is used to create a new daemon that wraps a lightning
 // network daemon.
-func NewDaemon(cfg *config.Config) (*Daemon, error) {
+func NewDaemon(cfg *config.Config, db *db.DB) (*Daemon, error) {
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
 	if err != nil {
 		return nil, err
@@ -43,6 +45,7 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 
 	return &Daemon{
 		cfg:        cfg,
+		breezDB:    db,
 		ntfnServer: subscribe.NewServer(),
 		log:        logBackend.Logger("DAEM"),
 	}, nil

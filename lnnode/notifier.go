@@ -59,11 +59,19 @@ func (d *Daemon) startSubscriptions() error {
 		return chainErr
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	d.wg.Add(4)
-	go d.subscribePeers()
-	go d.subscribeTransactions()
-	go d.subscribeInvoices()
-	go d.watchBackupEvents()
+	go d.subscribePeers(ctx)
+	go d.subscribeTransactions(ctx)
+	go d.subscribeInvoices(ctx)
+	go d.watchBackupEvents(ctx)
+
+	// cancel subscriptions on quit
+	go func() {
+		<-d.quitChan
+		cancel()
+	}()
 
 	if err := d.ntfnServer.SendUpdate(DaemonReadyEvent{IdentityPubkey: info.IdentityPubkey}); err != nil {
 		return err
@@ -72,14 +80,16 @@ func (d *Daemon) startSubscriptions() error {
 	return nil
 }
 
-func (d *Daemon) subscribePeers() error {
+func (d *Daemon) subscribePeers(ctx context.Context) error {
 	defer d.wg.Done()
 
-	subscription, err := d.lightningClient.SubscribePeers(context.Background(), &lnrpc.PeerSubscription{})
+	subscription, err := d.lightningClient.SubscribePeers(ctx, &lnrpc.PeerSubscription{})
 	if err != nil {
 		d.log.Errorf("Failed to subscribe peers %v", err)
 		return err
 	}
+
+	d.log.Infof("Peers subscription created")
 	for {
 		notification, err := subscription.Recv()
 		if err == io.EOF {
@@ -98,13 +108,14 @@ func (d *Daemon) subscribePeers() error {
 	}
 }
 
-func (d *Daemon) subscribeTransactions() error {
+func (d *Daemon) subscribeTransactions(ctx context.Context) error {
 	defer d.wg.Done()
 
-	stream, err := d.lightningClient.SubscribeTransactions(context.Background(), &lnrpc.GetTransactionsRequest{})
+	stream, err := d.lightningClient.SubscribeTransactions(ctx, &lnrpc.GetTransactionsRequest{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeTransactions %v, %v", stream, err)
 	}
+
 	d.log.Infof("Wallet transactions subscription created")
 	for {
 		notification, err := stream.Recv()
@@ -124,15 +135,16 @@ func (d *Daemon) subscribeTransactions() error {
 	}
 }
 
-func (d *Daemon) subscribeInvoices() error {
+func (d *Daemon) subscribeInvoices(ctx context.Context) error {
 	defer d.wg.Done()
 
-	stream, err := d.lightningClient.SubscribeInvoices(context.Background(), &lnrpc.InvoiceSubscription{})
+	stream, err := d.lightningClient.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeInvoices %v, %v", stream, err)
 		return err
 	}
 
+	d.log.Infof("Invoices subscription created")
 	for {
 		invoice, err := stream.Recv()
 		if err == io.EOF {
@@ -148,13 +160,14 @@ func (d *Daemon) subscribeInvoices() error {
 	}
 }
 
-func (d *Daemon) watchBackupEvents() error {
+func (d *Daemon) watchBackupEvents(ctx context.Context) error {
 	defer d.wg.Done()
 
-	stream, err := d.lightningClient.SubscribeBackupEvents(context.Background(), &lnrpc.BackupEventSubscription{})
+	stream, err := d.lightningClient.SubscribeBackupEvents(ctx, &lnrpc.BackupEventSubscription{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeBackupEvents %v, %v", stream, err)
 	}
+
 	d.log.Infof("Backup events subscription created")
 	for {
 		_, err := stream.Recv()
