@@ -52,11 +52,16 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
-func (a *Service) updateNodeChannelPolicy(pubkey string) {
+func (a *Service) updateNodeChannelPolicy() {
+	accData, err := a.calculateAccount()
+	if err != nil {
+		a.log.Errorf("Failed to updateNodeChannelPolicy, couldn't fetch account %v", err)
+		return
+	}
 	for {
 		if a.IsConnectedToRoutingNode() {
 			c, ctx, cancel := a.breezAPI.NewFundManager()
-			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: pubkey})
+			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: accData.Id})
 			cancel()
 			if err == nil {
 				return

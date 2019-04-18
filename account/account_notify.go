@@ -94,6 +94,7 @@ func (a *Service) onRoutingNodePendingChannel() {
 }
 
 func (a *Service) onRoutingNodeOpenedChannel() {
+	go a.updateNodeChannelPolicy()
 	a.onAccountChanged()
 }
 

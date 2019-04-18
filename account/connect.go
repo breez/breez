@@ -71,12 +71,7 @@ func (a *Service) onRoutingNodeConnection(connected bool) {
 	// BREEZ-377: When there is no channel request one from Breez
 	if connected {
 		a.connectedNotifier.setOnline()
-		accData, err := a.calculateAccount()
-		if err != nil {
-			a.log.Errorf("Failed to calculate account %v", err)
-			return
-		}
-		go a.updateNodeChannelPolicy(accData.Id)
+		go a.updateNodeChannelPolicy()
 		go a.ensureRoutingChannelOpened()
 	} else {
 		a.connectedNotifier.setOffline()
