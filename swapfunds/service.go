@@ -53,7 +53,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 					}
 				}
 			case lnnode.TransactionEvent:
-				s.onTransaction()
+				s.onTransaction(routingNodeConnected)
 			case lnnode.DaemonDownEvent:
 				return nil
 			case lnnode.ResumeEvent:

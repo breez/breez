@@ -274,7 +274,7 @@ func (s *Service) onDaemonReady() error {
 //to update the status of changed SwapAddressInfo in the db.
 //On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
 //In order to calim the payments from the swap service.
-func (s *Service) onTransaction() error {
+func (s *Service) onTransaction(routingNodeConnected bool) error {
 	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
 		s.log.Errorf("watchSwapAddressConfirmations - Failed to call fetchAllSwapAddresses %v", err)
@@ -290,10 +290,14 @@ func (s *Service) onTransaction() error {
 		newConfirmation = newConfirmation || updated
 	}
 
-	//if we got new confirmation, let's try to get payments
+	//if we got new confirmation we will raise change event.
 	if newConfirmation {
 		s.onUnspentChanged()
-		go s.getPaymentsForConfirmedTransactions()
+
+		// if we are connected to the routing node, let's redeem our payment.
+		if routingNodeConnected {
+			go s.getPaymentsForConfirmedTransactions()
+		}
 	}
 	return nil
 }
