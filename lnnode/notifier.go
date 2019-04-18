@@ -157,7 +157,7 @@ func (d *Daemon) subscribeInvoices(ctx context.Context) error {
 			return err
 		}
 		d.log.Infof("watchPayments - Invoice received by subscription")
-		d.ntfnServer.SendUpdate(&InvoiceEvent{invoice})
+		d.ntfnServer.SendUpdate(InvoiceEvent{invoice})
 	}
 }
 
@@ -181,7 +181,7 @@ func (d *Daemon) watchBackupEvents(ctx context.Context) error {
 			d.log.Errorf("watchBackupEvents failed to receive a new event: %v, %v", stream, err)
 			return err
 		}
-		d.ntfnServer.SendUpdate(&BackupNeededEvent{})
+		d.ntfnServer.SendUpdate(BackupNeededEvent{})
 	}
 }
 
@@ -201,6 +201,6 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 		}
 		time.Sleep(time.Second * 3)
 	}
-	d.ntfnServer.SendUpdate(&ChainSyncedEvent{})
+	d.ntfnServer.SendUpdate(ChainSyncedEvent{})
 	return nil
 }
