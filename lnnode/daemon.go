@@ -124,6 +124,7 @@ func (d *Daemon) stopDaemon() {
 	d.wg.Wait()
 	d.daemonRunning = false
 	d.ntfnServer.SendUpdate(DaemonDownEvent{})
+	d.log.Infof("Daemon sent down event")
 }
 
 func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
