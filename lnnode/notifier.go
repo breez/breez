@@ -61,11 +61,12 @@ func (d *Daemon) startSubscriptions() error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	d.wg.Add(4)
+	d.wg.Add(5)
 	go d.subscribePeers(ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(ctx)
+	go d.syncToChain(ctx)
 
 	// cancel subscriptions on quit
 	go func() {
@@ -184,10 +185,10 @@ func (d *Daemon) watchBackupEvents(ctx context.Context) error {
 	}
 }
 
-func (d *Daemon) syncToChain() error {
+func (d *Daemon) syncToChain(ctx context.Context) error {
 	defer d.wg.Done()
 	for {
-		chainInfo, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+		chainInfo, chainErr := d.lightningClient.GetInfo(ctx, &lnrpc.GetInfoRequest{})
 		if chainErr != nil {
 			d.log.Warnf("Failed get chain info", chainErr)
 			return chainErr
