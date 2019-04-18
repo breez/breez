@@ -1,6 +1,7 @@
 package breez
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -153,6 +154,9 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 	a.log.Infof("extractBackupInfo started")
 	lnclient := a.lnDaemon.APIClient()
+	if lnclient == nil {
+		return nil, "", errors.New("Daemon is not ready")
+	}
 	response, err := lnclient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
 	if err != nil {
 		a.log.Errorf("Couldn't get backup: %v", err)
