@@ -64,9 +64,10 @@ func (a *Service) updateNodeChannelPolicy() {
 			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: accData.Id})
 			cancel()
 			if err == nil {
+				a.log.Infof("updateChannelPolicy updated successfully")
 				return
 			}
-			a.log.Errorf("Error in updateChannelPolicy: %v", err)
+			a.log.Errorf("updateChannelPolicy error: %v", err)
 		}
 		time.Sleep(time.Second * 5)
 	}
@@ -90,6 +91,8 @@ func (a *Service) ensureRoutingChannelOpened() {
 			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if a.IsConnectedToRoutingNode() {
+					a.log.Infof("Attempting to open a channel...")
+
 					channelPoints, _, err := a.getBreezOpenChannels()
 					if err != nil {
 						a.log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannels %v", err)
@@ -117,12 +120,14 @@ func (a *Service) ensureRoutingChannelOpened() {
 						a.onRoutingNodePendingChannel()
 						return nil, nil
 					}
+
+					a.log.Errorf("Error in attempting to openChannel: %v", err)
 				}
 			}
 			if err != nil {
 				a.log.Errorf("Error in openChannel: %v", err)
 			}
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 25)
 		}
 	})
 }
