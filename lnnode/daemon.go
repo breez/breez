@@ -37,6 +37,21 @@ func (d *Daemon) ConnectedToRoutingNode() bool {
 	return d.connectedToRoutingNode
 }
 
+// HasChannelWithRoutingNode returns a boolean indicates if this node has an opened channel
+// with the routing node.
+func (d *Daemon) HasChannelWithRoutingNode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.hasChannelWithRoutingNode
+}
+
+// NodePubkey returns the identity public key of the lightning node.
+func (d *Daemon) NodePubkey() string {
+	d.Lock()
+	defer d.Unlock()
+	return d.nodePubkey
+}
+
 func (d *Daemon) setConnectedToRoutingNode(connected bool) {
 	d.Lock()
 	defer d.Unlock()
@@ -56,6 +71,8 @@ func (d *Daemon) Stop() error {
 
 // APIClient returns the interface to query the daemon.
 func (d *Daemon) APIClient() lnrpc.LightningClient {
+	d.Lock()
+	defer d.Unlock()
 	return d.lightningClient
 }
 

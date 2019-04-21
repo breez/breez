@@ -61,8 +61,7 @@ func (a *Service) watchDaemonEvents() (err error) {
 			switch notification := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
-				a.wg.Add(2)
-				go a.trackOpenedChannel()
+				a.wg.Add(1)
 				go a.watchPayments()
 				a.onAccountChanged()
 			case lnnode.PeerConnectionEvent:
@@ -77,6 +76,8 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.connectOnStartup()
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
+			case lnnode.RoutingNodeChannelOpened:
+				a.onRoutingNodeOpenedChannel()
 			}
 		case <-a.quitChan:
 			a.log.Infof("Cancelling daemon events subscription")

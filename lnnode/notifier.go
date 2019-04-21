@@ -38,8 +38,12 @@ type ChainSyncedEvent struct{}
 // ResumeEvent is sent when the app resumes.
 type ResumeEvent struct{}
 
-// BackupNeededEvent is sent whwen the node signals backup is needed.
+// BackupNeededEvent is sent when the node signals backup is needed.
 type BackupNeededEvent struct{}
+
+// RoutingNodeChannelOpened is sent when a channel with the routing
+// node is opened.
+type RoutingNodeChannelOpened struct{}
 
 // SubscribeEvents subscribe to various application events
 func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
@@ -48,10 +52,14 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	d.lightningClient, err = newLightningClient(d.cfg)
+	lnclient, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
+
+	d.Lock()
+	d.lightningClient = lnclient
+	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 	if chainErr != nil {
@@ -59,14 +67,19 @@ func (d *Daemon) startSubscriptions() error {
 		return chainErr
 	}
 
+	d.Lock()
+	d.nodePubkey = info.IdentityPubkey
+	d.Unlock()
+
 	ctx, cancel := context.WithCancel(context.Background())
 
-	d.wg.Add(5)
+	d.wg.Add(6)
 	go d.subscribePeers(ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(ctx)
 	go d.syncToChain(ctx)
+	go d.trackOpenedChannel()
 
 	// cancel subscriptions on quit
 	go func() {
@@ -207,4 +220,49 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 	}
 	d.ntfnServer.SendUpdate(ChainSyncedEvent{})
 	return nil
+}
+
+func (d *Daemon) trackOpenedChannel() {
+	defer d.wg.Done()
+	defer func() {
+		d.log.Info("trackOpenedChannel stopped")
+	}()
+
+	ticker := time.NewTicker(time.Second * 10)
+	for {
+		select {
+		case <-ticker.C:
+			hasChannel, err := d.setRoutingNodeChannelStatus()
+			if err == nil && hasChannel {
+				ticker.Stop()
+				d.ntfnServer.SendUpdate(RoutingNodeChannelOpened{})
+				return
+			}
+		case <-d.quitChan:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func (d *Daemon) setRoutingNodeChannelStatus() (bool, error) {
+	lnclient := d.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	var hasChannel bool
+	for _, c := range channels.Channels {
+		if c.RemotePubkey == d.cfg.RoutingNodePubKey {
+			d.log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
+			hasChannel = true
+		}
+	}
+	d.Lock()
+	defer d.Unlock()
+	d.hasChannelWithRoutingNode = hasChannel
+	return hasChannel, nil
 }
