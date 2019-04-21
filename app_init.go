@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"sync"
 
 	"github.com/breez/breez/account"
@@ -11,6 +12,7 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
@@ -107,6 +109,10 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	app.log.Infof("New daemon")
 
 	if err != nil {
+		return nil, err
+	}
+
+	if err := doubleratchet.Start(path.Join(app.cfg.WorkingDir, "sessions_encryption.db")); err != nil {
 		return nil, err
 	}
 

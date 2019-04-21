@@ -5,7 +5,6 @@ package breez
 import (
 	"context"
 	"errors"
-	"path"
 	"sync/atomic"
 
 	"github.com/breez/breez/data"
@@ -27,10 +26,6 @@ Start is responsible for starting the lightning client and some go routines to t
 func (a *App) Start() error {
 	if atomic.SwapInt32(&a.started, 1) == 1 {
 		return errors.New("Breez already started")
-	}
-
-	if err := doubleratchet.Start(path.Join(a.cfg.WorkingDir, "sessions_encryption.db")); err != nil {
-		return err
 	}
 
 	services := []Service{
