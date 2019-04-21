@@ -105,6 +105,10 @@ func (d *Daemon) subscribePeers(ctx context.Context) error {
 			time.Sleep(2 * time.Second)
 			continue
 		}
+		if notification.PubKey == d.cfg.RoutingNodePubKey {
+			d.setConnectedToRoutingNode(notification.Connected)
+		}
+
 		d.ntfnServer.SendUpdate(PeerConnectionEvent{notification})
 	}
 }

@@ -93,6 +93,7 @@ OnResume recalculate things we might missed when we were idle.
 func (a *App) OnResume() {
 	if atomic.LoadInt32(&a.isReady) == 1 {
 		a.AccountService.OnResume()
+		a.SwapService.SettlePendingTransfers()
 	}
 }
 

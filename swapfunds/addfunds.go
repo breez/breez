@@ -317,12 +317,12 @@ func (s *Service) onInvoice(invoice *lnrpc.Invoice) error {
 	return nil
 }
 
-//settlePendingTransfers watch for routing peer connection and once connected it does two things:
+//SettlePendingTransfers watch for routing peer connection and once connected it does two things:
 //1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
 //   that the funds are confirmred
 //2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
 //   remove funds flow
-func (s *Service) settlePendingTransfers() {
+func (s *Service) SettlePendingTransfers() {
 	go s.getPaymentsForConfirmedTransactions()
 	go s.redeemAllRemovedFunds()
 }

@@ -23,16 +23,17 @@ type API interface {
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
 	sync.Mutex
-	cfg             *config.Config
-	breezDB         *db.DB
-	started         int32
-	stopped         int32
-	daemonRunning   bool
-	wg              sync.WaitGroup
-	log             btclog.Logger
-	lightningClient lnrpc.LightningClient
-	ntfnServer      *subscribe.Server
-	quitChan        chan struct{}
+	cfg                    *config.Config
+	breezDB                *db.DB
+	started                int32
+	stopped                int32
+	daemonRunning          bool
+	connectedToRoutingNode bool
+	wg                     sync.WaitGroup
+	log                    btclog.Logger
+	lightningClient        lnrpc.LightningClient
+	ntfnServer             *subscribe.Server
+	quitChan               chan struct{}
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning

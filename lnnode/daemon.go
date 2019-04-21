@@ -29,6 +29,20 @@ func (d *Daemon) Start() error {
 	return nil
 }
 
+// ConnectedToRoutingNode returns a boolean indicates if the daemon is connected to the
+// routing node peer.
+func (d *Daemon) ConnectedToRoutingNode() bool {
+	d.Lock()
+	defer d.Unlock()
+	return d.connectedToRoutingNode
+}
+
+func (d *Daemon) setConnectedToRoutingNode(connected bool) {
+	d.Lock()
+	defer d.Unlock()
+	d.connectedToRoutingNode = connected
+}
+
 // Stop is used to stop the lightning network daemon.
 func (d *Daemon) Stop() error {
 	if atomic.SwapInt32(&d.stopped, 1) == 0 {

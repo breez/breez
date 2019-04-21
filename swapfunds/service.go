@@ -49,17 +49,13 @@ func (s *Service) watchDaemonEvents() (err error) {
 				if notification.PubKey == s.cfg.RoutingNodePubKey {
 					routingNodeConnected = notification.Connected
 					if routingNodeConnected {
-						s.settlePendingTransfers()
+						s.SettlePendingTransfers()
 					}
 				}
 			case lnnode.TransactionEvent:
 				s.onTransaction(routingNodeConnected)
 			case lnnode.DaemonDownEvent:
 				return nil
-			case lnnode.ResumeEvent:
-				if routingNodeConnected {
-					s.settlePendingTransfers()
-				}
 			}
 		case <-s.quitChan:
 			return nil
