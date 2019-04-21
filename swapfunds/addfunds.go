@@ -28,11 +28,9 @@ var (
 AddFundsInit is responsible for topping up an existing channel
 */
 func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
-	s.mu.Lock()
-	accountID := s.accountPubkey
-	s.mu.Unlock()
+	accountID := s.daemonAPI.NodePubkey()
 	if accountID == "" {
-		s.log.Errorf("Account is not ready yet")
+		return nil, fmt.Errorf("Account is not ready")
 	}
 
 	lnclient := s.daemonAPI.APIClient()
@@ -274,7 +272,7 @@ func (s *Service) onDaemonReady() error {
 //to update the status of changed SwapAddressInfo in the db.
 //On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
 //In order to calim the payments from the swap service.
-func (s *Service) onTransaction(routingNodeConnected bool) error {
+func (s *Service) onTransaction() error {
 	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
 		s.log.Errorf("watchSwapAddressConfirmations - Failed to call fetchAllSwapAddresses %v", err)
@@ -295,9 +293,7 @@ func (s *Service) onTransaction(routingNodeConnected bool) error {
 		s.onUnspentChanged()
 
 		// if we are connected to the routing node, let's redeem our payment.
-		if routingNodeConnected {
-			go s.getPaymentsForConfirmedTransactions()
-		}
+		go s.getPaymentsForConfirmedTransactions()
 	}
 	return nil
 }
@@ -315,6 +311,10 @@ func (s *Service) onInvoice(invoice *lnrpc.Invoice) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) lightningTransfersReady() bool {
+	return s.daemonAPI.ConnectedToRoutingNode() && s.daemonAPI.HasChannelWithRoutingNode()
 }
 
 //SettlePendingTransfers watch for routing peer connection and once connected it does two things:
@@ -352,6 +352,13 @@ func (s *Service) updateUnspentAmount(address string) (bool, error) {
 
 func (s *Service) getPaymentsForConfirmedTransactions() {
 	s.log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
+
+	if !s.lightningTransfersReady() {
+		s.log.Infof("Skipping getPaymentsForConfirmedTransactions connected=%v, hasChannel=%v",
+			s.daemonAPI.ConnectedToRoutingNode(), s.daemonAPI.HasChannelWithRoutingNode())
+		return
+	}
+
 	confirmedAddresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0
 	})
@@ -371,17 +378,21 @@ func (s *Service) getPaymentsForConfirmedTransactions() {
 
 func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) {
 	for i := 0; i < retries; i++ {
-		err := s.getPayment(addressInfo)
+		waitDuration := 5 * time.Second
+		deadlineExceeded, err := s.getPayment(addressInfo)
 		if err == nil {
 			s.log.Infof("succeed to get payment for address %v", addressInfo.Address)
 			break
 		}
 		s.log.Errorf("retryGetPayment - error getting payment in attempt=%v %v", i, err)
-		time.Sleep(2 * time.Second)
+		if deadlineExceeded {
+			waitDuration = 30 * time.Second
+		}
+		time.Sleep(waitDuration)
 	}
 }
 
-func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
+func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	//first lookup for an existing invoice
 	var paymentRequest string
 	lnclient := s.daemonAPI.APIClient()
@@ -393,13 +404,13 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 				a.ErrorMessage = errorMsg
 				return nil
 			})
-			return errors.New(errorMsg)
+			return false, errors.New(errorMsg)
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
 		addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
 		if err != nil {
-			return fmt.Errorf("failed to call AddInvoice, err = %v", err)
+			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
 		paymentRequest = addInvoice.PaymentRequest
 	}
@@ -408,6 +419,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 	defer cancel()
 	var paymentError string
 	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: paymentRequest})
+	deadlineExceeded := ctx.Err() == context.DeadlineExceeded
 	if err != nil {
 		paymentError = err.Error()
 	} else if reply.PaymentError != "" {
@@ -418,9 +430,9 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) error {
 			a.ErrorMessage = paymentError
 			return nil
 		})
-		return fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
+		return deadlineExceeded, fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
 	}
-	return nil
+	return deadlineExceeded, nil
 }
 
 func (s *Service) onUnspentChanged() {

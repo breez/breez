@@ -25,7 +25,6 @@ type Service struct {
 	breezAPI       services.API
 	sendPayment    func(payreq string, amount int64) (*account.PaymentResponse, error)
 	onServiceEvent func(data.NotificationEvent)
-	accountPubkey  string
 	quitChan       chan struct{}
 }
 

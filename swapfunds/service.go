@@ -38,24 +38,20 @@ func (s *Service) watchDaemonEvents() (err error) {
 	}
 	defer client.Cancel()
 
-	var routingNodeConnected bool
 	for {
 		select {
 		case u := <-client.Updates():
-			switch notification := u.(type) {
+			switch u.(type) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
 			case lnnode.PeerConnectionEvent:
-				if notification.PubKey == s.cfg.RoutingNodePubKey {
-					routingNodeConnected = notification.Connected
-					if routingNodeConnected {
-						s.SettlePendingTransfers()
-					}
-				}
+				s.SettlePendingTransfers()
 			case lnnode.TransactionEvent:
-				s.onTransaction(routingNodeConnected)
+				s.onTransaction()
 			case lnnode.DaemonDownEvent:
 				return nil
+			case lnnode.RoutingNodeChannelOpened:
+				s.SettlePendingTransfers()
 			}
 		case <-s.quitChan:
 			return nil
