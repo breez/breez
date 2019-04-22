@@ -106,6 +106,15 @@ GetFundStatus gets a notification token and does two things:
 2. Fetch the current status for the saved addresses from the server
 */
 func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply, error) {
+	lnclient := s.daemonAPI.APIClient()
+	if lnclient == nil {
+		return nil, errors.New("Daemon is not ready")
+	}
+	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
+
 	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.PaidAmount == 0
 	})
@@ -117,14 +126,23 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
 	}
 
-	var confirmedAddresses, transferErrors, unConfirmedAddresses []string
+	var confirmedAddresses, unConfirmedAddresses []string
 	var hasMempool bool
+	var lastError *data.AddFundError
 	for _, a := range addresses {
 
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
 		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
 			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
-				transferErrors = append(transferErrors, a.ErrorMessage)
+				if lastError == nil {
+					blocksToUnlock := int32(a.LockHeight) - int32(info.BlockHeight)
+					lastError = &data.AddFundError{
+						ErrorMessage:       a.ErrorMessage,
+						FundsExceededLimit: a.FundsExceededLimit,
+						LockHeight:         a.LockHeight,
+						HoursToUnlock:      float32(blocksToUnlock) / 6,
+					}
+				}
 				s.log.Infof("GetFundStatus adding transfer error for address %v", a.Address)
 			} else {
 				confirmedAddresses = append(confirmedAddresses, a.Address)
@@ -173,10 +191,10 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
-	if len(transferErrors) > 0 {
+	if lastError != nil {
 		return &data.FundStatusReply{
-			Status:       data.FundStatusReply_TRANSFER_ERROR,
-			ErrorMessage: transferErrors[0],
+			Status: data.FundStatusReply_TRANSFER_ERROR,
+			Error:  lastError,
 		}, nil
 	}
 
@@ -428,6 +446,9 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	if paymentError != "" {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 			a.ErrorMessage = paymentError
+			if reply != nil && reply.FundsExceededLimit {
+				a.FundsExceededLimit = true
+			}
 			return nil
 		})
 		return deadlineExceeded, fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
