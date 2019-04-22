@@ -123,7 +123,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
 		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
-			if a.ErrorMessage != "" {
+			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
 				transferErrors = append(transferErrors, a.ErrorMessage)
 				s.log.Infof("GetFundStatus adding transfer error for address %v", a.Address)
 			} else {
