@@ -137,6 +137,13 @@ message RefundRequest {
     string refundAddress = 2;
 }
 
+message AddFundError {
+    string errorMessage = 1;
+    bool FundsExceededLimit = 2;
+    uint32 lockHeight = 3;
+    float hoursToUnlock = 4;
+}
+
 message FundStatusReply {
     enum FundStatus {
         NO_FUND = 0;
@@ -145,7 +152,7 @@ message FundStatusReply {
         TRANSFER_ERROR = 3;     
     }
     FundStatus status = 1;
-    string errorMessage = 2;
+    AddFundError error = 2;    
 }
 
 message RemoveFundRequest {
