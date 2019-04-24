@@ -97,6 +97,7 @@ message GetSwapPaymentRequest {
 
 message GetSwapPaymentReply {
   string paymentError = 1;
+  bool FundsExceededLimit = 2;
 }
 
 message MempoolRegisterRequest {

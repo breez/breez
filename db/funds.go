@@ -25,9 +25,10 @@ type SwapAddressInfo struct {
 	LockHeight              uint32
 
 	//address script
-	Script         []byte
-	ErrorMessage   string
-	EnteredMempool bool
+	Script             []byte
+	ErrorMessage       string
+	FundsExceededLimit bool
+	EnteredMempool     bool
 
 	//refund
 	LastRefundTxID string
