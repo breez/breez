@@ -134,8 +134,9 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
 		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
 			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
+				s.log.Infof("Detected error in swap address: lastError=%v, info = %v", lastError, a.LockHeight, a.FundsExceededLimit)
 				if lastError == nil {
-					blocksToUnlock := int32(a.LockHeight) - int32(info.BlockHeight)
+					blocksToUnlock := int32(a.LockHeight) + 1 - int32(info.BlockHeight)
 					lastError = &data.AddFundError{
 						ErrorMessage:       a.ErrorMessage,
 						FundsExceededLimit: a.FundsExceededLimit,
@@ -442,6 +443,9 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		paymentError = err.Error()
 	} else if reply.PaymentError != "" {
 		paymentError = reply.PaymentError
+	}
+	if reply != nil {
+		s.log.Infof("reply from getPayment: error=%v, funds_exceeded=%v", reply.PaymentError, reply.FundsExceededLimit)
 	}
 	if paymentError != "" {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
