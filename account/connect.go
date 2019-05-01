@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	waitConnectTimeout = time.Second * 20
+	waitConnectTimeout = time.Second * 60
 )
 
 type onlineNotifier struct {
