@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	appServices *BreezAppServices
+	appServices AppServices
 	breezApp    *breez.App
 	appLogger   Logger
 )
@@ -28,30 +28,7 @@ var (
 type AppServices interface {
 	Notify(notificationEvent []byte)
 	BackupProviderName() string
-	BackupProviderSignIn() *SignInResult
-}
-
-// SignInResult returns a token and error for the signin process.
-type SignInResult struct {
-	Token string
-	Error error
-}
-
-type BreezAppServices struct {
-	appServices AppServices
-}
-
-func (b *BreezAppServices) Notify(notificationEvent []byte) {
-	appServices.Notify(notificationEvent)
-}
-
-func (b *BreezAppServices) BackupProviderName() string {
-	return appServices.BackupProviderName()
-}
-
-func (b *BreezAppServices) BackupProviderSignIn() (string, error) {
-	res := b.appServices.BackupProviderSignIn()
-	return res.Token, res.Error
+	BackupProviderSignIn() (string, error)
 }
 
 // Logger is an interface that is used to log to the central log file.
@@ -114,12 +91,12 @@ Init initialize lightning client
 */
 func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	os.Setenv("TMPDIR", tempDir)
-	appServices = &BreezAppServices{services}
+	appServices = services
 	appLogger, err = GetLogger(workingDir)
 	if err != nil {
 		return err
 	}
-	breezApp, err = breez.NewApp(workingDir, appServices)
+	breezApp, err = breez.NewApp(workingDir, services)
 	return err
 }
 
@@ -553,7 +530,7 @@ func SetPeers(request []byte) error {
 	return err
 }
 
-func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices *BreezAppServices) {
+func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
 		res, err := proto.Marshal(&notification)
