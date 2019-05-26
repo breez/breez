@@ -186,7 +186,7 @@ func RestoreBackup(nodeID string) (err error) {
 /*
 AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
 */
-func AvailableSnapshots(nodeID string) (string, error) {
+func AvailableSnapshots() (string, error) {
 	snapshots, err := breezApp.BackupManager.AvailableSnapshots()
 	if err != nil {
 		return "", err
