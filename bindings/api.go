@@ -113,6 +113,13 @@ func Start() error {
 }
 
 /*
+LastSyncedHeaderTimestamp returns the last header the node is synced to.
+*/
+func LastSyncedHeaderTimestamp() (int64, error) {
+	return breezApp.LastSyncedHeaderTimestamp();
+}
+
+/*
 RestartDaemon attempts to restart the daemon service.
 */
 func RestartDaemon() error {
