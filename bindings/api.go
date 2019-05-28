@@ -113,6 +113,13 @@ func Start() error {
 }
 
 /*
+LastSyncedHeaderTimestamp returns the last header the node is synced to.
+*/
+func LastSyncedHeaderTimestamp() (int64, error) {
+	return breezApp.LastSyncedHeaderTimestamp();
+}
+
+/*
 RestartDaemon attempts to restart the daemon service.
 */
 func RestartDaemon() error {
@@ -186,7 +193,7 @@ func RestoreBackup(nodeID string) (err error) {
 /*
 AvailableSnapshots is part of the binding inteface which is delegated to breez.AvailableSnapshots
 */
-func AvailableSnapshots(nodeID string) (string, error) {
+func AvailableSnapshots() (string, error) {
 	snapshots, err := breezApp.BackupManager.AvailableSnapshots()
 	if err != nil {
 		return "", err

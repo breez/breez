@@ -203,3 +203,7 @@ func (a *App) SetPeers(peers []string) error {
 func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
 	return a.breezDB.GetPeers(a.cfg.JobCfg.ConnectedPeers)
 }
+
+func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
+	return a.breezDB.FetchLastSyncedHeaderTimestamp()
+}

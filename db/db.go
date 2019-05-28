@@ -32,6 +32,9 @@ const (
 
 	//Network configuration
 	networkBucket = "network"
+
+	//syncstatus
+	syncstatus = "syncstatus"
 )
 
 var (
@@ -117,6 +120,11 @@ func openDB(dbPath string) (*DB, error) {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte(networkBucket))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(syncstatus))
 		if err != nil {
 			return err
 		}

@@ -132,7 +132,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		if s.terminated() {
 			return false, nil
 		}
-
+		
 		// Get filter
 		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
 		if err != nil {
@@ -155,6 +155,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		}
 	}
 	s.log.Info("syncFilters completed succesfully, checking for close channels...")
+
 	channelsWatcher, err := NewChannelsWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
 	if err != nil {
 		return false, err
@@ -162,6 +163,10 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 	channelClosedDetected, err := channelsWatcher.Scan(bestBlockHeight)
 	if err != nil {
 		return false, err
+	}
+	
+	if err := breezDB.SetLastSyncedHeaderTimestamp(time.Now().Unix()); err != nil {
+		s.log.Errorf("Failed to set last header timestamp")
 	}
 
 	return channelClosedDetected, jobDB.setLastSuccessRunDate(time.Now())
