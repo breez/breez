@@ -122,3 +122,27 @@ func TestAccount(t *testing.T) {
 		t.Error("account should be nil")
 	}
 }
+
+func TestSync(t *testing.T) {
+	var err error
+	db, err := openDB("testdb")
+	defer db.DeleteDB()
+	lastTS, err := db.FetchLastSyncedHeaderTimestamp()
+	if err != nil {
+		t.Error("failed to fetch header timestamp", err)
+	}
+	if lastTS != 0 {
+		t.Error("First timestamp should be zero.")
+	}
+	err = db.SetLastSyncedHeaderTimestamp(100)
+	if err != nil {
+		t.Error("Failed to set last header timestamp.")
+	} 
+	lastTS, err = db.FetchLastSyncedHeaderTimestamp()
+	if err != nil {
+		t.Error("failed to fetch header timestamp", err)
+	}
+	if lastTS != 100 {
+		t.Error("Timestamp should be 100.")
+	}
+}
