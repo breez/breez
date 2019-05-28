@@ -212,6 +212,11 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 		}
 
 		d.log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
+		
+		if err := d.breezDB.SetLastSyncedHeaderTimestamp(chainInfo.BestHeaderTimestamp); err != nil {
+			d.log.Errorf("Failed to set last header timestamp")
+		}
+		
 		if chainInfo.SyncedToChain {
 			d.log.Infof("Synchronized to chain finshed BlockHeight=%v", chainInfo.BlockHeight)
 			break
