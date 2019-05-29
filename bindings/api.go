@@ -115,8 +115,9 @@ func Start() error {
 /*
 LastSyncedHeaderTimestamp returns the last header the node is synced to.
 */
-func LastSyncedHeaderTimestamp() (int64, error) {
-	return breezApp.LastSyncedHeaderTimestamp();
+func LastSyncedHeaderTimestamp() int64 {
+	last, _ := breezApp.LastSyncedHeaderTimestamp()	
+	return last	
 }
 
 /*
