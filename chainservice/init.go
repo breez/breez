@@ -46,6 +46,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	var err error
 	neutrino.MaxPeers = 8
 	neutrino.BanDuration = 5 * time.Second
+	neutrino.ConnectionRetryInterval = 1 * time.Second
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return nil, nil, err
