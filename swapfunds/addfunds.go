@@ -187,16 +187,16 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		}
 	}
 
-	if len(confirmedAddresses) > 0 {
-		s.log.Infof("GetFundStatus return status 'confirmed'")
-		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
-	}
-
 	if lastError != nil {
 		return &data.FundStatusReply{
 			Status: data.FundStatusReply_TRANSFER_ERROR,
 			Error:  lastError,
 		}, nil
+	}
+
+	if len(confirmedAddresses) > 0 {
+		s.log.Infof("GetFundStatus return status 'confirmed'")
+		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
 	}
 
 	s.log.Infof("GetFundStatus return status 'no funds")
