@@ -241,8 +241,7 @@ func Log(msg string, lvl string) {
 /*
 GetAccountInfo is part of the binding inteface which is delegated to breez.GetAccountInfo
 */
-func GetAccountInfo() ([]byte, error) {
-	fmt.Println("GetAccountInfo breez app is null", (getBreezApp() == nil))
+func GetAccountInfo() ([]byte, error) {	
 	return marshalResponse(getBreezApp().AccountService.GetAccountInfo())
 }
 
@@ -277,11 +276,9 @@ func AddFundsInit(breezID string) ([]byte, error) {
 /*
 GetRefundableSwapAddresses returns all addresses that are refundable, e.g expired and not paid
 */
-func GetRefundableSwapAddresses() ([]byte, error) {
-	fmt.Println("GetRefundableSwapAddresses in api")
+func GetRefundableSwapAddresses() ([]byte, error) {	
 	refundableAddresses, err := getBreezApp().SwapService.GetRefundableAddresses()
-	if err != nil {
-		fmt.Println("GetRefundableSwapAddresses in api returned error from breez")
+	if err != nil {		
 		return nil, err
 	}
 
@@ -341,8 +338,7 @@ func GetLogPath() string {
 /*
 GetPayments is part of the binding inteface which is delegated to breez.GetPayments
 */
-func GetPayments() ([]byte, error) {
-	fmt.Println("GetPayments breez app is null", (getBreezApp() == nil))
+func GetPayments() ([]byte, error) {	
 	return marshalResponse(getBreezApp().AccountService.GetPayments())
 }
 
