@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/breez/breez/data"
@@ -396,7 +397,8 @@ func (s *Service) getPaymentsForConfirmedTransactions() {
 }
 
 func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) {
-	for i := 0; i < retries; i++ {
+	var channelNotReadyError bool
+	for i := 0; i < retries || channelNotReadyError; i++ {
 		waitDuration := 5 * time.Second
 		deadlineExceeded, err := s.getPayment(addressInfo)
 		if err == nil {
@@ -404,11 +406,17 @@ func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) 
 			break
 		}
 		s.log.Errorf("retryGetPayment - error getting payment in attempt=%v %v", i, err)
+
+		channelNotReadyError = isTemporaryChannelError(err.Error())
 		if deadlineExceeded {
 			waitDuration = 30 * time.Second
 		}
 		time.Sleep(waitDuration)
 	}
+}
+
+func isTemporaryChannelError(err string) bool {
+	return strings.Contains(err, "TemporaryChannelFailure")
 }
 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
@@ -449,7 +457,9 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	}
 	if paymentError != "" {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-			a.ErrorMessage = paymentError
+			if !isTemporaryChannelError(paymentError) {
+				a.ErrorMessage = paymentError
+			}
 			if reply != nil && reply.FundsExceededLimit {
 				a.FundsExceededLimit = true
 			}
