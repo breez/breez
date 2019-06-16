@@ -106,7 +106,7 @@ func (d *Daemon) subscribePeers(ctx context.Context) error {
 	d.log.Infof("Peers subscription created")
 	for {
 		notification, err := subscription.Recv()
-		if err == io.EOF {
+		if err == io.EOF || ctx.Err() == context.Canceled {
 			d.log.Errorf("subscribePeers cancelled, shutting down")
 			return err
 		}
@@ -137,7 +137,7 @@ func (d *Daemon) subscribeTransactions(ctx context.Context) error {
 	d.log.Infof("Wallet transactions subscription created")
 	for {
 		notification, err := stream.Recv()
-		if err == io.EOF {
+		if err == io.EOF || ctx.Err() == context.Canceled {
 			d.log.Errorf("subscribeTransactions cancelled, shutting down")
 			return err
 		}
@@ -165,7 +165,7 @@ func (d *Daemon) subscribeInvoices(ctx context.Context) error {
 	d.log.Infof("Invoices subscription created")
 	for {
 		invoice, err := stream.Recv()
-		if err == io.EOF {
+		if err == io.EOF || ctx.Err() == context.Canceled {
 			d.log.Errorf("subscribeInvoices cancelled, shutting down")
 			return err
 		}
@@ -189,7 +189,7 @@ func (d *Daemon) watchBackupEvents(ctx context.Context) error {
 	d.log.Infof("Backup events subscription created")
 	for {
 		_, err := stream.Recv()
-		if err == io.EOF {
+		if err == io.EOF || ctx.Err() == context.Canceled {
 			d.log.Errorf("watchBackupEvents cancelled, shutting down")
 			return err
 		}
@@ -212,11 +212,11 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 		}
 
 		d.log.Infof("Sync to chain interval Synced=%v BlockHeight=%v", chainInfo.SyncedToChain, chainInfo.BlockHeight)
-		
+
 		if err := d.breezDB.SetLastSyncedHeaderTimestamp(chainInfo.BestHeaderTimestamp); err != nil {
 			d.log.Errorf("Failed to set last header timestamp")
 		}
-		
+
 		if chainInfo.SyncedToChain {
 			d.log.Infof("Synchronized to chain finshed BlockHeight=%v", chainInfo.BlockHeight)
 			break
