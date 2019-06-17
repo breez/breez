@@ -135,7 +135,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
 		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
 			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
-				s.log.Infof("Detected error in swap address: lastError=%v, info = %v", lastError, a.LockHeight, a.FundsExceededLimit)
+				s.log.Infof("Detected error in swap address: lastError=%v, LockHeight = %v, FundsExcceeded=%v", lastError, a.LockHeight, a.FundsExceededLimit)
 				if lastError == nil {
 					blocksToUnlock := int32(a.LockHeight) + 1 - int32(info.BlockHeight)
 					lastError = &data.AddFundError{
@@ -161,7 +161,9 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 	}
 
-	s.log.Infof("GetFundStatus checknig unConfirmedAddresses len=%v", len(unConfirmedAddresses))
+	s.log.Infof("GetFundStatus checking unConfirmedAddresses len=%v", len(unConfirmedAddresses))
+
+	var hasUnconfirmed bool
 	if len(unConfirmedAddresses) > 0 {
 		c, ctx, cancel := s.breezAPI.NewFundManager()
 		defer cancel()
@@ -171,7 +173,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 			return nil, err
 		}
 
-		var hasUnconfirmed bool
 		for addr, status := range statusesMap.Statuses {
 			s.log.Infof("GetFundStatus - got status for address %v", status)
 			if !status.Confirmed && status.Tx != "" {
@@ -182,10 +183,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 				})
 			}
 		}
-		if hasUnconfirmed {
-			s.log.Infof("GetFundStatus return status 'waiting confirmation")
-			return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
-		}
 	}
 
 	if lastError != nil {
@@ -193,6 +190,11 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 			Status: data.FundStatusReply_TRANSFER_ERROR,
 			Error:  lastError,
 		}, nil
+	}
+
+	if hasUnconfirmed {
+		s.log.Infof("GetFundStatus return status 'waiting confirmation")
+		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
 	}
 
 	if len(confirmedAddresses) > 0 {
