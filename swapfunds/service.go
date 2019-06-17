@@ -41,7 +41,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 	for {
 		select {
 		case u := <-client.Updates():
-			switch u.(type) {
+			switch update := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
 			case lnnode.PeerConnectionEvent:
@@ -52,6 +52,8 @@ func (s *Service) watchDaemonEvents() (err error) {
 				return nil
 			case lnnode.RoutingNodeChannelOpened:
 				s.SettlePendingTransfers()
+			case lnnode.InvoiceEvent:
+				s.onInvoice(update.Invoice)
 			}
 		case <-s.quitChan:
 			return nil
