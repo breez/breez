@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"sync/atomic"
@@ -132,7 +133,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		if s.terminated() {
 			return false, nil
 		}
-		
+
 		// Get filter
 		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
 		if err != nil {
@@ -164,7 +165,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	if err := breezDB.SetLastSyncedHeaderTimestamp(time.Now().Unix()); err != nil {
 		s.log.Errorf("Failed to set last header timestamp")
 	}
@@ -190,7 +191,7 @@ func (s *Job) waitForHeaders(chainService *neutrino.ChainService, currentHeight 
 			}
 			bestBlockHeight = uint64(bestBlock.Height)
 		case <-s.quit:
-			return 0, nil
+			return 0, errors.New("waitForHeaders has quit")
 		}
 	}
 	return bestBlockHeight, nil
