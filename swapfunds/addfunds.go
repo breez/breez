@@ -215,7 +215,7 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 	}
 
 	refundable, err := s.breezDB.FetchSwapAddresses(func(a *db.SwapAddressInfo) bool {
-		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0
+		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0 && a.LastRefundTxID == ""
 		if refundable {
 			s.log.Infof("found refundable address: %v lockHeight=%v, amount=%v, currentHeight=%v", a.Address, a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
 		}
