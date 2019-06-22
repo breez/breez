@@ -133,6 +133,7 @@ func (b *Manager) Start() error {
 					continue
 				}
 
+				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
 				paths, nodeID, err := b.prepareBackupData()
 				if err != nil {
 					log.Errorf("error in backup %v", err)
