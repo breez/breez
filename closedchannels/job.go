@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/lightninglib/channeldb"
+	// "github.com/breez/breez/channeldbservice"
+	"github.com/lightningnetwork/lnd/channeldb"
 )
 
 const (
@@ -67,36 +67,36 @@ func (s *Job) terminated() bool {
 }
 
 func (s *Job) importAndPruneClosedChannels(workingDir string) error {
-	chanDB, chanDBCleanUp, err := channeldbservice.Get(workingDir)
-	if err != nil {
-		s.log.Infof("Error creating channeldbservice: %v", err)
-		return err
-	}
-	defer chanDBCleanUp()
+	// chanDB, chanDBCleanUp, err := channeldbservice.Get(workingDir)
+	// if err != nil {
+	// 	s.log.Infof("Error creating channeldbservice: %v", err)
+	// 	return err
+	// }
+	// defer chanDBCleanUp()
 
-	dirname := path.Join(s.workingDir, "pruned")
-	channelPruned := false
-	for !s.terminated() {
-		last, err := chanDB.ChannelGraph().LastImportedClosedChanIDs()
-		s.log.Infof("Result of LastImportedClosedChanIDs %v %v", last, err)
-		if err != nil {
-			return err
-		}
-		file, err := fileToImport(last, dirname)
-		s.log.Infof("Result of fileToImport %v %v", file, err)
-		if err != nil {
-			return err
-		}
-		if file == 0 {
-			break
-		}
-		channelPruned = true
-		err = s.importClosedChannels(chanDB, dirname, file)
-		s.log.Infof("Result of importClosedChannels %v", err)
-	}
-	if !s.terminated() && channelPruned {
-		return chanDB.ChannelGraph().PruneGraphNodes()
-	}
+	// dirname := path.Join(s.workingDir, "pruned")
+	// channelPruned := false
+	// for !s.terminated() {
+	// 	last, err := chanDB.ChannelGraph().LastImportedClosedChanIDs()
+	// 	s.log.Infof("Result of LastImportedClosedChanIDs %v %v", last, err)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	file, err := fileToImport(last, dirname)
+	// 	s.log.Infof("Result of fileToImport %v %v", file, err)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if file == 0 {
+	// 		break
+	// 	}
+	// 	channelPruned = true
+	// 	err = s.importClosedChannels(chanDB, dirname, file)
+	// 	s.log.Infof("Result of importClosedChannels %v", err)
+	// }
+	// if !s.terminated() && channelPruned {
+	// 	return chanDB.ChannelGraph().PruneGraphNodes()
+	// }
 
 	return nil
 }
@@ -125,14 +125,15 @@ func fileToImport(moreThan uint64, dirname string) (uint64, error) {
 }
 
 func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file uint64) error {
-	fileContent, err := ioutil.ReadFile(path.Join(dirname, strconv.Itoa(int(file))))
-	s.log.Infof("Result of ReadFile %v %v", len(fileContent), err)
-	if err != nil {
-		return err
-	}
-	c, err := chanDB.ChannelGraph().PruneClosedChannels(fileContent, file)
-	s.log.Infof("Result of PruneClosedChannels %v %v", c, err)
-	return err
+	// fileContent, err := ioutil.ReadFile(path.Join(dirname, strconv.Itoa(int(file))))
+	// s.log.Infof("Result of ReadFile %v %v", len(fileContent), err)
+	// if err != nil {
+	// 	return err
+	// }
+	// c, err := chanDB.ChannelGraph().PruneClosedChannels(fileContent, file)
+	// s.log.Infof("Result of PruneClosedChannels %v %v", c, err)
+	// return err
+	return nil
 }
 
 func (s *Job) downloadClosedChannels() error {

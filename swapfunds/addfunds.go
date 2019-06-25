@@ -11,7 +11,8 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/breez/lightninglib/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
@@ -34,8 +35,8 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return nil, fmt.Errorf("Account is not ready")
 	}
 
-	lnclient := s.daemonAPI.APIClient()
-	swap, err := lnclient.SubSwapClientInit(context.Background(), &lnrpc.SubSwapClientInitRequest{})
+	lnclient := s.daemonAPI.SubSwapClient()
+	swap, err := lnclient.SubSwapClientInit(context.Background(), &submarineswaprpc.SubSwapClientInitRequest{})
 	if err != nil {
 		s.log.Criticalf("Failed to call SubSwapClientInit %v", err)
 		return nil, err
@@ -56,7 +57,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 	}
 
-	client, err := lnclient.SubSwapClientWatch(context.Background(), &lnrpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
+	client, err := lnclient.SubSwapClientWatch(context.Background(), &submarineswaprpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
 		s.log.Criticalf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
@@ -230,8 +231,8 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
-	lnclient := s.daemonAPI.APIClient()
-	res, err := lnclient.SubSwapClientRefund(context.Background(), &lnrpc.SubSwapClientRefundRequest{
+	lnclient := s.daemonAPI.SubSwapClient()
+	res, err := lnclient.SubSwapClientRefund(context.Background(), &submarineswaprpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
 	})
@@ -350,9 +351,9 @@ func (s *Service) SettlePendingTransfers() {
 }
 
 func (s *Service) updateUnspentAmount(address string) (bool, error) {
-	lnclient := s.daemonAPI.APIClient()
+	lnclient := s.daemonAPI.SubSwapClient()
 	return s.breezDB.UpdateSwapAddress(address, func(swapInfo *db.SwapAddressInfo) error {
-		unspentResponse, err := lnclient.UnspentAmount(context.Background(), &lnrpc.UnspentAmountRequest{Address: address})
+		unspentResponse, err := lnclient.UnspentAmount(context.Background(), &submarineswaprpc.UnspentAmountRequest{Address: address})
 		if err != nil {
 			return err
 		}

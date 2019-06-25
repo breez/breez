@@ -14,7 +14,7 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/breez/lightninglib/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 const (
@@ -194,10 +194,6 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 	}
 
 	responseMap["payment_error"] = paymentResponse.PaymentError
-
-	if paymentResponse.FailedRoutes != nil {
-		responseMap["routes"] = paymentResponse.FailedRoutes
-	}
 
 	response, err := json.MarshalIndent(responseMap, "", "  ")
 	if err != nil {

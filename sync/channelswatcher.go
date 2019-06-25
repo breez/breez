@@ -2,13 +2,13 @@ package sync
 
 import (
 	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/lightninglib/lnwallet"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/lightninglabs/neutrino"
+	"github.com/lightningnetwork/lnd/input"
 )
 
 // ChannelsWatcher contains all the data that is needed in order to scan several
@@ -59,14 +59,14 @@ func NewChannelsWatcher(
 		fundingOut := c.FundingOutpoint
 		localKey := c.LocalChanCfg.MultiSigKey.PubKey.SerializeCompressed()
 		remoteKey := c.RemoteChanCfg.MultiSigKey.PubKey.SerializeCompressed()
-		multiSigScript, err := lnwallet.GenMultiSigScript(
+		multiSigScript, err := input.GenMultiSigScript(
 			localKey, remoteKey,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		pkScript, err := lnwallet.WitnessScriptHash(multiSigScript)
+		pkScript, err := input.WitnessScriptHash(multiSigScript)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,11 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 
 	startStamp := &waddrmgr.BlockStamp{Height: int32(startHeight), Hash: *startHash}
 	tipStamp := &waddrmgr.BlockStamp{Height: int32(tipHeight), Hash: *tipHash}
-	rescan := b.chainService.NewRescan(
+
+	rescan := neutrino.NewRescan(
+		&neutrino.RescanChainSource{
+			ChainService: b.chainService,
+		},
 		neutrino.StartBlock(startStamp),
 		neutrino.EndBlock(tipStamp),
 		neutrino.QuitChan(b.quitChan),

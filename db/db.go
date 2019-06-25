@@ -8,6 +8,8 @@ import (
 
 	"github.com/breez/breez/refcount"
 	bolt "go.etcd.io/bbolt"
+	breezlog "github.com/breez/breez/log"
+	"github.com/btcsuite/btclog"
 )
 
 const (
@@ -44,7 +46,8 @@ var (
 // DB is the structure for breez database
 type DB struct {
 	*bolt.DB
-	dbPath string
+	dbPath 	string
+	log 	btclog.Logger
 }
 
 // Get returns a Ch
@@ -61,15 +64,22 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 }
 
 func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
-	db, err := openDB(path.Join(workingDir, "breez.db"))
+	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return nil, nil, err
 	}
+	log := logBackend.Logger("BRDB")
+
+	db, err := openDB(path.Join(workingDir, "breez.db"), log)
+	if err != nil {
+		return nil, nil, err
+	}	
+
 	return db, db.closeDB, err
 }
 
 // OpenDB opens the database and makes it ready to work
-func openDB(dbPath string) (*DB, error) {
+func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 	var err error
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -138,6 +148,7 @@ func openDB(dbPath string) (*DB, error) {
 	return &DB{
 		DB:     db,
 		dbPath: dbPath,
+		log: 	log,
 	}, nil
 }
 

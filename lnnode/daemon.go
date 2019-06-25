@@ -7,9 +7,11 @@ import (
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/lightninglib/daemon"
-	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/signal"
+	"github.com/lightningnetwork/lnd"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/signal"
 )
 
 // Start is used to start the lightning network daemon.
@@ -76,6 +78,18 @@ func (d *Daemon) APIClient() lnrpc.LightningClient {
 	return d.lightningClient
 }
 
+func (d *Daemon) SubSwapClient() submarineswaprpc.SubmarineSwapperClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.subswapClient
+}
+
+func (d *Daemon) BreezBackupClient() breezbackuprpc.BreezBackuperClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.breezBackupClient
+}
+
 // RestartDaemon is used to restart a daemon that from some reason failed to start
 // or was started and failed at some later point.
 func (d *Daemon) RestartDaemon() error {
@@ -127,7 +141,7 @@ func (d *Daemon) startDaemon() error {
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
 		}
-		err = daemon.LndMain(params, deps)
+		err = lnd.Main(params, deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)

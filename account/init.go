@@ -9,7 +9,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
-	"github.com/breez/lightninglib/subscribe"
+	"github.com/lightningnetwork/lnd/subscribe"
 	"github.com/btcsuite/btclog"
 )
 

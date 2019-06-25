@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	breezservice "github.com/breez/breez/breez"
-	"github.com/breez/lightninglib/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 )

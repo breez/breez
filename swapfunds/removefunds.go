@@ -5,7 +5,7 @@ import (
 
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
-	"github.com/breez/lightninglib/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 /*

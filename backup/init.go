@@ -7,7 +7,8 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
-	"github.com/breez/lightninglib/daemon"
+	breezlog "github.com/breez/breez/log"
+	"github.com/btcsuite/btclog"
 )
 
 // ProviderFactory is a factory for create a specific provider.
@@ -16,7 +17,6 @@ import (
 type ProviderFactory func(authService AuthService) (Provider, error)
 
 var (
-	log              = daemon.BackendLog().Logger("BCKP")
 	providersFactory = map[string]ProviderFactory{
 		"gdrive": func(authService AuthService) (Provider, error) {
 			return NewGoogleDriveProvider(authService)
@@ -36,6 +36,7 @@ type Manager struct {
 	backupRequestChan chan struct{}
 	onServiceEvent    func(event data.NotificationEvent)
 	quitChan          chan struct{}
+	log               btclog.Logger
 	wg                sync.WaitGroup
 }
 
@@ -57,6 +58,11 @@ func NewManager(
 		return nil, err
 	}
 
+	logBackend, err := breezlog.GetLogBackend(config.WorkingDir)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Manager{
 		db:                db,
 		workingDir:        config.WorkingDir,
@@ -64,6 +70,7 @@ func NewManager(
 		provider:          provider,
 		prepareBackupData: prepareData,
 		config:            config,
+		log:               logBackend.Logger("BCKP"),
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil

@@ -147,7 +147,7 @@ func (db *DB) FetchRedeemablePaymentHashes() ([]string, error) {
 }
 
 func (db *DB) UpdateRedeemTxForPayment(hash string, txID string) error {
-	log.Infof("updateRedeemTxForPayment hash = %v, txid=%v", hash, txID)
+	db.log.Infof("updateRedeemTxForPayment hash = %v, txid=%v", hash, txID)
 	return db.Update(func(tx *bolt.Tx) error {
 		paymentB := tx.Bucket([]byte(paymentsBucket))
 		hashB := tx.Bucket([]byte(paymentsHashBucket))

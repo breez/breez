@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
-	"github.com/breez/lightninglib/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 var (

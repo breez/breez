@@ -4,7 +4,7 @@ import (
 	"io"
 
 	breezlog "github.com/breez/breez/log"
-	"github.com/breez/lightninglib/channeldb"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightninglabs/neutrino"
 )
 

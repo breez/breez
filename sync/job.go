@@ -135,7 +135,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		}
 
 		// Get filter
-		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk())
+		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk(), neutrino.OptimisticBatch())
 		if err != nil {
 			s.log.Errorf("fail to download block filter", err)
 			return false, err
@@ -144,6 +144,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		if err != nil {
 			return false, err
 		}
+		s.log.Errorf("setting filter height to %v", currentHeight)
 
 		if s.terminated() {
 			return false, nil
