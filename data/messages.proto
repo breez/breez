@@ -223,3 +223,11 @@ message Peers {
     bool isDefault = 1;
     repeated string peer = 2;
 }
+
+message rate {
+    string coin = 1;
+    double value = 2;
+}
+message Rates {
+    repeated rate rates = 1;
+}
