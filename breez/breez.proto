@@ -6,32 +6,57 @@ option java_outer_classname = "BreezProto";
 
 package breez;
 
-service Information {
-  rpc Ping (PingRequest) returns (PingReply) {}
+service Invoicer {
+  rpc RegisterDevice (RegisterRequest) returns (RegisterReply) {}
+  rpc SendInvoice (PaymentRequest) returns (InvoiceReply) {}
 }
 
-service MempoolNotifier {
-  rpc MempoolRegister (MempoolRegisterRequest) returns (MempoolRegisterReply) {}
+service CardOrderer {
+  rpc Order (OrderRequest) returns (OrderReply) {}
+}
+
+service Pos {
+  rpc RegisterDevice (RegisterRequest) returns (RegisterReply) {}
+  rpc UploadLogo (UploadFileRequest) returns (UploadFileReply) {}
+}
+
+service Information {
+  rpc Ping (PingRequest) returns (PingReply) {}
+  rpc Rates (RatesRequest) returns (RatesReply) {}
 }
 
 service FundManager {
-    rpc OpenChannel (OpenChannelRequest) returns (OpenChannelReply) {}
-    rpc UpdateChannelPolicy (UpdateChannelPolicyRequest) returns (UpdateChannelPolicyReply) {}
-    rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
-    rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
-    rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
-    rpc RedeemRemovedFunds (RedeemRemovedFundsRequest) returns (RedeemRemovedFundsReply) {}
-    rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
-    rpc RegisterTransactionConfirmation(RegisterTransactionConfirmationRequest) returns (RegisterTransactionConfirmationResponse) {}
+  rpc OpenChannel (OpenChannelRequest) returns (OpenChannelReply) {}
+  rpc UpdateChannelPolicy (UpdateChannelPolicyRequest) returns (UpdateChannelPolicyReply) {}
+  rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
+  rpc RemoveFund (RemoveFundRequest) returns (RemoveFundReply) {}
+  rpc RedeemRemovedFunds (RedeemRemovedFundsRequest) returns (RedeemRemovedFundsReply) {}
+  rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
+  rpc RegisterTransactionConfirmation(RegisterTransactionConfirmationRequest) returns (RegisterTransactionConfirmationResponse) {}
+}
+
+service CTP {
+  rpc JoinCTPSession (JoinCTPSessionRequest) returns (JoinCTPSessionResponse) {}
+  rpc TerminateCTPSession (TerminateCTPSessionRequest) returns (TerminateCTPSessionResponse) {}
 }
 
 service SyncNotifier {
   rpc RegisterPeriodicSync(RegisterPeriodicSyncRequest) returns (RegisterPeriodicSyncResponse) {}
 }
 
+message RatesRequest {}
+message Rate {
+  string coin = 1;
+  double value = 2;
+}
+message RatesReply {
+  repeated Rate rates = 1;
+}
+
 message OpenChannelRequest {
-   string pubKey = 1;
-   string notificationToken = 2;
+  string pubKey = 1;
+  string notificationToken = 2;
 }
 
 message OpenChannelReply {}
@@ -43,34 +68,34 @@ message UpdateChannelPolicyRequest {
 message UpdateChannelPolicyReply {}
 
 message AddFundInitRequest {
-    string nodeID = 1;
-    string notificationToken = 2;
-    bytes pubkey = 3;
-    bytes hash = 4;
+  string nodeID = 1;
+  string notificationToken = 2;
+  bytes pubkey = 3;
+  bytes hash = 4;
 }
 
 message AddFundInitReply {
-    string address = 1;
-    bytes pubkey = 2;
-    int64 lockHeight = 3;
-    int64 maxAllowedDeposit = 4;
-    string errorMessage = 5;
-    int64 requiredReserve = 6;
+  string address = 1;
+  bytes pubkey = 2;
+  int64 lockHeight = 3;
+  int64 maxAllowedDeposit = 4;
+  string errorMessage = 5;
+  int64 requiredReserve = 6;
 }
 
 message AddFundStatusRequest {
-    repeated string addresses = 1;
-    string notificationToken = 2;
+  repeated string addresses = 1;
+  string notificationToken = 2;
 }
 
 message AddFundStatusReply {
-    message AddressStatus {
-        string tx = 1;
-        int64 amount = 2;
-        bool confirmed = 3;
-        string blockHash = 4;
-    }
-    map<string, AddressStatus> statuses = 1;
+  message AddressStatus {
+    string tx = 1;
+    int64 amount = 2;
+    bool confirmed = 3;
+    string blockHash = 4;
+  }
+  map<string, AddressStatus> statuses = 1;  
 }
 
 message RemoveFundRequest {
@@ -97,27 +122,86 @@ message GetSwapPaymentRequest {
 
 message GetSwapPaymentReply {
   string paymentError = 1;
-  bool FundsExceededLimit = 2;
+  bool funds_exceeded_limit = 2;
 }
 
-message MempoolRegisterRequest {
-  string clientID = 1;
-  repeated string addresses = 2;
+// The request message containing the device id and lightning id
+message RegisterRequest {
+  string deviceID = 1;
+  string lightningID = 2;
 }
 
-message MempoolRegisterReply {
-  message Transaction {
-      string TX = 1;
-      string Address = 2;
-      double Value = 3;
+// The response message containing the breez id
+message RegisterReply {
+  string breezID = 1;
+}
+
+message PaymentRequest {
+  string breezID = 1;
+  string invoice = 2;
+  string payee = 3;
+  int64 amount = 4;
+}
+
+message InvoiceReply {
+  string Error = 1;
+}
+
+message UploadFileRequest {
+  bytes content = 1;
+}
+
+message UploadFileReply {
+  string url = 1;
+}
+
+message PingRequest {
+}
+
+message PingReply {
+  string version = 1;
+}
+
+message OrderRequest {
+  string FullName = 1;
+  string Address = 2;
+  string City = 3;
+  string State = 4;
+  string Zip = 5;
+  string Country = 6;
+  string Email = 7;
+}
+
+message OrderReply {
+}
+
+message JoinCTPSessionRequest {
+  enum PartyType {
+    PAYER = 0;
+    PAYEE = 1;
   }
-  repeated Transaction TXS = 1;
+  
+  PartyType partyType = 1;
+  string partyName = 2;
+  string notificationToken = 3;
+  string sessionID = 4;
 }
+
+message JoinCTPSessionResponse {
+  string sessionID = 1;
+  int64 expiry = 2;
+}
+
+message TerminateCTPSessionRequest {
+  string sessionID = 1;
+}
+
+message TerminateCTPSessionResponse {}
 
 message RegisterTransactionConfirmationRequest {
   enum NotificationType {
-    READY_RECEIVE_PAYMENT = 0;   
-    CHANNEL_OPENED = 1; 
+    READY_RECEIVE_PAYMENT = 0;
+    CHANNEL_OPENED = 1;    
   }
 
   string txID = 1;
@@ -126,13 +210,6 @@ message RegisterTransactionConfirmationRequest {
 }
 
 message RegisterTransactionConfirmationResponse {}
-
-message PingRequest {
-}
-
-message PingReply {
-  string version = 1;
-}
 
 message RegisterPeriodicSyncRequest {
   string notificationToken = 1;
