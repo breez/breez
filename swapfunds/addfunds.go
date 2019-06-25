@@ -383,7 +383,7 @@ func (s *Service) getPaymentsForConfirmedTransactions() {
 	}
 
 	confirmedAddresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
-		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0
+		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0 && addr.LastRefundTxID == ""
 	})
 	if err != nil {
 		s.log.Errorf("getPaymentsForConfirmedTransactions: failed to fetch swap addresses %v", err)
