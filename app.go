@@ -181,7 +181,11 @@ func (a *App) ensureSafeToRunNode() bool {
 }
 
 func (a *App) onServiceEvent(event data.NotificationEvent) {
-	go a.notify(event)
+	if isBackupEvent(event) {
+		a.notify(event)
+	} else {
+		go a.notify(event)
+	}
 	if event.Type == data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED {
 		if a.AccountService.IsConnectedToRoutingNode() {
 			go a.ensureSafeToRunNode()
@@ -190,6 +194,22 @@ func (a *App) onServiceEvent(event data.NotificationEvent) {
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
 		a.BackupManager.RequestBackup()
 	}
+}
+
+func isBackupEvent(event data.NotificationEvent) bool {
+	backupEventsTypes := []data.NotificationEvent_NotificationType{
+		data.NotificationEvent_BACKUP_AUTH_FAILED,
+		data.NotificationEvent_BACKUP_FAILED,
+		data.NotificationEvent_BACKUP_SUCCESS,
+		data.NotificationEvent_BACKUP_REQUEST,
+	}
+
+	for _, a := range backupEventsTypes {
+		if a == event.Type {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *App) notify(event data.NotificationEvent) {
