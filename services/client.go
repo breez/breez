@@ -8,6 +8,7 @@ import (
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
+	"github.com/breez/breez/data"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -67,6 +68,22 @@ func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 		c.log.Infof("getBreezClientConnection - new connection; err: %v", err)
 	}
 	return c.connection
+}
+
+//Rates returns the rates obtained from the server
+func (c *Client) Rates() (*data.Rates, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ic := breezservice.NewInformationClient(c.connection)
+	rates, err := ic.Rates(ctx, &breezservice.RatesRequest{})
+	if err != nil {
+		return nil, err
+	}
+	r := make([]*data.Rate, 0, len(rates.Rates))
+	for _, rate := range rates.Rates {
+		r = append(r, &data.Rate{Coin: rate.Coin, Value: rate.Value})
+	}
+	return &data.Rates{Rates: r}, nil
 }
 
 func dial(serverURL string) (*grpc.ClientConn, error) {
