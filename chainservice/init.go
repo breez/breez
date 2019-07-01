@@ -1,10 +1,10 @@
 package chainservice
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,9 +13,11 @@ import (
 	"github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino"
+	"github.com/lightninglabs/neutrino/headerfs"
 )
 
 const (
@@ -57,6 +59,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 			return nil, nil, err
 		}
 		logger = logBackend.Logger("CHAIN")
+		logger.Infof("After get logger")
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)
 		neutrino.QueryTimeout = time.Second * 10
@@ -69,7 +72,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		return nil, nil, err
 	}
 
-	service, walletDB, err = newNeutrino(workingDir, config.Network, peers)
+	service, walletDB, err = newNeutrino(workingDir, config, peers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
 		return nil, stopService, err
@@ -95,44 +98,79 @@ func stopService() error {
 	return nil
 }
 
+func chainParams(network string) (*chaincfg.Params, error) {
+	var params *chaincfg.Params
+	switch network {
+	case "testnet":
+		params = &chaincfg.TestNet3Params
+	case "simnet":
+		params = &chaincfg.SimNetParams
+	case "mainnet":
+		params = &chaincfg.MainNetParams
+	}
+
+	if params == nil {
+		return nil, fmt.Errorf("Unrecognized network %v", network)
+	}
+	return params, nil
+}
+
+func neutrinoDataDir(workingDir string, network string) string {
+	dataPath := strings.Replace(directoryPattern, "{{network}}", network, -1)
+	return path.Join(workingDir, dataPath)
+}
+
 /*
 newNeutrino creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
 */
-func newNeutrino(workingDir string, network string, peers []string) (*neutrino.ChainService, walletdb.DB, error) {
-	var chainParams *chaincfg.Params
-	switch network {
-	case "testnet":
-		chainParams = &chaincfg.TestNet3Params
-	case "simnet":
-		chainParams = &chaincfg.SimNetParams
-	case "mainnet":
-		chainParams = &chaincfg.MainNetParams
-	}
+func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutrino.ChainService, walletdb.DB, error) {
+	params, err := chainParams(cfg.Network)
 
-	if chainParams == nil {
-		return nil, nil, fmt.Errorf("Unrecognized network %v", network)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	//if neutrino directory or wallet directory do not exit then
 	//We exit silently.
-	dataPath := strings.Replace(directoryPattern, "{{network}}", network, -1)
+	dataPath := strings.Replace(directoryPattern, "{{network}}", cfg.Network, -1)
 	neutrinoDataDir := path.Join(workingDir, dataPath)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
-	if _, err := os.Stat(neutrinoDB); os.IsNotExist(err) {
-		return nil, nil, errors.New("neutrino db does not exist")
+	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
+		return nil, nil, err
 	}
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
 
 	db, err := walletdb.Create("bdb", neutrinoDB)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	var assertHeader *headerfs.FilterHeader
+	if cfg.JobCfg.AssertFilterHeader != "" {
+		heightAndHash := strings.Split(cfg.JobCfg.AssertFilterHeader, ":")
+
+		height, err := strconv.ParseUint(heightAndHash[0], 10, 32)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid filter header height: %v", err)
+		}
+
+		hash, err := chainhash.NewHashFromStr(heightAndHash[1])
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid filter header hash: %v", err)
+		}
+
+		assertHeader = &headerfs.FilterHeader{
+			FilterHash: *hash,
+			Height:     uint32(height),
+		}
+	}
+
 	neutrinoConfig := neutrino.Config{
-		DataDir:      neutrinoDataDir,
-		Database:     db,
-		ChainParams:  *chainParams,
-		ConnectPeers: peers,
+		DataDir:            neutrinoDataDir,
+		Database:           db,
+		ChainParams:        *params,
+		ConnectPeers:       peers,
+		AssertFilterHeader: assertHeader,
 	}
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)

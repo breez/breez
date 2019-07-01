@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync/atomic"
 
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
@@ -206,4 +207,12 @@ func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
 
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
+}
+
+func (a *App) NeedsBootstrap() (bool, error) {
+	return chainservice.NeedsBootstrap(a.cfg.WorkingDir)
+}
+
+func (a *App) BootstrapHeaders(bootstrapDir string) error {
+	return chainservice.BootstrapHeaders(a.cfg.WorkingDir, bootstrapDir)
 }

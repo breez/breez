@@ -22,7 +22,7 @@ var (
 	appServices AppServices
 	breezApp    *breez.App
 	appLogger   Logger
-	mu 			sync.Mutex
+	mu          sync.Mutex
 )
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -107,19 +107,29 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	}
 	mu.Lock()
 	breezApp, err = breez.NewApp(workingDir, services)
-	mu.Unlock()	
+	mu.Unlock()
 	return err
+}
+
+// NeedsBootstrap checks if bootstrap header is needed.
+func NeedsBootstrap() (bool, error) {
+	return getBreezApp().NeedsBootstrap()
+}
+
+// BootstrapHeaders bootstrap the chain with existing header files.
+func BootstrapHeaders(bootstrapDir string) error {
+	return getBreezApp().BootstrapHeaders(bootstrapDir)
 }
 
 /*
 Start the lightning client
 */
 func Start() error {
+	go deliverNotifications(getBreezApp().NotificationChan(), appServices)
 	err := getBreezApp().Start()
 	if err != nil {
 		return err
 	}
-	go deliverNotifications(getBreezApp().NotificationChan(), appServices)
 	return nil
 }
 
@@ -127,8 +137,8 @@ func Start() error {
 LastSyncedHeaderTimestamp returns the last header the node is synced to.
 */
 func LastSyncedHeaderTimestamp() int64 {
-	last, _ := getBreezApp().LastSyncedHeaderTimestamp()	
-	return last	
+	last, _ := getBreezApp().LastSyncedHeaderTimestamp()
+	return last
 }
 
 /*
@@ -241,7 +251,7 @@ func Log(msg string, lvl string) {
 /*
 GetAccountInfo is part of the binding inteface which is delegated to breez.GetAccountInfo
 */
-func GetAccountInfo() ([]byte, error) {	
+func GetAccountInfo() ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.GetAccountInfo())
 }
 
@@ -276,9 +286,9 @@ func AddFundsInit(breezID string) ([]byte, error) {
 /*
 GetRefundableSwapAddresses returns all addresses that are refundable, e.g expired and not paid
 */
-func GetRefundableSwapAddresses() ([]byte, error) {	
+func GetRefundableSwapAddresses() ([]byte, error) {
 	refundableAddresses, err := getBreezApp().SwapService.GetRefundableAddresses()
-	if err != nil {		
+	if err != nil {
 		return nil, err
 	}
 
@@ -338,7 +348,7 @@ func GetLogPath() string {
 /*
 GetPayments is part of the binding inteface which is delegated to breez.GetPayments
 */
-func GetPayments() ([]byte, error) {	
+func GetPayments() ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.GetPayments())
 }
 
