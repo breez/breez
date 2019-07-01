@@ -165,6 +165,20 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 		}
 	}
 
+	// Temporary change to not depend on config file so we can initiate build from
+	// the development branch.
+	if assertHeader == nil {
+		hash, err := chainhash.NewHashFromStr("1308d5cfc6462f877a5587fd77d7c1ab029d45e58d5175aaf8c264cee9bde760")
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid filter header hash: %v", err)
+		}
+
+		assertHeader = &headerfs.FilterHeader{
+			FilterHash: *hash,
+			Height:     uint32(230000),
+		}
+	}
+
 	neutrinoConfig := neutrino.Config{
 		DataDir:            neutrinoDataDir,
 		Database:           db,
