@@ -1,6 +1,7 @@
 package chainservice
 
 import (
+	"sync"
 	"bytes"
 	"errors"
 	"fmt"
@@ -20,7 +21,14 @@ const (
 	filterHeaderLength = 32
 )
 
+var (
+	bootstrapMu	sync.Mutex
+)
+
 func NeedsBootstrap(workingDir string) (bool, error) {
+	bootstrapMu.Lock()
+	defer bootstrapMu.Unlock()
+
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return false, err
@@ -62,6 +70,9 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 
 // BootstrapHeaders initialize the neutrino headers with existing data.
 func BootstrapHeaders(workingDir string, bootstrapDir string) error {
+	bootstrapMu.Lock()
+	defer bootstrapMu.Unlock()
+	
 	filterHeadersPath := path.Join(bootstrapDir, "reg_filter_headers.bin")
 	headersPath := path.Join(bootstrapDir, "block_headers.bin")
 
