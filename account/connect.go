@@ -138,5 +138,12 @@ func (a *Service) connectOnStartup() {
 		return
 	}
 
-	a.connectRoutingNode()
+	for {
+		if err := a.connectRoutingNode(); err != nil {
+			a.log.Warnf("Failed to connect to routing node %v", err)
+			time.Sleep(time.Duration(2))
+			continue
+		}
+		return
+	}
 }
