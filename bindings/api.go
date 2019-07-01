@@ -131,11 +131,11 @@ func BootstrapHeaders(bootstrapDir string) error {
 Start the lightning client
 */
 func Start() error {
-	go deliverNotifications(getBreezApp().NotificationChan(), appServices)
 	err := getBreezApp().Start()
 	if err != nil {
 		return err
 	}
+	go deliverNotifications(getBreezApp().NotificationChan(), appServices)
 	return nil
 }
 
