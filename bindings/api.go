@@ -112,8 +112,14 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 }
 
 // NeedsBootstrap checks if bootstrap header is needed.
-func NeedsBootstrap() (bool, error) {
-	return getBreezApp().NeedsBootstrap()
+func NeedsBootstrap() bool {
+	need, err := getBreezApp().NeedsBootstrap()
+	if err != nil {
+		fmt.Println("Error in NeedsBootstrap ", err)
+		return false
+	}
+	fmt.Println("Needs Boottrap = ", need)
+	return need
 }
 
 // BootstrapHeaders bootstrap the chain with existing header files.

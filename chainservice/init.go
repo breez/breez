@@ -120,6 +120,29 @@ func neutrinoDataDir(workingDir string, network string) string {
 	return path.Join(workingDir, dataPath)
 }
 
+func parseAssertFilterHeader(headerStr string) (*headerfs.FilterHeader, error) {
+	if headerStr == "" {
+		return nil, nil
+	}
+
+	heightAndHash := strings.Split(headerStr, ":")
+
+	height, err := strconv.ParseUint(heightAndHash[0], 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid filter header height: %v", err)
+	}
+
+	hash, err := chainhash.NewHashFromStr(heightAndHash[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid filter header hash: %v", err)
+	}
+
+	return &headerfs.FilterHeader{
+		FilterHash: *hash,
+		Height:     uint32(height),
+	}, nil
+}
+
 /*
 newNeutrino creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
@@ -145,38 +168,9 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 		return nil, nil, err
 	}
 
-	var assertHeader *headerfs.FilterHeader
-	if cfg.JobCfg.AssertFilterHeader != "" {
-		heightAndHash := strings.Split(cfg.JobCfg.AssertFilterHeader, ":")
-
-		height, err := strconv.ParseUint(heightAndHash[0], 10, 32)
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid filter header height: %v", err)
-		}
-
-		hash, err := chainhash.NewHashFromStr(heightAndHash[1])
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid filter header hash: %v", err)
-		}
-
-		assertHeader = &headerfs.FilterHeader{
-			FilterHash: *hash,
-			Height:     uint32(height),
-		}
-	}
-
-	// Temporary change to not depend on config file so we can initiate build from
-	// the development branch.
-	if assertHeader == nil {
-		hash, err := chainhash.NewHashFromStr("1308d5cfc6462f877a5587fd77d7c1ab029d45e58d5175aaf8c264cee9bde760")
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid filter header hash: %v", err)
-		}
-
-		assertHeader = &headerfs.FilterHeader{
-			FilterHash: *hash,
-			Height:     uint32(230000),
-		}
+	assertHeader, err := parseAssertFilterHeader(cfg.JobCfg.AssertFilterHeader)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	neutrinoConfig := neutrino.Config{

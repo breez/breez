@@ -43,7 +43,12 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 	}	
 	defer db.Close()
 
-	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, nil)
+	assertHeader, err := parseAssertFilterHeader(config.JobCfg.AssertFilterHeader)
+	if err != nil {
+		return false, err
+	}
+
+	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, assertHeader)
 	if err != nil {		
 		return false, err
 	}
