@@ -57,18 +57,22 @@ func (s *Job) terminated() bool {
 
 func (s *Job) syncFilters() (channelClosed bool, err error) {
 	s.log.Info("syncFilters started...")
+
+	needsBootstrap, err := chainservice.NeedsBootstrap(s.workingDir)
+	if err != nil {
+		return false, err
+	}
+	if needsBootstrap {
+		s.log.Info("syncFilters started needs boottrap, skiping job")
+		return false, nil
+	}
+
 	breezDB, cleanupDB, err := db.Get(s.workingDir)
 	if err != nil {
 		return false, err
 	}
 	defer cleanupDB()
 
-	chainService, cleanFn, err := chainservice.Get(s.workingDir, breezDB)
-	if err != nil {
-		s.log.Errorf("Error creating ChainService: %s", err)
-		return false, err
-	}
-	defer cleanFn()
 	jobDB, err := openJobDB(path.Join(s.workingDir, "job.db"))
 	if err != nil {
 		return false, err
@@ -90,7 +94,14 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		return false, err
 	}
 
+	chainService, cleanFn, err := chainservice.Get(s.workingDir, breezDB)
+	if err != nil {
+		s.log.Errorf("Error creating ChainService: %s", err)
+		return false, err
+	}
+
 	chainService.Start()
+	defer cleanFn()
 	s.log.Infof("Starting sync job from height: %v", startSyncHeight)
 
 	bestBlockHeight, err := s.waitForHeaders(chainService, startSyncHeight)
