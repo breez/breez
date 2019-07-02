@@ -22,6 +22,6 @@ require (
 	gopkg.in/macaroon.v2 v2.0.0
 )
 
-replace github.com/lightningnetwork/lnd v0.7.0-beta-rc2 => github.com/breez/lnd v0.6.1-beta.0.20190625115649-d3889f041b14
+replace github.com/lightningnetwork/lnd v0.7.0-beta-rc2 => github.com/breez/lnd v0.6.1-beta.0.20190628200439-4506714f9abd
 
 replace github.com/btcsuite/btcwallet v0.0.0-20190620233257-46c0cf2a3f3a => github.com/breez/btcwallet v0.0.0-20190623095413-2d15a1bc5050

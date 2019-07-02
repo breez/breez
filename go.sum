@@ -33,6 +33,8 @@ github.com/breez/lnd v0.6.1-beta.0.20190625103948-f1f48c640842 h1:jJrmK1+WQg5lC8
 github.com/breez/lnd v0.6.1-beta.0.20190625103948-f1f48c640842/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
 github.com/breez/lnd v0.6.1-beta.0.20190625115649-d3889f041b14 h1:DGfgKGy0B71V90/RjNDPKdiRNSTHGP8PHquCj1fwtLQ=
 github.com/breez/lnd v0.6.1-beta.0.20190625115649-d3889f041b14/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
+github.com/breez/lnd v0.6.1-beta.0.20190628200439-4506714f9abd h1:ddb1Bs72fNYmN8mSa1vNwW5pm2wI1Y0mwfN4eHU+5XU=
+github.com/breez/lnd v0.6.1-beta.0.20190628200439-4506714f9abd/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
 github.com/btcsuite/btcd v0.0.0-20180823030728-d81d8877b8f3/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btcd v0.0.0-20181130015935-7d2daa5bfef2/go.mod h1:Jr9bmNVGZ7TH2Ux1QuP0ec+yGgh0gE9FIlkzQiI5bR0=
 github.com/btcsuite/btcd v0.0.0-20190213025234-306aecffea32/go.mod h1:DrZx5ec/dmnfpw9KyYoQyYo7d0KEvTkk/5M/vbZjAr8=
