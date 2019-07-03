@@ -56,6 +56,11 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 		return false, err
 	}
 
+	_, err = headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
+	if err != nil {		
+		return false, err
+	}
+
 	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, assertHeader)
 	if err != nil {		
 		return false, err
@@ -72,7 +77,7 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
-	
+
 	filterHeadersPath := path.Join(bootstrapDir, "reg_filter_headers.bin")
 	headersPath := path.Join(bootstrapDir, "block_headers.bin")
 
