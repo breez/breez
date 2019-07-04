@@ -61,8 +61,8 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		logger = logBackend.Logger("CHAIN")
 		logger.Infof("After get logger")
 		logger.SetLevel(btclog.LevelDebug)
-		neutrino.UseLogger(logger)
-		neutrino.QueryTimeout = time.Second * 10
+		neutrino.UseLogger(logger)		
+		neutrino.QueryBatchTimeout = time.Second * 300
 	}
 	logger.Infof("creating shared chain service.")
 
