@@ -563,6 +563,10 @@ func SetPeers(request []byte) error {
 	return err
 }
 
+func Rate() ([]byte, error) {
+	return marshalResponse(getBreezApp().ServicesClient.Rates())
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

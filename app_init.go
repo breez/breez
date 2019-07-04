@@ -43,10 +43,10 @@ type App struct {
 	AccountService *account.Service
 	BackupManager  *backup.Manager
 	SwapService    *swapfunds.Service
+	ServicesClient *services.Client
 
 	//non exposed services
-	lnDaemon       *lnnode.Daemon
-	servicesClient *services.Client
+	lnDaemon *lnnode.Daemon
 
 	//channel for external binding events
 	notificationsChan chan data.NotificationEvent
@@ -88,7 +88,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		return nil, err
 	}
 
-	app.servicesClient, err = services.NewClient(app.cfg)
+	app.ServicesClient, err = services.NewClient(app.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating services.Client: %v", err)
 	}
@@ -132,7 +132,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	app.AccountService, err = account.NewService(
 		app.cfg,
 		app.breezDB,
-		app.servicesClient,
+		app.ServicesClient,
 		app.lnDaemon,
 		app.onServiceEvent,
 	)
@@ -143,7 +143,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 	app.SwapService, err = swapfunds.NewService(
 		app.cfg,
 		app.breezDB,
-		app.servicesClient,
+		app.ServicesClient,
 		app.lnDaemon,
 		app.AccountService.SendPaymentForRequest,
 		app.onServiceEvent,

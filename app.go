@@ -31,7 +31,7 @@ func (a *App) Start() error {
 
 	services := []Service{
 		a.lnDaemon,
-		a.servicesClient,
+		a.ServicesClient,
 		a.SwapService,
 		a.AccountService,
 		a.BackupManager,
@@ -61,7 +61,7 @@ func (a *App) Stop() error {
 	a.BackupManager.Stop()
 	a.SwapService.Stop()
 	a.AccountService.Stop()
-	a.servicesClient.Stop()
+	a.ServicesClient.Stop()
 	a.lnDaemon.Stop()
 	doubleratchet.Stop()
 	a.releaseBreezDB()
