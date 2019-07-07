@@ -7,8 +7,8 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
-	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd/channeldb"
 )
 
 const (

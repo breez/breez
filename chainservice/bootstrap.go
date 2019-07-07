@@ -1,12 +1,12 @@
 package chainservice
 
 import (
-	"sync"
 	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/breez/breez/config"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	bootstrapMu	sync.Mutex
+	bootstrapMu sync.Mutex
 )
 
 func NeedsBootstrap(workingDir string) (bool, error) {
@@ -41,14 +41,14 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 
 	//create temporary neturino db.
 	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")	
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return false, err
 	}
 	db, err := walletdb.Create("bdb", neutrinoDB)
 	if err != nil {
 		return false, err
-	}	
+	}
 	defer db.Close()
 
 	assertHeader, err := parseAssertFilterHeader(config.JobCfg.AssertFilterHeader)
@@ -57,12 +57,12 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 	}
 
 	_, err = headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
-	if err != nil {		
+	if err != nil {
 		return false, err
 	}
 
 	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, assertHeader)
-	if err != nil {		
+	if err != nil {
 		return false, err
 	}
 
@@ -105,31 +105,31 @@ func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 
 	//create temporary neturino db.
 	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")	
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return err
 	}
 	db, err := walletdb.Create("bdb", neutrinoDB)
 	if err != nil {
 		return err
-	}	
+	}
 	defer db.Close()
 
 	blockHeaderStore, err := headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
-	if err != nil {		
+	if err != nil {
 		return err
 	}
 
 	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, nil)
-	if err != nil {	
+	if err != nil {
 		return err
 	}
 
-	if err := copyBlockHeaderStore(blockHeaderStore, headersPath, db, params); err != nil {		
+	if err := copyBlockHeaderStore(blockHeaderStore, headersPath, db, params); err != nil {
 		return err
 	}
 
-	if err := copyFilterHeaderStore(*filterHeaderStore, blockHeaderStore, filterHeadersPath, db, params); err != nil {		
+	if err := copyFilterHeaderStore(*filterHeaderStore, blockHeaderStore, filterHeadersPath, db, params); err != nil {
 		return err
 	}
 
@@ -152,7 +152,7 @@ func copyFilterHeaderStore(filterHeaderStore headerfs.FilterHeaderStore, blockHe
 	_, height, err := filterHeaderStore.ChainTip()
 	if err != nil {
 		return err
-	}	
+	}
 
 	var headersToWrite []headerfs.FilterHeader
 	for i := height + 1; i < uint32(totalHeaders); i++ {
@@ -171,7 +171,7 @@ func copyFilterHeaderStore(filterHeaderStore headerfs.FilterHeaderStore, blockHe
 		}
 		headersToWrite = append(headersToWrite, filterHeader)
 	}
-	
+
 	return filterHeaderStore.WriteHeaders(headersToWrite...)
 }
 
@@ -209,7 +209,7 @@ func copyBlockHeaderStore(blockHeaderStore headerfs.BlockHeaderStore, blockHeade
 	_, height, err := blockHeaderStore.ChainTip()
 	if err != nil {
 		return err
-	}	
+	}
 
 	var headersToWrite []headerfs.BlockHeader
 	for i := height + 1; i < uint32(totalBlocks); i++ {
@@ -243,7 +243,7 @@ func readBlockHeader(file *os.File, height uint32) (*wire.BlockHeader, error) {
 	}
 	var header wire.BlockHeader
 	headerReader := bytes.NewReader(rawHeader)
-	
+
 	if err := header.Deserialize(headerReader); err != nil {
 		return &header, err
 	}

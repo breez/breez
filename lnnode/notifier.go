@@ -114,7 +114,7 @@ func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.C
 			d.log.Errorf("subscribePeers cancelled, shutting down")
 			return err
 		}
-				
+
 		d.log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
 		if err != nil {
 			d.log.Errorf("subscribe peers Failed to get notification %v", err)
