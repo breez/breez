@@ -135,7 +135,11 @@ func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file ui
 	}
 	chanIds := make([]uint64, 0, len(fileContent))
 	for i := 0; i < len(fileContent); i += 8 {
-		chanIds = append(chanIds, binary.BigEndian.Uint64(fileContent[i:i+8]))
+		chanID := binary.BigEndian.Uint64(fileContent[i : i+8])
+		_, _, exists, _, _ := chanDB.ChannelGraph().HasChannelEdge(chanID)
+		if exists {
+			chanIds = append(chanIds, chanID)
+		}
 	}
 	err = chanDB.ChannelGraph().DeleteChannelEdges(chanIds...)
 	if err != nil {
