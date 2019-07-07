@@ -145,11 +145,23 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
+	breezDB := &DB{
 		DB:     db,
 		dbPath: dbPath,
 		log:    log,
-	}, nil
+	}
+
+	// remove invalidated btcd on upgrade.
+	peers, _, err := breezDB.GetPeers(nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(peers) == 1 && peers[0] == "bb1.breez.technology" {
+		if err = breezDB.SetPeers(nil); err != nil {
+			return nil, err
+		}
+	}
+	return breezDB, nil
 }
 
 // CloseDB closed the db
