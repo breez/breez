@@ -25,13 +25,19 @@ type SwapAddressInfo struct {
 	LockHeight              uint32
 
 	//address script
-	Script             []byte
-	ErrorMessage       string
-	FundsExceededLimit bool
-	EnteredMempool     bool
+	Script []byte
+
+	ErrorMessage    string
+	SwapErrorReason int32
+	EnteredMempool  bool
 
 	//refund
 	LastRefundTxID string
+}
+
+// Confirmed returns true if the transaction has confirmed in the past.
+func (s *SwapAddressInfo) Confirmed() bool {
+	return s.LockHeight > 0
 }
 
 /**
