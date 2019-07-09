@@ -1,8 +1,6 @@
 package db
 
-import (
-	
-)
+import ()
 
 // FetchLastSyncedHeaderTimestamp the last known header timestamp that the node is synced to.
 func (db *DB) FetchLastSyncedHeaderTimestamp() (int64, error) {

@@ -17,8 +17,9 @@ import (
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
 	"github.com/breez/breez/swapfunds"
-	"github.com/breez/lightninglib/lnrpc"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"golang.org/x/net/context"
 )
 
@@ -163,7 +164,12 @@ func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 	if lnclient == nil {
 		return nil, "", errors.New("Daemon is not ready")
 	}
-	response, err := lnclient.GetBackup(context.Background(), &lnrpc.GetBackupRequest{})
+	backupClient := a.lnDaemon.BreezBackupClient()
+	if backupClient == nil {
+		return nil, "", errors.New("Daemon is not ready")
+	}
+
+	response, err := backupClient.GetBackup(context.Background(), &breezbackuprpc.GetBackupRequest{})
 	if err != nil {
 		a.log.Errorf("Couldn't get backup: %v", err)
 		return nil, "", err

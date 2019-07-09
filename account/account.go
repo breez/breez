@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
-	"github.com/breez/lightninglib/lnrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"

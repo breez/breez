@@ -6,9 +6,11 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
-	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/subscribe"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/subscribe"
 )
 
 // API represents the lnnode exposed functions that are accessible for
@@ -21,6 +23,8 @@ type API interface {
 	HasChannelWithRoutingNode() bool
 	NodePubkey() string
 	APIClient() lnrpc.LightningClient
+	SubSwapClient() submarineswaprpc.SubmarineSwapperClient
+	BreezBackupClient() breezbackuprpc.BreezBackuperClient
 }
 
 // Daemon contains data regarding the lightning daemon.
@@ -37,6 +41,8 @@ type Daemon struct {
 	wg                        sync.WaitGroup
 	log                       btclog.Logger
 	lightningClient           lnrpc.LightningClient
+	subswapClient             submarineswaprpc.SubmarineSwapperClient
+	breezBackupClient         breezbackuprpc.BreezBackuperClient
 	ntfnServer                *subscribe.Server
 	quitChan                  chan struct{}
 }

@@ -22,12 +22,12 @@ var (
 RequestBackup push a request for the backup files of breez
 */
 func (b *Manager) RequestBackup() {
-	log.Infof("Backup requested")
+	b.log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
 	err := b.db.addBackupRequest()
 	if err != nil {
-		log.Errorf("failed to set pending backup %v", err)
+		b.log.Errorf("failed to set pending backup %v", err)
 		b.notifyBackupFailed(err)
 		return
 	}
@@ -106,8 +106,8 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 	}
 	for _, s := range snapshots {
 		if s.NodeID == nodeID && s.BackupID != "" && backupID != s.BackupID {
-			log.Errorf("remote restore was found for node %v.", nodeID)
-			log.Errorf("current backupID=%v, remote backupID-%v", backupID, s.BackupID)
+			b.log.Errorf("remote restore was found for node %v.", nodeID)
+			b.log.Errorf("current backupID=%v, remote backupID-%v", backupID, s.BackupID)
 			return false, nil
 		}
 	}
@@ -126,7 +126,7 @@ func (b *Manager) Start() error {
 		for {
 			select {
 			case <-b.backupRequestChan:
-				log.Infof("start processing backup request")
+				b.log.Infof("start processing backup request")
 				//First get the last pending request in the database
 				pendingID, err := b.db.lastBackupRequest()
 				if pendingID == 0 {
@@ -136,17 +136,17 @@ func (b *Manager) Start() error {
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
 				paths, nodeID, err := b.prepareBackupData()
 				if err != nil {
-					log.Errorf("error in backup %v", err)
+					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
 				if err := b.provider.UploadBackupFiles(paths, nodeID); err != nil {
-					log.Errorf("error in backup %v", err)
+					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
 				b.db.markBackupRequestCompleted(pendingID)
-				log.Infof("backup finished succesfully")
+				b.log.Infof("backup finished succesfully")
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS})
 			case <-b.quitChan:
 				return
@@ -167,7 +167,7 @@ func (b *Manager) Stop() error {
 	b.db.close()
 	close(b.quitChan)
 	b.wg.Wait()
-	log.Infof("BackupManager shutdown succesfully")
+	b.log.Infof("BackupManager shutdown succesfully")
 	return nil
 }
 
@@ -181,7 +181,7 @@ func (b *Manager) destroy() error {
 }
 
 func (b *Manager) notifyBackupFailed(err error) {
-	log.Infof("notifyBackupFailed %v", err)
+	b.log.Infof("notifyBackupFailed %v", err)
 	if ferr, ok := err.(ProviderError); ok {
 		if ferr.IsAuthError() {
 			b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_AUTH_FAILED})

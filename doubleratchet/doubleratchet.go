@@ -20,13 +20,9 @@ type RatchetSessionDetails struct {
 }
 
 var (
-	byteOrder binary.ByteOrder
+	byteOrder = binary.BigEndian
 	mu        sync.Mutex
 )
-
-func init() {
-	byteOrder = binary.BigEndian
-}
 
 //Start starts the doubleratchet service and makes it ready for action
 func Start(dbpath string) error {

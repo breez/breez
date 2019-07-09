@@ -3,10 +3,12 @@ package db
 import (
 	"strings"
 	"testing"
+
+	"github.com/btcsuite/btclog"
 )
 
 func TestAddresses(t *testing.T) {
-	db, err := openDB("testDB")
+	db, err := openDB("testDB", btclog.Disabled)
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +60,7 @@ func TestAddresses(t *testing.T) {
 
 func TestAddPayments(t *testing.T) {
 	var err error
-	db, err := openDB("testdb")
+	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
 	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 1, 0)
 	if err != nil {
@@ -81,7 +83,7 @@ func TestAddPayments(t *testing.T) {
 
 func TestPaymentsSyncInfo(t *testing.T) {
 	var err error
-	db, err := openDB("testdb")
+	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
 	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 5, 0)
 	if err != nil {
@@ -112,7 +114,7 @@ func TestPaymentsSyncInfo(t *testing.T) {
 
 func TestAccount(t *testing.T) {
 	var err error
-	db, err := openDB("testdb")
+	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
 	acc, err := db.FetchAccount()
 	if err != nil {
@@ -125,7 +127,7 @@ func TestAccount(t *testing.T) {
 
 func TestSync(t *testing.T) {
 	var err error
-	db, err := openDB("testdb")
+	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
 	lastTS, err := db.FetchLastSyncedHeaderTimestamp()
 	if err != nil {
@@ -137,7 +139,7 @@ func TestSync(t *testing.T) {
 	err = db.SetLastSyncedHeaderTimestamp(100)
 	if err != nil {
 		t.Error("Failed to set last header timestamp.")
-	} 
+	}
 	lastTS, err = db.FetchLastSyncedHeaderTimestamp()
 	if err != nil {
 		t.Error("failed to fetch header timestamp", err)

@@ -6,7 +6,9 @@ import (
 	"path"
 	"path/filepath"
 
+	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
+	"github.com/btcsuite/btclog"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -45,6 +47,7 @@ var (
 type DB struct {
 	*bolt.DB
 	dbPath string
+	log    btclog.Logger
 }
 
 // Get returns a Ch
@@ -61,15 +64,22 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 }
 
 func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
-	db, err := openDB(path.Join(workingDir, "breez.db"))
+	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return nil, nil, err
 	}
+	log := logBackend.Logger("BRDB")
+
+	db, err := openDB(path.Join(workingDir, "breez.db"), log)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return db, db.closeDB, err
 }
 
 // OpenDB opens the database and makes it ready to work
-func openDB(dbPath string) (*DB, error) {
+func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 	var err error
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -135,10 +145,23 @@ func openDB(dbPath string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
+	breezDB := &DB{
 		DB:     db,
 		dbPath: dbPath,
-	}, nil
+		log:    log,
+	}
+
+	// remove invalidated btcd on upgrade.
+	peers, _, err := breezDB.GetPeers(nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(peers) == 1 && peers[0] == "bb1.breez.technology" {
+		if err = breezDB.SetPeers(nil); err != nil {
+			return nil, err
+		}
+	}
+	return breezDB, nil
 }
 
 // CloseDB closed the db

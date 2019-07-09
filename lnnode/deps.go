@@ -4,8 +4,8 @@ import (
 	"io"
 
 	breezlog "github.com/breez/breez/log"
-	"github.com/breez/lightninglib/channeldb"
 	"github.com/lightninglabs/neutrino"
+	"github.com/lightningnetwork/lnd/channeldb"
 )
 
 /*

@@ -9,8 +9,8 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
-	"github.com/breez/lightninglib/subscribe"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd/subscribe"
 )
 
 // Service is the account service that controls all aspects of routing node connection

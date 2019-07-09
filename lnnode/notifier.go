@@ -5,8 +5,10 @@ import (
 	"io"
 	"time"
 
-	"github.com/breez/lightninglib/lnrpc"
-	"github.com/breez/lightninglib/subscribe"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/peerrpc"
+	"github.com/lightningnetwork/lnd/subscribe"
 )
 
 // DaemonReadyEvent is sent when the daemon is ready for RPC requests
@@ -19,7 +21,7 @@ type DaemonDownEvent struct{}
 
 // PeerConnectionEvent is sent whenever a peer is connected/disconnected.
 type PeerConnectionEvent struct {
-	*lnrpc.PeerNotification
+	*peerrpc.PeerNotification
 }
 
 // TransactionEvent is sent when a new transaction is received.
@@ -52,13 +54,15 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient, err := newLightningClient(d.cfg)
+	lnclient, peersClient, backupEventClient, subswapClient, breezBackupClient, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
 
 	d.Lock()
 	d.lightningClient = lnclient
+	d.subswapClient = subswapClient
+	d.breezBackupClient = breezBackupClient
 	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
@@ -74,10 +78,10 @@ func (d *Daemon) startSubscriptions() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	d.wg.Add(6)
-	go d.subscribePeers(ctx)
+	go d.subscribePeers(peersClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
-	go d.watchBackupEvents(ctx)
+	go d.watchBackupEvents(backupEventClient, ctx)
 	go d.syncToChain(ctx)
 	go d.trackOpenedChannel()
 
@@ -94,10 +98,10 @@ func (d *Daemon) startSubscriptions() error {
 	return nil
 }
 
-func (d *Daemon) subscribePeers(ctx context.Context) error {
+func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.Context) error {
 	defer d.wg.Done()
 
-	subscription, err := d.lightningClient.SubscribePeers(ctx, &lnrpc.PeerSubscription{})
+	subscription, err := client.SubscribePeers(ctx, &peerrpc.PeerSubscription{})
 	if err != nil {
 		d.log.Errorf("Failed to subscribe peers %v", err)
 		return err
@@ -110,6 +114,7 @@ func (d *Daemon) subscribePeers(ctx context.Context) error {
 			d.log.Errorf("subscribePeers cancelled, shutting down")
 			return err
 		}
+
 		d.log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
 		if err != nil {
 			d.log.Errorf("subscribe peers Failed to get notification %v", err)
@@ -178,10 +183,10 @@ func (d *Daemon) subscribeInvoices(ctx context.Context) error {
 	}
 }
 
-func (d *Daemon) watchBackupEvents(ctx context.Context) error {
+func (d *Daemon) watchBackupEvents(client backuprpc.BackupClient, ctx context.Context) error {
 	defer d.wg.Done()
 
-	stream, err := d.lightningClient.SubscribeBackupEvents(ctx, &lnrpc.BackupEventSubscription{})
+	stream, err := client.SubscribeBackupEvents(ctx, &backuprpc.BackupEventSubscription{})
 	if err != nil {
 		d.log.Criticalf("Failed to call SubscribeBackupEvents %v, %v", stream, err)
 	}

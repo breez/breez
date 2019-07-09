@@ -49,7 +49,7 @@ type PaymentInfo struct {
 AddAccountPayment adds a payment to the database
 */
 func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, sentTime uint64) error {
-	log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
+	db.log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
 	return db.Update(func(tx *bolt.Tx) error {
 		paymentBuf, err := serializePaymentInfo(accPayment)
 		if err != nil {

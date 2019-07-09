@@ -1,31 +1,26 @@
 module github.com/breez/breez
 
 require (
-	github.com/awalterschulze/gographviz v0.0.0-20160912181450-761fd5fbb34e
-	github.com/breez/lightninglib v0.0.0-20190407174954-d32d4231e0fc
-	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
+	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcutil v0.0.0-20190112041146-bf1e1be93589
-	github.com/btcsuite/btcwallet v0.0.0-20190123033236-ba03278a64bc
-	github.com/golang/protobuf v1.2.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 // indirect
+	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+	github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57
+	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/lightninglabs/neutrino v0.0.0-20190115022559-351f5f06c6af
+	github.com/lightninglabs/neutrino v0.0.0-20190629001446-52dd89dd1aaa
+	github.com/lightningnetwork/lnd v0.7.0-beta
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/urfave/cli v1.18.0
-	go.etcd.io/bbolt v1.3.0
-	golang.org/x/mobile v0.0.0-20181026062114-a27dd33d354d // indirect
-	golang.org/x/net v0.0.0-20181106065722-10aee1819953
-	golang.org/x/oauth2 v0.0.0-20181203162652-d668ce993890
-	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f
-	google.golang.org/api v0.1.0
-	google.golang.org/grpc v1.18.0
+	go.etcd.io/bbolt v1.3.2
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	google.golang.org/api v0.7.0
+	google.golang.org/grpc v1.22.0
 	gopkg.in/macaroon.v2 v2.0.0
 )
 
-replace github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d => github.com/breez/btcd v0.0.0-20190217135408-786ef411fa65
+replace github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190703105503-48ac1af61b98
 
-replace github.com/lightninglabs/neutrino v0.0.0-20190115022559-351f5f06c6af => github.com/breez/neutrino v0.0.0-20190217133150-08c3c9e7d6d5
-
-replace github.com/btcsuite/btcwallet v0.0.0-20190123033236-ba03278a64bc => github.com/breez/btcwallet v0.0.0-20190303130849-eba47a0b4881
+replace github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57 => github.com/breez/btcwallet v0.0.0-20190703105141-dad0cf7525f1
