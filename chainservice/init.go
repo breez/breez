@@ -33,7 +33,10 @@ var (
 
 // Get returned a reusable ChainService
 func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupFn func() error, err error) {
-	service, release, err := serviceRefCounter.Get(
+	bootstrapMu.Lock()
+	defer bootstrapMu.Unlock()
+	
+	chainSer, release, err := serviceRefCounter.Get(
 		func() (interface{}, refcount.ReleaseFunc, error) {
 			return createService(workingDir, breezDB)
 		},
@@ -41,7 +44,8 @@ func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupF
 	if err != nil {
 		return nil, nil, err
 	}
-	return service.(*neutrino.ChainService), release, err
+	service = chainSer.(*neutrino.ChainService)
+	return service, release, err
 }
 
 func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, refcount.ReleaseFunc, error) {

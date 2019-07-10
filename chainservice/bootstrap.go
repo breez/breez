@@ -29,6 +29,13 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
 
+	// If we already have a chain service, then no bootstrap is needed.
+	// Caller responsibility to check for whether bootstrap is needed
+	// before creating a chain service.
+	if service != nil {
+		return false, nil
+	}
+
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return false, err
