@@ -19,6 +19,7 @@ import (
 
 const (
 	firstFileNumber = 5655
+	deletedSuffix   = ".deleted"
 )
 
 /*
@@ -112,7 +113,7 @@ func fileToImport(moreThan uint64, dirname string) (uint64, error) {
 		return 0, err
 	}
 	for _, f := range list {
-		if !f.IsDir() && !strings.HasSuffix(f.Name(), ".deleted") {
+		if !f.IsDir() && !strings.HasSuffix(f.Name(), deletedSuffix) {
 			if s, err := strconv.ParseUint(f.Name(), 10, 64); err == nil {
 				if s > moreThan && (toImport == 0 || s < toImport) {
 					toImport = s
@@ -146,7 +147,7 @@ func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file ui
 		s.log.Infof("DeleteChannelEdges error: %v", err)
 		return err
 	}
-	return os.Rename(filename, filename+".deleted")
+	return os.Rename(filename, filename+deletedSuffix)
 }
 
 func (s *Job) downloadClosedChannels() error {
@@ -184,7 +185,11 @@ func firstFileNumberToDownload(dirname string) (uint64, error) {
 	n := uint64(firstFileNumber)
 	for _, f := range list {
 		if !f.IsDir() {
-			if s, err := strconv.ParseUint(f.Name(), 10, 64); err == nil {
+			filename := f.Name()
+			if strings.HasSuffix(filename, deletedSuffix) {
+				filename = filename[0 : len(filename)-len(deletedSuffix)]
+			}
+			if s, err := strconv.ParseUint(filename, 10, 64); err == nil {
 				if s >= n {
 					n = s + 1
 				}
