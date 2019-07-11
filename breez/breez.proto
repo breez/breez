@@ -121,8 +121,16 @@ message GetSwapPaymentRequest {
 }
 
 message GetSwapPaymentReply {
+  enum SwapError {
+    NO_ERROR = 0;
+    FUNDS_EXCEED_LIMIT = 1;
+    TX_TOO_SMALL = 2;
+    INVOICE_AMOUNT_MISMATCH = 3;
+    SWAP_EXPIRED = 4;
+  }
+
   string paymentError = 1;
-  bool funds_exceeded_limit = 2;
+  SwapError swap_error = 2;
 }
 
 // The request message containing the device id and lightning id

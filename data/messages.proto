@@ -137,11 +137,17 @@ message RefundRequest {
     string refundAddress = 2;
 }
 
+enum SwapError {
+    NO_ERROR = 0;
+    FUNDS_EXCEED_LIMIT = 1;
+    TX_TOO_SMALL = 2;
+    INVOICE_AMOUNT_MISMATCH = 3;
+    SWAP_EXPIRED = 4;
+}
+
 message AddFundError {
-    string errorMessage = 1;
-    bool FundsExceededLimit = 2;
-    uint32 lockHeight = 3;
-    float hoursToUnlock = 4;
+    SwapAddressInfo swapAddressInfo = 1;
+    float hoursToUnlock = 2;    
 }
 
 message FundStatusReply {
@@ -174,6 +180,7 @@ message SwapAddressInfo {
     uint32 lockHeight = 6;
     string errorMessage = 7;
     string lastRefundTxID = 8;
+    SwapError swapError = 9;
 }
 
 message SwapAddressList {
