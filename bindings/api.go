@@ -321,6 +321,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 
 //Refund transfers the funds in address to the user destination address
 func Refund(refundRequest []byte) (string, error) {
+	Log("binding: starting refund flow...", "INFO")
 	request := &data.RefundRequest{}
 	if err := proto.Unmarshal(refundRequest, request); err != nil {
 		return "", err

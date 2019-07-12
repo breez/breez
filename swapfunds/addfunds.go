@@ -243,22 +243,31 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
+	s.log.Infof("Starting refund flow...")
 	lnclient := s.daemonAPI.SubSwapClient()
+	if lnclient == nil {
+		s.log.Error("unable to execute Refund: Daemon is not ready")
+	}
+
 	res, err := lnclient.SubSwapClientRefund(context.Background(), &submarineswaprpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
 	})
 	if err != nil {
+		s.log.Errorf("unable to execute SubSwapClientRefund: %v", err)
 		return "", err
 	}
+	s.log.Infof("refund executed, res: %v", res)
 	_, err = s.breezDB.UpdateSwapAddress(address, func(a *db.SwapAddressInfo) error {
 		a.LastRefundTxID = res.Txid
 		return nil
 	})
 	if err != nil {
+		s.log.Errorf("unable to update swap address after refund: %v", err)
 		return "", err
 	}
-	s.onUnspentChanged()
+	s.log.Infof("refund executed, triggerring unspendChangd event")
+	s.onUnspentChanged()	
 	return res.Txid, nil
 }
 
