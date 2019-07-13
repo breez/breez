@@ -37,7 +37,7 @@ type SwapAddressInfo struct {
 
 // Confirmed returns true if the transaction has confirmed in the past.
 func (s *SwapAddressInfo) Confirmed() bool {
-	return s.LockHeight > 0
+	return s.LockHeight > 0 && s.ConfirmedAmount > 0 && s.PaidAmount == 0
 }
 
 /**
