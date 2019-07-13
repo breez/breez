@@ -224,6 +224,7 @@ AvailableSnapshots is part of the binding inteface which is delegated to breez.A
 func AvailableSnapshots() (string, error) {
 	snapshots, err := getBreezApp().BackupManager.AvailableSnapshots()
 	if err != nil {
+		Log("error in calling AvailableSnapshots: "+err.Error(), "INFO")
 		return "", err
 	}
 	bytes, err := json.Marshal(snapshots)

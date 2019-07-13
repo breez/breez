@@ -14,12 +14,12 @@ import (
 // ProviderFactory is a factory for create a specific provider.
 // This is the function needed to be implemented for a new provider
 // to be registered and used.
-type ProviderFactory func(authService AuthService) (Provider, error)
+type ProviderFactory func(authService AuthService, log btclog.Logger) (Provider, error)
 
 var (
 	providersFactory = map[string]ProviderFactory{
-		"gdrive": func(authService AuthService) (Provider, error) {
-			return NewGoogleDriveProvider(authService)
+		"gdrive": func(authService AuthService, log btclog.Logger) (Provider, error) {
+			return NewGoogleDriveProvider(authService, log)
 		},
 	}
 )
@@ -48,17 +48,18 @@ func NewManager(
 	prepareData DataPreparer,
 	config *config.Config) (*Manager, error) {
 
-	provider, err := createBackupProvider(providerName, authService)
+	logBackend, err := breezlog.GetLogBackend(config.WorkingDir)
+	if err != nil {
+		return nil, err
+	}
+	log := logBackend.Logger("BCKP")
+
+	provider, err := createBackupProvider(providerName, authService, log)
 	if err != nil {
 		return nil, err
 	}
 
 	db, err := openDB(path.Join(config.WorkingDir, "backup.db"))
-	if err != nil {
-		return nil, err
-	}
-
-	logBackend, err := breezlog.GetLogBackend(config.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func NewManager(
 		provider:          provider,
 		prepareBackupData: prepareData,
 		config:            config,
-		log:               logBackend.Logger("BCKP"),
+		log:               log,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil
@@ -81,10 +82,10 @@ func RegisterProvider(providerName string, factory ProviderFactory) {
 	providersFactory[providerName] = factory
 }
 
-func createBackupProvider(providerName string, authService AuthService) (Provider, error) {
+func createBackupProvider(providerName string, authService AuthService, log btclog.Logger) (Provider, error) {
 	factory, ok := providersFactory[providerName]
 	if !ok {
 		return nil, fmt.Errorf("provider not found for %v", providerName)
 	}
-	return factory(authService)
+	return factory(authService, log)
 }
