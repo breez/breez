@@ -118,7 +118,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	}
 
 	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
-		return addr.PaidAmount == 0
+		return addr.PaidAmount == 0 && addr.LastRefundTxID == ""
 	})
 	if err != nil {
 		return nil, err
@@ -134,8 +134,17 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 	for _, a := range addresses {
 
-		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
-		if a.Confirmed() {
+		// If swap transaction is not confirmed, check to see if in mempool
+		if !a.Confirmed() {
+			hasMempool = hasMempool || a.EnteredMempool
+			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
+			s.log.Infof("Adding unconfirmed address: %v", a.Address)
+			continue
+		}
+
+		// In case the transactino is confirmed and has positive output, we will check
+		// if it is ready for completing the process by the client or it has error.
+		if a.ConfirmedAmount > 0 {
 
 			// if we have error for this swap and haven't got any refund yet we should
 			// treat this as error status.
@@ -163,9 +172,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 				confirmedAddresses = append(confirmedAddresses, a.Address)
 				s.log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
 			}
-		} else {
-			hasMempool = hasMempool || a.EnteredMempool
-			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
 		}
 	}
 
@@ -267,7 +273,7 @@ func (s *Service) Refund(address, refundAddress string) (string, error) {
 		return "", err
 	}
 	s.log.Infof("refund executed, triggerring unspendChangd event")
-	s.onUnspentChanged()	
+	s.onUnspentChanged()
 	return res.Txid, nil
 }
 
