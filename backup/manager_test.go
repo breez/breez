@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
+	"github.com/btcsuite/btclog"
 )
 
 type MockAuthService struct{}
@@ -64,7 +65,7 @@ func prepareBackupData() (paths []string, nodeID string, err error) {
 
 func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	backupDelay = time.Duration(0)
-	RegisterProvider("mock", func(authServie AuthService) (Provider, error) { return mp, nil })
+	RegisterProvider("mock", func(authServie AuthService, logger btclog.Logger) (Provider, error) { return mp, nil })
 
 	ntfnChan := make(chan data.NotificationEvent)
 	dir := os.TempDir()

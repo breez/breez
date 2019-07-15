@@ -131,19 +131,31 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	var confirmedAddresses, unConfirmedAddresses []string
 	var hasMempool bool
 	var lastError *data.AddFundError
+
 	for _, a := range addresses {
 
 		//log.Infof("GetFundStatus paid=%v confirmed=%v lockHeight=%v mempool=%v address=%v refundTX=%v", a.PaidAmount, a.ConfirmedAmount, a.LockHeight, a.EnteredMempool, a.Address, a.LastRefundTxID)
-		if len(a.ConfirmedTransactionIds) > 0 || a.LockHeight > 0 || a.LastRefundTxID != "" {
+		if a.Confirmed() {
+
+			// if we have error for this swap and haven't got any refund yet we should
+			// treat this as error status.
 			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
-				s.log.Infof("Detected error in swap address: lastError=%v, LockHeight = %v, FundsExcceeded=%v", lastError, a.LockHeight, a.FundsExceededLimit)
+				s.log.Infof("Detected error in swap address: lastError=%v, LockHeight = %v, Reason=%v", lastError, a.LockHeight, a.SwapErrorReason)
 				if lastError == nil {
 					blocksToUnlock := int32(a.LockHeight) + 1 - int32(info.BlockHeight)
 					lastError = &data.AddFundError{
-						ErrorMessage:       a.ErrorMessage,
-						FundsExceededLimit: a.FundsExceededLimit,
-						LockHeight:         a.LockHeight,
-						HoursToUnlock:      float32(blocksToUnlock) / 6,
+						SwapAddressInfo: &data.SwapAddressInfo{
+							Address:                 a.Address,
+							PaymentHash:             hex.EncodeToString(a.PaymentHash),
+							ConfirmedAmount:         a.ConfirmedAmount,
+							ConfirmedTransactionIds: a.ConfirmedTransactionIds,
+							PaidAmount:              a.PaidAmount,
+							LockHeight:              a.LockHeight,
+							ErrorMessage:            a.ErrorMessage,
+							LastRefundTxID:          a.LastRefundTxID,
+							SwapError:               data.SwapError(a.SwapErrorReason),
+						},
+						HoursToUnlock: float32(blocksToUnlock) / 6,
 					}
 				}
 				s.log.Infof("GetFundStatus adding transfer error for address %v", a.Address)
@@ -160,6 +172,13 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	if hasMempool {
 		s.log.Infof("GetFundStatus return status 'waiting confirmation'")
 		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
+	}
+
+	if lastError != nil {
+		return &data.FundStatusReply{
+			Status: data.FundStatusReply_TRANSFER_ERROR,
+			Error:  lastError,
+		}, nil
 	}
 
 	s.log.Infof("GetFundStatus checking unConfirmedAddresses len=%v", len(unConfirmedAddresses))
@@ -184,13 +203,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 				})
 			}
 		}
-	}
-
-	if lastError != nil {
-		return &data.FundStatusReply{
-			Status: data.FundStatusReply_TRANSFER_ERROR,
-			Error:  lastError,
-		}, nil
 	}
 
 	if hasUnconfirmed {
@@ -231,22 +243,31 @@ func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
 
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
+	s.log.Infof("Starting refund flow...")
 	lnclient := s.daemonAPI.SubSwapClient()
+	if lnclient == nil {
+		s.log.Error("unable to execute Refund: Daemon is not ready")
+	}
+
 	res, err := lnclient.SubSwapClientRefund(context.Background(), &submarineswaprpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
 	})
 	if err != nil {
+		s.log.Errorf("unable to execute SubSwapClientRefund: %v", err)
 		return "", err
 	}
+	s.log.Infof("refund executed, res: %v", res)
 	_, err = s.breezDB.UpdateSwapAddress(address, func(a *db.SwapAddressInfo) error {
 		a.LastRefundTxID = res.Txid
 		return nil
 	})
 	if err != nil {
+		s.log.Errorf("unable to update swap address after refund: %v", err)
 		return "", err
 	}
-	s.onUnspentChanged()
+	s.log.Infof("refund executed, triggerring unspendChangd event")
+	s.onUnspentChanged()	
 	return res.Txid, nil
 }
 
@@ -456,16 +477,17 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		paymentError = reply.PaymentError
 	}
 	if reply != nil {
-		s.log.Infof("reply from getPayment: error=%v, funds_exceeded=%v", reply.PaymentError, reply.FundsExceededLimit)
+		s.log.Infof("reply from getPayment: error=%v, error reason=%v", reply.PaymentError, reply.SwapError)
 	}
 	if paymentError != "" {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 			if !isTemporaryChannelError(paymentError) {
 				a.ErrorMessage = paymentError
 			}
-			if reply != nil && reply.FundsExceededLimit {
-				a.FundsExceededLimit = true
+			if reply != nil {
+				a.SwapErrorReason = int32(reply.SwapError)
 			}
+
 			return nil
 		})
 		return deadlineExceeded, fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)

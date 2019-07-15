@@ -224,6 +224,7 @@ AvailableSnapshots is part of the binding inteface which is delegated to breez.A
 func AvailableSnapshots() (string, error) {
 	snapshots, err := getBreezApp().BackupManager.AvailableSnapshots()
 	if err != nil {
+		Log("error in calling AvailableSnapshots: "+err.Error(), "INFO")
 		return "", err
 	}
 	bytes, err := json.Marshal(snapshots)
@@ -321,6 +322,7 @@ func GetRefundableSwapAddresses() ([]byte, error) {
 
 //Refund transfers the funds in address to the user destination address
 func Refund(refundRequest []byte) (string, error) {
+	Log("binding: starting refund flow...", "INFO")
 	request := &data.RefundRequest{}
 	if err := proto.Unmarshal(refundRequest, request); err != nil {
 		return "", err

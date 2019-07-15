@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btcsuite/btclog"
 	"golang.org/x/oauth2"
 	drive "google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
@@ -46,14 +47,18 @@ func (d *driveServiceError) IsAuthError() bool {
 // GoogleDriveBackupProvider
 type TokenSource struct {
 	authService AuthService
+	log         btclog.Logger
 }
 
 // Token retrieved a token from the AuthService provided
 func (s *TokenSource) Token() (*oauth2.Token, error) {
+	s.log.Infof("Token source before signIn")
 	token, err := s.authService.SignIn()
 	if err != nil {
+		s.log.Infof("Token source got error %v", err)
 		return nil, err
 	}
+	s.log.Infof("Token source succesfully got token with length: %v", len(token))
 	return &oauth2.Token{
 		AccessToken: token,
 		Expiry:      time.Now().Add(time.Second),
@@ -80,29 +85,32 @@ func (s *TokenSource) Token() (*oauth2.Token, error) {
 //       where two nodes are running the same backup...
 type GoogleDriveProvider struct {
 	driveService *drive.Service
+	log          btclog.Logger
 }
 
 // NewGoogleDriveProvider creates a new instance of GoogleDriveProvider.
 // It needs AuthService that will provide the access token, and refresh access token functionality
 // It implements the backup.Provider interface by using google drive as storage.
-func NewGoogleDriveProvider(authService AuthService) (*GoogleDriveProvider, error) {
-	tokenSource := &TokenSource{authService: authService}
+func NewGoogleDriveProvider(authService AuthService, log btclog.Logger) (*GoogleDriveProvider, error) {
+	tokenSource := &TokenSource{authService: authService, log: log}
 	httpClient := oauth2.NewClient(context.Background(), tokenSource)
 	driveService, err := drive.New(httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating drive service, %v", err)
 	}
-	return &GoogleDriveProvider{driveService: driveService}, nil
+	return &GoogleDriveProvider{driveService: driveService, log: log}, nil
 }
 
 // AvailableSnapshots fetches all existing backup snapshots that exist in the user app data.
 // There is only one snapshot per node id.
 func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
+	p.log.Info("GoogleDriveProvider, AvailableSnapshots started")
 	r, err := p.driveService.Files.List().Spaces("appDataFolder").
 		Fields("files(name)", "files(modifiedTime)", "files(appProperties)").
 		Q("'appDataFolder' in parents and name contains 'snapshot-'").
 		Do()
 	if err != nil {
+		p.log.Infof("GoogleDriveProvider unable to fetch available snapshot: %v", err)
 		return nil, &driveServiceError{err}
 	}
 	var backups []SnapshotInfo
@@ -110,7 +118,9 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	// We are going over all nodes that have a snapshot.
 	// For each snapshot we extract the NodeID, Modifiedtime
 	// and BackupID (it will only exist if this node has been restored)
+	p.log.Infof("GoogleDriveProvider going over fetched snapshots")
 	for _, f := range r.Files {
+		p.log.Infof("GoogleDriveProvider checking snapshot, name:%v, id:%v", f.Name, f.Id)
 		var backupID string
 		for k, v := range f.AppProperties {
 			if k == backupIDProperty {
@@ -134,15 +144,18 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 // 3. update the node folder metadata property "activeBackupFolderProperty" to contain the
 //    id of the new folder.
 func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) error {
+	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
 	// Fetch the node folder
 	nodeFolder, err := p.nodeFolder(nodeID)
 	if err != nil {
+		p.log.Infof("uploadBackupFiles failed to fetch node folder:%v", nodeID)
 		return &driveServiceError{err}
 	}
 
 	// Create the backup folder
 	newBackupFolder, err := p.createFolder(nodeFolder.Id, "backup")
 	if err != nil {
+		p.log.Infof("uploadBackupFiles failed to create backkup folder:%v", nodeFolder.Id)
 		return &driveServiceError{err}
 	}
 
@@ -151,6 +164,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 	errorChan := make(chan error)
 	defer close(errorChan)
 
+	p.log.Infof("uploadBackupFiles backup folder created for node:%v", nodeFolder.Id)
 	// Upload the files
 	for _, fPath := range files {
 		go func(filePath string) {
@@ -166,15 +180,18 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 				Parents: []string{newBackupFolder.Id}},
 			).Media(file).Fields("md5Checksum").Do()
 			if err != nil {
+				p.log.Infof("uploadBackupFiles failed to upload file at folder:%v", newBackupFolder.Id)
 				errorChan <- &driveServiceError{err}
 				return
 			}
 			checksum, err := fileChecksum(filePath)
 			if err != nil {
+				p.log.Infof("failed to calculate checksum for path: %v", filePath)
 				errorChan <- errors.New("failed to calculate checksum")
 				return
 			}
 			if uploadedFile.Md5Checksum != checksum {
+				p.log.Infof("backup file checksum mismatch: %v", filePath)
 				errorChan <- errors.New("uploaded file checksum doesn't match")
 				return
 			}
@@ -199,8 +216,10 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 	folderUpdate := &drive.File{AppProperties: map[string]string{activeBackupFolderProperty: newBackupFolder.Id}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
+		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
 		return &driveServiceError{err}
 	}
+	p.log.Infof("UploadBackupFiles finished succesfully")
 	return nil
 }
 
