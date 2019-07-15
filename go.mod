@@ -23,7 +23,7 @@ require (
 
 replace (
 	github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57 => github.com/breez/btcwallet v0.0.0-20190703105141-dad0cf7525f1
-	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190703105503-48ac1af61b98
+	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190715131809-0143c78887af
 
 	golang.org/x/net => github.com/golang/net latest
 )
