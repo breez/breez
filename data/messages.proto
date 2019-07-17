@@ -151,14 +151,9 @@ message AddFundError {
 }
 
 message FundStatusReply {
-    enum FundStatus {
-        NO_FUND = 0;
-        WAITING_CONFIRMATION = 1;
-        CONFIRMED = 2;
-        TRANSFER_ERROR = 3;     
-    }
-    FundStatus status = 1;
-    AddFundError error = 2;    
+    repeated SwapAddressInfo unConfirmedAddresses = 1;
+    repeated SwapAddressInfo confirmedAddresses = 2;
+    repeated SwapAddressInfo refundableAddresses = 3;
 }
 
 message RemoveFundRequest {
@@ -181,6 +176,8 @@ message SwapAddressInfo {
     string errorMessage = 7;
     string lastRefundTxID = 8;
     SwapError swapError = 9;
+    string FundingTxID = 10;
+    float hoursToUnlock = 11;
 }
 
 message SwapAddressList {
