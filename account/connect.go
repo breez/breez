@@ -63,7 +63,7 @@ func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
 
 // IsConnectedToRoutingNode returns true if we are connected to the routing node.
 func (a *Service) IsConnectedToRoutingNode() bool {
-	return a.connectedNotifier.connected()
+	return a.daemonAPI.ConnectedToRoutingNode()
 }
 
 func (a *Service) onRoutingNodeConnection(connected bool) {
@@ -141,9 +141,11 @@ func (a *Service) connectOnStartup() {
 	for {
 		if err := a.connectRoutingNode(); err != nil {
 			a.log.Warnf("Failed to connect to routing node %v", err)
-			time.Sleep(time.Duration(2 * time.Second))
-			continue
 		}
-		return
+		if a.IsConnectedToRoutingNode() {
+			return
+		}
+		a.log.Warnf("Still not connected to routing node, retrying in 2 seconds.")
+		time.Sleep(time.Duration(2 * time.Second))
 	}
 }
