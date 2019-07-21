@@ -202,7 +202,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 				continue
 			}
 
-			s.log.Infof("Adding refundable address: %v", string(jsonBytes))
+			s.log.Infof("Adding refundable address: %v", a.Address)
 			statusReply.RefundableAddresses = append(statusReply.RefundableAddresses, createRPCSwapAddressInfo(a))
 		}
 	}
