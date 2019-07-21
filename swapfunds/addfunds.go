@@ -51,7 +51,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return nil, err
 	}
 
-	s.log.Infof("AddFundInit response = %v", r)
+	s.log.Infof("AddFundInit response = %v, notification token=%v", r, notificationToken)
 
 	if r.ErrorMessage != "" {
 		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
@@ -71,12 +71,13 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 	}
 
 	swapInfo := &db.SwapAddressInfo{
-		Address:     r.Address,
-		PaymentHash: swap.Hash,
-		Preimage:    swap.Preimage,
-		PrivateKey:  swap.Key,
-		PublicKey:   swap.Pubkey,
-		Script:      client.Script,
+		Address:          r.Address,
+		CreatedTimestamp: time.Now().Unix(),
+		PaymentHash:      swap.Hash,
+		Preimage:         swap.Preimage,
+		PrivateKey:       swap.Key,
+		PublicKey:        swap.Pubkey,
+		Script:           client.Script,
 	}
 	s.log.Infof("Saving new swap info %v", swapInfo)
 	s.breezDB.SaveSwapAddressInfo(swapInfo)
@@ -117,112 +118,97 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		return nil, err
 	}
 
-	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
-		return addr.PaidAmount == 0 && addr.LastRefundTxID == ""
+	var statusReply data.FundStatusReply
+
+	createRPCSwapAddressInfo := func(a *db.SwapAddressInfo) *data.SwapAddressInfo {
+		var hoursToUnlock float32
+		if a.Confirmed() {
+			blocksToUnlock := int32(a.LockHeight) + 1 - int32(info.BlockHeight)
+			hoursToUnlock = float32(blocksToUnlock) / 6
+		}
+		return &data.SwapAddressInfo{
+			Address:                 a.Address,
+			PaymentHash:             hex.EncodeToString(a.PaymentHash),
+			ConfirmedAmount:         a.ConfirmedAmount,
+			ConfirmedTransactionIds: a.ConfirmedTransactionIds,
+			PaidAmount:              a.PaidAmount,
+			LockHeight:              a.LockHeight,
+			ErrorMessage:            a.ErrorMessage,
+			LastRefundTxID:          a.LastRefundTxID,
+			SwapError:               data.SwapError(a.SwapErrorReason),
+			FundingTxID:             a.FundingTxID,
+			HoursToUnlock:           hoursToUnlock,
+		}
+	}
+
+	var nonMempoolAddresses []string
+	_, err = s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
+		if addr.PaidAmount == 0 && addr.LastRefundTxID == "" &&
+			!addr.EnteredMempool && time.Now().Sub(time.Unix(addr.CreatedTimestamp, 0)) < time.Hour*24 {
+			nonMempoolAddresses = append(nonMempoolAddresses, addr.Address)
+		}
+		return false
 	})
 	if err != nil {
 		return nil, err
 	}
-	s.log.Infof("GetFundStatus len = %v", len(addresses))
-	if len(addresses) == 0 {
-		return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
-	}
 
-	var confirmedAddresses, unConfirmedAddresses []string
-	var hasMempool bool
-	var lastError *data.AddFundError
-
-	for _, a := range addresses {
-
-		// If swap transaction is not confirmed, check to see if in mempool
-		if !a.Confirmed() {
-			hasMempool = hasMempool || a.EnteredMempool
-			unConfirmedAddresses = append(unConfirmedAddresses, a.Address)
-			s.log.Infof("Adding unconfirmed address: %v", a.Address)
-			continue
-		}
-
-		// In case the transactino is confirmed and has positive output, we will check
-		// if it is ready for completing the process by the client or it has error.
-		if a.ConfirmedAmount > 0 {
-
-			// if we have error for this swap and haven't got any refund yet we should
-			// treat this as error status.
-			if a.ErrorMessage != "" && a.LastRefundTxID == "" {
-				s.log.Infof("Detected error in swap address: lastError=%v, LockHeight = %v, Reason=%v", lastError, a.LockHeight, a.SwapErrorReason)
-				if lastError == nil {
-					blocksToUnlock := int32(a.LockHeight) + 1 - int32(info.BlockHeight)
-					lastError = &data.AddFundError{
-						SwapAddressInfo: &data.SwapAddressInfo{
-							Address:                 a.Address,
-							PaymentHash:             hex.EncodeToString(a.PaymentHash),
-							ConfirmedAmount:         a.ConfirmedAmount,
-							ConfirmedTransactionIds: a.ConfirmedTransactionIds,
-							PaidAmount:              a.PaidAmount,
-							LockHeight:              a.LockHeight,
-							ErrorMessage:            a.ErrorMessage,
-							LastRefundTxID:          a.LastRefundTxID,
-							SwapError:               data.SwapError(a.SwapErrorReason),
-						},
-						HoursToUnlock: float32(blocksToUnlock) / 6,
-					}
-				}
-				s.log.Infof("GetFundStatus adding transfer error for address %v", a.Address)
-			} else {
-				confirmedAddresses = append(confirmedAddresses, a.Address)
-				s.log.Infof("GetFundStatus adding confirmed transaction for address %v", a.Address)
-			}
-		}
-	}
-
-	if hasMempool {
-		s.log.Infof("GetFundStatus return status 'waiting confirmation'")
-		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
-	}
-
-	if lastError != nil {
-		return &data.FundStatusReply{
-			Status: data.FundStatusReply_TRANSFER_ERROR,
-			Error:  lastError,
-		}, nil
-	}
-
-	s.log.Infof("GetFundStatus checking unConfirmedAddresses len=%v", len(unConfirmedAddresses))
-
-	var hasUnconfirmed bool
-	if len(unConfirmedAddresses) > 0 {
+	s.log.Infof("GetFundStatus got %v non mempool addresses to query", len(nonMempoolAddresses))
+	if len(nonMempoolAddresses) > 0 {
 		c, ctx, cancel := s.breezAPI.NewFundManager()
 		defer cancel()
 
-		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: unConfirmedAddresses})
+		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: nonMempoolAddresses})
 		if err != nil {
 			return nil, err
 		}
 
 		for addr, status := range statusesMap.Statuses {
 			s.log.Infof("GetFundStatus - got status for address %v", status)
-			if !status.Confirmed && status.Tx != "" {
-				hasUnconfirmed = true
+			if status.Tx != "" {
 				s.breezDB.UpdateSwapAddress(addr, func(swapInfo *db.SwapAddressInfo) error {
 					swapInfo.EnteredMempool = true
+					swapInfo.FundingTxID = status.Tx
 					return nil
 				})
 			}
 		}
 	}
 
-	if hasUnconfirmed {
-		s.log.Infof("GetFundStatus return status 'waiting confirmation")
-		return &data.FundStatusReply{Status: data.FundStatusReply_WAITING_CONFIRMATION}, nil
+	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
+		return addr.PaidAmount == 0 && addr.LastRefundTxID == ""
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.log.Infof("GetFundStatus got %v non paid addresses", len(addresses))
+
+	for _, a := range addresses {
+
+		// If swap transaction is not confirmed, check to see if in mempool
+		if !a.Confirmed() {
+			if a.EnteredMempool {
+				statusReply.UnConfirmedAddresses = append(statusReply.UnConfirmedAddresses, createRPCSwapAddressInfo(a))
+				s.log.Infof("Adding unconfirmed address: %v", a.Address)
+			}
+			continue
+		}
+
+		// In case the transactino is confirmed and has positive output, we will check
+		// if it is ready for completing the process by the client or it has error.
+		if a.ConfirmedAmount > 0 {
+			if a.LockHeight < info.BlockHeight && data.SwapError(a.SwapErrorReason) == data.SwapError_NO_ERROR {
+				statusReply.ConfirmedAddresses = append(statusReply.ConfirmedAddresses, createRPCSwapAddressInfo(a))
+				continue
+			}
+
+			statusReply.RefundableAddresses = append(statusReply.RefundableAddresses, createRPCSwapAddressInfo(a))
+		}
 	}
 
-	if len(confirmedAddresses) > 0 {
-		s.log.Infof("GetFundStatus return status 'confirmed'")
-		return &data.FundStatusReply{Status: data.FundStatusReply_CONFIRMED}, nil
-	}
+	s.log.Infof("GetFundStatus return %v", statusReply)
 
-	s.log.Infof("GetFundStatus return status 'no funds")
-	return &data.FundStatusReply{Status: data.FundStatusReply_NO_FUND}, nil
+	return &statusReply, nil
 }
 
 //GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
