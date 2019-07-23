@@ -1,7 +1,7 @@
 # breez
 ## Build
 ```
-git clone github.com/breez/breez gopath/src/github.com/breez/breez
+git clone https://github.com/breez/breez.git gopath/src/github.com/breez/breez
 export GOPATH=$(pwd)/gopath
 go get golang.org/x/mobile/cmd/gomobile
 go get golang.org/x/mobile/cmd/gobind
