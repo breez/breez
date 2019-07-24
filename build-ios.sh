@@ -1,4 +1,4 @@
-# GOPATH and ANDROID_HOME needs to be set
+# GOPATH needs to be set
 # gomobile & gobind needs to be installed in $GOPATH/bin
 
 mkdir -p build/ios
