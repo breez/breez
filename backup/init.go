@@ -37,6 +37,7 @@ type Manager struct {
 	quitChan          chan struct{}
 	log               btclog.Logger
 	encryptionKey     []byte
+	mu                sync.Mutex
 	wg                sync.WaitGroup
 }
 

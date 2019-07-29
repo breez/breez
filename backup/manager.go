@@ -61,23 +61,19 @@ func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 	// If we got an encryption key, let's decrypt the files
 	if key != "" {
 		decKey := generateEncryptionKey(key)
-		for i, p := range files {			
+		for i, p := range files {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, decKey)
-			if err != nil {				
-				break
-			}			
+			if err != nil {
+				return nil, err
+			}
 			if err = os.Remove(files[i]); err != nil {
-				break
-			}			
+				return nil, err
+			}
 			if err = os.Rename(destPath, files[i]); err != nil {
-				break
-			}			
+				return nil, err
+			}
 		}
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	paths := map[string]string{
@@ -99,7 +95,7 @@ func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 				return nil, err
 			}
 		}
-				
+
 		err = os.Rename(f, path.Join(destDir, basename))
 		if err != nil {
 			return nil, err
@@ -165,11 +161,14 @@ func (b *Manager) Start() error {
 				}
 
 				// If we have an encryption key let's encrypt the files.
-				encrypt := b.encryptionKey != nil
+				b.mu.Lock()
+				encryptionKey := b.encryptionKey
+				b.mu.Unlock()
+				encrypt := encryptionKey != nil
 				if encrypt {
 					for i, p := range paths {
 						destPath := p + ".enc"
-						err = encryptFile(p, destPath, b.encryptionKey)
+						err = encryptFile(p, destPath, encryptionKey)
 						if err != nil {
 							break
 						}
@@ -207,7 +206,9 @@ func (b *Manager) Start() error {
 
 // SetEncryptionPIN sets the pin which should be used to encrypt the backup files
 func (b *Manager) SetEncryptionPIN(pin string) {
+	b.mu.Lock()
 	b.encryptionKey = generateEncryptionKey(pin)
+	b.mu.Unlock()
 	b.RequestBackup()
 }
 
