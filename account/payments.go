@@ -129,7 +129,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 /*
 AddInvoice encapsulate a given amount and description in a payment request
 */
-func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
+func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (addInvoiceResponse *data.AddInvoiceResponse, err error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	// Format the standard invoice memo
@@ -138,15 +138,29 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
+
 	if err := a.waitRoutingNodeConnected(); err != nil {
-		return "", err
+		return nil, err
 	}
+
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
 	a.log.Infof("Generated Invoice: %v", response.PaymentRequest)
-	return response.PaymentRequest, nil
+
+	shrunkInvoice, err := shrinkInvoice(response.PaymentRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	message := &data.AddInvoiceResponse{
+		PaymentRequest: response.PaymentRequest,
+		ShrunkPaymentRequest: shrunkInvoice,
+	}
+
+	return message, nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.

@@ -81,6 +81,16 @@ message PayInvoiceRequest {
     string paymentRequest = 2;
 }
 
+message AddInvoiceResponse {
+    string paymentRequest = 1;
+    bytes shrunkPaymentRequest = 2;
+}
+
+message DecodePaymentRequest {
+    string paymentRequest = 1;
+    bytes shrunkPaymentRequest = 2;
+}
+
 message InvoiceMemo {
     string description = 1;
     int64 amount = 2;

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/breez/breez"
+	"github.com/breez/breez/account"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
@@ -366,6 +367,8 @@ PayBlankInvoice is part of the binding inteface which is delegated to breez.PayB
 func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
+	// if there is only shrunk request do ....
+
 	resp, err := getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 	if err != nil {
 		return nil, err
@@ -383,17 +386,27 @@ func SendPaymentFailureBugReport(report string) error {
 /*
 AddInvoice is part of the binding inteface which is delegated to breez.AddInvoice
 */
-func AddInvoice(invoice []byte) (paymentRequest string, err error) {
+func AddInvoice(invoice []byte) ([]byte, error) {
 	decodedInvoiceMemo := &data.InvoiceMemo{}
 	proto.Unmarshal(invoice, decodedInvoiceMemo)
-	return getBreezApp().AccountService.AddInvoice(decodedInvoiceMemo)
+	return marshalResponse(getBreezApp().AccountService.AddInvoice(decodedInvoiceMemo))
 }
 
 /*
 DecodePaymentRequest is part of the binding inteface which is delegated to breez.DecodePaymentRequest
 */
-func DecodePaymentRequest(paymentRequest string) ([]byte, error) {
-	return marshalResponse(getBreezApp().AccountService.DecodePaymentRequest(paymentRequest))
+func DecodePaymentRequest(paymentRequest []byte) ([]byte, error) {
+	decodePaymentRequest := &data.DecodePaymentRequest{}
+	proto.Unmarshal(paymentRequest, decodePaymentRequest)
+
+	if len(decodePaymentRequest.PaymentRequest) == 0 {
+		expandedInvoice, err := account.ExpandInvoice(decodePaymentRequest.ShrunkPaymentRequest)
+		if err != nil {
+			return nil, err
+		}
+		return marshalResponse(getBreezApp().AccountService.DecodePaymentRequest(expandedInvoice))
+	}
+	return marshalResponse(getBreezApp().AccountService.DecodePaymentRequest(decodePaymentRequest.PaymentRequest))
 }
 
 /*
