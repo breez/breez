@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 const (
 	backupIDProperty           = "backupID"
 	activeBackupFolderProperty = "activeBackupFolder"
+	backupEncryptedProperty    = "backupEncrypted"
 )
 
 // driveServiceError is the type of error this provider returns in case
@@ -130,6 +132,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 		backups = append(backups, SnapshotInfo{
 			NodeID:       string(f.Name[9:]),
 			ModifiedTime: f.ModifiedTime,
+			Encrypted:    f.AppProperties[backupEncryptedProperty] == "true",
 			BackupID:     backupID,
 		})
 	}
@@ -143,7 +146,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 // 2. Uploads all files to the newly created folder.
 // 3. update the node folder metadata property "activeBackupFolderProperty" to contain the
 //    id of the new folder.
-func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) error {
+func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, encrypted bool) error {
 	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
 	// Fetch the node folder
 	nodeFolder, err := p.nodeFolder(nodeID)
@@ -213,7 +216,10 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string) e
 		return uploadErr
 	}
 	// Update active backup folder for this specific node folder
-	folderUpdate := &drive.File{AppProperties: map[string]string{activeBackupFolderProperty: newBackupFolder.Id}}
+	folderUpdate := &drive.File{AppProperties: map[string]string{
+		activeBackupFolderProperty: newBackupFolder.Id,
+		backupEncryptedProperty:    strconv.FormatBool(encrypted),
+	}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
