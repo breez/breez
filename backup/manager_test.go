@@ -78,7 +78,7 @@ func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	onEvent := func(d data.NotificationEvent) {
 		ntfnChan <- d
 	}
-	manager, err = NewManager("mock", nil, onEvent, mp.preparer, config)
+	manager, err = NewManager("mock", nil, onEvent, mp.preparer, config, btclog.Disabled)
 	if err != nil {
 		return
 	}
@@ -117,7 +117,7 @@ func TestCreateDefaultProvider(t *testing.T) {
 	onEvent := func(d data.NotificationEvent) {
 		ntfnChan <- d
 	}
-	manager, err := NewManager("gdrive", nil, onEvent, prepareBackupData, config)
+	manager, err := NewManager("gdrive", nil, onEvent, prepareBackupData, config, btclog.Disabled)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestRequestBackup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.Start()
+	manager.Start("")
 	defer manager.destroy()
 
 	manager.RequestBackup()
@@ -150,7 +150,7 @@ func TestMultipleRequestBackup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.Start()
+	manager.Start("")
 	defer manager.destroy()
 
 	for i := 0; i < 10; i++ {
@@ -172,7 +172,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.Start()
+	manager.Start("")
 	defer manager.destroy()
 
 	manager.RequestBackup()
@@ -191,7 +191,7 @@ func TestErrorInUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.Start()
+	manager.Start("")
 	defer manager.destroy()
 
 	manager.RequestBackup()
@@ -213,7 +213,7 @@ func TestAuthError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.Start()
+	manager.Start("")
 	defer manager.destroy()
 
 	manager.RequestBackup()

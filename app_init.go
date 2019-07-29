@@ -123,6 +123,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.onServiceEvent,
 		app.prepareBackupInfo,
 		app.cfg,
+		logBackend.Logger("BCKP"),
 	)
 	if err != nil {
 		return nil, err
