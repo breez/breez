@@ -8,6 +8,8 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
+
+	breezservice "github.com/breez/breez/breez"
 )
 
 var (
@@ -90,13 +92,43 @@ func (a *Service) onRoutingNodeConnection(connected bool) {
 	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED})
 }
 
+func (a *Service) SetLSP(id string) {
+	a.cfg.LSPId = id
+}
+
+func (a *Service) GetLSP() string {
+	return a.cfg.LSPId
+}
+
+func (a *Service) routingNode(lspID string) (pubkey, host string) {
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+	r, err := c.LSPList(ctx, &breezservice.LSPListRequest{Pubkey: a.daemonAPI.NodePubkey()})
+	if err != nil {
+		a.log.Infof("LSPList returned an error: %v", err)
+		return
+	}
+	l, ok := r.Lsps[lspID]
+	if !ok {
+		a.log.Infof("The LSP ID is not in the LSPList: %v", lspID)
+		return
+	}
+	pubkey = l.Pubkey
+	host = l.Host
+	return
+}
+
 func (a *Service) connectRoutingNode() error {
+	if a.cfg.LSPId == "" {
+		return nil
+	}
+	pubkey, host := a.routingNode(a.cfg.LSPId)
 	lnclient := a.daemonAPI.APIClient()
-	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
+	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", host, pubkey)
 	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
 		Addr: &lnrpc.LightningAddress{
-			Pubkey: a.cfg.RoutingNodePubKey,
-			Host:   a.cfg.RoutingNodeHost,
+			Pubkey: pubkey,
+			Host:   host,
 		},
 		Perm: true,
 	})

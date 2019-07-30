@@ -569,6 +569,19 @@ func Rate() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.Rates())
 }
 
+func LSPList() ([]byte, error) {
+	return marshalResponse(getBreezApp().ServicesClient.LSPList())
+}
+
+func SetLSP(id string) error {
+	getBreezApp().AccountService.SetLSP(id)
+	return nil
+}
+
+func GetLSP() string {
+	return getBreezApp().AccountService.GetLSP()
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

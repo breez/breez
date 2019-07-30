@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"path"
 	"sync"
 
@@ -33,6 +32,7 @@ type Config struct {
 	WorkingDir         string
 	RoutingNodeHost    string `long:"routingnodehost"`
 	RoutingNodePubKey  string `long:"routingnodepubkey"`
+	LSPId              string `long:"lspid"`
 	BreezServer        string `long:"breezserver"`
 	Network            string `long:"network"`
 	GrpcKeepAlive      bool   `long:"grpckeepalive"`
@@ -58,10 +58,6 @@ func initConfig(workingDir string) error {
 	if err := flags.IniParse(path.Join(workingDir, configFile), c); err != nil {
 		return err
 	}
-	if len(c.RoutingNodeHost) == 0 || len(c.RoutingNodePubKey) == 0 {
-		return errors.New("Breez must have routing node defined in the configuration file")
-	}
-
 	cfg = c
 	return nil
 }

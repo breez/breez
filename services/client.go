@@ -53,6 +53,14 @@ func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, conte
 	return breezservice.NewSyncNotifierClient(con), ctx, cancel
 }
 
+//NewSyncNotifierClient creates a new SyncNotifierClient
+func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc) {
+	con := c.getBreezClientConnection()
+	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	return breezservice.NewChannelOpenerClient(con), ctx, cancel
+}
+
 func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 	c.log.Infof("getBreezClientConnection - before Ping;")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -84,6 +92,32 @@ func (c *Client) Rates() (*data.Rates, error) {
 		r = append(r, &data.Rate{Coin: rate.Coin, Value: rate.Value})
 	}
 	return &data.Rates{Rates: r}, nil
+}
+
+//LSPList returns the list of the LSPs
+func (c *Client) LSPList() (*data.LSPList, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ic := breezservice.NewChannelOpenerClient(c.connection)
+	lsps, err := ic.LSPList(ctx, &breezservice.LSPListRequest{})
+	if err != nil {
+		return nil, err
+	}
+	r := make(map[string]*data.LSPInformation)
+	for id, l := range lsps.Lsps {
+		r[id] = &data.LSPInformation{
+			Name:            l.Name,
+			Pubkey:          l.Pubkey,
+			Host:            l.Host,
+			ChannelCapacity: l.ChannelCapacity,
+			TargetConf:      l.TargetConf,
+			BaseFeeMsat:     l.BaseFeeMsat,
+			FeeRate:         l.FeeRate,
+			TimeLockDelta:   l.TimeLockDelta,
+			MinHtlcMsat:     l.MinHtlcMsat,
+		}
+	}
+	return &data.LSPList{Lsps: r}, nil
 }
 
 func dial(serverURL string) (*grpc.ClientConn, error) {
