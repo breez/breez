@@ -7,7 +7,6 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
-	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
 )
 
@@ -37,6 +36,8 @@ type Manager struct {
 	onServiceEvent    func(event data.NotificationEvent)
 	quitChan          chan struct{}
 	log               btclog.Logger
+	encryptionKey     []byte
+	mu                sync.Mutex
 	wg                sync.WaitGroup
 }
 
@@ -46,13 +47,8 @@ func NewManager(
 	authService AuthService,
 	onServiceEvent func(event data.NotificationEvent),
 	prepareData DataPreparer,
-	config *config.Config) (*Manager, error) {
-
-	logBackend, err := breezlog.GetLogBackend(config.WorkingDir)
-	if err != nil {
-		return nil, err
-	}
-	log := logBackend.Logger("BCKP")
+	config *config.Config,
+	log btclog.Logger) (*Manager, error) {
 
 	provider, err := createBackupProvider(providerName, authService, log)
 	if err != nil {

@@ -1,8 +1,10 @@
 package backup
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -24,9 +26,10 @@ type MockTester struct {
 	downloadCounter         int
 	preparer                DataPreparer
 	lastNotification        data.NotificationEvent
-	UploadBackupFilesImpl   func(files []string, nodeID string) error
+	UploadBackupFilesImpl   func(files []string, nodeID string, encrypted bool) error
 	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
 	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
+	MsgChannel              chan data.NotificationEvent
 }
 
 func newDefaultMockTester() *MockTester {
@@ -41,16 +44,17 @@ func newDefaultMockTester() *MockTester {
 		p.downloadCounter++
 		return []string{}, nil
 	}
-	p.UploadBackupFilesImpl = func(files []string, nodeID string) error {
+	p.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
 		time.Sleep(time.Millisecond * 10)
 		p.uploadCounter++
 		return nil
 	}
+	p.MsgChannel = make(chan data.NotificationEvent, 100)
 	return &p
 }
 
-func (m *MockTester) UploadBackupFiles(files []string, nodeID string) error {
-	return m.UploadBackupFilesImpl(files, nodeID)
+func (m *MockTester) UploadBackupFiles(files []string, nodeID string, encrypted bool) error {
+	return m.UploadBackupFilesImpl(files, nodeID, false)
 }
 func (m *MockTester) AvailableSnapshots() ([]SnapshotInfo, error) {
 	return m.AvailableSnapshotsImpl()
@@ -67,7 +71,7 @@ func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	backupDelay = time.Duration(0)
 	RegisterProvider("mock", func(authServie AuthService, logger btclog.Logger) (Provider, error) { return mp, nil })
 
-	ntfnChan := make(chan data.NotificationEvent)
+	ntfnChan := make(chan data.NotificationEvent, 100)
 	dir := os.TempDir()
 	fmt.Println("tempDir " + dir)
 
@@ -78,7 +82,7 @@ func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	onEvent := func(d data.NotificationEvent) {
 		ntfnChan <- d
 	}
-	manager, err = NewManager("mock", nil, onEvent, mp.preparer, config)
+	manager, err = NewManager("mock", nil, onEvent, mp.preparer, config, btclog.Disabled)
 	if err != nil {
 		return
 	}
@@ -87,8 +91,8 @@ func createTestManager(mp *MockTester) (manager *Manager, err error) {
 			select {
 			case msg := <-ntfnChan:
 				mp.lastNotification = msg
+				mp.MsgChannel <- msg
 			case <-manager.quitChan:
-				close(ntfnChan)
 				os.RemoveAll(path.Join(dir, "backup.db"))
 				fmt.Println("Remove db from go routine")
 				return
@@ -117,7 +121,7 @@ func TestCreateDefaultProvider(t *testing.T) {
 	onEvent := func(d data.NotificationEvent) {
 		ntfnChan <- d
 	}
-	manager, err := NewManager("gdrive", nil, onEvent, prepareBackupData, config)
+	manager, err := NewManager("gdrive", nil, onEvent, prepareBackupData, config, btclog.Disabled)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +142,7 @@ func TestRequestBackup(t *testing.T) {
 	defer manager.destroy()
 
 	manager.RequestBackup()
-	time.Sleep(100 * time.Millisecond)
+	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter != 1 {
 		t.Error("Backup was not called after backup requested")
 	}
@@ -176,7 +180,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 	defer manager.destroy()
 
 	manager.RequestBackup()
-	time.Sleep(100 * time.Millisecond)
+	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
 	}
@@ -184,7 +188,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 
 func TestErrorInUpload(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string) error {
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
 		return errors.New("failed to upload files")
 	}
 	manager, err := createTestManager(tester)
@@ -195,7 +199,7 @@ func TestErrorInUpload(t *testing.T) {
 	defer manager.destroy()
 
 	manager.RequestBackup()
-	time.Sleep(100 * time.Millisecond)
+	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
 	}
@@ -206,7 +210,7 @@ func TestErrorInUpload(t *testing.T) {
 
 func TestAuthError(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string) error {
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
 		return &mockAuthError{}
 	}
 	manager, err := createTestManager(tester)
@@ -217,7 +221,7 @@ func TestAuthError(t *testing.T) {
 	defer manager.destroy()
 
 	manager.RequestBackup()
-	time.Sleep(100 * time.Millisecond)
+	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
 	}
@@ -239,7 +243,7 @@ func TestRestoreWrongNumberOfFiles(t *testing.T) {
 	}
 	defer manager.destroy()
 
-	if _, err := manager.Restore("test-node-id"); err == nil {
+	if _, err := manager.Restore("test-node-id", ""); err == nil {
 		t.Fatal(err)
 	}
 }
@@ -275,7 +279,7 @@ func TestRestoreSuccess(t *testing.T) {
 	}
 	defer manager.destroy()
 
-	restoredFiles, err := manager.Restore("test-node-id")
+	restoredFiles, err := manager.Restore("test-node-id", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,5 +322,105 @@ func TestBackupConflict(t *testing.T) {
 	safe, err := manager.IsSafeToRunNode("test-node-id")
 	if safe {
 		t.Fatal("returned safe to run even though it isn't")
+	}
+}
+
+func TestEncryptDecryptFiles(t *testing.T) {
+	key := generateEncryptionKey("123456")
+	originalContent := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	dir := os.TempDir()
+	file := path.Join(dir, "sourceFile")
+	encryptedFile := path.Join(dir, "encryptedFile")
+	decryptedFile := path.Join(dir, "decryptedFile")
+	if err := ioutil.WriteFile(file, originalContent, os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	if err := encryptFile(file, encryptedFile, key); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := decryptFile(encryptedFile, decryptedFile, key); err != nil {
+		t.Fatal(err)
+	}
+	content, err := ioutil.ReadFile(decryptedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(content, originalContent) != 0 {
+		t.Error("Failed to decrypt file", content)
+	}
+}
+
+func TestEncryptedBackup(t *testing.T) {
+	securityPIN := "123456"
+	originalContent := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	dir := os.TempDir()
+	downloads := []string{
+		path.Join(dir, "wallet.db"),
+		path.Join(dir, "channel.db"),
+		path.Join(dir, "breez.db"),
+	}
+	defer func() {
+		for _, backupFile := range downloads {
+			os.Remove(backupFile)
+		}
+	}()
+
+	preparer := func() (paths []string, nodeID string, err error) {
+		for _, backupFile := range downloads {
+			if err := ioutil.WriteFile(backupFile, originalContent, os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return downloads, "test-node-id", nil
+	}
+	tester := newDefaultMockTester()
+	tester.preparer = preparer
+	tester.DownloadBackupFilesImpl = func(nodeID, backupID string) ([]string, error) {
+		time.Sleep(100 * time.Millisecond)
+		if nodeID != "test-node-id" {
+			return nil, errors.New("node id not found")
+		}
+
+		return downloads, nil
+	}
+
+	manager, err := createTestManager(tester)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager.SetEncryptionPIN(securityPIN)
+	manager.Start()
+	defer manager.destroy()
+
+	manager.RequestBackup()
+	waitForBackupEnd(tester.MsgChannel)
+	paths, err := manager.Restore("test-node-id", securityPIN)
+	if err != nil {
+		t.Fatal("Restore failed", err)
+	}
+	defer func() {
+		for _, f := range paths {
+			os.Remove(f)
+		}
+	}()
+
+	content, err := ioutil.ReadFile(paths[0])
+	if err != nil {
+		t.Error("Restore failed", err)
+	}
+	if bytes.Compare(content, originalContent) != 0 {
+		t.Error("Restore failed to decreypt file", err, content)
+	}
+}
+
+func waitForBackupEnd(msgChan chan data.NotificationEvent) {
+	for {
+		event := <-msgChan
+		fmt.Println("waitForBackupEnd ", event)
+		if event.Type != data.NotificationEvent_BACKUP_REQUEST {
+			break
+		}
 	}
 }

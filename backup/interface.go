@@ -4,6 +4,7 @@ package backup
 type SnapshotInfo struct {
 	NodeID       string
 	BackupID     string
+	Encrypted    bool
 	ModifiedTime string
 }
 
@@ -18,7 +19,7 @@ type Service interface {
 // Provider represents the functionality needed to be implemented for any backend backup
 // storage provider. This provider will be used and inststiated by the service.
 type Provider interface {
-	UploadBackupFiles(files []string, nodeID string) error
+	UploadBackupFiles(files []string, nodeID string, encrypted bool) error
 	AvailableSnapshots() ([]SnapshotInfo, error)
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
 }

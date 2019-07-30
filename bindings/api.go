@@ -211,7 +211,7 @@ func RestoreBackup(nodeID string) (err error) {
 	if err = getBreezApp().Stop(); err != nil {
 		return err
 	}
-	if _, err = getBreezApp().BackupManager.Restore(nodeID); err != nil {
+	if _, err = getBreezApp().BackupManager.Restore(nodeID, ""); err != nil {
 		return err
 	}
 	breezApp, err = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)

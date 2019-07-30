@@ -99,7 +99,7 @@ func (a *App) RestartDaemon() error {
 
 // Restore is the breez API for restoring a specific nodeID using the configured
 // backup backend provider.
-func (a *App) Restore(nodeID string) error {
+func (a *App) Restore(nodeID string, key string) error {
 	a.log.Infof("Restore nodeID = %v", nodeID)
 	if err := a.releaseBreezDB(); err != nil {
 		return err
@@ -107,7 +107,7 @@ func (a *App) Restore(nodeID string) error {
 	defer func() {
 		a.breezDB, a.releaseBreezDB, _ = db.Get(a.cfg.WorkingDir)
 	}()
-	_, err := a.BackupManager.Restore(nodeID)
+	_, err := a.BackupManager.Restore(nodeID, key)
 	return err
 }
 

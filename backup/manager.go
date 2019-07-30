@@ -45,7 +45,7 @@ func (b *Manager) RequestBackup() {
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
-func (b *Manager) Restore(nodeID string) ([]string, error) {
+func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 	backupID, err := b.getBackupIdentifier()
 	if err != nil {
 		return nil, err
@@ -56,6 +56,24 @@ func (b *Manager) Restore(nodeID string) ([]string, error) {
 	}
 	if len(files) != 3 {
 		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
+	}
+
+	// If we got an encryption key, let's decrypt the files
+	if key != "" {
+		decKey := generateEncryptionKey(key)
+		for i, p := range files {
+			destPath := p + ".decrypted"
+			err = decryptFile(p, destPath, decKey)
+			if err != nil {
+				return nil, err
+			}
+			if err = os.Remove(files[i]); err != nil {
+				return nil, err
+			}
+			if err = os.Rename(destPath, files[i]); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	paths := map[string]string{
@@ -77,6 +95,7 @@ func (b *Manager) Restore(nodeID string) ([]string, error) {
 				return nil, err
 			}
 		}
+
 		err = os.Rename(f, path.Join(destDir, basename))
 		if err != nil {
 			return nil, err
@@ -140,7 +159,35 @@ func (b *Manager) Start() error {
 					b.notifyBackupFailed(err)
 					continue
 				}
-				if err := b.provider.UploadBackupFiles(paths, nodeID); err != nil {
+
+				// If we have an encryption key let's encrypt the files.
+				b.mu.Lock()
+				encryptionKey := b.encryptionKey
+				b.mu.Unlock()
+				encrypt := encryptionKey != nil
+				if encrypt {
+					for i, p := range paths {
+						destPath := p + ".enc"
+						err = encryptFile(p, destPath, encryptionKey)
+						if err != nil {
+							break
+						}
+						if err = os.Remove(paths[i]); err != nil {
+							break
+						}
+						if err = os.Rename(destPath, paths[i]); err != nil {
+							break
+						}
+					}
+
+					if err != nil {
+						b.notifyBackupFailed(err)
+						b.log.Errorf("error in encrypting backup files %v", err)
+						continue
+					}
+				}
+
+				if err := b.provider.UploadBackupFiles(paths, nodeID, encrypt); err != nil {
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
@@ -154,9 +201,15 @@ func (b *Manager) Start() error {
 		}
 	}()
 
-	// execute recovery if needed.
-	b.backupRequestChan <- struct{}{}
 	return nil
+}
+
+// SetEncryptionPIN sets the pin which should be used to encrypt the backup files
+func (b *Manager) SetEncryptionPIN(pin string) {
+	b.mu.Lock()
+	b.encryptionKey = generateEncryptionKey(pin)
+	b.mu.Unlock()
+	b.RequestBackup()
 }
 
 // Stop stops the BackupService and wait for complete shutdown.
@@ -175,6 +228,9 @@ func (b *Manager) Stop() error {
 func (b *Manager) destroy() error {
 	b.Stop()
 	if err := os.RemoveAll(path.Join(b.workingDir, "backup")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(path.Join(b.workingDir, "data")); err != nil {
 		return err
 	}
 	return os.Remove(path.Join(b.workingDir, "backup.db"))
