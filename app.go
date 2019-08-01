@@ -184,9 +184,9 @@ func (a *App) ensureSafeToRunNode() bool {
 func (a *App) onServiceEvent(event data.NotificationEvent) {
 	a.notify(event)
 	if event.Type == data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED {
-		if a.AccountService.IsConnectedToRoutingNode() {
-			go a.ensureSafeToRunNode()
-		}
+		//if a.AccountService.IsConnectedToRoutingNode() {
+		go a.ensureSafeToRunNode()
+		//}
 	}
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
 		a.BackupManager.RequestBackup()

@@ -94,9 +94,9 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (*PaymentResponse, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
-	if err := a.waitRoutingNodeConnected(); err != nil {
+	/*if err := a.waitRoutingNodeConnected(); err != nil {
 		return nil, err
-	}
+	}*/
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
@@ -138,9 +138,9 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-	if err := a.waitRoutingNodeConnected(); err != nil {
+	/*if err := a.waitRoutingNodeConnected(); err != nil {
 		return "", err
-	}
+	}*/
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
 	if err != nil {
 		return "", err
@@ -450,7 +450,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	if err != nil {
 		return err
 	}
-	if decodedReq.Destination == a.cfg.RoutingNodePubKey {
+	if decodedReq.Destination == a.cfg.SwapperPubkey {
 		paymentType = db.WithdrawalPayment
 	}
 

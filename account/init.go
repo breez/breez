@@ -29,6 +29,7 @@ type Service struct {
 	daemonAPI          lnnode.API
 	connectedNotifier  *onlineNotifier
 	onServiceEvent     func(data.NotificationEvent)
+	LSPId              string
 
 	notification *notificationRequest
 

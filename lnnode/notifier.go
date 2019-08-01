@@ -54,7 +54,7 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient, peersClient, backupEventClient, subswapClient, breezBackupClient, err := newLightningClient(d.cfg)
+	lnclient, _, backupEventClient, subswapClient, breezBackupClient, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (d *Daemon) startSubscriptions() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	d.wg.Add(6)
-	go d.subscribePeers(peersClient, ctx)
+	//go d.subscribePeers(peersClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(backupEventClient, ctx)
@@ -98,7 +98,7 @@ func (d *Daemon) startSubscriptions() error {
 	return nil
 }
 
-func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.Context) error {
+/*func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.Context) error {
 	defer d.wg.Done()
 
 	subscription, err := client.SubscribePeers(ctx, &peerrpc.PeerSubscription{})
@@ -129,7 +129,7 @@ func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.C
 
 		d.ntfnServer.SendUpdate(PeerConnectionEvent{notification})
 	}
-}
+}*/
 
 func (d *Daemon) subscribeTransactions(ctx context.Context) error {
 	defer d.wg.Done()
@@ -264,13 +264,7 @@ func (d *Daemon) setRoutingNodeChannelStatus() (bool, error) {
 		return false, err
 	}
 
-	var hasChannel bool
-	for _, c := range channels.Channels {
-		if c.RemotePubkey == d.cfg.RoutingNodePubKey {
-			d.log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
-			hasChannel = true
-		}
-	}
+	hasChannel := len(channels.Channels) > 0
 	d.Lock()
 	defer d.Unlock()
 	d.hasChannelWithRoutingNode = hasChannel

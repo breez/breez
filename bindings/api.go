@@ -266,21 +266,24 @@ func GetAccountInfo() ([]byte, error) {
 ConnectAccount is part of the binding inteface which is delegated to breez.ConnectAccount
 */
 func ConnectAccount() error {
-	return getBreezApp().AccountService.Connect()
+	//return getBreezApp().AccountService.Connect()
+	return nil
 }
 
 /*
 EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
 */
 func EnableAccount(enabled bool) error {
-	return getBreezApp().AccountService.EnableAccount(enabled)
+	//return getBreezApp().AccountService.EnableAccount(enabled)
+	return nil
 }
 
 /*
 IsConnectedToRoutingNode is part of the binding inteface which is delegated to breez.IsConnectedToRoutingNode
 */
 func IsConnectedToRoutingNode() bool {
-	return getBreezApp().AccountService.IsConnectedToRoutingNode()
+	//return getBreezApp().AccountService.IsConnectedToRoutingNode()
+	return true
 }
 
 /*

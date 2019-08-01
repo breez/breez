@@ -2,11 +2,9 @@ package account
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
-	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
 
 	breezservice "github.com/breez/breez/breez"
@@ -64,65 +62,39 @@ func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
 }
 
 // IsConnectedToRoutingNode returns true if we are connected to the routing node.
-func (a *Service) IsConnectedToRoutingNode() bool {
-	return a.daemonAPI.ConnectedToRoutingNode()
-}
-
-func (a *Service) onRoutingNodeConnection(connected bool) {
-	a.log.Infof("onRoutingNodeConnection connected=%v", connected)
-	// BREEZ-377: When there is no channel request one from Breez
-	if connected {
-		a.connectedNotifier.setOnline()
-		go a.updateNodeChannelPolicy()
-		go a.ensureRoutingChannelOpened()
-	} else {
-		a.connectedNotifier.setOffline()
-
-		// in case we don't have a channel yet, we will try to connect
-		// again so we can keep trying to get an opened channel.
-		_, channels, err := a.getBreezOpenChannels()
-		if err != nil {
-			a.log.Errorf("Failed to call getBreezOpenChannels %v", err)
-			return
-		}
-		if len(channels) == 0 {
-			a.connectRoutingNode()
-		}
-	}
-	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED})
-}
+//yas func (a *Service) IsConnectedToRoutingNode() bool {
+//	return a.daemonAPI.ConnectedToRoutingNode()
+//}
 
 func (a *Service) SetLSP(id string) {
-	a.cfg.LSPId = id
+	a.LSPId = id
 }
 
 func (a *Service) GetLSP() string {
-	return a.cfg.LSPId
+	return a.LSPId
 }
 
-func (a *Service) routingNode(lspID string) (pubkey, host string) {
+func (a *Service) routingNode(lspID string) (string, string) {
 	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 	defer cancel()
 	r, err := c.LSPList(ctx, &breezservice.LSPListRequest{Pubkey: a.daemonAPI.NodePubkey()})
 	if err != nil {
 		a.log.Infof("LSPList returned an error: %v", err)
-		return
+		return "", ""
 	}
 	l, ok := r.Lsps[lspID]
 	if !ok {
 		a.log.Infof("The LSP ID is not in the LSPList: %v", lspID)
-		return
+		return "", ""
 	}
-	pubkey = l.Pubkey
-	host = l.Host
-	return
+	return l.Host, l.Host
 }
 
-func (a *Service) connectRoutingNode() error {
-	if a.cfg.LSPId == "" {
-		return nil
+func (a *Service) connectLSP() (string, error) {
+	if a.LSPId == "" {
+		return "", nil
 	}
-	pubkey, host := a.routingNode(a.cfg.LSPId)
+	pubkey, host := a.routingNode(a.LSPId)
 	lnclient := a.daemonAPI.APIClient()
 	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", host, pubkey)
 	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
@@ -132,31 +104,91 @@ func (a *Service) connectRoutingNode() error {
 		},
 		Perm: true,
 	})
-	return err
+	return pubkey, err
 }
 
-func (a *Service) disconnectRoutingNode() error {
+func (a *Service) waitChannelActive() error {
+	return nil
+}
+
+func (a *Service) isConnected(pubkey string) bool {
 	lnclient := a.daemonAPI.APIClient()
-	a.log.Infof("Disconnecting from routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
-	_, err := lnclient.DisconnectPeer(context.Background(), &lnrpc.DisconnectPeerRequest{
-		PubKey: a.cfg.RoutingNodePubKey,
-	})
-	return err
+	peers, err := lnclient.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
+	if err != nil {
+		a.log.Errorf("isConnected got error in ListPeers: %v", err)
+		return false
+	}
+	for _, p := range peers.Peers {
+		if p.PubKey == pubkey {
+			return true
+		}
+	}
+	return false
 }
 
-func (a *Service) waitRoutingNodeConnected() error {
-	select {
-	case <-a.connectedNotifier.notifyWhenOnline():
-		return nil
-	case <-time.After(waitConnectTimeout):
-		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
-	}
+/*
+createChannel is responsible for creating a new channel
+*/
+func (a *Service) openLSPChannel(pubkey string) {
+	a.log.Info("openLSPChannel started...")
+	lnclient := a.daemonAPI.APIClient()
+	createChannelGroup.Do("createChannel", func() (interface{}, error) {
+		for {
+			enabled, err := a.breezDB.AccountEnabled()
+			if err != nil {
+				return nil, err
+			}
+			if !enabled {
+				return nil, nil
+			}
+			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+			if err == nil {
+				if a.isConnected(pubkey) {
+					a.log.Infof("Attempting to open a channel...")
+
+					channelPoints, _, err := a.getOpenChannels()
+					if err != nil {
+						a.log.Errorf("openLSPChannel got error in getBreezOpenChannels %v", err)
+					}
+
+					if len(channelPoints) > 0 {
+						a.log.Infof("openLSPChannel already has a channel with breez, doing nothing")
+						return nil, nil
+					}
+					pendingChannels, err := a.getPendingChannelPoint()
+					if err != nil {
+						a.log.Errorf("openLSPChannel got error in getPendingBreezChannelPoint %v", err)
+					}
+
+					if len(pendingChannels) > 0 {
+						a.log.Infof("openLSPChannel already has a pending channel with breez, doing nothing")
+						a.onRoutingNodePendingChannel()
+						return nil, nil
+					}
+
+					c, ctx, cancel := a.breezAPI.NewFundManager()
+					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
+					cancel()
+					if err == nil {
+						a.onRoutingNodePendingChannel()
+						return nil, nil
+					}
+
+					a.log.Errorf("Error in attempting to openChannel: %v", err)
+				}
+			}
+			if err != nil {
+				a.log.Errorf("Error in openChannel: %v", err)
+			}
+			time.Sleep(time.Second * 25)
+		}
+	})
 }
 
 func (a *Service) connectOnStartup() {
-	channelPoints, _, err := a.getBreezOpenChannels()
+	channelPoints, _, err := a.getOpenChannels()
 	if err != nil {
-		a.log.Errorf("connectOnStartup: error in getBreezOpenChannels", err)
+		a.log.Errorf("connectOnStartup: error in getOpenChannels", err)
 		return
 	}
 	lnclient := a.daemonAPI.APIClient()
@@ -170,14 +202,16 @@ func (a *Service) connectOnStartup() {
 		return
 	}
 
+	var pubkey string
 	for {
-		if err := a.connectRoutingNode(); err != nil {
-			a.log.Warnf("Failed to connect to routing node %v", err)
+		pubkey, err = a.connectLSP()
+		if err == nil {
+			break
 		}
-		if a.IsConnectedToRoutingNode() {
-			return
-		}
+
+		a.log.Warnf("Failed to connect to routing node %v", err)
 		a.log.Warnf("Still not connected to routing node, retrying in 2 seconds.")
 		time.Sleep(time.Duration(2 * time.Second))
 	}
+	a.openLSPChannel(pubkey)
 }

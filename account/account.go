@@ -9,8 +9,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"golang.org/x/sync/singleflight"
-
-	breezservice "github.com/breez/breez/breez"
 )
 
 const (
@@ -21,21 +19,6 @@ const (
 var (
 	createChannelGroup singleflight.Group
 )
-
-// EnableAccount controls whether the account will be enabled or disabled.
-// When disbled, no attempt will be made to open a channel with breez node.
-func (a *Service) EnableAccount(enabled bool) error {
-	if err := a.breezDB.EnableAccount(enabled); err != nil {
-		a.log.Infof("Error in enabling account (enabled = %v) %v", enabled, err)
-		return err
-	}
-	if enabled {
-		go a.ensureRoutingChannelOpened()
-	}
-
-	a.onAccountChanged()
-	return nil
-}
 
 /*
 GetAccountInfo is responsible for retrieving some general account details such as balance, status, etc...
@@ -52,7 +35,7 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
-func (a *Service) updateNodeChannelPolicy() {
+/*func (a *Service) updateNodeChannelPolicy() {
 	accData, err := a.calculateAccount()
 	if err != nil {
 		a.log.Errorf("Failed to updateNodeChannelPolicy, couldn't fetch account %v", err)
@@ -71,69 +54,10 @@ func (a *Service) updateNodeChannelPolicy() {
 		}
 		time.Sleep(time.Second * 5)
 	}
-}
-
-/*
-createChannel is responsible for creating a new channel
-*/
-func (a *Service) ensureRoutingChannelOpened() {
-	a.log.Info("ensureRoutingChannelOpened started...")
-	lnclient := a.daemonAPI.APIClient()
-	createChannelGroup.Do("createChannel", func() (interface{}, error) {
-		for {
-			enabled, err := a.breezDB.AccountEnabled()
-			if err != nil {
-				return nil, err
-			}
-			if !enabled {
-				return nil, nil
-			}
-			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-			if err == nil {
-				if a.IsConnectedToRoutingNode() {
-					a.log.Infof("Attempting to open a channel...")
-
-					channelPoints, _, err := a.getBreezOpenChannels()
-					if err != nil {
-						a.log.Errorf("ensureRoutingChannelOpened got error in getBreezOpenChannels %v", err)
-					}
-
-					if len(channelPoints) > 0 {
-						a.log.Infof("ensureRoutingChannelOpened already has a channel with breez, doing nothing")
-						return nil, nil
-					}
-					pendingChannels, err := a.getPendingBreezChannelPoint()
-					if err != nil {
-						a.log.Errorf("ensureRoutingChannelOpened got error in getPendingBreezChannelPoint %v", err)
-					}
-
-					if len(pendingChannels) > 0 {
-						a.log.Infof("ensureRoutingChannelOpened already has a pending channel with breez, doing nothing")
-						a.onRoutingNodePendingChannel()
-						return nil, nil
-					}
-
-					c, ctx, cancel := a.breezAPI.NewFundManager()
-					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
-					cancel()
-					if err == nil {
-						a.onRoutingNodePendingChannel()
-						return nil, nil
-					}
-
-					a.log.Errorf("Error in attempting to openChannel: %v", err)
-				}
-			}
-			if err != nil {
-				a.log.Errorf("Error in openChannel: %v", err)
-			}
-			time.Sleep(time.Second * 25)
-		}
-	})
-}
+}*/
 
 func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
-	channelPoints, _, err := a.getBreezOpenChannels()
+	channelPoints, _, err := a.getOpenChannels()
 	if err != nil {
 		return -1, err
 	}
@@ -147,7 +71,7 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 		return -1, err
 	}
 	if len(pendingChannels.PendingOpenChannels) > 0 {
-		return data.Account_PROCESSING_BREEZ_CONNECTION, nil
+		return data.Account_PROCESSING_CONNECTION, nil
 	}
 	if len(pendingChannels.PendingClosingChannels) > 0 || len(pendingChannels.PendingForceClosingChannels) > 0 {
 		return data.Account_PROCESSING_WITHDRAWAL, nil
@@ -208,7 +132,7 @@ func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, er
 }
 
 func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
-	chanIDs, _, err := a.getBreezOpenChannels()
+	chanIDs, _, err := a.getOpenChannels()
 	if err != nil {
 		a.log.Errorf("Failed to get breez channels %v", err)
 		return 0, err
@@ -233,7 +157,7 @@ func (a *Service) getRoutingNodeFeeRate(ourKey string) (int64, error) {
 	return 0, nil
 }
 
-func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
+func (a *Service) getOpenChannels() ([]uint64, []string, error) {
 	var channelPoints []string
 	var channelIds []uint64
 	lnclient := a.daemonAPI.APIClient()
@@ -245,16 +169,14 @@ func (a *Service) getBreezOpenChannels() ([]uint64, []string, error) {
 	}
 
 	for _, c := range channels.Channels {
-		if c.RemotePubkey == a.cfg.RoutingNodePubKey {
-			channelPoints = append(channelPoints, c.ChannelPoint)
-			channelIds = append(channelIds, c.ChanId)
-			a.log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
-		}
+		channelPoints = append(channelPoints, c.ChannelPoint)
+		channelIds = append(channelIds, c.ChanId)
+		a.log.Infof("Channel Point with node = %v", c.ChannelPoint)
 	}
 	return channelIds, channelPoints, nil
 }
 
-func (a *Service) getPendingBreezChannelPoint() (string, error) {
+func (a *Service) getPendingChannelPoint() (string, error) {
 	lnclient := a.daemonAPI.APIClient()
 	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
@@ -266,9 +188,7 @@ func (a *Service) getPendingBreezChannelPoint() (string, error) {
 	}
 
 	for _, c := range pendingChannels.PendingOpenChannels {
-		if c.Channel.RemoteNodePub == a.cfg.RoutingNodePubKey {
-			return c.Channel.ChannelPoint, nil
-		}
+		return c.Channel.ChannelPoint, nil
 	}
 
 	return "", nil

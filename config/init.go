@@ -30,10 +30,8 @@ Config holds the breez configuration
 */
 type Config struct {
 	WorkingDir         string
-	RoutingNodeHost    string `long:"routingnodehost"`
-	RoutingNodePubKey  string `long:"routingnodepubkey"`
-	LSPId              string `long:"lspid"`
 	BreezServer        string `long:"breezserver"`
+	SwapperPubkey      string `long:"swapperpubkey"`
 	Network            string `long:"network"`
 	GrpcKeepAlive      bool   `long:"grpckeepalive"`
 	BootstrapURL       string `long:"bootstrap"`

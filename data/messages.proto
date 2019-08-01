@@ -11,7 +11,7 @@ message Account {
     enum AccountStatus {        
         WAITING_DEPOSIT = 0;
         WAITING_DEPOSIT_CONFIRMATION = 1;
-        PROCESSING_BREEZ_CONNECTION = 2;
+        PROCESSING_CONNECTION = 2;
         PROCESSING_WITHDRAWAL = 3;
         ACTIVE = 4;
     }
