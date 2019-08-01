@@ -111,6 +111,12 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	return err
 }
 
+// SetPinCode sets the security pin code to the backup manager so it
+// can be used in encrypting backup files.
+func SetPinCode(pinCode string) error {
+	return getBreezApp().BackupManager.SetEncryptionPIN(pinCode)
+}
+
 // NeedsBootstrap checks if bootstrap header is needed.
 func NeedsBootstrap() bool {
 	need, err := getBreezApp().NeedsBootstrap()
