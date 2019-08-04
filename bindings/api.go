@@ -213,11 +213,11 @@ func RequestBackup() {
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func RestoreBackup(nodeID string) (err error) {
+func RestoreBackup(nodeID string, pinCode string) (err error) {
 	if err = getBreezApp().Stop(); err != nil {
 		return err
 	}
-	if _, err = getBreezApp().BackupManager.Restore(nodeID, ""); err != nil {
+	if _, err = getBreezApp().BackupManager.Restore(nodeID, pinCode); err != nil {
 		return err
 	}
 	breezApp, err = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)

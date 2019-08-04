@@ -3,6 +3,7 @@ package backup
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -79,7 +80,7 @@ func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, decKey)
 			if err != nil {
-				return nil, err
+				return nil, errors.New("Failed to restore backup due to incorrect PIN")
 			}
 			if err = os.Remove(files[i]); err != nil {
 				return nil, err
