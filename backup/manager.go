@@ -18,10 +18,24 @@ var (
 	backupDelay = time.Duration(time.Second * 2)
 )
 
+// RequestCommitmentChangedBackup is called when the commitment transaction
+// of the channel is changed. We add a small delay because we know such changes
+// are coming in batch
+func (b *Manager) RequestCommitmentChangedBackup() {
+	b.requestBackup(backupDelay)
+}
+
 /*
 RequestBackup push a request for the backup files of breez
 */
 func (b *Manager) RequestBackup() {
+	b.requestBackup(time.Duration(0))
+}
+
+/*
+RequestBackup push a request for the backup files of breez
+*/
+func (b *Manager) requestBackup(delay time.Duration) {
 	b.log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
@@ -34,7 +48,7 @@ func (b *Manager) RequestBackup() {
 
 	go func() {
 		select {
-		case <-time.After(backupDelay):
+		case <-time.After(delay):
 		case <-b.quitChan:
 			return
 		}

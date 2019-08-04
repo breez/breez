@@ -151,7 +151,7 @@ func (a *App) watchDaemonEvents() error {
 				atomic.StoreInt32(&a.isReady, 0)
 				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN})
 			case lnnode.BackupNeededEvent:
-				a.BackupManager.RequestBackup()
+				a.BackupManager.RequestCommitmentChangedBackup()
 			}
 		case <-client.Quit():
 			return nil
