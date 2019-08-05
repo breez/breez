@@ -44,8 +44,8 @@ func (s *Service) watchDaemonEvents() (err error) {
 			switch update := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
-			case lnnode.PeerConnectionEvent:
-				s.SettlePendingTransfers()
+			case lnnode.ChannelEvent:
+				//s.SettlePendingTransfers()
 			case lnnode.TransactionEvent:
 				s.onTransaction()
 			case lnnode.DaemonDownEvent:

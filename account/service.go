@@ -68,6 +68,8 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.onAccountChanged()
 			case lnnode.ChainSyncedEvent:
 				a.connectOnStartup()
+			case lnnode.ChannelEvent:
+				//
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
 			case lnnode.RoutingNodeChannelOpened:
