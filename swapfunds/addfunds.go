@@ -359,9 +359,11 @@ func (s *Service) lightningTransfersReady() bool {
 //   that the funds are confirmred
 //2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
 //   remove funds flow
-func (s *Service) SettlePendingTransfers() {
-	go s.getPaymentsForConfirmedTransactions()
-	go s.redeemAllRemovedFunds()
+func (s *Service) SettlePendingTransfers(update *lnrpc.ChannelEventUpdate) {
+	if update.Type == lnrpc.ChannelEventUpdate_ACTIVE_CHANNEL || update.Type == lnrpc.ChannelEventUpdate_OPEN_CHANNEL {
+		go s.getPaymentsForConfirmedTransactions()
+		go s.redeemAllRemovedFunds()
+	}
 }
 
 func (s *Service) updateUnspentAmount(address string) (bool, error) {

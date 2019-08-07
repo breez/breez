@@ -45,13 +45,11 @@ func (s *Service) watchDaemonEvents() (err error) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
 			case lnnode.ChannelEvent:
-				//s.SettlePendingTransfers()
+				s.SettlePendingTransfers(update.ChannelEventUpdate)
 			case lnnode.TransactionEvent:
 				s.onTransaction()
 			case lnnode.DaemonDownEvent:
 				return nil
-			case lnnode.RoutingNodeChannelOpened:
-				s.SettlePendingTransfers()
 			case lnnode.InvoiceEvent:
 				s.onInvoice(update.Invoice)
 			}
