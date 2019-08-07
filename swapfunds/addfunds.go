@@ -175,9 +175,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		}
 	}
 
-	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
-		return addr.PaidAmount == 0 && addr.LastRefundTxID == ""
-	})
+	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +373,12 @@ func (s *Service) updateUnspentAmount(address string) (bool, error) {
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
 		if len(unspentResponse.Utxos) > 0 {
 			s.log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
-			swapInfo.LockHeight = uint32(unspentResponse.LockHeight + unspentResponse.Utxos[0].BlockHeight)
+			for _, utxo := range unspentResponse.Utxos {
+				currentUtxoLockHeight := uint32(utxo.BlockHeight + unspentResponse.LockHeight)
+				if swapInfo.LockHeight < currentUtxoLockHeight {
+					swapInfo.LockHeight = currentUtxoLockHeight
+				}
+			}
 		}
 
 		var confirmedTransactionIDs []string
