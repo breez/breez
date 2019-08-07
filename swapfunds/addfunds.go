@@ -175,9 +175,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		}
 	}
 
-	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
-		return addr.PaidAmount == 0 && addr.LastRefundTxID == ""
-	})
+	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
 		return nil, err
 	}
@@ -210,28 +208,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	s.log.Infof("GetFundStatus return %v", statusReply)
 
 	return &statusReply, nil
-}
-
-//GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
-func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
-	lnclient := s.daemonAPI.APIClient()
-	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	refundable, err := s.breezDB.FetchSwapAddresses(func(a *db.SwapAddressInfo) bool {
-		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0 && a.LastRefundTxID == ""
-		if refundable {
-			s.log.Infof("found refundable address: %v lockHeight=%v, amount=%v, currentHeight=%v", a.Address, a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
-		}
-		return refundable
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return refundable, nil
 }
 
 //Refund broadcast a refund transaction for a sub swap address.
@@ -375,7 +351,12 @@ func (s *Service) updateUnspentAmount(address string) (bool, error) {
 		swapInfo.ConfirmedAmount = unspentResponse.Amount //get unsepnt amount
 		if len(unspentResponse.Utxos) > 0 {
 			s.log.Infof("Updating unspent amount %v for address %v", unspentResponse.Amount, address)
-			swapInfo.LockHeight = uint32(unspentResponse.LockHeight + unspentResponse.Utxos[0].BlockHeight)
+			for _, utxo := range unspentResponse.Utxos {
+				currentUtxoLockHeight := uint32(utxo.BlockHeight + unspentResponse.LockHeight)
+				if swapInfo.LockHeight < currentUtxoLockHeight {
+					swapInfo.LockHeight = currentUtxoLockHeight
+				}
+			}
 		}
 
 		var confirmedTransactionIDs []string
