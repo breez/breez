@@ -1,7 +1,6 @@
 package bindings
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -294,36 +293,6 @@ AddFundsInit is part of the binding inteface which is delegated to breez.AddFund
 */
 func AddFundsInit(breezID string) ([]byte, error) {
 	return marshalResponse(getBreezApp().SwapService.AddFundsInit(breezID))
-}
-
-/*
-GetRefundableSwapAddresses returns all addresses that are refundable, e.g expired and not paid
-*/
-func GetRefundableSwapAddresses() ([]byte, error) {
-	refundableAddresses, err := getBreezApp().SwapService.GetRefundableAddresses()
-	if err != nil {
-		return nil, err
-	}
-
-	var rpcAddresses []*data.SwapAddressInfo
-	for _, a := range refundableAddresses {
-		rpcAddresses = append(rpcAddresses, &data.SwapAddressInfo{
-			Address:                 a.Address,
-			PaymentHash:             hex.EncodeToString(a.PaymentHash),
-			ConfirmedAmount:         a.ConfirmedAmount,
-			ConfirmedTransactionIds: a.ConfirmedTransactionIds,
-			PaidAmount:              a.PaidAmount,
-			LockHeight:              a.LockHeight,
-			ErrorMessage:            a.ErrorMessage,
-			LastRefundTxID:          a.LastRefundTxID,
-		})
-	}
-
-	addressList := &data.SwapAddressList{
-		Addresses: rpcAddresses,
-	}
-	fmt.Printf("GetRefundableSwapAddresses returned %v addresses", len(rpcAddresses))
-	return marshalResponse(addressList, nil)
 }
 
 //Refund transfers the funds in address to the user destination address

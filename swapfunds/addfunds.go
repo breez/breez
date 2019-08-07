@@ -210,28 +210,6 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	return &statusReply, nil
 }
 
-//GetRefundableAddresses returns all addresses that are refundable, e.g: expired and not paid
-func (s *Service) GetRefundableAddresses() ([]*db.SwapAddressInfo, error) {
-	lnclient := s.daemonAPI.APIClient()
-	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	refundable, err := s.breezDB.FetchSwapAddresses(func(a *db.SwapAddressInfo) bool {
-		refundable := a.LockHeight < info.BlockHeight && a.ConfirmedAmount > 0 && a.LastRefundTxID == ""
-		if refundable {
-			s.log.Infof("found refundable address: %v lockHeight=%v, amount=%v, currentHeight=%v", a.Address, a.LockHeight, a.ConfirmedAmount, info.BlockHeight)
-		}
-		return refundable
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return refundable, nil
-}
-
 //Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string) (string, error) {
 	s.log.Infof("Starting refund flow...")
