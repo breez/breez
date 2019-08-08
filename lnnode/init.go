@@ -19,8 +19,7 @@ import (
 // and get an APIClient to query the daemon directly via RPC.
 type API interface {
 	SubscribeEvents() (*subscribe.Client, error)
-	ConnectedToRoutingNode() bool
-	HasChannelWithRoutingNode() bool
+	HasActiveChannel() bool
 	NodePubkey() string
 	APIClient() lnrpc.LightningClient
 	SubSwapClient() submarineswaprpc.SubmarineSwapperClient
@@ -30,21 +29,19 @@ type API interface {
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
 	sync.Mutex
-	cfg                       *config.Config
-	breezDB                   *db.DB
-	started                   int32
-	stopped                   int32
-	daemonRunning             bool
-	connectedToRoutingNode    bool
-	hasChannelWithRoutingNode bool
-	nodePubkey                string
-	wg                        sync.WaitGroup
-	log                       btclog.Logger
-	lightningClient           lnrpc.LightningClient
-	subswapClient             submarineswaprpc.SubmarineSwapperClient
-	breezBackupClient         breezbackuprpc.BreezBackuperClient
-	ntfnServer                *subscribe.Server
-	quitChan                  chan struct{}
+	cfg               *config.Config
+	breezDB           *db.DB
+	started           int32
+	stopped           int32
+	daemonRunning     bool
+	nodePubkey        string
+	wg                sync.WaitGroup
+	log               btclog.Logger
+	lightningClient   lnrpc.LightningClient
+	subswapClient     submarineswaprpc.SubmarineSwapperClient
+	breezBackupClient breezbackuprpc.BreezBackuperClient
+	ntfnServer        *subscribe.Server
+	quitChan          chan struct{}
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning

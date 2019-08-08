@@ -45,7 +45,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
 			case lnnode.ChannelEvent:
-				s.SettlePendingTransfers(update.ChannelEventUpdate)
+				s.SettlePendingTransfers()
 			case lnnode.TransactionEvent:
 				s.onTransaction()
 			case lnnode.DaemonDownEvent:

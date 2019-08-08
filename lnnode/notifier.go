@@ -82,7 +82,6 @@ func (d *Daemon) startSubscriptions() error {
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(backupEventClient, ctx)
 	go d.syncToChain(ctx)
-	go d.trackOpenedChannel()
 
 	// cancel subscriptions on quit
 	go func() {
@@ -226,43 +225,4 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 	}
 	d.ntfnServer.SendUpdate(ChainSyncedEvent{})
 	return nil
-}
-
-func (d *Daemon) trackOpenedChannel() {
-	defer d.wg.Done()
-	defer func() {
-		d.log.Info("trackOpenedChannel stopped")
-	}()
-
-	ticker := time.NewTicker(time.Second * 10)
-	for {
-		select {
-		case <-ticker.C:
-			hasChannel, err := d.setRoutingNodeChannelStatus()
-			if err == nil && hasChannel {
-				ticker.Stop()
-				d.ntfnServer.SendUpdate(RoutingNodeChannelOpened{})
-				return
-			}
-		case <-d.quitChan:
-			ticker.Stop()
-			return
-		}
-	}
-}
-
-func (d *Daemon) setRoutingNodeChannelStatus() (bool, error) {
-	lnclient := d.APIClient()
-	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
-	})
-	if err != nil {
-		return false, err
-	}
-
-	hasChannel := len(channels.Channels) > 0
-	d.Lock()
-	defer d.Unlock()
-	d.hasChannelWithRoutingNode = hasChannel
-	return hasChannel, nil
 }

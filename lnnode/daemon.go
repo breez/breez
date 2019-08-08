@@ -1,6 +1,7 @@
 package lnnode
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -31,20 +32,22 @@ func (d *Daemon) Start() error {
 	return nil
 }
 
-// ConnectedToRoutingNode returns a boolean indicates if the daemon is connected to the
-// routing node peer.
-func (d *Daemon) ConnectedToRoutingNode() bool {
-	d.Lock()
-	defer d.Unlock()
-	return d.connectedToRoutingNode
-}
-
-// HasChannelWithRoutingNode returns a boolean indicates if this node has an opened channel
-// with the routing node.
-func (d *Daemon) HasChannelWithRoutingNode() bool {
-	d.Lock()
-	defer d.Unlock()
-	return d.hasChannelWithRoutingNode
+// HasActiveChannel returns true if the node has at least one active channel.
+func (d *Daemon) HasActiveChannel() bool {
+	lnclient := d.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		d.log.Errorf("Error in HasActiveChannel() > ListChannels(): %v", err)
+		return false
+	}
+	for _, c := range channels.Channels {
+		if c.Active {
+			return true
+		}
+	}
+	return false
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -52,12 +55,6 @@ func (d *Daemon) NodePubkey() string {
 	d.Lock()
 	defer d.Unlock()
 	return d.nodePubkey
-}
-
-func (d *Daemon) setConnectedToRoutingNode(connected bool) {
-	d.Lock()
-	defer d.Unlock()
-	d.connectedToRoutingNode = connected
 }
 
 // Stop is used to stop the lightning network daemon.
