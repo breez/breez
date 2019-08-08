@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -108,7 +109,15 @@ func (a *Service) connectLSP() (string, error) {
 }
 
 func (a *Service) waitChannelActive() error {
-	return nil
+	if a.daemonAPI.HasActiveChannel() {
+		return nil
+	}
+	select {
+	case <-a.connectedNotifier.notifyWhenOnline():
+		return nil
+	case <-time.After(waitConnectTimeout):
+		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
+	}
 }
 
 func (a *Service) isConnected(pubkey string) bool {

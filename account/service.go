@@ -69,11 +69,13 @@ func (a *Service) watchDaemonEvents() (err error) {
 			case lnnode.ChainSyncedEvent:
 				a.connectOnStartup()
 			case lnnode.ChannelEvent:
-				//
+				if a.daemonAPI.HasActiveChannel() {
+					a.connectedNotifier.setOnline()
+				} else {
+					a.connectedNotifier.setOffline()
+				}
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
-			case lnnode.RoutingNodeChannelOpened:
-				a.onRoutingNodeOpenedChannel()
 			}
 		case <-a.quitChan:
 			a.log.Infof("Cancelling daemon events subscription")
