@@ -166,8 +166,8 @@ func (a *Service) openLSPChannel(pubkey string) {
 						return nil, nil
 					}
 
-					c, ctx, cancel := a.breezAPI.NewFundManager()
-					_, err = c.OpenChannel(ctx, &breezservice.OpenChannelRequest{PubKey: lnInfo.IdentityPubkey})
+					c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+					_, err = c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: a.LSPId, Pubkey: lnInfo.IdentityPubkey})
 					cancel()
 					if err == nil {
 						a.onRoutingNodePendingChannel()
