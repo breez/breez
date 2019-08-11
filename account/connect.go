@@ -74,6 +74,34 @@ func (a *Service) GetLSP() string {
 	return a.LSPId
 }
 
+// ConnectChannelsPeers connects to all peers associated with a non active channel.
+func (a *Service) ConnectChannelsPeers() error {
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		InactiveOnly: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, c := range channels.Channels {
+		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.RemotePubkey})
+		if err != nil && len(nodeInfo.GetNode().Addresses) > 0 {
+			address := nodeInfo.GetNode().Addresses[0]
+			a.log.Infof("Connecting to peer %v with address= %v", c.RemotePubkey, address.Addr)
+			lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+				Addr: &lnrpc.LightningAddress{
+					Pubkey: c.RemotePubkey,
+					Host:   address.Addr,
+				},
+				Perm: true,
+			})
+		}
+	}
+
+	return nil
+}
+
 func (a *Service) routingNode(lspID string) (string, string) {
 	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 	defer cancel()
@@ -141,7 +169,7 @@ func (a *Service) openLSPChannel(pubkey string) {
 	a.log.Info("openLSPChannel started...")
 	lnclient := a.daemonAPI.APIClient()
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
-		for {					
+		for {
 			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if a.isConnected(pubkey) {

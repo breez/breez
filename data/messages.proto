@@ -34,6 +34,9 @@ message Account {
 
     //maximum chan reserve accross all channels of this account.
     int64 maxChanReserve = 10;
+
+    // reflects if this account can receive/send payments.
+    bool readyForPayments = 11;
 }
 
 message Payment {
@@ -100,16 +103,15 @@ message NotificationEvent {
         INITIALIZATION_FAILED = 1;        
         ACCOUNT_CHANGED = 2;        
         PAYMENT_SENT = 3;
-        INVOICE_PAID = 4;
-        CHANNEL_ACTIVATION_CHANGED = 5;
-        LIGHTNING_SERVICE_DOWN = 6;
-        FUND_ADDRESS_CREATED = 7;
-        FUND_ADDRESS_UNSPENT_CHANGED = 8;
-        BACKUP_SUCCESS = 9;
-        BACKUP_FAILED = 10;
-        BACKUP_AUTH_FAILED = 11;
-        BACKUP_NODE_CONFLICT = 12;
-        BACKUP_REQUEST = 13;
+        INVOICE_PAID = 4;        
+        LIGHTNING_SERVICE_DOWN = 5;
+        FUND_ADDRESS_CREATED = 6;
+        FUND_ADDRESS_UNSPENT_CHANGED = 7;
+        BACKUP_SUCCESS = 8;
+        BACKUP_FAILED = 9;
+        BACKUP_AUTH_FAILED = 10;
+        BACKUP_NODE_CONFLICT = 11;
+        BACKUP_REQUEST = 12;
     }
 
     NotificationType type = 1;

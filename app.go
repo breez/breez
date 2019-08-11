@@ -152,6 +152,10 @@ func (a *App) watchDaemonEvents() error {
 				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN})
 			case lnnode.BackupNeededEvent:
 				a.BackupManager.RequestBackup()
+			case lnnode.ChannelEvent:
+				if a.lnDaemon.HasActiveChannel() {
+					go a.ensureSafeToRunNode()
+				}
 			}
 		case <-client.Quit():
 			return nil
@@ -183,11 +187,6 @@ func (a *App) ensureSafeToRunNode() bool {
 
 func (a *App) onServiceEvent(event data.NotificationEvent) {
 	a.notify(event)
-	if event.Type == data.NotificationEvent_CHANNEL_ACTIVATION_CHANGED {
-		if a.lnDaemon.HasActiveChannel() {
-			go a.ensureSafeToRunNode()
-		}
-	}
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED {
 		a.BackupManager.RequestBackup()
 	}

@@ -237,7 +237,8 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		MaxChanReserve:      maxChanReserve,
 		Status:              accStatus,
 		WalletBalance:       onChainBalance,
-		RoutingNodeFee:      routingNodeFeeRate,		
+		RoutingNodeFee:      routingNodeFeeRate,
+		ReadyForPayments:    a.daemonAPI.HasActiveChannel(),
 	}, nil
 }
 
