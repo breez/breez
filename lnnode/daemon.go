@@ -37,17 +37,13 @@ func (d *Daemon) HasActiveChannel() bool {
 	lnclient := d.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
+		ActiveOnly:  true,
 	})
 	if err != nil {
 		d.log.Errorf("Error in HasActiveChannel() > ListChannels(): %v", err)
 		return false
 	}
-	for _, c := range channels.Channels {
-		if c.Active {
-			return true
-		}
-	}
-	return false
+	return len(channels.Channels) > 0
 }
 
 // NodePubkey returns the identity public key of the lightning node.
