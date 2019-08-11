@@ -141,14 +141,7 @@ func (a *Service) openLSPChannel(pubkey string) {
 	a.log.Info("openLSPChannel started...")
 	lnclient := a.daemonAPI.APIClient()
 	createChannelGroup.Do("createChannel", func() (interface{}, error) {
-		for {
-			enabled, err := a.breezDB.AccountEnabled()
-			if err != nil {
-				return nil, err
-			}
-			if !enabled {
-				return nil, nil
-			}
+		for {					
 			lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 			if err == nil {
 				if a.isConnected(pubkey) {

@@ -227,11 +227,6 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	}
 	a.log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
 
-	enabled, err := a.breezDB.AccountEnabled()
-	if err != nil {
-		return nil, err
-	}
-
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
@@ -242,8 +237,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		MaxChanReserve:      maxChanReserve,
 		Status:              accStatus,
 		WalletBalance:       onChainBalance,
-		RoutingNodeFee:      routingNodeFeeRate,
-		Enabled:             enabled,
+		RoutingNodeFee:      routingNodeFeeRate,		
 	}, nil
 }
 
