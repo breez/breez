@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/breez/breez/data"
 	"github.com/breez/breez/lnnode"
 )
 
@@ -69,11 +70,8 @@ func (a *Service) watchDaemonEvents() (err error) {
 			case lnnode.ChainSyncedEvent:
 				a.connectOnStartup()
 			case lnnode.ChannelEvent:
-				if a.daemonAPI.HasActiveChannel() {
-					a.connectedNotifier.setOnline()
-				} else {
-					a.connectedNotifier.setOffline()
-				}
+				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
+				a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED})
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
 			}

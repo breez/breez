@@ -27,7 +27,7 @@ type Service struct {
 	breezAPI           services.API
 	log                btclog.Logger
 	daemonAPI          lnnode.API
-	connectedNotifier  *onlineNotifier
+	connectedNotifier  *channelActiveNotifier
 	onServiceEvent     func(data.NotificationEvent)
 	LSPId              string
 
@@ -57,7 +57,7 @@ func NewService(
 	return &Service{
 		cfg:               cfg,
 		log:               logBackend.Logger("ACCNT"),
-		connectedNotifier: newOnlineNotifier(),
+		connectedNotifier: newChannelActiveNotifier(),
 		daemonAPI:         daemonAPI,
 		breezDB:           breezDB,
 		breezAPI:          breezAPI,

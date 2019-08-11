@@ -15,48 +15,47 @@ var (
 	waitConnectTimeout = time.Second * 60
 )
 
-type onlineNotifier struct {
+type channelActiveNotifier struct {
 	sync.Mutex
 	ntfnChan chan struct{}
-	isOnline bool
+	isActive bool
 }
 
-// NewOnlineNotifier creates a new onlineNotifier
-func newOnlineNotifier() *onlineNotifier {
-	return &onlineNotifier{
+// newChannelActiveNotifier creates a new channelActiveNotifier
+func newChannelActiveNotifier() *channelActiveNotifier {
+	return &channelActiveNotifier{
 		ntfnChan: make(chan struct{}),
 	}
 }
 
-func (n *onlineNotifier) connected() bool {
+func (n *channelActiveNotifier) active() bool {
 	n.Lock()
 	defer n.Unlock()
-	return n.isOnline
+	return n.isActive
 }
 
-func (n *onlineNotifier) setOffline() {
-	n.Lock()
-	defer n.Unlock()
-	n.ntfnChan = make(chan struct{})
-	n.isOnline = false
-}
+func (n *channelActiveNotifier) setActive(active bool) {
 
-func (n *onlineNotifier) setOnline() {
-	n.Lock()
-	// prevent calling multiple times to setOnline and causing panic of closing a closed
-	// channel.
-	var ntfnChan chan struct{}
-	if !n.isOnline {
-		ntfnChan = n.ntfnChan
+	if n.active() == active {
+		return
 	}
-	n.isOnline = true
-	n.Unlock()
-	if ntfnChan != nil {
-		close(ntfnChan)
+
+	n.Lock()
+	n.isActive = active
+
+	if !active {
+		n.ntfnChan = make(chan struct{})
+		n.Unlock()
+	} else {
+		ntfnChan := n.ntfnChan
+		n.Unlock()
+		if ntfnChan != nil {
+			close(ntfnChan)
+		}
 	}
 }
 
-func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
+func (n *channelActiveNotifier) notifyWhenActive() <-chan struct{} {
 	n.Lock()
 	defer n.Unlock()
 	return n.ntfnChan
@@ -113,7 +112,7 @@ func (a *Service) waitChannelActive() error {
 		return nil
 	}
 	select {
-	case <-a.connectedNotifier.notifyWhenOnline():
+	case <-a.connectedNotifier.notifyWhenActive():
 		return nil
 	case <-time.After(waitConnectTimeout):
 		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
