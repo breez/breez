@@ -101,7 +101,7 @@ message NotificationEvent {
         ACCOUNT_CHANGED = 2;        
         PAYMENT_SENT = 3;
         INVOICE_PAID = 4;
-        ROUTING_NODE_CONNECTION_CHANGED = 5;
+        CHANNEL_ACTIVATION_CHANGED = 5;
         LIGHTNING_SERVICE_DOWN = 6;
         FUND_ADDRESS_CREATED = 7;
         FUND_ADDRESS_UNSPENT_CHANGED = 8;

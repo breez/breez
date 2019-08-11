@@ -71,7 +71,7 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.connectOnStartup()
 			case lnnode.ChannelEvent:
 				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
-				a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED})
+				a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_CHANNEL_ACTIVATION_CHANGED})
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
 			}
