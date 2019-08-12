@@ -62,7 +62,7 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 		return -1, err
 	}
 	if len(channelPoints) > 0 {
-		return data.Account_ACTIVE, nil
+		return data.Account_CONNECTED, nil
 	}
 
 	lnclient := a.daemonAPI.APIClient()
@@ -74,13 +74,10 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 		return data.Account_PROCESSING_CONNECTION, nil
 	}
 	if len(pendingChannels.PendingClosingChannels) > 0 || len(pendingChannels.PendingForceClosingChannels) > 0 {
-		return data.Account_PROCESSING_WITHDRAWAL, nil
+		return data.Account_CLOSING_CONNECTION, nil
 	}
 
-	if walletBalance.UnconfirmedBalance > 0 {
-		return data.Account_WAITING_DEPOSIT_CONFIRMATION, nil
-	}
-	return data.Account_WAITING_DEPOSIT, nil
+	return data.Account_DISCONNECTED, nil
 }
 
 func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {

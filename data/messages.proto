@@ -9,11 +9,10 @@ message ChainStatus {
 
 message Account {
     enum AccountStatus {        
-        WAITING_DEPOSIT = 0;
-        WAITING_DEPOSIT_CONFIRMATION = 1;
-        PROCESSING_CONNECTION = 2;
-        PROCESSING_WITHDRAWAL = 3;
-        ACTIVE = 4;
+        DISCONNECTED = 0;        
+        PROCESSING_CONNECTION = 1;
+        CLOSING_CONNECTION = 2;
+        CONNECTED = 3;
     }
     string id = 1;
     int64 balance = 2;      
