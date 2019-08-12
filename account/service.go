@@ -66,8 +66,6 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
 				a.onAccountChanged()
-			case lnnode.ChainSyncedEvent:
-				a.connectOnStartup()
 			case lnnode.ChannelEvent:
 				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
 				a.calculateAccountAndNotify()

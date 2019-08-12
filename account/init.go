@@ -28,8 +28,7 @@ type Service struct {
 	log                btclog.Logger
 	daemonAPI          lnnode.API
 	connectedNotifier  *channelActiveNotifier
-	onServiceEvent     func(data.NotificationEvent)
-	LSPId              string
+	onServiceEvent     func(data.NotificationEvent)	
 
 	notification *notificationRequest
 
