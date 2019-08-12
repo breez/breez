@@ -34,7 +34,8 @@ func (d *backupDB) close() error {
 }
 
 var (
-	markIDKey = []byte("lastBackupMarkID")
+	markIDKey        = []byte("lastBackupMarkID")
+	useEncryptionKey = []byte("useEncryption")
 )
 
 // AddBackupRequest is used to mark a need for a backup before actually executing it.
@@ -75,6 +76,32 @@ func (d *backupDB) markBackupRequestCompleted(requestID uint64) error {
 		}
 		return b.Delete(markIDKey)
 	})
+}
+
+func (d *backupDB) setUseEncryption(use bool) error {
+	var encrypt byte
+	if use {
+		encrypt = 1
+	}
+	return d.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(backupBucket))
+		return b.Put(useEncryptionKey, []byte{encrypt})
+	})
+}
+
+func (d *backupDB) useEncryption() (bool, error) {
+	var useEncryption bool
+	err := d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(backupBucket))
+		useEncryptionBytes := b.Get(markIDKey)
+		useEncryption = len(useEncryptionBytes) == 1 && useEncryptionBytes[0] == 1
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return useEncryption, nil
 }
 
 func itob(v uint64) []byte {

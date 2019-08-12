@@ -3,6 +3,7 @@ package backup
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,10 +19,24 @@ var (
 	backupDelay = time.Duration(time.Second * 2)
 )
 
+// RequestCommitmentChangedBackup is called when the commitment transaction
+// of the channel is changed. We add a small delay because we know such changes
+// are coming in batch
+func (b *Manager) RequestCommitmentChangedBackup() {
+	b.requestBackup(backupDelay)
+}
+
 /*
 RequestBackup push a request for the backup files of breez
 */
 func (b *Manager) RequestBackup() {
+	b.requestBackup(time.Duration(0))
+}
+
+/*
+RequestBackup push a request for the backup files of breez
+*/
+func (b *Manager) requestBackup(delay time.Duration) {
 	b.log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
@@ -34,7 +49,7 @@ func (b *Manager) RequestBackup() {
 
 	go func() {
 		select {
-		case <-time.After(backupDelay):
+		case <-time.After(delay):
 		case <-b.quitChan:
 			return
 		}
@@ -65,7 +80,7 @@ func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, decKey)
 			if err != nil {
-				return nil, err
+				return nil, errors.New("Failed to restore backup due to incorrect PIN")
 			}
 			if err = os.Remove(files[i]); err != nil {
 				return nil, err
@@ -152,6 +167,20 @@ func (b *Manager) Start() error {
 					continue
 				}
 
+				b.mu.Lock()
+				encryptionKey := b.encryptionKey
+				b.mu.Unlock()
+
+				useEncryption, err := b.db.useEncryption()
+				if err != nil {
+					b.log.Errorf("error reading encryption settings from backup db %v", err)
+					continue
+				}
+				if useEncryption && encryptionKey == nil {
+					b.log.Errorf("fail to serve pending backup due to key not provided yet %v", err)
+					continue
+				}
+
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
 				paths, nodeID, err := b.prepareBackupData()
 				if err != nil {
@@ -161,11 +190,9 @@ func (b *Manager) Start() error {
 				}
 
 				// If we have an encryption key let's encrypt the files.
-				b.mu.Lock()
-				encryptionKey := b.encryptionKey
-				b.mu.Unlock()
 				encrypt := encryptionKey != nil
 				if encrypt {
+					b.log.Infof("using encryption to backup files")
 					for i, p := range paths {
 						destPath := p + ".enc"
 						err = encryptFile(p, destPath, encryptionKey)
@@ -200,16 +227,25 @@ func (b *Manager) Start() error {
 			}
 		}
 	}()
+	b.backupRequestChan <- struct{}{}
 
 	return nil
 }
 
 // SetEncryptionPIN sets the pin which should be used to encrypt the backup files
-func (b *Manager) SetEncryptionPIN(pin string) {
+func (b *Manager) SetEncryptionPIN(pin string) error {
+	if err := b.db.setUseEncryption(pin != ""); err != nil {
+		return err
+	}
 	b.mu.Lock()
 	b.encryptionKey = generateEncryptionKey(pin)
 	b.mu.Unlock()
-	b.RequestBackup()
+
+	// After changing the encryption PIN we'll backup if we have
+	// pending backup requests.
+	b.backupRequestChan <- struct{}{}
+	b.log.Infof("Succesfully set new encryption key")
+	return nil
 }
 
 // Stop stops the BackupService and wait for complete shutdown.

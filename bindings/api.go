@@ -1,7 +1,6 @@
 package bindings
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -111,6 +110,12 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	return err
 }
 
+// SetPinCode sets the security pin code to the backup manager so it
+// can be used in encrypting backup files.
+func SetPinCode(pinCode string) error {
+	return getBreezApp().BackupManager.SetEncryptionPIN(pinCode)
+}
+
 // NeedsBootstrap checks if bootstrap header is needed.
 func NeedsBootstrap() bool {
 	need, err := getBreezApp().NeedsBootstrap()
@@ -207,11 +212,11 @@ func RequestBackup() {
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func RestoreBackup(nodeID string) (err error) {
+func RestoreBackup(nodeID string, pinCode string) (err error) {
 	if err = getBreezApp().Stop(); err != nil {
 		return err
 	}
-	if _, err = getBreezApp().BackupManager.Restore(nodeID, ""); err != nil {
+	if _, err = getBreezApp().BackupManager.Restore(nodeID, pinCode); err != nil {
 		return err
 	}
 	breezApp, err = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
@@ -274,36 +279,6 @@ AddFundsInit is part of the binding inteface which is delegated to breez.AddFund
 */
 func AddFundsInit(breezID string) ([]byte, error) {
 	return marshalResponse(getBreezApp().SwapService.AddFundsInit(breezID))
-}
-
-/*
-GetRefundableSwapAddresses returns all addresses that are refundable, e.g expired and not paid
-*/
-func GetRefundableSwapAddresses() ([]byte, error) {
-	refundableAddresses, err := getBreezApp().SwapService.GetRefundableAddresses()
-	if err != nil {
-		return nil, err
-	}
-
-	var rpcAddresses []*data.SwapAddressInfo
-	for _, a := range refundableAddresses {
-		rpcAddresses = append(rpcAddresses, &data.SwapAddressInfo{
-			Address:                 a.Address,
-			PaymentHash:             hex.EncodeToString(a.PaymentHash),
-			ConfirmedAmount:         a.ConfirmedAmount,
-			ConfirmedTransactionIds: a.ConfirmedTransactionIds,
-			PaidAmount:              a.PaidAmount,
-			LockHeight:              a.LockHeight,
-			ErrorMessage:            a.ErrorMessage,
-			LastRefundTxID:          a.LastRefundTxID,
-		})
-	}
-
-	addressList := &data.SwapAddressList{
-		Addresses: rpcAddresses,
-	}
-	fmt.Printf("GetRefundableSwapAddresses returned %v addresses", len(rpcAddresses))
-	return marshalResponse(addressList, nil)
 }
 
 //Refund transfers the funds in address to the user destination address
