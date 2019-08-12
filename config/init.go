@@ -31,6 +31,7 @@ Config holds the breez configuration
 type Config struct {
 	WorkingDir         string
 	BreezServer        string `long:"breezserver"`
+	LspToken           string `long:"lsptoken"`
 	SwapperPubkey      string `long:"swapperpubkey"`
 	Network            string `long:"network"`
 	GrpcKeepAlive      bool   `long:"grpckeepalive"`
