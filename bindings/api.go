@@ -534,8 +534,8 @@ func LSPList() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.LSPList())
 }
 
-func ConnectToLSP(id string) {
-	getBreezApp().AccountService.OpenLSPChannel(id)
+func ConnectToLSP(id string) error {
+	return getBreezApp().AccountService.OpenLSPChannel(id)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

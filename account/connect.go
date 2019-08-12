@@ -120,9 +120,9 @@ func (a *Service) waitChannelActive() error {
 /*
 OpenLSPChannel is responsible for creating a new channel with the LSP
 */
-func (a *Service) OpenLSPChannel(lspID string) {
+func (a *Service) OpenLSPChannel(lspID string) error {
 	a.log.Info("openLSPChannel started...")
-	createChannelGroup.Do("createChannel", func() (interface{}, error) {
+	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 
 			err := a.connectAndOpenChannel(lspID)
@@ -134,6 +134,7 @@ func (a *Service) OpenLSPChannel(lspID string) {
 			time.Sleep(time.Second * 25)
 		}
 	})
+	return err
 }
 
 func (a *Service) connectAndOpenChannel(lspID string) error {
