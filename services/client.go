@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 // Start the client
@@ -57,7 +58,10 @@ func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, conte
 func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	ctx, cancel := context.WithTimeout(
+		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
+		endpointTimeout*time.Second,
+	)
 	return breezservice.NewChannelOpenerClient(con), ctx, cancel
 }
 
