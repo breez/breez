@@ -102,7 +102,7 @@ func (a *Service) routingNode(lspID string) (string, string, error) {
 		a.log.Infof("The LSP ID is not in the LSPList: %v", lspID)
 		return "", "", fmt.Errorf("The LSP ID is not in the LSPList: %v", lspID)
 	}
-	return l.Host, l.Host, nil
+	return l.Pubkey, l.Host, nil
 }
 
 func (a *Service) waitChannelActive() error {
@@ -138,12 +138,12 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 }
 
 func (a *Service) connectAndOpenChannel(lspID string) error {
-	if err := a.connectLSP(lspID); err != nil {
+	if err := a.connectLSP(lspID); err != nil {		
 		return err
 	}
 
 	hasChan, err := a.hasChannel()
-	if err != nil {
+	if err != nil {		
 		return err
 	}
 
@@ -151,14 +151,14 @@ func (a *Service) connectAndOpenChannel(lspID string) error {
 	if !hasChan {
 		lnclient := a.daemonAPI.APIClient()
 		lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-		if err != nil {
+		if err != nil {			
 			return err
 		}
 
 		c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 		defer cancel()
 		_, err = c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lspID, Pubkey: lnInfo.IdentityPubkey})
-		if err != nil {
+		if err != nil {			
 			return err
 		}
 
