@@ -122,6 +122,8 @@ OpenLSPChannel is responsible for creating a new channel with the LSP
 */
 func (a *Service) OpenLSPChannel(lspID string) error {
 	a.log.Info("openLSPChannel started...")
+	currentBackoff := 2 * time.Second
+	maxBackoff := 32 * time.Second
 	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 
@@ -131,7 +133,11 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 			}
 
 			a.log.Errorf("Error in openChannel: %v, retrying in 25 seconds...", err)
-			time.Sleep(time.Second * 25)
+			time.Sleep(currentBackoff)
+			currentBackoff = currentBackoff * 2
+			if currentBackoff > maxBackoff {
+				currentBackoff = maxBackoff
+			}
 		}
 	})
 	return err
