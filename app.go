@@ -209,7 +209,7 @@ func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 }
 
 func (a *App) NeedsBootstrap() (bool, error) {
-	return chainservice.NeedsBootstrap(a.cfg.WorkingDir)
+	return chainservice.NeedsBootstrap(a.cfg.WorkingDir, a.log)
 }
 
 func (a *App) BootstrapHeaders(bootstrapDir string) error {
