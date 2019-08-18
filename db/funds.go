@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	bolt "go.etcd.io/bbolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 //SwapAddressInfo contains all the infromation regarding
@@ -34,7 +34,7 @@ type SwapAddressInfo struct {
 	EnteredMempool  bool
 
 	//refund
-	LastRefundTxID string
+	LastRefundTxID string	
 }
 
 // Confirmed returns true if the transaction has confirmed in the past.

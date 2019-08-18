@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
-	"sync"
+	"path"	
+	"sync"	
 
 	"github.com/breez/breez/config"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -19,6 +19,7 @@ import (
 const (
 	blockHeaderLength  = 80
 	filterHeaderLength = 32
+	headersBatchSize   = 20000
 )
 
 var (
@@ -177,9 +178,19 @@ func copyFilterHeaderStore(filterHeaderStore headerfs.FilterHeaderStore, blockHe
 			HeaderHash: bHeader.BlockHash(),
 		}
 		headersToWrite = append(headersToWrite, filterHeader)
+		if len(headersToWrite) == headersBatchSize {
+			err = filterHeaderStore.WriteHeaders(headersToWrite...)
+			headersToWrite = nil
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	return filterHeaderStore.WriteHeaders(headersToWrite...)
+	if len(headersToWrite) > 0 {
+		err = filterHeaderStore.WriteHeaders(headersToWrite...)
+	}
+	return err
 }
 
 func totalFilterHeaders(file *os.File) (int64, error) {
@@ -229,9 +240,19 @@ func copyBlockHeaderStore(blockHeaderStore headerfs.BlockHeaderStore, blockHeade
 			BlockHeader: wireHeader,
 		}
 		headersToWrite = append(headersToWrite, blockHeader)
+		if len(headersToWrite) == headersBatchSize {
+			err = blockHeaderStore.WriteHeaders(headersToWrite...)
+			headersToWrite = nil
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	return blockHeaderStore.WriteHeaders(headersToWrite...)
+	if len(headersToWrite) > 0 {
+		err = blockHeaderStore.WriteHeaders(headersToWrite...)
+	}
+	return err
 }
 
 func totalBlockHeaders(file *os.File) (int64, error) {
