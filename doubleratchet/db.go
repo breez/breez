@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	bolt "go.etcd.io/bbolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 const (

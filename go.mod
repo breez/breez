@@ -5,6 +5,7 @@ require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57
+	github.com/coreos/bbolt v1.3.3
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
@@ -12,7 +13,6 @@ require (
 	github.com/lightningnetwork/lnd v0.7.0-beta
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/urfave/cli v1.18.0
-	go.etcd.io/bbolt v1.3.2
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58

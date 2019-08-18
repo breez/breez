@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/binary"
 
-	bolt "go.etcd.io/bbolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 const (

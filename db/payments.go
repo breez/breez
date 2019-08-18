@@ -3,7 +3,7 @@ package db
 import (
 	"encoding/json"
 
-	bolt "go.etcd.io/bbolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 // PaymentType is the type of payment
