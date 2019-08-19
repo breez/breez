@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/breez/breez"
@@ -17,11 +18,17 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+const (
+	forceRescan = "FORCE_RESCAN"
+)
+
 var (
 	appServices AppServices
 	breezApp    *breez.App
 	appLogger   Logger
 	mu          sync.Mutex
+
+	ErrorForceRescan = fmt.Errorf("Force rescan")
 )
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -164,6 +171,9 @@ NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
 func NewSyncJob(workingDir string) (ChannelsWatcherJobController, error) {
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		return nil, ErrorForceRescan
+	}
 	job, err := breezSync.NewJob(workingDir)
 	if err != nil {
 		return nil, err
@@ -176,6 +186,9 @@ NewClosedChannelsJob starts a job to download the list of closed channels.
 The daemon closes itself automatically when reaching this state.
 */
 func NewClosedChannelsJob(workingDir string) (JobController, error) {
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		return nil, ErrorForceRescan
+	}
 	job, err := closedchannels.NewJob(workingDir)
 	if err != nil {
 		return nil, err
