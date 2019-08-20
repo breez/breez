@@ -12,6 +12,7 @@ import (
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/dropwtx"
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/btcsuite/btclog"
@@ -110,6 +111,15 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	if err != nil {
 		fmt.Println("Error in init ", err)
 		return err
+	}
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
+		err = dropwtx.Drop(workingDir)
+		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
+		if err == nil {
+			err = os.Remove(path.Join(workingDir, forceRescan))
+			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
+		}
 	}
 	mu.Lock()
 	breezApp, err = breez.NewApp(workingDir, services)
