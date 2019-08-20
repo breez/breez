@@ -4,7 +4,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57
+	github.com/btcsuite/btcwallet v0.0.0-20190814023431-505acf51507f
 	github.com/coreos/bbolt v1.3.3
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
@@ -23,7 +23,7 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git v0.0.0-20180720073208-c0276d75487e => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
-	github.com/btcsuite/btcwallet v0.0.0-20190628225330-4a9774585e57 => github.com/breez/btcwallet v0.0.0-20190703105141-dad0cf7525f1
+	github.com/btcsuite/btcwallet v0.0.0-20190814023431-505acf51507f => github.com/breez/btcwallet v0.0.0-20190820052426-2f8655345ca7
 	github.com/lightninglabs/neutrino v0.0.0-20190629001446-52dd89dd1aaa => github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0
 	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190715131809-0143c78887af
 
