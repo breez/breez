@@ -135,6 +135,8 @@ message AddFundReply {
 message RefundRequest {
     string address = 1;
     string refundAddress = 2;
+    int32 target_conf = 3;
+    int64 sat_per_byte = 4;
 }
 
 enum SwapError {

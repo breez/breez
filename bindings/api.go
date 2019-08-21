@@ -325,7 +325,7 @@ func Refund(refundRequest []byte) (string, error) {
 	if err := proto.Unmarshal(refundRequest, request); err != nil {
 		return "", err
 	}
-	return getBreezApp().SwapService.Refund(request.Address, request.RefundAddress)
+	return getBreezApp().SwapService.Refund(request.Address, request.RefundAddress, request.TargetConf, request.SatPerByte)
 }
 
 /*
