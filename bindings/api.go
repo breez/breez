@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/breez/breez"
@@ -11,10 +12,15 @@ import (
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/dropwtx"
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
+)
+
+const (
+	forceRescan = "FORCE_RESCAN"
 )
 
 var (
@@ -22,6 +28,8 @@ var (
 	breezApp    *breez.App
 	appLogger   Logger
 	mu          sync.Mutex
+
+	ErrorForceRescan = fmt.Errorf("Force rescan")
 )
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -104,6 +112,15 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		fmt.Println("Error in init ", err)
 		return err
 	}
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
+		err = dropwtx.Drop(workingDir)
+		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
+		if err == nil {
+			err = os.Remove(path.Join(workingDir, forceRescan))
+			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
+		}
+	}
 	mu.Lock()
 	breezApp, err = breez.NewApp(workingDir, services)
 	mu.Unlock()
@@ -164,6 +181,9 @@ NewSyncJob starts breez only to reach synchronized state.
 The daemon closes itself automatically when reaching this state.
 */
 func NewSyncJob(workingDir string) (ChannelsWatcherJobController, error) {
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		return nil, ErrorForceRescan
+	}
 	job, err := breezSync.NewJob(workingDir)
 	if err != nil {
 		return nil, err
@@ -176,6 +196,9 @@ NewClosedChannelsJob starts a job to download the list of closed channels.
 The daemon closes itself automatically when reaching this state.
 */
 func NewClosedChannelsJob(workingDir string) (JobController, error) {
+	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
+		return nil, ErrorForceRescan
+	}
 	job, err := closedchannels.NewJob(workingDir)
 	if err != nil {
 		return nil, err
