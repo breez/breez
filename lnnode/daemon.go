@@ -11,6 +11,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/signal"
 )
 
@@ -88,6 +89,12 @@ func (d *Daemon) BreezBackupClient() breezbackuprpc.BreezBackuperClient {
 	d.Lock()
 	defer d.Unlock()
 	return d.breezBackupClient
+}
+
+func (d *Daemon) RouterClient() routerrpc.RouterClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.routerClient
 }
 
 // RestartDaemon is used to restart a daemon that from some reason failed to start
