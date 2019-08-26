@@ -9,6 +9,7 @@ import (
 
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
@@ -20,7 +21,8 @@ import (
 )
 
 const (
-	forceRescan = "FORCE_RESCAN"
+	forceRescan    = "FORCE_RESCAN"
+	forceBootstrap = "FORCE_BOOTSTRAP"
 )
 
 var (
@@ -29,7 +31,8 @@ var (
 	appLogger   Logger
 	mu          sync.Mutex
 
-	ErrorForceRescan = fmt.Errorf("Force rescan")
+	ErrorForceRescan    = fmt.Errorf("Force rescan")
+	ErrorForceBootstrap = fmt.Errorf("Force bootstrap")
 )
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -112,6 +115,15 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		fmt.Println("Error in init ", err)
 		return err
 	}
+	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
+		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
+		err = chainservice.ResetChainService(workingDir)
+		appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
+		if err == nil {
+			err = os.Remove(path.Join(workingDir, forceBootstrap))
+			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
+		}
+	}
 	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
 		err = dropwtx.Drop(workingDir)
@@ -184,6 +196,9 @@ func NewSyncJob(workingDir string) (ChannelsWatcherJobController, error) {
 	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
 		return nil, ErrorForceRescan
 	}
+	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
+		return nil, ErrorForceBootstrap
+	}
 	job, err := breezSync.NewJob(workingDir)
 	if err != nil {
 		return nil, err
@@ -198,6 +213,9 @@ The daemon closes itself automatically when reaching this state.
 func NewClosedChannelsJob(workingDir string) (JobController, error) {
 	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
 		return nil, ErrorForceRescan
+	}
+	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
+		return nil, ErrorForceBootstrap
 	}
 	job, err := closedchannels.NewJob(workingDir)
 	if err != nil {
