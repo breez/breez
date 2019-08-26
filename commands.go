@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/urfave/cli"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -30,6 +31,7 @@ import (
 var returnBuffer string
 var lightningClient lnrpc.LightningClient
 var backupClient breezbackuprpc.BreezBackuperClient
+var routerClient routerrpc.RouterClient
 
 func (a *App) SendCommand(command string) (string, error) {
 	app := cli.NewApp()
@@ -72,9 +74,12 @@ func (a *App) SendCommand(command string) (string, error) {
 		feeReportCommand,
 		updateChannelPolicyCommand,
 		forwardingHistoryCommand,
+		queryMissionControlCommand,
+		resetMissionControlCommand,
 	}
 	lightningClient = a.lnDaemon.APIClient()
 	backupClient = a.lnDaemon.BreezBackupClient()
+	routerClient = a.lnDaemon.RouterClient()
 
 	commandArguments := strings.Split(command, " ")
 
@@ -2847,3 +2852,65 @@ func forwardingHistory(ctx *cli.Context) error {
 	printRespJSON(resp)
 	return nil
 }
+
+var queryMissionControlCommand = cli.Command{
+	Name:     "querymc",
+	Category: "Payments",
+	Usage:    "Query the internal mission control state.",
+	Action:   actionDecorator(queryMissionControl),
+}
+
+func queryMissionControl(ctx *cli.Context) error {
+	ctxb := context.Background()
+	client := routerClient	
+
+	req := &routerrpc.QueryMissionControlRequest{}	
+	snapshot, err := client.QueryMissionControl(ctxb, req)
+	if err != nil {
+		return err
+	}
+
+	type displayNodeHistory struct {
+		Pubkey               string
+		LastFailTime         int64
+		OtherChanSuccessProb float32
+		Channels             []*routerrpc.ChannelHistory
+	}
+
+	displayResp := struct {
+		Nodes []displayNodeHistory
+	}{}
+
+	for _, n := range snapshot.Nodes {
+		displayResp.Nodes = append(
+			displayResp.Nodes,
+			displayNodeHistory{
+				Pubkey:               hex.EncodeToString(n.Pubkey),
+				LastFailTime:         n.LastFailTime,
+				OtherChanSuccessProb: n.OtherChanSuccessProb,
+				Channels:             n.Channels,
+			},
+		)
+	}
+
+	printJSON(displayResp)
+
+	return nil
+}
+
+var resetMissionControlCommand = cli.Command{
+	Name:     "resetmc",
+	Category: "Payments",
+	Usage:    "Reset internal mission control state.",
+	Action:   actionDecorator(resetMissionControl),
+}
+
+func resetMissionControl(ctx *cli.Context) error {
+	ctxb := context.Background()
+	client := routerClient	
+
+	req := &routerrpc.ResetMissionControlRequest{}	
+	_, err := client.ResetMissionControl(ctxb, req)
+	return err
+}
+
