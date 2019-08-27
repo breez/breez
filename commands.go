@@ -113,8 +113,9 @@ func printJSON(resp interface{}) {
 	out.WriteString("\n")
 
 	// Both print and return to caller (for easy ADB access)
-	out.WriteTo(os.Stdout)
-	returnBuffer = out.String()
+	outStr := out.String()
+	fmt.Println("output comand = ", outStr)
+	returnBuffer = outStr
 }
 
 func saveRespJSON(resp proto.Message, filename string) {
@@ -2910,7 +2911,12 @@ func resetMissionControl(ctx *cli.Context) error {
 	client := routerClient	
 
 	req := &routerrpc.ResetMissionControlRequest{}	
-	_, err := client.ResetMissionControl(ctxb, req)
-	return err
+	resp, err := client.ResetMissionControl(ctxb, req)
+	if err != nil {
+		return err
+	}
+
+	printRespJSON(resp)
+	return nil
 }
 
