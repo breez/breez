@@ -25,7 +25,7 @@ replace (
 	git.schwanenlied.me/yawning/bsaes.git v0.0.0-20180720073208-c0276d75487e => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
 	github.com/btcsuite/btcwallet v0.0.0-20190814023431-505acf51507f => github.com/breez/btcwallet v0.0.0-20190820052426-2f8655345ca7
 	github.com/lightninglabs/neutrino v0.0.0-20190629001446-52dd89dd1aaa => github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0
-	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190715131809-0143c78887af
+	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190821121826-c30ced2b358e
 
 	golang.org/x/net => github.com/golang/net latest
 )

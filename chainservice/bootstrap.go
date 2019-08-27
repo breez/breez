@@ -27,6 +27,27 @@ var (
 	bootstrapMu sync.Mutex
 )
 
+func ResetChainService(workingDir string) error {
+	bootstrapMu.Lock()
+	defer bootstrapMu.Unlock()
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return err
+	}
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)	
+	if err = os.Remove(path.Join(neutrinoDataDir, "neutrino.db")); err != nil {
+		return err
+	}
+	if err = os.Remove(path.Join(neutrinoDataDir, "reg_filter_headers.bin")); err != nil {
+		return err
+	}
+	if err = os.Remove(path.Join(neutrinoDataDir, "block_headers.bin")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NeedsBootstrap(workingDir string, logger btclog.Logger) (bool, error) {
 	logger.Info("NeedsBootstrap started")
 	bootstrapMu.Lock()

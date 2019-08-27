@@ -211,7 +211,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 }
 
 //Refund broadcast a refund transaction for a sub swap address.
-func (s *Service) Refund(address, refundAddress string) (string, error) {
+func (s *Service) Refund(address, refundAddress string, targetConf int32, satPerByte int64) (string, error) {
 	s.log.Infof("Starting refund flow...")
 	lnclient := s.daemonAPI.SubSwapClient()
 	if lnclient == nil {
@@ -221,6 +221,8 @@ func (s *Service) Refund(address, refundAddress string) (string, error) {
 	res, err := lnclient.SubSwapClientRefund(context.Background(), &submarineswaprpc.SubSwapClientRefundRequest{
 		Address:       address,
 		RefundAddress: refundAddress,
+		TargetConf:    targetConf,
+		SatPerByte:    satPerByte,
 	})
 	if err != nil {
 		s.log.Errorf("unable to execute SubSwapClientRefund: %v", err)
