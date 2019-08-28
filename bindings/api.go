@@ -316,6 +316,13 @@ func ConnectAccount() error {
 }
 
 /*
+EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
+*/
+func EnableAccount(enabled bool) error {
+	return getBreezApp().AccountService.EnableAccount(enabled)	
+}
+
+/*
 AddFundsInit is part of the binding inteface which is delegated to breez.AddFundsInit
 */
 func AddFundsInit(breezID string) ([]byte, error) {

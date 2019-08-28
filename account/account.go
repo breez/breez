@@ -35,6 +35,18 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
+// EnableAccount controls whether the account will be enabled or disabled.
+// When disbled, no attempt will be made to open a channel with breez node.
+func (a *Service) EnableAccount(enabled bool) error {
+	if err := a.breezDB.EnableAccount(enabled); err != nil {
+		a.log.Infof("Error in enabling account (enabled = %v) %v", enabled, err)
+		return err
+	}	
+	a.onAccountChanged()
+	return nil
+}
+
+
 /*func (a *Service) updateNodeChannelPolicy() {
 	accData, err := a.calculateAccount()
 	if err != nil {
@@ -232,6 +244,10 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	}
 	a.log.Infof("Routing node fee rate = %v", routingNodeFeeRate)
 
+	enabled, err := a.breezDB.AccountEnabled()
+	if err != nil {
+		return nil, err
+	}
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
@@ -244,6 +260,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		WalletBalance:       onChainBalance,
 		RoutingNodeFee:      routingNodeFeeRate,
 		ReadyForPayments:    a.daemonAPI.HasActiveChannel(),
+		Enabled: 			 enabled,
 	}, nil
 }
 
