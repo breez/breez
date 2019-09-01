@@ -2863,9 +2863,9 @@ var queryMissionControlCommand = cli.Command{
 
 func queryMissionControl(ctx *cli.Context) error {
 	ctxb := context.Background()
-	client := routerClient	
+	client := routerClient
 
-	req := &routerrpc.QueryMissionControlRequest{}	
+	req := &routerrpc.QueryMissionControlRequest{}
 	snapshot, err := client.QueryMissionControl(ctxb, req)
 	if err != nil {
 		return err
@@ -2908,9 +2908,9 @@ var resetMissionControlCommand = cli.Command{
 
 func resetMissionControl(ctx *cli.Context) error {
 	ctxb := context.Background()
-	client := routerClient	
+	client := routerClient
 
-	req := &routerrpc.ResetMissionControlRequest{}	
+	req := &routerrpc.ResetMissionControlRequest{}
 	resp, err := client.ResetMissionControl(ctxb, req)
 	if err != nil {
 		return err
@@ -2919,4 +2919,3 @@ func resetMissionControl(ctx *cli.Context) error {
 	printRespJSON(resp)
 	return nil
 }
-

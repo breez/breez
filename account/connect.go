@@ -2,13 +2,20 @@ package account
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/lightningnetwork/lnd/lnrpc"
-
 	breezservice "github.com/breez/breez/breez"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+)
+
+const (
+	captchaAuthType = "Captcha-v1"
 )
 
 var (
@@ -120,18 +127,20 @@ func (a *Service) waitChannelActive() error {
 /*
 OpenLSPChannel is responsible for creating a new channel with the LSP
 */
-func (a *Service) OpenLSPChannel(lspID string) error {
+func (a *Service) OpenLSPChannel(lspID, captchaID, captchaValue string) (string, []byte, error) {
 	a.log.Info("openLSPChannel started...")
 	currentBackoff := 2 * time.Second
 	maxBackoff := 32 * time.Second
 	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
 
-			err := a.connectAndOpenChannel(lspID)
+			err := a.connectAndOpenChannel(lspID, captchaID, captchaValue)
 			if err == nil {
 				return nil, nil
 			}
-
+			if st, ok := status.FromError(err); ok && st.Code() == codes.PermissionDenied {
+				return nil, err
+			}
 			a.log.Errorf("Error in openChannel: %v, retrying in 25 seconds...", err)
 			time.Sleep(currentBackoff)
 			currentBackoff = currentBackoff * 2
@@ -140,16 +149,24 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 			}
 		}
 	})
-	return err
+	if st, ok := status.FromError(err); ok && st.Code() == codes.PermissionDenied {
+		for _, d := range st.Details() {
+			if v, ok := d.(*breezservice.Captcha); ok {
+				a.log.Errorf("id: %v, image: data:image/png;base64,%s", v.Id, base64.StdEncoding.EncodeToString(v.Image))
+				return v.Id, v.Image, err
+			}
+		}
+	}
+	return "", nil, err
 }
 
-func (a *Service) connectAndOpenChannel(lspID string) error {
-	if err := a.connectLSP(lspID); err != nil {		
+func (a *Service) connectAndOpenChannel(lspID, captchaID, captchaValue string) error {
+	if err := a.connectLSP(lspID); err != nil {
 		return err
 	}
 
 	hasChan, err := a.hasChannel()
-	if err != nil {		
+	if err != nil {
 		return err
 	}
 
@@ -157,14 +174,17 @@ func (a *Service) connectAndOpenChannel(lspID string) error {
 	if !hasChan {
 		lnclient := a.daemonAPI.APIClient()
 		lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-		if err != nil {			
+		if err != nil {
 			return err
 		}
 
 		c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 		defer cancel()
+		if captchaID != "" {
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("%s %s %s", captchaAuthType, captchaID, captchaValue))
+		}
 		_, err = c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lspID, Pubkey: lnInfo.IdentityPubkey})
-		if err != nil {			
+		if err != nil {
 			return err
 		}
 

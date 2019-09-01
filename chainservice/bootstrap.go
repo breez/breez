@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"	
-	"sync"	
+	"path"
+	"sync"
 
 	"github.com/breez/breez/config"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -34,7 +34,7 @@ func ResetChainService(workingDir string) error {
 	if err != nil {
 		return err
 	}
-	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)	
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
 	if err = os.Remove(path.Join(neutrinoDataDir, "neutrino.db")); err != nil {
 		return err
 	}

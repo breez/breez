@@ -34,7 +34,7 @@ type SwapAddressInfo struct {
 	EnteredMempool  bool
 
 	//refund
-	LastRefundTxID string	
+	LastRefundTxID string
 }
 
 // Confirmed returns true if the transaction has confirmed in the past.

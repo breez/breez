@@ -265,3 +265,13 @@ message LSPInformation {
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }
+
+message ConnectToLSPRequest {
+    string lsp_id = 1;
+    string captcha_id = 2;
+    string captcha_value = 3;
+}
+message ConnectToLSPReply {
+    string captcha_id = 1;
+    bytes captcha_image = 2;
+}

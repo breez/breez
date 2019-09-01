@@ -319,7 +319,7 @@ func ConnectAccount() error {
 EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
 */
 func EnableAccount(enabled bool) error {
-	return getBreezApp().AccountService.EnableAccount(enabled)	
+	return getBreezApp().AccountService.EnableAccount(enabled)
 }
 
 /*
@@ -582,8 +582,20 @@ func LSPList() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.LSPList())
 }
 
-func ConnectToLSP(id string) error {
-	return getBreezApp().AccountService.OpenLSPChannel(id)
+func ConnectToLSP(request []byte) ([]byte, error) {
+	var rq data.ConnectToLSPRequest
+	if err := proto.Unmarshal(request, &rq); err != nil {
+		return nil, err
+	}
+	id, image, OpenErr := getBreezApp().AccountService.OpenLSPChannel(rq.LspId, rq.CaptchaId, rq.CaptchaValue)
+	var reply data.ConnectToLSPReply
+	reply.CaptchaId = id
+	reply.CaptchaImage = image
+	res, err := proto.Marshal(&reply)
+	if err != nil {
+		return nil, err
+	}
+	return res, OpenErr
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

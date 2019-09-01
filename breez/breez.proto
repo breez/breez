@@ -103,6 +103,11 @@ message OpenChannelRequest {
 
 message OpenChannelReply {}
 
+message Captcha {
+  string id = 1;
+  bytes image = 2;
+}
+
 message UpdateChannelPolicyRequest {
     string pubKey = 1;
 }

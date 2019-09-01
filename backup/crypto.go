@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"	
+	"crypto/sha256"
 	"io"
 	"io/ioutil"
 	"os"
