@@ -132,31 +132,32 @@ func (a *Service) ensureRoutingChannelOpened() {
 	})
 }
 
-func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, error) {
-	channelPoints, _, err := a.getBreezOpenChannels()
+func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, string, error) {
+	_, channelPoints, err := a.getBreezOpenChannels()
 	if err != nil {
-		return -1, err
+		return -1, "", err
 	}
 	if len(channelPoints) > 0 {
-		return data.Account_ACTIVE, nil
+		return data.Account_ACTIVE, channelPoints[0], nil
 	}
 
 	lnclient := a.daemonAPI.APIClient()
 	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
 	if err != nil {
-		return -1, err
+		return -1, "", err
 	}
 	if len(pendingChannels.PendingOpenChannels) > 0 {
-		return data.Account_PROCESSING_BREEZ_CONNECTION, nil
+		chanPoint := pendingChannels.PendingOpenChannels[0].Channel.ChannelPoint
+		return data.Account_PROCESSING_BREEZ_CONNECTION, chanPoint, nil
 	}
 	if len(pendingChannels.PendingClosingChannels) > 0 || len(pendingChannels.PendingForceClosingChannels) > 0 {
-		return data.Account_PROCESSING_WITHDRAWAL, nil
+		return data.Account_PROCESSING_WITHDRAWAL, "", nil
 	}
 
 	if walletBalance.UnconfirmedBalance > 0 {
-		return data.Account_WAITING_DEPOSIT_CONFIRMATION, nil
+		return data.Account_WAITING_DEPOSIT_CONFIRMATION, "", nil
 	}
-	return data.Account_WAITING_DEPOSIT, nil
+	return data.Account_WAITING_DEPOSIT, "", nil
 }
 
 func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
@@ -299,7 +300,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	accStatus, err := a.getAccountStatus(walletBalance)
+	accStatus, chanPoint, err := a.getAccountStatus(walletBalance)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +333,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		WalletBalance:       onChainBalance,
 		RoutingNodeFee:      routingNodeFeeRate,
 		Enabled:             enabled,
+		ChannelPoint:        chanPoint,
 	}, nil
 }
 
