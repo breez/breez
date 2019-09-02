@@ -38,6 +38,9 @@ message Account {
 
     //maximum chan reserve accross all channels of this account.
     int64 maxChanReserve = 10;
+
+    //The funding transaction id of the channel.
+    string channelPoint = 11;
 }
 
 message Payment {
