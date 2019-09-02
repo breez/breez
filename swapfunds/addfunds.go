@@ -437,6 +437,10 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	} else {
 		addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
 		if err != nil {
+			s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+				a.ErrorMessage = err.Error()
+				return nil
+			})
 			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
 		paymentRequest = addInvoice.PaymentRequest
