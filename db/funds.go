@@ -34,7 +34,7 @@ type SwapAddressInfo struct {
 	EnteredMempool  bool
 
 	//refund
-	LastRefundTxID string	
+	LastRefundTxID string
 }
 
 // Confirmed returns true if the transaction has confirmed in the past.
@@ -181,6 +181,18 @@ func (db *DB) UpdateRedeemTxForPayment(hash string, txID string) error {
 		redeemableHashesB := tx.Bucket([]byte(redeemableHashesBucket))
 		return redeemableHashesB.Delete([]byte(hash))
 	})
+}
+
+// IsInvoiceHashPaid returns true if the payReqHash was paid by this client.
+func (db *DB) IsInvoiceHashPaid(payReqHash string) (bool, error) {
+	var paid bool
+	err := db.View(func(tx *bolt.Tx) error {
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		paymentIndex := hashB.Get([]byte(payReqHash))
+		paid = paymentIndex != nil
+		return nil
+	})
+	return paid, err
 }
 
 func serializeSwapAddressInfo(s *SwapAddressInfo) ([]byte, error) {

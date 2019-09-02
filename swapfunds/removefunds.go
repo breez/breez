@@ -66,8 +66,19 @@ func (s *Service) redeemAllRemovedFunds() error {
 		s.log.Errorf("failed to fetchRedeemablePaymentHashes, %v", err)
 		return err
 	}
+
 	for _, hash := range hashes {
 		s.log.Infof("Redeeming transaction for has %v", hash)
+		paid, err := s.breezDB.IsInvoiceHashPaid(hash)
+		if err != nil {
+			s.log.Infof("Skipping payment hash %v as couldn't fetch payment from db %v", hash, err)
+			continue
+		}
+		if !paid {
+			s.log.Infof("Skipping payment hash %v as it was not paid by this client")
+			continue
+		}
+
 		txID, err := s.redeemRemovedFundsForHash(hash)
 		if err != nil {
 			s.log.Errorf("failed to redeem funds for hash %v, %v", hash, err)
