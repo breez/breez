@@ -74,9 +74,8 @@ message PaymentResponse {
 }
 
 message SendWalletCoinsRequest {
-    string address = 1;
-    int64 amount = 2;
-    int64 satPerByteFee = 3;    
+    string address = 1;    
+    int64 satPerByteFee = 2;    
 }
 
 message PayInvoiceRequest {

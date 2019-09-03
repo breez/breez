@@ -425,7 +425,7 @@ SendWalletCoins is part of the binding inteface which is delegated to breez.Send
 func SendWalletCoins(sendCoinsRequest []byte) (string, error) {
 	unmarshaledRequest := data.SendWalletCoinsRequest{}
 	proto.Unmarshal(sendCoinsRequest, &unmarshaledRequest)
-	return getBreezApp().AccountService.SendWalletCoins(unmarshaledRequest.Address, unmarshaledRequest.Amount, unmarshaledRequest.SatPerByteFee)
+	return getBreezApp().AccountService.SendWalletCoins(unmarshaledRequest.Address, unmarshaledRequest.SatPerByteFee)
 }
 
 /*
