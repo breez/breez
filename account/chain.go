@@ -42,9 +42,10 @@ func (a *Service) ValidateAddress(address string) error {
 /*
 SendWalletCoins executes a request to send wallet coins to a particular address.
 */
-func (a *Service) SendWalletCoins(address string, satAmount, satPerByteFee int64) (string, error) {
+func (a *Service) SendWalletCoins(address string, satPerByteFee int64) (string, error) {
 	lnclient := a.daemonAPI.APIClient()
-	res, err := lnclient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{Addr: address, Amount: satAmount, SatPerByte: satPerByteFee})
+	res, err := lnclient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{
+		Addr: address, SatPerByte: satPerByteFee, SendAll: true})
 	if err != nil {
 		return "", err
 	}
