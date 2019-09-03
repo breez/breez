@@ -195,13 +195,17 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		// In case the transactino is confirmed and has positive output, we will check
 		// if it is ready for completing the process by the client or it has error.
 		if a.ConfirmedAmount > 0 {
-			if a.LockHeight > info.BlockHeight && data.SwapError(a.SwapErrorReason) == data.SwapError_NO_ERROR {
+			paid := a.PaidAmount > 0
+
+			if !paid && a.LockHeight > info.BlockHeight && data.SwapError(a.SwapErrorReason) == data.SwapError_NO_ERROR {
 				statusReply.ConfirmedAddresses = append(statusReply.ConfirmedAddresses, createRPCSwapAddressInfo(a))
 				continue
 			}
 
-			s.log.Infof("Adding refundable address: %v", a.Address)
-			statusReply.RefundableAddresses = append(statusReply.RefundableAddresses, createRPCSwapAddressInfo(a))
+			if !paid || a.LockHeight <= info.BlockHeight {
+				s.log.Infof("Adding refundable address: %v", a.Address)
+				statusReply.RefundableAddresses = append(statusReply.RefundableAddresses, createRPCSwapAddressInfo(a))
+			}
 		}
 	}
 
