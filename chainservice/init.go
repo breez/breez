@@ -2,6 +2,7 @@ package chainservice
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -35,7 +36,7 @@ var (
 func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupFn func() error, err error) {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
-	
+
 	chainSer, release, err := serviceRefCounter.Get(
 		func() (interface{}, refcount.ReleaseFunc, error) {
 			return createService(workingDir, breezDB)
@@ -46,6 +47,72 @@ func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupF
 	}
 	service = chainSer.(*neutrino.ChainService)
 	return service, release, err
+}
+
+func restoreNeutrinoVariables() func() {
+	curMaxPeers := neutrino.MaxPeers
+	curBanDuration := neutrino.BanDuration
+	curConnectionRetryInterval := neutrino.ConnectionRetryInterval
+	curQueryBatchTimeout := neutrino.QueryBatchTimeout
+
+	return func() {
+		neutrino.MaxPeers = curMaxPeers
+		neutrino.BanDuration = curBanDuration
+		neutrino.ConnectionRetryInterval = curConnectionRetryInterval
+		neutrino.QueryBatchTimeout = curQueryBatchTimeout
+	}
+}
+
+func TestPeer(peer string) error {
+	defer restoreNeutrinoVariables()
+	neutrino.MaxPeers = 1
+	neutrino.BanDuration = 5 * time.Second
+	neutrino.ConnectionRetryInterval = 1 * time.Second
+	neutrino.QueryBatchTimeout = time.Second * 300
+
+	tempDir, err := ioutil.TempDir("", "testConnection")
+	if err != nil {
+		logger.Errorf("Error in ioutil.TempDir: %v", err)
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+	logger.Infof("TestDir tempDir: %v", tempDir)
+
+	neutrinoDataDir := path.Join(tempDir, "data")
+	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
+		logger.Errorf("Error in os.MkdirAll %v", err)
+		return err
+	}
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
+	db, err := walletdb.Create("bdb", neutrinoDB)
+	if err != nil {
+		logger.Errorf("Error in walletdb.Create: %v", err)
+		return err
+	}
+
+	neutrinoConfig := neutrino.Config{
+		DataDir:      neutrinoDataDir,
+		Database:     db,
+		ChainParams:  chaincfg.MainNetParams,
+		ConnectPeers: []string{peer},
+	}
+	chainService, err := neutrino.NewChainService(neutrinoConfig)
+	if err != nil {
+		logger.Errorf("Error in neutrino.NewChainService: %v", err)
+		return err
+	}
+	err = chainService.Start()
+	if err != nil {
+		logger.Errorf("Error in chainService.Start: %v", err)
+		return err
+	}
+	time.Sleep(10 * time.Second)
+	c := chainService.ConnectedCount()
+	if c < 1 {
+		logger.Errorf("chainService.ConnectedCount() returned 0")
+		return fmt.Errorf("Cannot connect to peer")
+	}
+	return nil
 }
 
 func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, refcount.ReleaseFunc, error) {

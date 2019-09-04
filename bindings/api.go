@@ -581,6 +581,10 @@ func SetPeers(request []byte) error {
 	return err
 }
 
+func TestPeer(peer string) error {
+	return chainservice.TestPeer(peer)
+}
+
 func Rate() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.Rates())
 }
