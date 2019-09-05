@@ -40,6 +40,9 @@ message Account {
 
     // reflects if this account can receive/send payments.
     bool readyForPayments = 11;
+
+    //The funding transaction id of the channel.
+    string channelPoint = 12;
 }
 
 message Payment {
@@ -73,9 +76,8 @@ message PaymentResponse {
 }
 
 message SendWalletCoinsRequest {
-    string address = 1;
-    int64 amount = 2;
-    int64 satPerByteFee = 3;    
+    string address = 1;    
+    int64 satPerByteFee = 2;    
 }
 
 message PayInvoiceRequest {
