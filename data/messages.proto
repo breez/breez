@@ -36,13 +36,13 @@ message Account {
     bool enabled = 9;
 
     //maximum chan reserve accross all channels of this account.
-    int64 maxChanReserve = 10;
-
-    // reflects if this account can receive/send payments.
-    bool readyForPayments = 11;
+    int64 maxChanReserve = 10;   
 
     //The funding transaction id of the channel.
-    string channelPoint = 12;
+    string channelPoint = 11;
+
+    // reflects if this account can receive/send payments.
+    bool readyForPayments = 12;
 }
 
 message Payment {
