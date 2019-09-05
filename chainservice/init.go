@@ -117,7 +117,7 @@ func TestPeer(peer string) error {
 
 func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, refcount.ReleaseFunc, error) {
 	var err error
-	neutrino.MaxPeers = 8
+	neutrino.MaxPeers = 1
 	neutrino.BanDuration = 5 * time.Second
 	neutrino.ConnectionRetryInterval = 1 * time.Second
 	config, err := config.GetConfig(workingDir)
