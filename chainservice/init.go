@@ -49,27 +49,7 @@ func Get(workingDir string, breezDB *db.DB) (cs *neutrino.ChainService, cleanupF
 	return service, release, err
 }
 
-func restoreNeutrinoVariables() func() {
-	curMaxPeers := neutrino.MaxPeers
-	curBanDuration := neutrino.BanDuration
-	curConnectionRetryInterval := neutrino.ConnectionRetryInterval
-	curQueryBatchTimeout := neutrino.QueryBatchTimeout
-
-	return func() {
-		neutrino.MaxPeers = curMaxPeers
-		neutrino.BanDuration = curBanDuration
-		neutrino.ConnectionRetryInterval = curConnectionRetryInterval
-		neutrino.QueryBatchTimeout = curQueryBatchTimeout
-	}
-}
-
 func TestPeer(peer string) error {
-	defer restoreNeutrinoVariables()
-	neutrino.MaxPeers = 1
-	neutrino.BanDuration = 5 * time.Second
-	neutrino.ConnectionRetryInterval = 1 * time.Second
-	neutrino.QueryBatchTimeout = time.Second * 300
-
 	tempDir, err := ioutil.TempDir("", "testConnection")
 	if err != nil {
 		logger.Errorf("Error in ioutil.TempDir: %v", err)
