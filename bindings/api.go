@@ -291,7 +291,10 @@ func DaemonReady() bool {
 OnResume just calls the breez.OnResume
 */
 func OnResume() {
-	getBreezApp().OnResume()
+	app := getBreezApp()
+	if app != nil {
+		app.OnResume()
+	}
 }
 
 /*
