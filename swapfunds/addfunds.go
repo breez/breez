@@ -199,6 +199,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 			if !paid && a.LockHeight > info.BlockHeight && data.SwapError(a.SwapErrorReason) == data.SwapError_NO_ERROR {
 				statusReply.ConfirmedAddresses = append(statusReply.ConfirmedAddresses, createRPCSwapAddressInfo(a))
+				s.log.Infof("Adding confirmed address: %v", a.Address)
 				continue
 			}
 
