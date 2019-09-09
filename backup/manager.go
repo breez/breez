@@ -60,7 +60,8 @@ func (b *Manager) requestBackup(delay time.Duration) {
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
-func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
+func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
+
 	backupID, err := b.getBackupIdentifier()
 	if err != nil {
 		return nil, err
@@ -74,11 +75,10 @@ func (b *Manager) Restore(nodeID string, key string) ([]string, error) {
 	}
 
 	// If we got an encryption key, let's decrypt the files
-	if key != "" {
-		decKey := generateEncryptionKey(key)
+	if key != nil {		
 		for i, p := range files {
 			destPath := p + ".decrypted"
-			err = decryptFile(p, destPath, decKey)
+			err = decryptFile(p, destPath, key)
 			if err != nil {
 				return nil, errors.New("Failed to restore backup due to incorrect PIN")
 			}
@@ -167,8 +167,8 @@ func (b *Manager) Start() error {
 					continue
 				}
 
-				b.mu.Lock()
-				encryptionKey := b.encryptionKey
+				b.mu.Lock()				
+				encryptionKey := b.encryptionKey				
 				b.mu.Unlock()
 
 				useEncryption, err := b.db.useEncryption()
@@ -214,7 +214,7 @@ func (b *Manager) Start() error {
 					}
 				}
 
-				if err := b.provider.UploadBackupFiles(paths, nodeID, encrypt); err != nil {
+				if err := b.provider.UploadBackupFiles(paths, nodeID, b.encryptionType); err != nil {
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
@@ -232,13 +232,15 @@ func (b *Manager) Start() error {
 	return nil
 }
 
-// SetEncryptionPIN sets the pin which should be used to encrypt the backup files
-func (b *Manager) SetEncryptionPIN(pin string) error {
-	if err := b.db.setUseEncryption(pin != ""); err != nil {
+// SetEncryptionKey sets the pin which should be used to encrypt the backup files
+func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {	
+	if err := b.db.setUseEncryption(len(encKey) > 0); err != nil {
 		return err
-	}
+	}	
+
 	b.mu.Lock()
-	b.encryptionKey = generateEncryptionKey(pin)
+	b.encryptionKey = encKey
+	b.encryptionType = encryptionType
 	b.mu.Unlock()
 
 	// After changing the encryption PIN we'll backup if we have
