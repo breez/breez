@@ -75,7 +75,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 	}
 
 	// If we got an encryption key, let's decrypt the files
-	if key != nil {		
+	if key != nil {
 		for i, p := range files {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, key)
@@ -167,9 +167,9 @@ func (b *Manager) Start() error {
 					continue
 				}
 
-				b.mu.Lock()				
+				b.mu.Lock()
 				encryptionKey := b.encryptionKey
-				encryptionType := b.encryptionType				
+				encryptionType := b.encryptionType
 				b.mu.Unlock()
 
 				useEncryption, err := b.db.useEncryption()
@@ -234,10 +234,10 @@ func (b *Manager) Start() error {
 }
 
 // SetEncryptionKey sets the pin which should be used to encrypt the backup files
-func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {	
+func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {
 	if err := b.db.setUseEncryption(len(encKey) > 0); err != nil {
 		return err
-	}	
+	}
 
 	b.mu.Lock()
 	b.encryptionKey = encKey

@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	backupIDProperty           = "backupID"
-	activeBackupFolderProperty = "activeBackupFolder"
-	backupEncryptedProperty    = "backupEncrypted" //legacy
-	backupEncryptionTypeProperty    = "backupEncryptionType"
+	backupIDProperty             = "backupID"
+	activeBackupFolderProperty   = "activeBackupFolder"
+	backupEncryptedProperty      = "backupEncrypted" //legacy
+	backupEncryptionTypeProperty = "backupEncryptionType"
 )
 
 // driveServiceError is the type of error this provider returns in case
@@ -221,8 +221,8 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 
 	// Update active backup folder for this specific node folder
 	folderUpdate := &drive.File{AppProperties: map[string]string{
-		activeBackupFolderProperty: newBackupFolder.Id,
-		backupEncryptionTypeProperty: encryptionType,		
+		activeBackupFolderProperty:   newBackupFolder.Id,
+		backupEncryptionTypeProperty: encryptionType,
 	}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
