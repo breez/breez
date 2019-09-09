@@ -26,7 +26,7 @@ type MockTester struct {
 	downloadCounter         int
 	preparer                DataPreparer
 	lastNotification        data.NotificationEvent
-	UploadBackupFilesImpl   func(files []string, nodeID string, encrypted bool) error
+	UploadBackupFilesImpl   func(files []string, nodeID string, encryptionType string) error
 	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
 	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
 	MsgChannel              chan data.NotificationEvent
@@ -44,7 +44,7 @@ func newDefaultMockTester() *MockTester {
 		p.downloadCounter++
 		return []string{}, nil
 	}
-	p.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
+	p.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
 		time.Sleep(time.Millisecond * 10)
 		p.uploadCounter++
 		return nil
@@ -53,8 +53,8 @@ func newDefaultMockTester() *MockTester {
 	return &p
 }
 
-func (m *MockTester) UploadBackupFiles(files []string, nodeID string, encrypted bool) error {
-	return m.UploadBackupFilesImpl(files, nodeID, false)
+func (m *MockTester) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
+	return m.UploadBackupFilesImpl(files, nodeID, "")
 }
 func (m *MockTester) AvailableSnapshots() ([]SnapshotInfo, error) {
 	return m.AvailableSnapshotsImpl()
@@ -188,7 +188,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 
 func TestErrorInUpload(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
 		return errors.New("failed to upload files")
 	}
 	manager, err := createTestManager(tester)
@@ -210,7 +210,7 @@ func TestErrorInUpload(t *testing.T) {
 
 func TestAuthError(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encrypted bool) error {
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
 		return &mockAuthError{}
 	}
 	manager, err := createTestManager(tester)
@@ -243,7 +243,7 @@ func TestRestoreWrongNumberOfFiles(t *testing.T) {
 	}
 	defer manager.destroy()
 
-	if _, err := manager.Restore("test-node-id", ""); err == nil {
+	if _, err := manager.Restore("test-node-id", nil); err == nil {
 		t.Fatal(err)
 	}
 }
@@ -279,7 +279,7 @@ func TestRestoreSuccess(t *testing.T) {
 	}
 	defer manager.destroy()
 
-	restoredFiles, err := manager.Restore("test-node-id", "")
+	restoredFiles, err := manager.Restore("test-node-id", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +326,7 @@ func TestBackupConflict(t *testing.T) {
 }
 
 func TestEncryptDecryptFiles(t *testing.T) {
-	key := generateEncryptionKey("123456")
+	key := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 	originalContent := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	dir := os.TempDir()
 	file := path.Join(dir, "sourceFile")
@@ -353,7 +353,7 @@ func TestEncryptDecryptFiles(t *testing.T) {
 }
 
 func TestEncryptedBackup(t *testing.T) {
-	securityPIN := "123456"
+	securityPIN := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 	originalContent := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	dir := os.TempDir()
 	downloads := []string{
@@ -390,7 +390,7 @@ func TestEncryptedBackup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manager.SetEncryptionPIN(securityPIN)
+	manager.SetEncryptionKey(securityPIN, "PIN")
 	manager.Start()
 	defer manager.destroy()
 
