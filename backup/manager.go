@@ -233,7 +233,7 @@ func (b *Manager) Start() error {
 	return nil
 }
 
-// SetEncryptionKey sets the pin which should be used to encrypt the backup files
+// SetEncryptionKey sets the key which should be used to encrypt the backup files
 func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {
 	if err := b.db.setUseEncryption(len(encKey) > 0); err != nil {
 		return err
