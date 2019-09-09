@@ -168,7 +168,8 @@ func (b *Manager) Start() error {
 				}
 
 				b.mu.Lock()				
-				encryptionKey := b.encryptionKey				
+				encryptionKey := b.encryptionKey
+				encryptionType := b.encryptionType				
 				b.mu.Unlock()
 
 				useEncryption, err := b.db.useEncryption()
@@ -214,7 +215,7 @@ func (b *Manager) Start() error {
 					}
 				}
 
-				if err := b.provider.UploadBackupFiles(paths, nodeID, b.encryptionType); err != nil {
+				if err := b.provider.UploadBackupFiles(paths, nodeID, encryptionType); err != nil {
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
