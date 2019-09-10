@@ -36,6 +36,9 @@ func (d *Daemon) Start() error {
 // HasActiveChannel returns true if the node has at least one active channel.
 func (d *Daemon) HasActiveChannel() bool {
 	lnclient := d.APIClient()
+	if lnclient == nil {
+		return false
+	}
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 		ActiveOnly:  true,

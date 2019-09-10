@@ -32,6 +32,7 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 	if accBuf != nil {
 		err = proto.Unmarshal(accBuf, account)
 	}
+	account.ReadyForPayments = a.daemonAPI.HasActiveChannel()
 	return account, err
 }
 
