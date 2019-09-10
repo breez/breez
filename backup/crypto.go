@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"	
 	"io"
 	"io/ioutil"
 	"os"
@@ -69,12 +68,4 @@ func decryptFile(source, dest string, key []byte) error {
 	}
 
 	return nil
-}
-
-func generateEncryptionKey(pin string) []byte {
-	if pin == "" {
-		return nil
-	}
-	sum := sha256.Sum256([]byte(pin))
-	return sum[:]
 }

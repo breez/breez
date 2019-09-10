@@ -139,10 +139,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	return err
 }
 
-// SetPinCode sets the security pin code to the backup manager so it
+// SetBackupEncryptionKey sets the security key to the backup manager so it
 // can be used in encrypting backup files.
-func SetPinCode(pinCode string) error {
-	return getBreezApp().BackupManager.SetEncryptionPIN(pinCode)
+func SetBackupEncryptionKey(key []byte, encryptionType string) error {
+	encKey := append([]byte(nil), key...)
+	return getBreezApp().BackupManager.SetEncryptionKey(encKey, encryptionType)
 }
 
 // NeedsBootstrap checks if bootstrap header is needed.
@@ -253,11 +254,12 @@ func RequestBackup() {
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
-func RestoreBackup(nodeID string, pinCode string) (err error) {
+func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	if err = getBreezApp().Stop(); err != nil {
 		return err
 	}
-	if _, err = getBreezApp().BackupManager.Restore(nodeID, pinCode); err != nil {
+	encKey := append([]byte(nil), encryptionKey...)
+	if _, err = getBreezApp().BackupManager.Restore(nodeID, encKey); err != nil {
 		return err
 	}
 	breezApp, err = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
