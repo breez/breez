@@ -4,13 +4,13 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/btcsuite/btcwallet v0.0.0-20190814023431-505acf51507f
+	github.com/btcsuite/btcwallet v0.0.0-20190712034938-7a3a3e82cbb6
 	github.com/coreos/bbolt v1.3.3
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/lightninglabs/neutrino v0.0.0-20190629001446-52dd89dd1aaa
-	github.com/lightningnetwork/lnd v0.7.0-beta
+	github.com/lightninglabs/neutrino v0.0.0-20190725230401-ddf667a8b5c4
+	github.com/lightningnetwork/lnd v0.7.1-beta
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/urfave/cli v1.18.0
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
@@ -23,9 +23,9 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git v0.0.0-20180720073208-c0276d75487e => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
-	github.com/btcsuite/btcwallet v0.0.0-20190814023431-505acf51507f => github.com/breez/btcwallet v0.0.0-20190820052426-2f8655345ca7
-	github.com/lightninglabs/neutrino v0.0.0-20190629001446-52dd89dd1aaa => github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0
-	github.com/lightningnetwork/lnd v0.7.0-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190821121826-c30ced2b358e
 
-	golang.org/x/net => github.com/golang/net latest
+	github.com/btcsuite/btcwallet v0.0.0-20190712034938-7a3a3e82cbb6 => github.com/breez/btcwallet v0.0.0-20190820052426-2f8655345ca7
+	github.com/lightninglabs/neutrino v0.0.0-20190725230401-ddf667a8b5c4 => github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335
+	github.com/lightningnetwork/lnd v0.7.1-beta => github.com/breez/lnd v0.7.0-beta-rc2.0.20190911134719-9a55dc568120
+	golang.org/x/net => github.com/golang/net v0.0.0-20190827160401-ba9fcec4b297
 )
