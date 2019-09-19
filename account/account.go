@@ -130,8 +130,8 @@ func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, er
 	}
 
 	for _, b := range channels.Channels {
-		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserve
-		thisChannelCanPay := b.LocalBalance - b.LocalChanReserve
+		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserveSat
+		thisChannelCanPay := b.LocalBalance - b.LocalChanReserveSat
 		if !b.Initiator {
 			// In case this is a remote initated channel we will take a buffer of half commit fee size
 			// to ensure the remote balance won't get too close to the channel reserve.
@@ -140,11 +140,11 @@ func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, er
 			// Otherwise we need to restrict how much we can pay at the same manner
 			thisChannelCanPay -= b.CommitFee / 2
 		}
-		processChannel(thisChannelCanReceive, thisChannelCanPay, b.LocalChanReserve)
+		processChannel(thisChannelCanReceive, thisChannelCanPay, b.LocalChanReserveSat)
 	}
 
 	for _, b := range pendingChannels.PendingOpenChannels {
-		processChannel(0, 0, b.Channel.LocalChanReserve)
+		processChannel(0, 0, b.Channel.LocalChanReserveSat)
 	}
 
 	return maxAllowedToReceive, maxAllowedToPay, maxChanReserve, nil
