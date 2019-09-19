@@ -8,6 +8,10 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
+// NativeBackupProvider is interface that serves as backup provider and is intended to be 
+// implemented by the native platform and injected to breez library.
+// It is usefull when it is more nature to implement the provider in the native environment
+// rather than in go API.
 type NativeBackupProvider interface {
 	UploadBackupFiles(files string, nodeID string, encryptionType string) error
 	AvailableSnapshots() (string, error)
@@ -19,10 +23,12 @@ type NativeBackupProviderBridge struct {
 	nativeProvider NativeBackupProvider
 }
 
+// UploadBackupFiles is called when files needs to be uploaded as part of the backup
 func (b *NativeBackupProviderBridge) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
 	return b.nativeProvider.UploadBackupFiles(strings.Join(files, ","), nodeID, encryptionType)
 }
 
+// AvailableSnapshots is called when querying for all available nodes backups.
 func (b *NativeBackupProviderBridge) AvailableSnapshots() ([]backup.SnapshotInfo, error) {
 	snapshotsString, err := b.nativeProvider.AvailableSnapshots()
 	if err != nil {
@@ -37,6 +43,7 @@ func (b *NativeBackupProviderBridge) AvailableSnapshots() ([]backup.SnapshotInfo
 	return snapshots, nil
 }
 
+// DownloadBackupFiles is called when restring from a backup snapshot.
 func (b *NativeBackupProviderBridge) DownloadBackupFiles(nodeID, backupID string) ([]string, error) {
 	files, err := b.nativeProvider.DownloadBackupFiles(nodeID, backupID)
 	if err != nil {
