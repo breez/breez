@@ -7,7 +7,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/breez/breez"
+	"github.com/breez/breez"	
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
@@ -137,6 +137,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	breezApp, err = breez.NewApp(workingDir, services)
 	mu.Unlock()
 	return err
+}
+
+// SetBackupProvider sets a new backup provider backend.
+func SetBackupProvider(providerName string) error {
+	return getBreezApp().BackupManager.SetBackupProvider(providerName)
 }
 
 // SetBackupEncryptionKey sets the security key to the backup manager so it
