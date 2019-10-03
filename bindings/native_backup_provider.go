@@ -18,16 +18,16 @@ type NativeBackupProvider interface {
 	DownloadBackupFiles(nodeID, backupID string) (string, error)
 }
 
-// icloudServiceError is the type of error this provider returns in case
+// nativeProviderError is the type of error this provider returns in case
 // of API error. It also implements the ProviderError interface
-type icloudServiceError struct {
+type nativeProviderError struct {
 	err error
 }
 
-func (d *icloudServiceError) Error() string {
+func (d *nativeProviderError) Error() string {
 	return d.err.Error()
 }
-func (d *icloudServiceError) IsAuthError() bool {	
+func (d *nativeProviderError) IsAuthError() bool {	
 	if strings.Contains(d.err.Error(), "AuthError") {
 		return true
 	}
@@ -43,7 +43,7 @@ type NativeBackupProviderBridge struct {
 func (b *NativeBackupProviderBridge) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
 	err := b.nativeProvider.UploadBackupFiles(strings.Join(files, ","), nodeID, encryptionType)
 	if err != nil {
-		return &icloudServiceError{err: err}
+		return &nativeProviderError{err: err}
 	}
 	return nil
 }
