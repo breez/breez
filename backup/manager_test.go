@@ -47,7 +47,7 @@ func newDefaultMockTester() *MockTester {
 	p.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) (string, error) {
 		time.Sleep(time.Millisecond * 10)
 		p.uploadCounter++
-		return nil
+		return "", nil
 	}
 	p.MsgChannel = make(chan data.NotificationEvent, 100)
 	return &p
