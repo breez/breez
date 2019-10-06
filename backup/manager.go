@@ -233,14 +233,15 @@ func (b *Manager) Start() error {
 					}
 				}
 
-				if err := provider.UploadBackupFiles(paths, nodeID, encryptionType); err != nil {
+				accountName, err := provider.UploadBackupFiles(paths, nodeID, encryptionType)
+				if err != nil {
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
 				b.db.markBackupRequestCompleted(pendingID)
 				b.log.Infof("backup finished succesfully")
-				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS})
+				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS, Data: []string{accountName}})
 			case <-b.quitChan:
 				return
 			}
