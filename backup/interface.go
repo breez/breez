@@ -20,7 +20,7 @@ type Service interface {
 // Provider represents the functionality needed to be implemented for any backend backup
 // storage provider. This provider will be used and inststiated by the service.
 type Provider interface {
-	UploadBackupFiles(files []string, nodeID string, encryptionType string) error
+	UploadBackupFiles(files []string, nodeID string, encryptionType string) (string, error)
 	AvailableSnapshots() ([]SnapshotInfo, error)
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
 }
