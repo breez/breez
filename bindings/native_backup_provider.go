@@ -13,9 +13,25 @@ import (
 // It is usefull when it is more nature to implement the provider in the native environment
 // rather than in go API.
 type NativeBackupProvider interface {
-	UploadBackupFiles(files string, nodeID string, encryptionType string) error
+	UploadBackupFiles(files string, nodeID string, encryptionType string) (string, error)
 	AvailableSnapshots() (string, error)
 	DownloadBackupFiles(nodeID, backupID string) (string, error)
+}
+
+// nativeProviderError is the type of error this provider returns in case
+// of API error. It also implements the ProviderError interface
+type nativeProviderError struct {
+	err error
+}
+
+func (d *nativeProviderError) Error() string {
+	return d.err.Error()
+}
+func (d *nativeProviderError) IsAuthError() bool {	
+	if strings.Contains(d.err.Error(), "AuthError") {
+		return true
+	}
+	return false
 }
 
 // NativeBackupProviderBridge is a bridge for using a native implemented provider in the backup manager.
@@ -24,8 +40,12 @@ type NativeBackupProviderBridge struct {
 }
 
 // UploadBackupFiles is called when files needs to be uploaded as part of the backup
-func (b *NativeBackupProviderBridge) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
-	return b.nativeProvider.UploadBackupFiles(strings.Join(files, ","), nodeID, encryptionType)
+func (b *NativeBackupProviderBridge) UploadBackupFiles(files []string, nodeID string, encryptionType string) (string, error) {
+	acc, err := b.nativeProvider.UploadBackupFiles(strings.Join(files, ","), nodeID, encryptionType)
+	if err != nil {
+		return "", &nativeProviderError{err: err}
+	}
+	return acc, nil
 }
 
 // AvailableSnapshots is called when querying for all available nodes backups.

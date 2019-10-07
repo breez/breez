@@ -149,20 +149,28 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 // 2. Uploads all files to the newly created folder.
 // 3. update the node folder metadata property "activeBackupFolderProperty" to contain the
 //    id of the new folder.
-func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
+func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, encryptionType string) (string, error) {
 	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
+
 	// Fetch the node folder
 	nodeFolder, err := p.nodeFolder(nodeID)
 	if err != nil {
 		p.log.Infof("uploadBackupFiles failed to fetch node folder:%v", nodeID)
-		return &driveServiceError{err}
+		return "", &driveServiceError{err}
+	}
+
+	// Get account information.
+	a, err := p.driveService.About.Get().Fields("user").Do()
+	if err != nil {
+		fmt.Printf("An error occurred: %v\n", err)
+		return "", &driveServiceError{err}
 	}
 
 	// Create the backup folder
 	newBackupFolder, err := p.createFolder(nodeFolder.Id, "backup")
 	if err != nil {
 		p.log.Infof("uploadBackupFiles failed to create backkup folder:%v", nodeFolder.Id)
-		return &driveServiceError{err}
+		return "", &driveServiceError{err}
 	}
 
 	successChan := make(chan struct{})
@@ -216,7 +224,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 	}
 
 	if uploadErr != nil {
-		return uploadErr
+		return "", uploadErr
 	}
 
 	// Update active backup folder for this specific node folder
@@ -227,10 +235,10 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
-		return &driveServiceError{err}
+		return "", &driveServiceError{err}
 	}
 	p.log.Infof("UploadBackupFiles finished succesfully")
-	return nil
+	return a.User.EmailAddress, nil
 }
 
 // DownloadBackupFiles is responsible for download a specific node backup and updating.
