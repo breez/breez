@@ -245,24 +245,26 @@ message LSPInformation {
     /// The name of of lsp
     string name = 1;
 
+    string widget_url = 2;
+
     /// The identity pubkey of the Lightning node
-    string pubkey = 2;
+    string pubkey = 3;
     /// The network location of the lightning node, e.g. `12.34.56.78:9012` or `localhost:10011`
-    string host = 3;
+    string host = 4;
 
     /// The channel capacity in satoshis
-    int64 channel_capacity = 4;
+    int64 channel_capacity = 5;
     /// The target number of blocks that the funding transaction should be confirmed by.
-    int32 target_conf = 5;
+    int32 target_conf = 6;
 
     /// The base fee charged regardless of the number of milli-satoshis sent.
-    int64 base_fee_msat = 6;
+    int64 base_fee_msat = 7;
     /// The effective fee rate in milli-satoshis. The precision of this value goes up to 6 decimal places, so 1e-6.
-    double fee_rate = 7;
+    double fee_rate = 8;
     /// The required timelock delta for HTLCs forwarded over the channel.
-    uint32 time_lock_delta = 8;
+    uint32 time_lock_delta = 9;
     /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
-    int64 min_htlc_msat = 9;
+    int64 min_htlc_msat = 10;
 }
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
