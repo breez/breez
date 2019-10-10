@@ -237,7 +237,7 @@ OpenLnurlChannel is responsible for creating a new channelusing a lnURL
 */
 func (a *Service) OpenLnurlChannel(lnurl string) error {
 	l, err := NewLnurlLSP(lnurl)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	lsp := lsp(l)
