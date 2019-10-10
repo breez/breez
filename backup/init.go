@@ -30,6 +30,7 @@ type Manager struct {
 	workingDir        string
 	db                *backupDB
 	provider          Provider
+	authService 	  AuthService
 	prepareBackupData DataPreparer
 	config            *config.Config
 	backupRequestChan chan struct{}
@@ -51,9 +52,13 @@ func NewManager(
 	config *config.Config,
 	log btclog.Logger) (*Manager, error) {
 
-	provider, err := createBackupProvider(providerName, authService, log)
-	if err != nil {
-		return nil, err
+	var provider Provider
+	var err error
+	if providerName != "" {
+		provider, err = createBackupProvider(providerName, authService, log)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	db, err := openDB(path.Join(config.WorkingDir, "backup.db"))
@@ -69,6 +74,7 @@ func NewManager(
 		prepareBackupData: prepareData,
 		config:            config,
 		log:               log,
+		authService: 	   authService,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil

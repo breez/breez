@@ -17,6 +17,7 @@ import (
 
 var (
 	backupDelay = time.Duration(time.Second * 2)
+	ErrorNoProvider = errors.New("Provider is not set")
 )
 
 // RequestCommitmentChangedBackup is called when the commitment transaction
@@ -66,7 +67,11 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	files, err := b.provider.DownloadBackupFiles(nodeID, backupID)
+	provider := b.getProvider()
+	if provider == nil {
+		return nil, ErrorNoProvider
+	}
+	files, err := provider.DownloadBackupFiles(nodeID, backupID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,14 +128,22 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 // AvailableSnapshots returns a list of snsapshot that the backup provider reports
 // it has. Every snapshot is for a specific node id.
 func (b *Manager) AvailableSnapshots() ([]SnapshotInfo, error) {
-	return b.provider.AvailableSnapshots()
+	provider := b.getProvider()
+	if provider == nil {
+		return nil, ErrorNoProvider
+	}
+	return provider.AvailableSnapshots()
 }
 
 // IsSafeToRunNode checks if it is safe for this breez instance to run a specific node.
 // It is considered safe if we don't know of another instance which is the last to restore
 // this node (nodeID)
 func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
-	snapshots, err := b.provider.AvailableSnapshots()
+	provider := b.getProvider()
+	if provider == nil {
+		return false, ErrorNoProvider
+	}
+	snapshots, err := provider.AvailableSnapshots()
 	if err != nil {
 		return false, err
 	}
@@ -189,6 +202,11 @@ func (b *Manager) Start() error {
 					b.notifyBackupFailed(err)
 					continue
 				}
+				provider := b.getProvider()
+				if provider == nil {
+					b.notifyBackupFailed(ErrorNoProvider)
+					continue					
+				}
 
 				// If we have an encryption key let's encrypt the files.
 				encrypt := encryptionKey != nil
@@ -215,14 +233,15 @@ func (b *Manager) Start() error {
 					}
 				}
 
-				if err := b.provider.UploadBackupFiles(paths, nodeID, encryptionType); err != nil {
+				accountName, err := provider.UploadBackupFiles(paths, nodeID, encryptionType)
+				if err != nil {
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
 				b.db.markBackupRequestCompleted(pendingID)
 				b.log.Infof("backup finished succesfully")
-				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS})
+				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS, Data: []string{accountName}})
 			case <-b.quitChan:
 				return
 			}
@@ -312,4 +331,21 @@ func (b *Manager) getBackupIdentifier() (string, error) {
 		return "", err
 	}
 	return "backup-id-" + hex.EncodeToString(id), nil
+}
+
+func (b *Manager) SetBackupProvider(providerName string) error {	
+	provider, err := createBackupProvider(providerName, b.authService, b.log)
+	if err != nil {
+		return err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.provider = provider;
+	return nil
+}
+
+func (b *Manager) getProvider() Provider {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.provider;
 }

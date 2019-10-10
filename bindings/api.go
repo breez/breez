@@ -7,7 +7,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/breez/breez"
+	"github.com/breez/breez"	
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
@@ -139,6 +139,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	return err
 }
 
+// SetBackupProvider sets a new backup provider backend.
+func SetBackupProvider(providerName string) error {
+	return getBreezApp().BackupManager.SetBackupProvider(providerName)
+}
+
 // SetBackupEncryptionKey sets the security key to the backup manager so it
 // can be used in encrypting backup files.
 func SetBackupEncryptionKey(key []byte, encryptionType string) error {
@@ -259,10 +264,8 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 		return err
 	}
 	encKey := append([]byte(nil), encryptionKey...)
-	if _, err = getBreezApp().BackupManager.Restore(nodeID, encKey); err != nil {
-		return err
-	}
-	breezApp, err = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
+	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey);
+	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)		
 	return err
 }
 

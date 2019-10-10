@@ -26,7 +26,7 @@ type MockTester struct {
 	downloadCounter         int
 	preparer                DataPreparer
 	lastNotification        data.NotificationEvent
-	UploadBackupFilesImpl   func(files []string, nodeID string, encryptionType string) error
+	UploadBackupFilesImpl   func(files []string, nodeID string, encryptionType string) (string, error)
 	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
 	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
 	MsgChannel              chan data.NotificationEvent
@@ -44,16 +44,16 @@ func newDefaultMockTester() *MockTester {
 		p.downloadCounter++
 		return []string{}, nil
 	}
-	p.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
+	p.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) (string, error) {
 		time.Sleep(time.Millisecond * 10)
 		p.uploadCounter++
-		return nil
+		return "", nil
 	}
 	p.MsgChannel = make(chan data.NotificationEvent, 100)
 	return &p
 }
 
-func (m *MockTester) UploadBackupFiles(files []string, nodeID string, encryptionType string) error {
+func (m *MockTester) UploadBackupFiles(files []string, nodeID string, encryptionType string) (string, error) {
 	return m.UploadBackupFilesImpl(files, nodeID, "")
 }
 func (m *MockTester) AvailableSnapshots() ([]SnapshotInfo, error) {
@@ -188,8 +188,8 @@ func TestErrorInPrepareBackup(t *testing.T) {
 
 func TestErrorInUpload(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
-		return errors.New("failed to upload files")
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) (string, error) {
+		return "", errors.New("failed to upload files")
 	}
 	manager, err := createTestManager(tester)
 	if err != nil {
@@ -210,8 +210,8 @@ func TestErrorInUpload(t *testing.T) {
 
 func TestAuthError(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) error {
-		return &mockAuthError{}
+	tester.UploadBackupFilesImpl = func(files []string, nodeID string, encryptionType string) (string, error) {
+		return "", &mockAuthError{}
 	}
 	manager, err := createTestManager(tester)
 	if err != nil {
