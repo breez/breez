@@ -2,7 +2,11 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,20 +93,122 @@ func (a *Service) ConnectChannelsPeers() error {
 	return nil
 }
 
-func (a *Service) routingNode(lspID string) (string, string, error) {
+type regularLSP struct {
+	lspID string
+}
+
+func NewRegularLSP(lspID string) *regularLSP {
+	return &regularLSP{lspID: lspID}
+}
+
+func (lsp *regularLSP) Connect(a *Service) error {
 	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 	defer cancel()
 	r, err := c.LSPList(ctx, &breezservice.LSPListRequest{Pubkey: a.daemonAPI.NodePubkey()})
 	if err != nil {
 		a.log.Infof("LSPList returned an error: %v", err)
-		return "", "", err
+		return err
 	}
-	l, ok := r.Lsps[lspID]
+	l, ok := r.Lsps[lsp.lspID]
 	if !ok {
-		a.log.Infof("The LSP ID is not in the LSPList: %v", lspID)
-		return "", "", fmt.Errorf("The LSP ID is not in the LSPList: %v", lspID)
+		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %v", lsp.lspID)
 	}
-	return l.Pubkey, l.Host, nil
+
+	return a.ConnectPeer(l.Pubkey, l.Host)
+}
+
+func (lsp *regularLSP) OpenChannel(a *Service, pubkey string) error {
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+	_, err := c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lsp.lspID, Pubkey: pubkey})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type lnurlLSP struct {
+	URI      string `json:"uri"`
+	CallBack string `json:"callback"`
+	K1       string `json:"k1"`
+
+	//Error fields
+	Status string `json:"status,omitempty"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func NewLnurlLSP(lnurl string) (*lnurlLSP, error) {
+	hrp, data, err := decode(lnurl)
+	if err != nil {
+		return nil, err
+	}
+	if hrp != "lnurl" {
+		return nil, fmt.Errorf("invalid lnurl string")
+	}
+	url, err := convertBits(data, 5, 8, false)
+	if err != nil {
+		return nil, err
+	}
+	res, err := http.Get(string(url))
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	decoder := json.NewDecoder(res.Body)
+	var lnurlLSP lnurlLSP
+	err = decoder.Decode(&lnurlLSP)
+	if err != nil {
+		return nil, err
+	}
+	if lnurlLSP.Status == "ERROR" {
+		return nil, fmt.Errorf("Error: %v", lnurlLSP.Reason)
+	}
+	return &lnurlLSP, nil
+}
+
+func (lsp *lnurlLSP) Connect(a *Service) error {
+	s := strings.Split(lsp.URI, "@")
+	if len(s) != 2 {
+		return fmt.Errorf("Malformed URI: %v", lsp.URI)
+	}
+	return a.ConnectPeer(s[0], s[1])
+}
+
+func (lsp *lnurlLSP) OpenChannel(a *Service, pubkey string) error {
+	//<callback>?k1=<k1>&remoteid=<Local LN node ID>&private=<1/0>
+	u, err := url.Parse(lsp.CallBack)
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	q.Set("k1", lsp.K1)
+	q.Set("remoteid", pubkey)
+	q.Set("private", "1")
+	u.RawQuery = q.Encode()
+	res, err := http.Get(u.String())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	decoder := json.NewDecoder(res.Body)
+	var r struct {
+		Status string `json:"status"`
+		Reason string `json:"reason"`
+	}
+	err = decoder.Decode(&r)
+	if err != nil {
+		return err
+	}
+	if r.Status == "ERROR" {
+		return fmt.Errorf("Error: %v", r.Reason)
+	}
+	return nil
+}
+
+type lsp interface {
+	Connect(a *Service) error
+	OpenChannel(a *Service, pubkey string) error
 }
 
 func (a *Service) waitChannelActive() error {
@@ -121,13 +227,30 @@ func (a *Service) waitChannelActive() error {
 OpenLSPChannel is responsible for creating a new channel with the LSP
 */
 func (a *Service) OpenLSPChannel(lspID string) error {
-	a.log.Info("openLSPChannel started...")
+	l := NewRegularLSP(lspID)
+	lsp := lsp(l)
+	return a.openChannel(lsp, false)
+}
+
+/*
+OpenLnurlChannel is responsible for creating a new channelusing a lnURL
+*/
+func (a *Service) OpenLnurlChannel(lnurl string) error {
+	l, err := NewLnurlLSP(lnurl)
+	if err == nil {
+		return err
+	}
+	lsp := lsp(l)
+	return a.openChannel(lsp, true)
+}
+
+func (a *Service) openChannel(l lsp, force bool) error {
+	a.log.Info("openChannel started...")
 	currentBackoff := 2 * time.Second
 	maxBackoff := 32 * time.Second
 	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
 		for {
-
-			err := a.connectAndOpenChannel(lspID)
+			err := a.connectAndOpenChannel(l, force)
 			if err == nil {
 				return nil, nil
 			}
@@ -143,48 +266,42 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 	return err
 }
 
-func (a *Service) connectAndOpenChannel(lspID string) error {
-	if err := a.connectLSP(lspID); err != nil {		
+func (a *Service) connectAndOpenChannel(l lsp, force bool) error {
+	err := l.Connect(a)
+	if err != nil {
 		return err
 	}
-
-	hasChan, err := a.hasChannel()
-	if err != nil {		
-		return err
-	}
-
-	// open channel if no channel exists.
-	if !hasChan {
-		lnclient := a.daemonAPI.APIClient()
-		lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-		if err != nil {			
+	var dontOpen bool
+	if !force {
+		dontOpen, err = a.hasChannel()
+		if err != nil {
 			return err
 		}
-
-		c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
-		defer cancel()
-		_, err = c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lspID, Pubkey: lnInfo.IdentityPubkey})
-		if err != nil {			
+	}
+	// open channel if no channel exists.
+	if !dontOpen {
+		lnclient := a.daemonAPI.APIClient()
+		lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+		if err != nil {
+			return err
+		}
+		err = l.OpenChannel(a, lnInfo.IdentityPubkey)
+		if err != nil {
 			return err
 		}
 
 		a.onRoutingNodePendingChannel()
 	}
-
 	return nil
 }
 
-func (a *Service) connectLSP(lspID string) error {
-	pubkey, host, err := a.routingNode(lspID)
-	if err != nil {
-		return err
-	}
+func (a *Service) ConnectPeer(pubkey, host string) error {
 	if a.isConnected(pubkey) {
 		return nil
 	}
 	lnclient := a.daemonAPI.APIClient()
 	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", host, pubkey)
-	_, err = lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
 		Addr: &lnrpc.LightningAddress{
 			Pubkey: pubkey,
 			Host:   host,

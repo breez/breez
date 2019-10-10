@@ -327,7 +327,7 @@ func ConnectAccount() error {
 EnableAccount is part of the binding inteface which is delegated to breez.EnableAccount
 */
 func EnableAccount(enabled bool) error {
-	return getBreezApp().AccountService.EnableAccount(enabled)	
+	return getBreezApp().AccountService.EnableAccount(enabled)
 }
 
 /*
@@ -596,6 +596,10 @@ func LSPList() ([]byte, error) {
 
 func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
+}
+
+func ConnectToLnurl(lnurl string) error {
+	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
