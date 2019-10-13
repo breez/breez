@@ -114,6 +114,7 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 	for id, l := range lsps.Lsps {
 		r[id] = &data.LSPInformation{
 			Name:            l.Name,
+			WidgetUrl:       l.WidgetUrl,
 			Pubkey:          l.Pubkey,
 			Host:            l.Host,
 			ChannelCapacity: l.ChannelCapacity,
