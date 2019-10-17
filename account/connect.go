@@ -245,23 +245,11 @@ func (a *Service) OpenLnurlChannel(lnurl string) error {
 }
 
 func (a *Service) openChannel(l lsp, force bool) error {
-	a.log.Info("openChannel started...")
-	currentBackoff := 2 * time.Second
-	maxBackoff := 32 * time.Second
+	a.log.Info("openChannel started...")	
 	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
-		for {
-			err := a.connectAndOpenChannel(l, force)
-			if err == nil {
-				return nil, nil
-			}
-
-			a.log.Errorf("Error in openChannel: %v, retrying in 25 seconds...", err)
-			time.Sleep(currentBackoff)
-			currentBackoff = currentBackoff * 2
-			if currentBackoff > maxBackoff {
-				currentBackoff = maxBackoff
-			}
-		}
+		err := a.connectAndOpenChannel(l, force)
+		a.log.Info("openChannel finished, error = %v", err)
+		return nil, err
 	})
 	return err
 }
