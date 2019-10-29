@@ -15,8 +15,7 @@ require (
 	github.com/lightningnetwork/lnd v0.8.0-beta
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/urfave/cli v1.18.0
-	golang.org/x/mobile v0.0.0-20191025110607-73ccc5ba0426 // indirect
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/api v0.13.0
@@ -27,10 +26,9 @@ require (
 replace (
 	git.schwanenlied.me/yawning/bsaes.git v0.0.0-20180720073208-c0276d75487e => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
 
-	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.10.1-0.20191024084108-c6fa155e736a
-	github.com/lightninglabs/neutrino v0.10.0 => github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78
-	github.com/lightningnetwork/lnd v0.8.0-beta => github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54
-	golang.org/x/net => github.com/golang/net v0.0.0-20190827160401-ba9fcec4b297
+	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.0.0-20191024084108-c6fa155e736a
+	github.com/lightninglabs/neutrino v0.10.0 => github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78
+	github.com/lightningnetwork/lnd v0.8.0-beta => github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951
 )
 
-go 1.13
+go 1.12
