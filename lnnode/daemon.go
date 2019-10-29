@@ -11,8 +11,8 @@ import (
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/signal"
 )
 
@@ -144,7 +144,7 @@ func (d *Daemon) startDaemon() error {
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
 		}
-		err = lnd.Main(params, deps)
+		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)

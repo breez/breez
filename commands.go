@@ -2862,34 +2862,55 @@ var queryMissionControlCommand = cli.Command{
 }
 
 func queryMissionControl(ctx *cli.Context) error {
-	ctxb := context.Background()
-	client := routerClient	
+	client := routerClient
 
-	req := &routerrpc.QueryMissionControlRequest{}	
-	snapshot, err := client.QueryMissionControl(ctxb, req)
+	req := &routerrpc.QueryMissionControlRequest{}
+	rpcCtx := context.Background()
+	snapshot, err := client.QueryMissionControl(rpcCtx, req)
 	if err != nil {
 		return err
 	}
 
 	type displayNodeHistory struct {
-		Pubkey               string
-		LastFailTime         int64
-		OtherChanSuccessProb float32
-		Channels             []*routerrpc.ChannelHistory
+		Pubkey           string
+		LastFailTime     int64
+		OtherSuccessProb float32
+	}
+
+	type displayPairHistory struct {
+		NodeFrom, NodeTo      string
+		LastAttemptSuccessful bool
+		Timestamp             int64
+		SuccessProb           float32
+		MinPenalizeAmtSat     int64
 	}
 
 	displayResp := struct {
 		Nodes []displayNodeHistory
+		Pairs []displayPairHistory
 	}{}
 
 	for _, n := range snapshot.Nodes {
 		displayResp.Nodes = append(
 			displayResp.Nodes,
 			displayNodeHistory{
-				Pubkey:               hex.EncodeToString(n.Pubkey),
-				LastFailTime:         n.LastFailTime,
-				OtherChanSuccessProb: n.OtherChanSuccessProb,
-				Channels:             n.Channels,
+				Pubkey:           hex.EncodeToString(n.Pubkey),
+				LastFailTime:     n.LastFailTime,
+				OtherSuccessProb: n.OtherSuccessProb,
+			},
+		)
+	}
+
+	for _, n := range snapshot.Pairs {
+		displayResp.Pairs = append(
+			displayResp.Pairs,
+			displayPairHistory{
+				NodeFrom:              hex.EncodeToString(n.NodeFrom),
+				NodeTo:                hex.EncodeToString(n.NodeTo),
+				LastAttemptSuccessful: n.LastAttemptSuccessful,
+				Timestamp:             n.Timestamp,
+				SuccessProb:           n.SuccessProb,
+				MinPenalizeAmtSat:     n.MinPenalizeAmtSat,
 			},
 		)
 	}
@@ -2908,9 +2929,9 @@ var resetMissionControlCommand = cli.Command{
 
 func resetMissionControl(ctx *cli.Context) error {
 	ctxb := context.Background()
-	client := routerClient	
+	client := routerClient
 
-	req := &routerrpc.ResetMissionControlRequest{}	
+	req := &routerrpc.ResetMissionControlRequest{}
 	resp, err := client.ResetMissionControl(ctxb, req)
 	if err != nil {
 		return err
@@ -2919,4 +2940,3 @@ func resetMissionControl(ctx *cli.Context) error {
 	printRespJSON(resp)
 	return nil
 }
-
