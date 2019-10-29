@@ -79,7 +79,7 @@ func NeedsBootstrap(workingDir string, logger btclog.Logger) (bool, error) {
 	}
 
 	logger.Info("NeedsBootstrap before creating walletdb")
-	db, err := walletdb.Create("bdb", neutrinoDB)
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	if db != nil {
 		defer db.Close()
 	}
@@ -146,7 +146,7 @@ func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return err
 	}
-	db, err := walletdb.Create("bdb", neutrinoDB)
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	if err != nil {
 		return err
 	}
