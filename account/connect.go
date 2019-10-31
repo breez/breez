@@ -81,7 +81,7 @@ func (a *Service) ConnectChannelsPeers() error {
 			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
 		}
 		
-		if err == nil && len(nodeInfo.GetNode().Addresses) > 0 {
+		if len(nodeInfo.GetNode().Addresses) > 0 {
 			address := nodeInfo.GetNode().Addresses[0]
 			a.log.Infof("Connecting to peer %v with address= %v", c.RemotePubkey, address.Addr)
 			lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
