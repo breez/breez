@@ -39,8 +39,7 @@ func (d *Daemon) HasActiveChannel() bool {
 	if lnclient == nil {
 		return false
 	}
-	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{		
 		ActiveOnly:  true,
 	})
 	if err != nil {
