@@ -13,8 +13,8 @@ import (
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -36,9 +36,9 @@ var (
 func newLightningClient(cfg *config.Config) (
 	lnrpc.LightningClient, backuprpc.BackupClient,
 	submarineswaprpc.SubmarineSwapperClient,
-	breezbackuprpc.BreezBackuperClient, 
+	breezbackuprpc.BreezBackuperClient,
 	routerrpc.RouterClient, error) {
-		
+
 	appWorkingDir := cfg.WorkingDir
 	network := cfg.Network
 	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", network}, "/")

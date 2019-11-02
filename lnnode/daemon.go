@@ -39,8 +39,8 @@ func (d *Daemon) HasActiveChannel() bool {
 	if lnclient == nil {
 		return false
 	}
-	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{		
-		ActiveOnly:  true,
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		ActiveOnly: true,
 	})
 	if err != nil {
 		d.log.Errorf("Error in HasActiveChannel() > ListChannels(): %v", err)

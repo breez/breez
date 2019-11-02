@@ -66,21 +66,21 @@ func (n *channelActiveNotifier) notifyWhenActive() <-chan struct{} {
 }
 
 // ConnectChannelsPeers connects to all peers associated with a non active channel.
-func (a *Service) ConnectChannelsPeers() error {	
+func (a *Service) ConnectChannelsPeers() error {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		InactiveOnly: true,
 	})
-	if err != nil {		
+	if err != nil {
 		return err
 	}
 
 	for _, c := range channels.Channels {
-		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.RemotePubkey})		
+		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.RemotePubkey})
 		if err != nil {
 			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
 		}
-		
+
 		if len(nodeInfo.GetNode().Addresses) > 0 {
 			address := nodeInfo.GetNode().Addresses[0]
 			a.log.Infof("Connecting to peer %v with address= %v", c.RemotePubkey, address.Addr)

@@ -42,11 +42,10 @@ func (a *Service) EnableAccount(enabled bool) error {
 	if err := a.breezDB.EnableAccount(enabled); err != nil {
 		a.log.Infof("Error in enabling account (enabled = %v) %v", enabled, err)
 		return err
-	}	
+	}
 	a.onAccountChanged()
 	return nil
 }
-
 
 /*func (a *Service) updateNodeChannelPolicy() {
 	accData, err := a.calculateAccount()
@@ -262,7 +261,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		WalletBalance:       onChainBalance,
 		RoutingNodeFee:      routingNodeFeeRate,
 		ReadyForPayments:    a.daemonAPI.HasActiveChannel(),
-		Enabled: 			 enabled,
+		Enabled:             enabled,
 		ChannelPoint:        chanPoint,
 	}, nil
 }

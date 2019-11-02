@@ -9,8 +9,8 @@ import (
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -42,8 +42,8 @@ type Daemon struct {
 	lightningClient   lnrpc.LightningClient
 	subswapClient     submarineswaprpc.SubmarineSwapperClient
 	breezBackupClient breezbackuprpc.BreezBackuperClient
-	routerClient	  routerrpc.RouterClient
-	ntfnServer        *subscribe.Server	
+	routerClient      routerrpc.RouterClient
+	ntfnServer        *subscribe.Server
 	quitChan          chan struct{}
 }
 
