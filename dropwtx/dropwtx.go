@@ -20,7 +20,7 @@ func Drop(workingDir string) error {
 	if err != nil {
 		return err
 	}
-	db, err := walletdb.Open("bdb", path.Join(workingDir, "data/chain/bitcoin/", cfg.Network, "wallet.db"))
+	db, err := walletdb.Open("bdb", path.Join(workingDir, "data/chain/bitcoin/", cfg.Network, "wallet.db"), false)
 	if err != nil {
 		return err
 	}
