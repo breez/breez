@@ -141,7 +141,42 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if err := a.waitChannelActive(); err != nil {
 		return "", err
 	}
-	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
+	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		return "", err
+	}	
+	var routeHints []*lnrpc.RouteHint
+	for _, h := range channelsRes.Channels {
+		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+			ChanId: h.ChanId,
+		})
+		if err != nil {
+			log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
+			continue
+		}
+		remotePolicy := ci.Node1Policy
+		if ci.Node2Pub == h.RemotePubkey {
+			remotePolicy = ci.Node2Policy
+		}
+		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
+		routeHints = append(routeHints, &lnrpc.RouteHint{
+			HopHints: []*lnrpc.HopHint{
+				&lnrpc.HopHint{
+					NodeId:                    h.RemotePubkey,
+					ChanId:                    h.ChanId,
+					FeeBaseMsat:               uint32(remotePolicy.FeeBaseMsat),
+					FeeProportionalMillionths: uint32(remotePolicy.FeeRateMilliMsat),
+					CltvExpiryDelta:           remotePolicy.TimeLockDelta,
+				},
+			},
+		})
+	}
+	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
+		Memo: memo, Private: true, Value: invoice.Amount,
+		Expiry: invoice.Expiry, RouteHints: routeHints,
+	})
 	if err != nil {
 		return "", err
 	}
