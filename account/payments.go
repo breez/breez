@@ -146,14 +146,14 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	})
 	if err != nil {
 		return "", err
-	}	
+	}
 	var routeHints []*lnrpc.RouteHint
 	for _, h := range channelsRes.Channels {
 		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
 			ChanId: h.ChanId,
 		})
 		if err != nil {
-			log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
+			a.log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
 			continue
 		}
 		remotePolicy := ci.Node1Policy
