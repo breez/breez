@@ -67,6 +67,8 @@ func (n *channelActiveNotifier) notifyWhenActive() <-chan struct{} {
 
 // ConnectChannelsPeers connects to all peers associated with a non active channel.
 func (a *Service) ConnectChannelsPeers() error {
+	var nodesToConnect []*lnrpc.NodeInfo
+
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		InactiveOnly: true,
@@ -74,19 +76,35 @@ func (a *Service) ConnectChannelsPeers() error {
 	if err != nil {
 		return err
 	}
-
 	for _, c := range channels.Channels {
 		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.RemotePubkey})
 		if err != nil {
 			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
+			continue
 		}
+		nodesToConnect = append(nodesToConnect, nodeInfo)
+	}
 
-		if len(nodeInfo.GetNode().Addresses) > 0 {
-			address := nodeInfo.GetNode().Addresses[0]
-			a.log.Infof("Connecting to peer %v with address= %v", c.RemotePubkey, address.Addr)
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		return err
+	}
+	for _, c := range pendingChannels.PendingOpenChannels {
+		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.Channel.RemoteNodePub})
+		if err != nil {
+			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
+			continue
+		}
+		nodesToConnect = append(nodesToConnect, nodeInfo)
+	}
+
+	for _, n := range nodesToConnect {
+		if len(n.GetNode().Addresses) > 0 {
+			address := n.GetNode().Addresses[0]
+			a.log.Infof("Connecting to peer %v with address= %v", n.GetNode().PubKey, address.Addr)
 			lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
 				Addr: &lnrpc.LightningAddress{
-					Pubkey: c.RemotePubkey,
+					Pubkey: n.GetNode().PubKey,
 					Host:   address.Addr,
 				},
 				Perm: true,
