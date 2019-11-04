@@ -26,7 +26,9 @@ require (
 replace (
 	git.schwanenlied.me/yawning/bsaes.git v0.0.0-20180720073208-c0276d75487e => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
 
-	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.0.0-20191024084108-c6fa155e736a
+	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.10.1-0.20191103104723-0e068b848776
+	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.1.1-0.20191103104723-0e068b848776
+	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191103104723-0e068b848776
 	github.com/lightninglabs/neutrino v0.10.0 => github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78
 	github.com/lightningnetwork/lnd v0.8.0-beta => github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951
 )
