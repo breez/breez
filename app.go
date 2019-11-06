@@ -213,5 +213,5 @@ func (a *App) NeedsBootstrap() (bool, error) {
 }
 
 func (a *App) BootstrapHeaders(bootstrapDir string) error {
-	return chainservice.BootstrapHeaders(a.cfg.WorkingDir, bootstrapDir)
+	return chainservice.BootstrapHeaders(a.cfg.WorkingDir, bootstrapDir, a.log)
 }

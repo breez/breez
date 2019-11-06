@@ -111,10 +111,12 @@ func NeedsBootstrap(workingDir string, logger btclog.Logger) (bool, error) {
 }
 
 // BootstrapHeaders initialize the neutrino headers with existing data.
-func BootstrapHeaders(workingDir string, bootstrapDir string) error {
+func BootstrapHeaders(workingDir string, bootstrapDir string, logger btclog.Logger) error {
+	logger.Info("BootstrapHeaders before lock")
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
 
+	logger.Info("BootstrapHeaders after lock")
 	filterHeadersPath := path.Join(bootstrapDir, "reg_filter_headers.bin")
 	headersPath := path.Join(bootstrapDir, "block_headers.bin")
 
@@ -152,17 +154,27 @@ func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 	}
 	defer db.Close()
 
+	logger.Info("creating NewBlockHeaderStore")
 	blockHeaderStore, err := headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
 	if err != nil {
 		return err
 	}
 
-	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, nil)
+	logger.Info("start copyBlockHeaderStore")
+	if err := copyBlockHeaderStore(blockHeaderStore, headersPath, db, params); err != nil {
+		return err
+	}
+
+	logger.Info("start copyFilterHeaderStore")
+	db.Close()
+	db, err = walletdb.Create("bdb", neutrinoDB, false)
 	if err != nil {
 		return err
 	}
 
-	if err := copyBlockHeaderStore(blockHeaderStore, headersPath, db, params); err != nil {
+	logger.Info("creating NewFilterHeaderStore")
+	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, nil)
+	if err != nil {
 		return err
 	}
 
@@ -170,6 +182,7 @@ func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 		return err
 	}
 
+	logger.Info("end Bootstrap headers")
 	return nil
 
 }
@@ -275,6 +288,7 @@ func copyBlockHeaderStore(blockHeaderStore headerfs.BlockHeaderStore, blockHeade
 			if err != nil {
 				return err
 			}
+			fmt.Println("headers flushed")
 		}
 	}
 

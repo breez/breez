@@ -163,7 +163,7 @@ func NeedsBootstrap() bool {
 }
 
 // BootstrapHeaders bootstrap the chain with existing header files.
-func BootstrapHeaders(bootstrapDir string) error {
+func BootstrapHeaders(bootstrapDir string) error {	
 	return getBreezApp().BootstrapHeaders(bootstrapDir)
 }
 
