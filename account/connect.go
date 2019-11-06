@@ -2,150 +2,364 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
+
+	breezservice "github.com/breez/breez/breez"
 )
 
 var (
 	waitConnectTimeout = time.Second * 60
 )
 
-type onlineNotifier struct {
+type channelActiveNotifier struct {
 	sync.Mutex
 	ntfnChan chan struct{}
-	isOnline bool
+	isActive bool
 }
 
-// NewOnlineNotifier creates a new onlineNotifier
-func newOnlineNotifier() *onlineNotifier {
-	return &onlineNotifier{
+// newChannelActiveNotifier creates a new channelActiveNotifier
+func newChannelActiveNotifier() *channelActiveNotifier {
+	return &channelActiveNotifier{
 		ntfnChan: make(chan struct{}),
 	}
 }
 
-func (n *onlineNotifier) connected() bool {
+func (n *channelActiveNotifier) active() bool {
 	n.Lock()
 	defer n.Unlock()
-	return n.isOnline
+	return n.isActive
 }
 
-func (n *onlineNotifier) setOffline() {
-	n.Lock()
-	defer n.Unlock()
-	n.ntfnChan = make(chan struct{})
-	n.isOnline = false
-}
+func (n *channelActiveNotifier) setActive(active bool) {
 
-func (n *onlineNotifier) setOnline() {
-	n.Lock()
-	// prevent calling multiple times to setOnline and causing panic of closing a closed
-	// channel.
-	var ntfnChan chan struct{}
-	if !n.isOnline {
-		ntfnChan = n.ntfnChan
+	if n.active() == active {
+		return
 	}
-	n.isOnline = true
-	n.Unlock()
-	if ntfnChan != nil {
-		close(ntfnChan)
+
+	n.Lock()
+	n.isActive = active
+
+	if !active {
+		n.ntfnChan = make(chan struct{})
+		n.Unlock()
+	} else {
+		ntfnChan := n.ntfnChan
+		n.Unlock()
+		if ntfnChan != nil {
+			close(ntfnChan)
+		}
 	}
 }
 
-func (n *onlineNotifier) notifyWhenOnline() <-chan struct{} {
+func (n *channelActiveNotifier) notifyWhenActive() <-chan struct{} {
 	n.Lock()
 	defer n.Unlock()
 	return n.ntfnChan
 }
 
-// IsConnectedToRoutingNode returns true if we are connected to the routing node.
-func (a *Service) IsConnectedToRoutingNode() bool {
-	return a.daemonAPI.ConnectedToRoutingNode()
-}
+// ConnectChannelsPeers connects to all peers associated with a non active channel.
+func (a *Service) ConnectChannelsPeers() error {
+	var nodesToConnect []*lnrpc.NodeInfo
 
-func (a *Service) onRoutingNodeConnection(connected bool) {
-	a.log.Infof("onRoutingNodeConnection connected=%v", connected)
-	// BREEZ-377: When there is no channel request one from Breez
-	if connected {
-		a.connectedNotifier.setOnline()
-		go a.updateNodeChannelPolicy()
-		go a.ensureRoutingChannelOpened()
-	} else {
-		a.connectedNotifier.setOffline()
-
-		// in case we don't have a channel yet, we will try to connect
-		// again so we can keep trying to get an opened channel.
-		_, channels, err := a.getBreezOpenChannels()
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		InactiveOnly: true,
+	})
+	if err != nil {
+		return err
+	}
+	for _, c := range channels.Channels {
+		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.RemotePubkey})
 		if err != nil {
-			a.log.Errorf("Failed to call getBreezOpenChannels %v", err)
-			return
+			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
+			continue
 		}
-		if len(channels) == 0 {
-			a.connectRoutingNode()
+		nodesToConnect = append(nodesToConnect, nodeInfo)
+	}
+
+	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	if err != nil {
+		return err
+	}
+	for _, c := range pendingChannels.PendingOpenChannels {
+		nodeInfo, err := lnclient.GetNodeInfo(context.Background(), &lnrpc.NodeInfoRequest{PubKey: c.Channel.RemoteNodePub})
+		if err != nil {
+			a.log.Infof("ConnectChannelsPeers got error trying to fetch node %v", nodeInfo)
+			continue
+		}
+		nodesToConnect = append(nodesToConnect, nodeInfo)
+	}
+
+	for _, n := range nodesToConnect {
+		if len(n.GetNode().Addresses) > 0 {
+			address := n.GetNode().Addresses[0]
+			a.log.Infof("Connecting to peer %v with address= %v", n.GetNode().PubKey, address.Addr)
+			lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+				Addr: &lnrpc.LightningAddress{
+					Pubkey: n.GetNode().PubKey,
+					Host:   address.Addr,
+				},
+				Perm: true,
+			})
 		}
 	}
-	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_ROUTING_NODE_CONNECTION_CHANGED})
+
+	return nil
 }
 
-func (a *Service) connectRoutingNode() error {
-	lnclient := a.daemonAPI.APIClient()
-	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
-	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
-		Addr: &lnrpc.LightningAddress{
-			Pubkey: a.cfg.RoutingNodePubKey,
-			Host:   a.cfg.RoutingNodeHost,
-		},
-		Perm: true,
-	})
-	return err
+type regularLSP struct {
+	lspID string
 }
 
-func (a *Service) disconnectRoutingNode() error {
-	lnclient := a.daemonAPI.APIClient()
-	a.log.Infof("Disconnecting from routing node host: %v, pubKey: %v", a.cfg.RoutingNodeHost, a.cfg.RoutingNodePubKey)
-	_, err := lnclient.DisconnectPeer(context.Background(), &lnrpc.DisconnectPeerRequest{
-		PubKey: a.cfg.RoutingNodePubKey,
-	})
-	return err
+func NewRegularLSP(lspID string) *regularLSP {
+	return &regularLSP{lspID: lspID}
 }
 
-func (a *Service) waitRoutingNodeConnected() error {
+func (lsp *regularLSP) Connect(a *Service) error {
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+	r, err := c.LSPList(ctx, &breezservice.LSPListRequest{Pubkey: a.daemonAPI.NodePubkey()})
+	if err != nil {
+		a.log.Infof("LSPList returned an error: %v", err)
+		return err
+	}
+	l, ok := r.Lsps[lsp.lspID]
+	if !ok {
+		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %v", lsp.lspID)
+	}
+
+	return a.ConnectPeer(l.Pubkey, l.Host)
+}
+
+func (lsp *regularLSP) OpenChannel(a *Service, pubkey string) error {
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+	_, err := c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lsp.lspID, Pubkey: pubkey})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type lnurlLSP struct {
+	URI      string `json:"uri"`
+	CallBack string `json:"callback"`
+	K1       string `json:"k1"`
+
+	//Error fields
+	Status string `json:"status,omitempty"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func NewLnurlLSP(lnurl string) (*lnurlLSP, error) {
+	hrp, data, err := decode(lnurl)
+	if err != nil {
+		return nil, err
+	}
+	if hrp != "lnurl" {
+		return nil, fmt.Errorf("invalid lnurl string")
+	}
+	url, err := convertBits(data, 5, 8, false)
+	if err != nil {
+		return nil, err
+	}
+	res, err := http.Get(string(url))
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	decoder := json.NewDecoder(res.Body)
+	var lnurlLSP lnurlLSP
+	err = decoder.Decode(&lnurlLSP)
+	if err != nil {
+		return nil, err
+	}
+	if lnurlLSP.Status == "ERROR" {
+		return nil, fmt.Errorf("Error: %v", lnurlLSP.Reason)
+	}
+	return &lnurlLSP, nil
+}
+
+func (lsp *lnurlLSP) Connect(a *Service) error {
+	s := strings.Split(lsp.URI, "@")
+	if len(s) != 2 {
+		return fmt.Errorf("Malformed URI: %v", lsp.URI)
+	}
+	return a.ConnectPeer(s[0], s[1])
+}
+
+func (lsp *lnurlLSP) OpenChannel(a *Service, pubkey string) error {
+	//<callback>?k1=<k1>&remoteid=<Local LN node ID>&private=<1/0>
+	u, err := url.Parse(lsp.CallBack)
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	q.Set("k1", lsp.K1)
+	q.Set("remoteid", pubkey)
+	q.Set("private", "1")
+	u.RawQuery = q.Encode()
+	res, err := http.Get(u.String())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	decoder := json.NewDecoder(res.Body)
+	var r struct {
+		Status string `json:"status"`
+		Reason string `json:"reason"`
+	}
+	err = decoder.Decode(&r)
+	if err != nil {
+		return err
+	}
+	if r.Status == "ERROR" {
+		return fmt.Errorf("Error: %v", r.Reason)
+	}
+	return nil
+}
+
+type lsp interface {
+	Connect(a *Service) error
+	OpenChannel(a *Service, pubkey string) error
+}
+
+func (a *Service) waitChannelActive() error {
+	if a.daemonAPI.HasActiveChannel() {
+		return nil
+	}
 	select {
-	case <-a.connectedNotifier.notifyWhenOnline():
+	case <-a.connectedNotifier.notifyWhenActive():
 		return nil
 	case <-time.After(waitConnectTimeout):
 		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
 	}
 }
 
-func (a *Service) connectOnStartup() {
-	channelPoints, _, err := a.getBreezOpenChannels()
+/*
+OpenLSPChannel is responsible for creating a new channel with the LSP
+*/
+func (a *Service) OpenLSPChannel(lspID string) error {
+	l := NewRegularLSP(lspID)
+	lsp := lsp(l)
+	return a.openChannel(lsp, false)
+}
+
+/*
+OpenLnurlChannel is responsible for creating a new channelusing a lnURL
+*/
+func (a *Service) OpenLnurlChannel(lnurl string) error {
+	l, err := NewLnurlLSP(lnurl)
 	if err != nil {
-		a.log.Errorf("connectOnStartup: error in getBreezOpenChannels", err)
-		return
+		return err
+	}
+	lsp := lsp(l)
+	return a.openChannel(lsp, true)
+}
+
+func (a *Service) openChannel(l lsp, force bool) error {
+	a.log.Info("openChannel started...")
+	_, err, _ := createChannelGroup.Do("createChannel", func() (interface{}, error) {
+		err := a.connectAndOpenChannel(l, force)
+		a.log.Info("openChannel finished, error = %v", err)
+		return nil, err
+	})
+	return err
+}
+
+func (a *Service) connectAndOpenChannel(l lsp, force bool) error {
+	err := l.Connect(a)
+	if err != nil {
+		return err
+	}
+	var dontOpen bool
+	if !force {
+		dontOpen, err = a.hasChannel()
+		if err != nil {
+			return err
+		}
+	}
+	// open channel if no channel exists.
+	if !dontOpen {
+		lnclient := a.daemonAPI.APIClient()
+		lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+		if err != nil {
+			return err
+		}
+		err = l.OpenChannel(a, lnInfo.IdentityPubkey)
+		if err != nil {
+			return err
+		}
+
+		a.onRoutingNodePendingChannel()
+	}
+	return nil
+}
+
+func (a *Service) ConnectPeer(pubkey, host string) error {
+	if a.isConnected(pubkey) {
+		return nil
 	}
 	lnclient := a.daemonAPI.APIClient()
-	pendingChannels, err := lnclient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
+	a.log.Infof("Connecting to routing node host: %v, pubKey: %v", host, pubkey)
+	_, err := lnclient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+		Addr: &lnrpc.LightningAddress{
+			Pubkey: pubkey,
+			Host:   host,
+		},
+		Perm: true,
+	})
 	if err != nil {
-		a.log.Errorf("connectOnStartup: error in PendingChannels", err)
-		return
-	}
-	if len(channelPoints) > 0 || len(pendingChannels.PendingOpenChannels) > 0 {
-		a.log.Infof("connectOnStartup: already has a channel, ignoring manual connection")
-		return
+		return err
 	}
 
-	for {
-		if err := a.connectRoutingNode(); err != nil {
-			a.log.Warnf("Failed to connect to routing node %v", err)
-		}
-		if a.IsConnectedToRoutingNode() {
-			return
-		}
-		a.log.Warnf("Still not connected to routing node, retrying in 2 seconds.")
-		time.Sleep(time.Duration(2 * time.Second))
+	return nil
+}
+
+func (a *Service) hasChannel() (bool, error) {
+	channelPoints, _, err := a.getOpenChannels()
+	if err != nil {
+		return false, fmt.Errorf("openLSPChannel got error in getBreezOpenChannels %v", err)
 	}
+
+	if len(channelPoints) > 0 {
+		a.log.Infof("openLSPChannel already has a channel with breez, doing nothing")
+		return true, nil
+	}
+	pendingChannels, err := a.getPendingChannelPoint()
+	if err != nil {
+		return false, fmt.Errorf("openLSPChannel got error in getPendingBreezChannelPoint %v", err)
+	}
+
+	if len(pendingChannels) > 0 {
+		a.onRoutingNodePendingChannel()
+		a.log.Infof("openLSPChannel already has a pending channel with breez, doing nothing")
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (a *Service) isConnected(pubkey string) bool {
+	lnclient := a.daemonAPI.APIClient()
+	peers, err := lnclient.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
+	if err != nil {
+		a.log.Errorf("isConnected got error in ListPeers: %v", err)
+		return false
+	}
+	for _, p := range peers.Peers {
+		if p.PubKey == pubkey {
+			return true
+		}
+	}
+	return false
 }

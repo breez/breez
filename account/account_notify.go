@@ -28,7 +28,7 @@ func (a *Service) RegisterChannelOpenedNotification(token string) error {
 
 func (a *Service) setUserNotificationRequest(token string, notificationType int) error {
 	a.log.Infof("setUserNotificationRequest notificationType = %v", notificationType)
-	channelPoints, _, err := a.getBreezOpenChannels()
+	channelPoints, _, err := a.getOpenChannels()
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (a *Service) registerPendingChannelConfirmation() error {
 		return nil
 	}
 
-	pendingChannelPoint, err := a.getPendingBreezChannelPoint()
+	pendingChannelPoint, err := a.getPendingChannelPoint()
 	if err != nil {
 		a.log.Infof("registerPendingChannelConfirmation error in querying for pending channels %v", err)
 		return err
@@ -93,6 +93,6 @@ func (a *Service) onRoutingNodePendingChannel() {
 }
 
 func (a *Service) onRoutingNodeOpenedChannel() {
-	go a.updateNodeChannelPolicy()
+	//go a.updateNodeChannelPolicy()
 	a.onAccountChanged()
 }

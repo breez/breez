@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/headerfs"
 )
@@ -47,10 +48,12 @@ func ResetChainService(workingDir string) error {
 	return nil
 }
 
-func NeedsBootstrap(workingDir string) (bool, error) {
+func NeedsBootstrap(workingDir string, logger btclog.Logger) (bool, error) {
+	logger.Info("NeedsBootstrap started")
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
 
+	logger.Info("NeedsBootstrap after lock")
 	// If we already have a chain service, then no bootstrap is needed.
 	// Caller responsibility to check for whether bootstrap is needed
 	// before creating a chain service.
@@ -74,11 +77,15 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return false, err
 	}
-	db, err := walletdb.Create("bdb", neutrinoDB)
+
+	logger.Info("NeedsBootstrap before creating walletdb")
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	if db != nil {
+		defer db.Close()
+	}
 	if err != nil {
 		return false, err
 	}
-	defer db.Close()
 
 	assertHeader, err := parseAssertFilterHeader(config.JobCfg.AssertFilterHeader)
 	if err != nil {
@@ -99,6 +106,7 @@ func NeedsBootstrap(workingDir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	logger.Info("NeedsBootstrap finished, currenet tip = %v", height)
 	return height < 250000, nil
 }
 
@@ -138,7 +146,7 @@ func BootstrapHeaders(workingDir string, bootstrapDir string) error {
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return err
 	}
-	db, err := walletdb.Create("bdb", neutrinoDB)
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	if err != nil {
 		return err
 	}

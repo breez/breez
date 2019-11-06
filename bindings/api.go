@@ -296,7 +296,10 @@ func DaemonReady() bool {
 OnResume just calls the breez.OnResume
 */
 func OnResume() {
-	getBreezApp().OnResume()
+	app := getBreezApp()
+	if app != nil {
+		app.OnResume()
+	}
 }
 
 /*
@@ -317,7 +320,7 @@ func GetAccountInfo() ([]byte, error) {
 ConnectAccount is part of the binding inteface which is delegated to breez.ConnectAccount
 */
 func ConnectAccount() error {
-	return getBreezApp().AccountService.Connect()
+	return getBreezApp().AccountService.ConnectChannelsPeers()
 }
 
 /*
@@ -325,13 +328,6 @@ EnableAccount is part of the binding inteface which is delegated to breez.Enable
 */
 func EnableAccount(enabled bool) error {
 	return getBreezApp().AccountService.EnableAccount(enabled)
-}
-
-/*
-IsConnectedToRoutingNode is part of the binding inteface which is delegated to breez.IsConnectedToRoutingNode
-*/
-func IsConnectedToRoutingNode() bool {
-	return getBreezApp().AccountService.IsConnectedToRoutingNode()
 }
 
 /*
@@ -592,6 +588,18 @@ func TestPeer(peer string) error {
 
 func Rate() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.Rates())
+}
+
+func LSPList() ([]byte, error) {
+	return marshalResponse(getBreezApp().ServicesClient.LSPList())
+}
+
+func ConnectToLSP(id string) error {
+	return getBreezApp().AccountService.OpenLSPChannel(id)
+}
+
+func ConnectToLnurl(lnurl string) error {
+	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

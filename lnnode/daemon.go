@@ -1,6 +1,7 @@
 package lnnode
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -10,8 +11,8 @@ import (
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/signal"
 )
 
@@ -32,20 +33,20 @@ func (d *Daemon) Start() error {
 	return nil
 }
 
-// ConnectedToRoutingNode returns a boolean indicates if the daemon is connected to the
-// routing node peer.
-func (d *Daemon) ConnectedToRoutingNode() bool {
-	d.Lock()
-	defer d.Unlock()
-	return d.connectedToRoutingNode
-}
-
-// HasChannelWithRoutingNode returns a boolean indicates if this node has an opened channel
-// with the routing node.
-func (d *Daemon) HasChannelWithRoutingNode() bool {
-	d.Lock()
-	defer d.Unlock()
-	return d.hasChannelWithRoutingNode
+// HasActiveChannel returns true if the node has at least one active channel.
+func (d *Daemon) HasActiveChannel() bool {
+	lnclient := d.APIClient()
+	if lnclient == nil {
+		return false
+	}
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		ActiveOnly: true,
+	})
+	if err != nil {
+		d.log.Errorf("Error in HasActiveChannel() > ListChannels(): %v", err)
+		return false
+	}
+	return len(channels.Channels) > 0
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -53,12 +54,6 @@ func (d *Daemon) NodePubkey() string {
 	d.Lock()
 	defer d.Unlock()
 	return d.nodePubkey
-}
-
-func (d *Daemon) setConnectedToRoutingNode(connected bool) {
-	d.Lock()
-	defer d.Unlock()
-	d.connectedToRoutingNode = connected
 }
 
 // Stop is used to stop the lightning network daemon.
@@ -148,7 +143,7 @@ func (d *Daemon) startDaemon() error {
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
 		}
-		err = lnd.Main(params, deps)
+		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)

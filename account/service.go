@@ -34,9 +34,9 @@ func (a *Service) Stop() error {
 	return nil
 }
 
-func (a *Service) Connect() error {
+/*func (a *Service) Connect() error {
 	return a.connectRoutingNode()
-}
+}*/
 
 func (a *Service) OnResume() {
 	a.calculateAccountAndNotify()
@@ -58,26 +58,19 @@ func (a *Service) watchDaemonEvents() (err error) {
 	for {
 		select {
 		case u := <-a.daemonSubscription.Updates():
-			switch notification := u.(type) {
+			switch u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
 				a.wg.Add(1)
 				go a.watchPayments()
 				a.onAccountChanged()
-			case lnnode.PeerConnectionEvent:
-				a.log.Infof("PeerConnectionEvent received")
-				if notification.PubKey == a.cfg.RoutingNodePubKey {
-					a.onRoutingNodeConnection(notification.Connected)
-				}
 			case lnnode.TransactionEvent:
 				a.onAccountChanged()
-				go a.ensureRoutingChannelOpened()
-			case lnnode.ChainSyncedEvent:
-				a.connectOnStartup()
+			case lnnode.ChannelEvent:
+				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
+				a.calculateAccountAndNotify()
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
-			case lnnode.RoutingNodeChannelOpened:
-				a.onRoutingNodeOpenedChannel()
 			}
 		case <-a.quitChan:
 			a.log.Infof("Cancelling daemon events subscription")

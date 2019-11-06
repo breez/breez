@@ -9,11 +9,10 @@ message ChainStatus {
 
 message Account {
     enum AccountStatus {        
-        WAITING_DEPOSIT = 0;
-        WAITING_DEPOSIT_CONFIRMATION = 1;
-        PROCESSING_BREEZ_CONNECTION = 2;
-        PROCESSING_WITHDRAWAL = 3;
-        ACTIVE = 4;
+        DISCONNECTED = 0;        
+        PROCESSING_CONNECTION = 1;
+        CLOSING_CONNECTION = 2;
+        CONNECTED = 3;
     }
     string id = 1;
     int64 balance = 2;      
@@ -37,10 +36,13 @@ message Account {
     bool enabled = 9;
 
     //maximum chan reserve accross all channels of this account.
-    int64 maxChanReserve = 10;
+    int64 maxChanReserve = 10;   
 
     //The funding transaction id of the channel.
     string channelPoint = 11;
+
+    // reflects if this account can receive/send payments.
+    bool readyForPayments = 12;
 }
 
 message Payment {
@@ -106,16 +108,15 @@ message NotificationEvent {
         INITIALIZATION_FAILED = 1;        
         ACCOUNT_CHANGED = 2;        
         PAYMENT_SENT = 3;
-        INVOICE_PAID = 4;
-        ROUTING_NODE_CONNECTION_CHANGED = 5;
-        LIGHTNING_SERVICE_DOWN = 6;
-        FUND_ADDRESS_CREATED = 7;
-        FUND_ADDRESS_UNSPENT_CHANGED = 8;
-        BACKUP_SUCCESS = 9;
-        BACKUP_FAILED = 10;
-        BACKUP_AUTH_FAILED = 11;
-        BACKUP_NODE_CONFLICT = 12;
-        BACKUP_REQUEST = 13;
+        INVOICE_PAID = 4;        
+        LIGHTNING_SERVICE_DOWN = 5;
+        FUND_ADDRESS_CREATED = 6;
+        FUND_ADDRESS_UNSPENT_CHANGED = 7;
+        BACKUP_SUCCESS = 8;
+        BACKUP_FAILED = 9;
+        BACKUP_AUTH_FAILED = 10;
+        BACKUP_NODE_CONFLICT = 11;
+        BACKUP_REQUEST = 12;
     }
 
     NotificationType type = 1;
@@ -238,4 +239,33 @@ message rate {
 }
 message Rates {
     repeated rate rates = 1;
+}
+
+message LSPInformation {
+    /// The name of of lsp
+    string name = 1;
+
+    string widget_url = 2;
+
+    /// The identity pubkey of the Lightning node
+    string pubkey = 3;
+    /// The network location of the lightning node, e.g. `12.34.56.78:9012` or `localhost:10011`
+    string host = 4;
+
+    /// The channel capacity in satoshis
+    int64 channel_capacity = 5;
+    /// The target number of blocks that the funding transaction should be confirmed by.
+    int32 target_conf = 6;
+
+    /// The base fee charged regardless of the number of milli-satoshis sent.
+    int64 base_fee_msat = 7;
+    /// The effective fee rate in milli-satoshis. The precision of this value goes up to 6 decimal places, so 1e-6.
+    double fee_rate = 8;
+    /// The required timelock delta for HTLCs forwarded over the channel.
+    uint32 time_lock_delta = 9;
+    /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
+    int64 min_htlc_msat = 10;
+}
+message LSPList {
+    map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }

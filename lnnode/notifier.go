@@ -7,7 +7,6 @@ import (
 
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/peerrpc"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -19,9 +18,9 @@ type DaemonReadyEvent struct {
 // DaemonDownEvent is sent when the daemon stops
 type DaemonDownEvent struct{}
 
-// PeerConnectionEvent is sent whenever a peer is connected/disconnected.
-type PeerConnectionEvent struct {
-	*peerrpc.PeerNotification
+// ChannelEvent is sent whenever a channel is created/closed or active/inactive.
+type ChannelEvent struct {
+	*lnrpc.ChannelEventUpdate
 }
 
 // TransactionEvent is sent when a new transaction is received.
@@ -54,7 +53,7 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient, peersClient, backupEventClient, subswapClient, breezBackupClient, routerClient, err := newLightningClient(d.cfg)
+	lnclient, backupEventClient, subswapClient, breezBackupClient, routerClient, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
@@ -79,12 +78,11 @@ func (d *Daemon) startSubscriptions() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	d.wg.Add(6)
-	go d.subscribePeers(peersClient, ctx)
+	go d.subscribeChannels(lnclient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(backupEventClient, ctx)
 	go d.syncToChain(ctx)
-	go d.trackOpenedChannel()
 
 	// cancel subscriptions on quit
 	go func() {
@@ -99,36 +97,33 @@ func (d *Daemon) startSubscriptions() error {
 	return nil
 }
 
-func (d *Daemon) subscribePeers(client peerrpc.PeerNotifierClient, ctx context.Context) error {
+func (d *Daemon) subscribeChannels(client lnrpc.LightningClient, ctx context.Context) error {
 	defer d.wg.Done()
 
-	subscription, err := client.SubscribePeers(ctx, &peerrpc.PeerSubscription{})
+	subscription, err := client.SubscribeChannelEvents(ctx, &lnrpc.ChannelEventSubscription{})
 	if err != nil {
-		d.log.Errorf("Failed to subscribe peers %v", err)
+		d.log.Errorf("Failed to subscribe channels %v", err)
 		return err
 	}
 
-	d.log.Infof("Peers subscription created")
+	d.log.Infof("Channels subscription created")
 	for {
 		notification, err := subscription.Recv()
 		if err == io.EOF || ctx.Err() == context.Canceled {
-			d.log.Errorf("subscribePeers cancelled, shutting down")
+			d.log.Errorf("subscribeChannels cancelled, shutting down")
 			return err
 		}
 
-		d.log.Infof("Peer event recieved for %v, connected = %v", notification.PubKey, notification.Connected)
+		d.log.Infof("Channel event type %v received for channel = %v", notification.Type, notification.Channel)
 		if err != nil {
-			d.log.Errorf("subscribe peers Failed to get notification %v", err)
+			d.log.Errorf("subscribe channels Failed to get notification %v", err)
 			// in case of unexpected error, we will wait a bit so we won't get
 			// into infinite loop.
 			time.Sleep(2 * time.Second)
 			continue
 		}
-		if notification.PubKey == d.cfg.RoutingNodePubKey {
-			d.setConnectedToRoutingNode(notification.Connected)
-		}
 
-		d.ntfnServer.SendUpdate(PeerConnectionEvent{notification})
+		d.ntfnServer.SendUpdate(ChannelEvent{notification})
 	}
 }
 
@@ -231,49 +226,4 @@ func (d *Daemon) syncToChain(ctx context.Context) error {
 	}
 	d.ntfnServer.SendUpdate(ChainSyncedEvent{})
 	return nil
-}
-
-func (d *Daemon) trackOpenedChannel() {
-	defer d.wg.Done()
-	defer func() {
-		d.log.Info("trackOpenedChannel stopped")
-	}()
-
-	ticker := time.NewTicker(time.Second * 10)
-	for {
-		select {
-		case <-ticker.C:
-			hasChannel, err := d.setRoutingNodeChannelStatus()
-			if err == nil && hasChannel {
-				ticker.Stop()
-				d.ntfnServer.SendUpdate(RoutingNodeChannelOpened{})
-				return
-			}
-		case <-d.quitChan:
-			ticker.Stop()
-			return
-		}
-	}
-}
-
-func (d *Daemon) setRoutingNodeChannelStatus() (bool, error) {
-	lnclient := d.APIClient()
-	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
-	})
-	if err != nil {
-		return false, err
-	}
-
-	var hasChannel bool
-	for _, c := range channels.Channels {
-		if c.RemotePubkey == d.cfg.RoutingNodePubKey {
-			d.log.Infof("Channel Point with Breez node = %v", c.ChannelPoint)
-			hasChannel = true
-		}
-	}
-	d.Lock()
-	defer d.Unlock()
-	d.hasChannelWithRoutingNode = hasChannel
-	return hasChannel, nil
 }

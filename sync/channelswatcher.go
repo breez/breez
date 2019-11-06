@@ -6,8 +6,8 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/lightninglabs/neutrino"
+	"github.com/lightninglabs/neutrino/headerfs"
 	"github.com/lightningnetwork/lnd/input"
 )
 
@@ -119,8 +119,8 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 
 	b.log.Infof("Scanning for closed channels in range %v-%v", startHeight, tipHeight)
 
-	startStamp := &waddrmgr.BlockStamp{Height: int32(startHeight), Hash: *startHash}
-	tipStamp := &waddrmgr.BlockStamp{Height: int32(tipHeight), Hash: *tipHash}
+	startStamp := &headerfs.BlockStamp{Height: int32(startHeight), Hash: *startHash}
+	tipStamp := &headerfs.BlockStamp{Height: int32(tipHeight), Hash: *tipHash}
 
 	rescan := neutrino.NewRescan(
 		&neutrino.RescanChainSource{

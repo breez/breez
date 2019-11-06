@@ -334,7 +334,7 @@ func (s *Service) onInvoice(invoice *lnrpc.Invoice) error {
 }
 
 func (s *Service) lightningTransfersReady() bool {
-	return s.daemonAPI.ConnectedToRoutingNode() && s.daemonAPI.HasChannelWithRoutingNode()
+	return s.daemonAPI.HasActiveChannel()
 }
 
 //SettlePendingTransfers watch for routing peer connection and once connected it does two things:
@@ -379,8 +379,8 @@ func (s *Service) getPaymentsForConfirmedTransactions() {
 	s.log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
 
 	if !s.lightningTransfersReady() {
-		s.log.Infof("Skipping getPaymentsForConfirmedTransactions connected=%v, hasChannel=%v",
-			s.daemonAPI.ConnectedToRoutingNode(), s.daemonAPI.HasChannelWithRoutingNode())
+		s.log.Infof("Skipping getPaymentsForConfirmedTransactions HasActiveChannel=%v",
+			s.daemonAPI.HasActiveChannel())
 		return
 	}
 

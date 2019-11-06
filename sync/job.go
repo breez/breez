@@ -58,7 +58,7 @@ func (s *Job) terminated() bool {
 func (s *Job) syncFilters() (channelClosed bool, err error) {
 	s.log.Info("syncFilters started...")
 
-	needsBootstrap, err := chainservice.NeedsBootstrap(s.workingDir)
+	needsBootstrap, err := chainservice.NeedsBootstrap(s.workingDir, s.log)
 	if err != nil {
 		return false, err
 	}

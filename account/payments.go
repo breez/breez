@@ -94,7 +94,7 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (*PaymentResponse, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
-	if err := a.waitRoutingNodeConnected(); err != nil {
+	if err := a.waitChannelActive(); err != nil {
 		return nil, err
 	}
 	lnclient := a.daemonAPI.APIClient()
@@ -138,10 +138,45 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-	if err := a.waitRoutingNodeConnected(); err != nil {
+	if err := a.waitChannelActive(); err != nil {
 		return "", err
 	}
-	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{Memo: memo, Private: true, Value: invoice.Amount, Expiry: invoice.Expiry})
+	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	var routeHints []*lnrpc.RouteHint
+	for _, h := range channelsRes.Channels {
+		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+			ChanId: h.ChanId,
+		})
+		if err != nil {
+			a.log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
+			continue
+		}
+		remotePolicy := ci.Node1Policy
+		if ci.Node2Pub == h.RemotePubkey {
+			remotePolicy = ci.Node2Policy
+		}
+		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
+		routeHints = append(routeHints, &lnrpc.RouteHint{
+			HopHints: []*lnrpc.HopHint{
+				&lnrpc.HopHint{
+					NodeId:                    h.RemotePubkey,
+					ChanId:                    h.ChanId,
+					FeeBaseMsat:               uint32(remotePolicy.FeeBaseMsat),
+					FeeProportionalMillionths: uint32(remotePolicy.FeeRateMilliMsat),
+					CltvExpiryDelta:           remotePolicy.TimeLockDelta,
+				},
+			},
+		})
+	}
+	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
+		Memo: memo, Private: true, Value: invoice.Amount,
+		Expiry: invoice.Expiry, RouteHints: routeHints,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -450,7 +485,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	if err != nil {
 		return err
 	}
-	if decodedReq.Destination == a.cfg.RoutingNodePubKey {
+	if decodedReq.Destination == a.cfg.SwapperPubkey {
 		paymentType = db.WithdrawalPayment
 	}
 

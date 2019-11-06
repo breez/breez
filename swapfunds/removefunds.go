@@ -57,8 +57,7 @@ func (s *Service) RemoveFund(amount int64, address string) (*data.RemoveFundRepl
 func (s *Service) redeemAllRemovedFunds() error {
 	s.log.Infof("redeemAllRemovedFunds")
 	if !s.lightningTransfersReady() {
-		s.log.Infof("Skipping redeemAllRemovedFunds connected=%v, hasChannel=%v",
-			s.daemonAPI.ConnectedToRoutingNode(), s.daemonAPI.HasChannelWithRoutingNode())
+		s.log.Infof("Skipping redeemAllRemovedFunds HasActiveChannel=%v", s.daemonAPI.HasActiveChannel())
 		return nil
 	}
 	hashes, err := s.breezDB.FetchRedeemablePaymentHashes()

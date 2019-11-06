@@ -8,14 +8,13 @@ import (
 	"time"
 
 	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/peerrpc"
 
 	"github.com/breez/breez/config"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -35,18 +34,18 @@ var (
 
 // NewLightningClient returns an instance of lnrpc.LightningClient
 func newLightningClient(cfg *config.Config) (
-	lnrpc.LightningClient, peerrpc.PeerNotifierClient, backuprpc.BackupClient,
+	lnrpc.LightningClient, backuprpc.BackupClient,
 	submarineswaprpc.SubmarineSwapperClient,
-	breezbackuprpc.BreezBackuperClient, 
+	breezbackuprpc.BreezBackuperClient,
 	routerrpc.RouterClient, error) {
-		
+
 	appWorkingDir := cfg.WorkingDir
 	network := cfg.Network
 	macaroonDir := strings.Join([]string{appWorkingDir, "data", "chain", "bitcoin", network}, "/")
 	tlsCertPath := filepath.Join(appWorkingDir, defaultTLSCertFilename)
 	creds, err := credentials.NewClientTLSFromFile(tlsCertPath, "")
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Create a dial options array.
@@ -58,11 +57,11 @@ func newLightningClient(cfg *config.Config) (
 	macPath := filepath.Join(macaroonDir, defaultMacaroonFilename)
 	macBytes, err := ioutil.ReadFile(macPath)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	mac := &macaroon.Macaroon{}
 	if err = mac.UnmarshalBinary(macBytes); err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Now we append the macaroon credentials to the dial options.
@@ -71,7 +70,7 @@ func newLightningClient(cfg *config.Config) (
 
 	conn, err := lnd.MemDial()
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// We need to use a custom dialer so we can also connect to unix sockets
@@ -84,10 +83,10 @@ func newLightningClient(cfg *config.Config) (
 	)
 	grpcCon, err := grpc.Dial("localhost", opts...)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
-	return lnrpc.NewLightningClient(grpcCon), peerrpc.NewPeerNotifierClient(grpcCon),
+	return lnrpc.NewLightningClient(grpcCon),
 		backuprpc.NewBackupClient(grpcCon),
 		submarineswaprpc.NewSubmarineSwapperClient(grpcCon),
 		breezbackuprpc.NewBreezBackuperClient(grpcCon),
