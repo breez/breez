@@ -7,12 +7,13 @@ import (
 	"path"
 	"sync"
 
-	"github.com/breez/breez"	
+	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/drophintcache"
 	"github.com/breez/breez/dropwtx"
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
@@ -128,6 +129,8 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
 		err = dropwtx.Drop(workingDir)
 		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
+		err = drophintcache.Drop(workingDir)
+		appLogger.Log(fmt.Sprintf("Drop hint cache result: %v", err), "INFO")
 		if err == nil {
 			err = os.Remove(path.Join(workingDir, forceRescan))
 			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
@@ -264,8 +267,8 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 		return err
 	}
 	encKey := append([]byte(nil), encryptionKey...)
-	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey);
-	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)		
+	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
+	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
 	return err
 }
 
