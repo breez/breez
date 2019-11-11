@@ -7,7 +7,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/breez/breez"	
+	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
@@ -115,6 +115,7 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		fmt.Println("Error in init ", err)
 		return err
 	}
+	appLogger.Log("Breez initialization started", "INFO")
 	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
 		err = chainservice.ResetChainService(workingDir)
@@ -136,6 +137,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	mu.Lock()
 	breezApp, err = breez.NewApp(workingDir, services)
 	mu.Unlock()
+	if err != nil {
+		appLogger.Log("Breez initialization failed: %v", "INFO")
+	} else {
+		appLogger.Log("Breez initialization finished", "INFO")
+	}
 	return err
 }
 
@@ -264,8 +270,8 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 		return err
 	}
 	encKey := append([]byte(nil), encryptionKey...)
-	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey);
-	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)		
+	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
+	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
 	return err
 }
 

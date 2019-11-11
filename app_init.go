@@ -84,8 +84,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.cfg, err = config.GetConfig(workingDir)
 	if err != nil {
-		fmt.Println("Warning initConfig", err)
-		return nil, err
+		return nil, fmt.Errorf("Failed to get config file: %v", err)
 	}
 
 	app.ServicesClient, err = services.NewClient(app.cfg)
@@ -97,24 +96,24 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.breezDB, app.releaseBreezDB, err = db.Get(workingDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to initialze breezDB: %v", err)
 	}
 
 	app.log.Infof("New db")
 
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating lnnode.Daemon: %v", err)
+		return nil, fmt.Errorf("Failed to create lnnode.Daemon: %v", err)
 	}
 
 	app.log.Infof("New daemon")
 
-	if err != nil {
+	if err := doubleratchet.Start(path.Join(app.cfg.WorkingDir, "sessions_encryption.db")); err != nil {
 		return nil, err
 	}
 
-	if err := doubleratchet.Start(path.Join(app.cfg.WorkingDir, "sessions_encryption.db")); err != nil {
-		return nil, err
+	if err != nil {
+		return nil, fmt.Errorf("Failed to start doubleratchet: %v", err)
 	}
 
 	app.BackupManager, err = backup.NewManager(
@@ -126,7 +125,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		logBackend.Logger("BCKP"),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to start backup manager: %v", err)
 	}
 	app.log.Infof("New backup")
 
@@ -138,7 +137,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.onServiceEvent,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to create AccountService: %v", err)
 	}
 
 	app.SwapService, err = swapfunds.NewService(
@@ -150,7 +149,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.onServiceEvent,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to create SwapService: %v", err)
 	}
 
 	return app, nil
