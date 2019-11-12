@@ -80,15 +80,15 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 	}
 	defer jobDB.close()
 
-	// ensure job is rate limited.
-	// lastRun, err := jobDB.lastSuccessRunDate()
-	// if err != nil {
-	// 	return false, err
-	// }
-	// if time.Now().Sub(lastRun) < rateLimitJobInterval {
-	// 	s.log.Infof("job was not running due to rate limit, last run was at %v", lastRun)
-	// 	return false, nil
-	// }
+	//ensure job is rate limited.
+	lastRun, err := jobDB.lastSuccessRunDate()
+	if err != nil {
+		return false, err
+	}
+	if time.Now().Sub(lastRun) < rateLimitJobInterval {
+		s.log.Infof("job was not running due to rate limit, last run was at %v", lastRun)
+		return false, nil
+	}
 
 	startSyncHeight, err := jobDB.fetchCFilterSyncHeight()
 	if err != nil {
