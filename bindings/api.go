@@ -111,7 +111,7 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	os.Setenv("TMPDIR", tempDir)
 	appServices = services
 	appLogger, err = GetLogger(workingDir)
-	if err != nil {
+	if err != nil || appLogger == nil {
 		fmt.Println("Error in init ", err)
 		return err
 	}
