@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path"
@@ -79,7 +80,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 	}
 	defer jobDB.close()
 
-	// ensure job is rate limited.
+	//ensure job is rate limited.
 	lastRun, err := jobDB.lastSuccessRunDate()
 	if err != nil {
 		return false, err
@@ -113,10 +114,21 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		startSyncHeight = bestBlockHeight
 	}
 
-	//must wait for neutrino to connect to a peer and download the best
-	//block before starting the filters download loop.
-	for i := 0; i < 50 && startSyncHeight == bestBlockHeight; i++ {
+	//We wait for neutrino to connect to a peer and give it a chance
+	//to advance the headers state beyond the startSyncHeight
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+syncHeaders:
+	for {
+		// stop waiting in case we reached the best block and at least on e peer is
+		// connected.
+		if chainService.ConnectedCount() > 0 && startSyncHeight < bestBlockHeight {
+			break
+		}
 		select {
+		case <-ctx.Done():
+			break syncHeaders
 		case <-time.After(time.Millisecond * 100):
 			bestBlockHeight, err = s.waitForHeaders(chainService, startSyncHeight)
 			if err != nil {
@@ -128,7 +140,12 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 		}
 	}
 
-	s.log.Infof("Finished waiting for neutrino to sync best block: %v", bestBlockHeight)
+	s.log.Infof("Finished waiting for neutrino to sync best block: %v connected peer count = %v",
+		bestBlockHeight, chainService.ConnectedCount())
+
+	if chainService.ConnectedCount() == 0 {
+		return false, errors.New("job failed to conect to peer. aborting")
+	}
 
 	for currentHeight := startSyncHeight; currentHeight <= bestBlockHeight; currentHeight++ {
 		if s.terminated() {

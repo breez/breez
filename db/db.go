@@ -46,7 +46,6 @@ var (
 // DB is the structure for breez database
 type DB struct {
 	*bolt.DB
-	dbPath string
 	log    btclog.Logger
 }
 
@@ -147,7 +146,6 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 
 	breezDB := &DB{
 		DB:     db,
-		dbPath: dbPath,
 		log:    log,
 	}
 

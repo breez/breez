@@ -112,10 +112,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	os.Setenv("TMPDIR", tempDir)
 	appServices = services
 	appLogger, err = GetLogger(workingDir)
-	if err != nil {
+	if err != nil || appLogger == nil {
 		fmt.Println("Error in init ", err)
 		return err
 	}
+	appLogger.Log("Breez initialization started", "INFO")
 	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
 		err = chainservice.ResetChainService(workingDir)
@@ -139,6 +140,11 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	mu.Lock()
 	breezApp, err = breez.NewApp(workingDir, services)
 	mu.Unlock()
+	if err != nil {
+		appLogger.Log("Breez initialization failed: %v", "INFO")
+	} else {
+		appLogger.Log("Breez initialization finished", "INFO")
+	}
 	return err
 }
 
