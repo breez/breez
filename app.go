@@ -29,6 +29,10 @@ func (a *App) Start() error {
 		return errors.New("Breez already started")
 	}
 
+	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
+		return err
+	}
+
 	services := []Service{
 		a.lnDaemon,
 		a.ServicesClient,
@@ -206,12 +210,4 @@ func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
 
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
-}
-
-func (a *App) NeedsBootstrap() (bool, error) {
-	return chainservice.NeedsBootstrap(a.cfg.WorkingDir, a.log)
-}
-
-func (a *App) BootstrapHeaders(bootstrapDir string) error {
-	return chainservice.BootstrapHeaders(a.cfg.WorkingDir, bootstrapDir)
 }

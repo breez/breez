@@ -2,14 +2,15 @@ package chainservice
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/breez/breez/config"
-	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/breez/breez/log"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
@@ -17,16 +18,17 @@ import (
 	"github.com/lightninglabs/neutrino/headerfs"
 )
 
-const (
-	blockHeaderLength  = 80
-	filterHeaderLength = 32
-	headersBatchSize   = 20000
-)
-
 var (
-	bootstrapMu sync.Mutex
+	bootstrapMu       sync.Mutex
+	waddrmgrNamespace = []byte("waddrmgr")
+	syncBucketName    = []byte("sync")
+	birthdayBlockName = []byte("birthday")
 )
 
+// ResetChainService deletes neutrino headers/cfheaders and the db so
+// the process of synching will start from the beginning.
+// It allows the node to recover in case some filters/headers were
+// skipped due to unexpected error.
 func ResetChainService(workingDir string) error {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
@@ -48,262 +50,244 @@ func ResetChainService(workingDir string) error {
 	return nil
 }
 
-func NeedsBootstrap(workingDir string, logger btclog.Logger) (bool, error) {
-	logger.Info("NeedsBootstrap started")
-	bootstrapMu.Lock()
-	defer bootstrapMu.Unlock()
-
-	logger.Info("NeedsBootstrap after lock")
-	// If we already have a chain service, then no bootstrap is needed.
-	// Caller responsibility to check for whether bootstrap is needed
-	// before creating a chain service.
-	if service != nil {
-		return false, nil
-	}
-
-	config, err := config.GetConfig(workingDir)
+// Bootstrapped returns true if bootstrap was done, fals otherwise.
+func Bootstrapped(workingDir string) (bool, error) {
+	tipHeight, err := chainTipHeight(workingDir)
 	if err != nil {
 		return false, err
 	}
-
-	params, err := chainParams(config.Network)
+	birthday, err := walletBirthday(workingDir)
 	if err != nil {
 		return false, err
 	}
-
-	//create temporary neturino db.
-	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
-	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
-		return false, err
-	}
-
-	logger.Info("NeedsBootstrap before creating walletdb")
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
-	if db != nil {
-		defer db.Close()
-	}
+	logBackend, err := log.GetLogBackend(workingDir)
 	if err != nil {
 		return false, err
 	}
-
-	assertHeader, err := parseAssertFilterHeader(config.JobCfg.AssertFilterHeader)
-	if err != nil {
-		return false, err
-	}
-
-	_, err = headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
-	if err != nil {
-		return false, err
-	}
-
-	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, assertHeader)
-	if err != nil {
-		return false, err
-	}
-
-	_, height, err := filterHeaderStore.ChainTip()
-	if err != nil {
-		return false, err
-	}
-	logger.Info("NeedsBootstrap finished, currenet tip = %v", height)
-	return height < 250000, nil
+	logger = logBackend.Logger("CHAIN")
+	logger.Infof("using birthday %v for bootstrap", birthday)
+	lastCheckpiont := getLatestCheckpoint(*birthday)
+	return tipHeight >= lastCheckpiont.Height, nil
 }
 
-// BootstrapHeaders initialize the neutrino headers with existing data.
-func BootstrapHeaders(workingDir string, bootstrapDir string) error {
+// Bootstrap is populating neutrino data (flat files and db) with predefined
+// checkpoints to make the sync process a lot faster.
+// Instad of synching from the genesis block, it is now done down to a checkpoint
+// determined by the wallet birthday.
+func Bootstrap(workingDir string) error {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
 
-	filterHeadersPath := path.Join(bootstrapDir, "reg_filter_headers.bin")
-	headersPath := path.Join(bootstrapDir, "block_headers.bin")
-
-	if _, err := os.Stat(filterHeadersPath); os.IsNotExist(err) {
-		return fmt.Errorf("%v does not exist", filterHeadersPath)
+	logBackend, err := log.GetLogBackend(workingDir)
+	if err != nil {
+		return err
 	}
-
-	if _, err := os.Stat(headersPath); os.IsNotExist(err) {
-		return fmt.Errorf("%v does not exist", headersPath)
-	}
+	logger = logBackend.Logger("CHAIN")
 
 	if service != nil {
 		return errors.New("Chain service already created, can't bootstrap")
 	}
 
-	config, err := config.GetConfig(workingDir)
+	bootstrapped, err := Bootstrapped(workingDir)
 	if err != nil {
+		logger.Errorf("Bootstrapped returned error: %v", err)
 		return err
 	}
-
-	params, err := chainParams(config.Network)
-	if err != nil {
-		return err
+	if bootstrapped {
+		return nil
 	}
 
+	logger.Info("staring bootstrap flow")
 	//create temporary neturino db.
-	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
-	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
-		return err
-	}
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	blockHeaderStore, err := headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
+	birthday, err := walletBirthday(workingDir)
 	if err != nil {
 		return err
 	}
+	logger.Infof("bootstrapping using birthday: %v", birthday)
 
-	filterHeaderStore, err := headerfs.NewFilterHeaderStore(neutrinoDataDir, db, headerfs.RegularFilter, params, nil)
-	if err != nil {
-		return err
-	}
+	tipCheckpoint := getLatestCheckpoint(*birthday)
+	logger.Infof("bootstrapping using checkpoint height: %v", tipCheckpoint.Height)
 
-	if err := copyBlockHeaderStore(blockHeaderStore, headersPath, db, params); err != nil {
-		return err
-	}
-
-	if err := copyFilterHeaderStore(*filterHeaderStore, blockHeaderStore, filterHeadersPath, db, params); err != nil {
+	// Now that we have the latest checkpoint that was mined before the wallet
+	// birthday we need to ensure neutrino is pupulated with that.
+	if err = ensureMinimumTip(db, neutrinoDataDir,
+		&headerfs.BlockHeader{
+			BlockHeader: tipCheckpoint.BlockHeader,
+			Height:      tipCheckpoint.Height},
+		tipCheckpoint.FilterHeader, logger); err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
-func copyFilterHeaderStore(filterHeaderStore headerfs.FilterHeaderStore, blockHeaderStore headerfs.BlockHeaderStore,
-	filterHeadersPath string, db walletdb.DB, params *chaincfg.Params) error {
-	file, err := os.Open(filterHeadersPath)
+func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return "", nil, err
+	}
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
+	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
+		return "", nil, err
+	}
+
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	return neutrinoDataDir, db, err
+}
+
+// getLatestCheckpoint returns the latest checkpoint that is mined before the
+// walletBirthday date.
+func getLatestCheckpoint(walletBirthday time.Time) Checkpoint {
+	var latestCheckpoint Checkpoint
+	for _, ck := range checkpoints {
+		if ck.BlockHeader.Timestamp.After(walletBirthday) {
+			break
+		}
+		latestCheckpoint = ck
+	}
+
+	return latestCheckpoint
+}
+
+// ensureMinimumTip ensures neutrino is initialized with (at least) 'startHeader' as the tip.
+// using this function allows us to use a pre-defined checkpoint for neutrino as earliest point
+// for syncing, making the bootstrap and sync a lot faster.
+func ensureMinimumTip(db walletdb.DB, bootstrapDir string, startHeader *headerfs.BlockHeader,
+	filterHash *chainhash.Hash, logger btclog.Logger) error {
+
+	headersPath := path.Join(bootstrapDir, "block_headers.bin")
+	headersFile, err := os.OpenFile(headersPath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
+	defer headersFile.Close()
 
-	totalHeaders, err := totalFilterHeaders(file)
+	filterHeadersPath := path.Join(bootstrapDir, "reg_filter_headers.bin")
+	filterHeadersFile, err := os.OpenFile(filterHeadersPath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
+	defer headersFile.Close()
 
-	_, height, err := filterHeaderStore.ChainTip()
-	if err != nil {
+	if err := headersFile.Truncate(int64(startHeader.Height * headerfs.BlockHeaderSize)); err != nil {
+		return err
+	}
+	if err := filterHeadersFile.Truncate(int64(startHeader.Height * headerfs.RegularFilterHeaderSize)); err != nil {
 		return err
 	}
 
-	var headersToWrite []headerfs.FilterHeader
-	for i := height + 1; i < uint32(totalHeaders); i++ {
-		hash, err := readFilterHeader(file, i)
+	// populating all the predefined checpoints
+	for i, ck := range checkpoints {
+		height := uint32(i * wire.CFCheckptInterval)
+		if _, err := headersFile.Seek(int64(height*headerfs.BlockHeaderSize), 0); err != nil {
+			return err
+		}
+		var buf bytes.Buffer
+		if err = ck.BlockHeader.Serialize(&buf); err != nil {
+			return err
+		}
+		if _, err := headersFile.Write(buf.Bytes()); err != nil {
+			return err
+		}
+
+		if _, err := filterHeadersFile.Seek(int64(height*headerfs.RegularFilterHeaderSize), 0); err != nil {
+			return err
+		}
+
+		if _, err := filterHeadersFile.Write(ck.FilterHeader[:]); err != nil {
+			return err
+		}
+	}
+
+	return updateDBTip(db, startHeader.Height, startHeader.BlockHash())
+}
+
+func updateDBTip(db walletdb.DB, height uint32, hash chainhash.Hash) error {
+	return walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
+		rootBucket := tx.ReadWriteBucket([]byte("header-index"))
+		var heightBytes [4]byte
+		binary.BigEndian.PutUint32(heightBytes[:], height)
+		err := rootBucket.Put(hash[:], heightBytes[:])
 		if err != nil {
 			return err
 		}
-		bHeader, err := blockHeaderStore.FetchHeaderByHeight(i)
-		if err != nil {
+
+		if err = rootBucket.Put([]byte("bitcoin"), hash[:]); err != nil {
 			return err
 		}
-		filterHeader := headerfs.FilterHeader{
-			Height:     i,
-			FilterHash: *hash,
-			HeaderHash: bHeader.BlockHash(),
-		}
-		headersToWrite = append(headersToWrite, filterHeader)
-		if len(headersToWrite) == headersBatchSize {
-			err = filterHeaderStore.WriteHeaders(headersToWrite...)
-			headersToWrite = nil
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(headersToWrite) > 0 {
-		err = filterHeaderStore.WriteHeaders(headersToWrite...)
-	}
-	return err
+		return rootBucket.Put([]byte("regular"), hash[:])
+	})
 }
 
-func totalFilterHeaders(file *os.File) (int64, error) {
-	fileInfo, err := os.Stat(file.Name())
+// chainTipHeight returns the current headers tip.
+func chainTipHeight(workingDir string) (uint32, error) {
+	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return 0, err
 	}
-	return fileInfo.Size() / filterHeaderLength, nil
-}
-
-func readFilterHeader(file *os.File, height uint32) (*chainhash.Hash, error) {
-	seekDistance := int64(height) * filterHeaderLength
-
-	rawHeader := make([]byte, filterHeaderLength)
-	if _, err := file.ReadAt(rawHeader[:], seekDistance); err != nil {
-		return nil, err
-	}
-
-	return chainhash.NewHash(rawHeader)
-}
-
-func copyBlockHeaderStore(blockHeaderStore headerfs.BlockHeaderStore, blockHeadersPath string,
-	db walletdb.DB, params *chaincfg.Params) error {
-	file, err := os.Open(blockHeadersPath)
-	if err != nil {
-		return err
-	}
-
-	totalBlocks, err := totalBlockHeaders(file)
-	if err != nil {
-		return err
-	}
-
-	_, height, err := blockHeaderStore.ChainTip()
-	if err != nil {
-		return err
-	}
-
-	var headersToWrite []headerfs.BlockHeader
-	for i := height + 1; i < uint32(totalBlocks); i++ {
-		wireHeader, err := readBlockHeader(file, i)
-		if err != nil {
-			return err
-		}
-		blockHeader := headerfs.BlockHeader{
-			Height:      i,
-			BlockHeader: wireHeader,
-		}
-		headersToWrite = append(headersToWrite, blockHeader)
-		if len(headersToWrite) == headersBatchSize {
-			err = blockHeaderStore.WriteHeaders(headersToWrite...)
-			headersToWrite = nil
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(headersToWrite) > 0 {
-		err = blockHeaderStore.WriteHeaders(headersToWrite...)
-	}
-	return err
-}
-
-func totalBlockHeaders(file *os.File) (int64, error) {
-	fileInfo, err := os.Stat(file.Name())
+	params, err := chainParams(config.Network)
 	if err != nil {
 		return 0, err
 	}
-	return fileInfo.Size() / blockHeaderLength, nil
+	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
+	if err != nil {
+		return 0, err
+	}
+	defer db.Close()
+	headersStore, err := headerfs.NewBlockHeaderStore(neutrinoDataDir, db, params)
+	if err != nil {
+		return 0, err
+	}
+	_, height, err := headersStore.ChainTip()
+	if err != nil {
+		return 0, err
+	}
+	return height, nil
 }
-func readBlockHeader(file *os.File, height uint32) (*wire.BlockHeader, error) {
-	seekDistance := int64(height) * blockHeaderLength
 
-	rawHeader := make([]byte, blockHeaderLength)
-	if _, err := file.ReadAt(rawHeader[:], seekDistance); err != nil {
+// walletBirthday finds the wallet birthday date. If the wallet already exists
+// it query it, otherwise it just return a date two days ago.
+func walletBirthday(workingDir string) (*time.Time, error) {
+	noWalletBirthday := time.Now().Add(time.Hour * 48 * -1)
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
 		return nil, err
 	}
-	var header wire.BlockHeader
-	headerReader := bytes.NewReader(rawHeader)
-
-	if err := header.Deserialize(headerReader); err != nil {
-		return &header, err
+	walletDBPath := path.Join(workingDir, "data/chain/bitcoin/", config.Network, "wallet.db")
+	_, err = os.Stat(walletDBPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &noWalletBirthday, nil
+		}
+		return nil, err
 	}
 
-	return &header, nil
+	db, err := walletdb.Open("bdb", walletDBPath, false)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	birthday := noWalletBirthday
+	err = walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
+		ns := tx.ReadWriteBucket(waddrmgrNamespace)
+		if ns != nil {
+			syncBucket := ns.NestedReadBucket(syncBucketName)
+			if syncBucket != nil {
+				birthdayTimestamp := syncBucket.Get(birthdayBlockName)
+				if len(birthdayTimestamp) == 8 {
+					birthday = time.Unix(int64(binary.BigEndian.Uint64(birthdayTimestamp)), 0)
+				}
+			}
+		}
+		return nil
+	})
+	return &birthday, err
 }
