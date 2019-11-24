@@ -136,6 +136,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.lnDaemon,
 		app.onServiceEvent,
 	)
+	app.log.Infof("New AccountService")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create AccountService: %v", err)
 	}
@@ -148,10 +149,12 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 		app.AccountService.SendPaymentForRequest,
 		app.onServiceEvent,
 	)
+	app.log.Infof("New SwapService")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create SwapService: %v", err)
 	}
 
+	app.log.Infof("app initialized")
 	return app, nil
 }
 

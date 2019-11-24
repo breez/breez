@@ -217,18 +217,11 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 	if err != nil {
 		return nil, nil, err
 	}
-
-	assertHeader, err := parseAssertFilterHeader(cfg.JobCfg.AssertFilterHeader)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	neutrinoConfig := neutrino.Config{
-		DataDir:            neutrinoDataDir,
-		Database:           db,
-		ChainParams:        *params,
-		ConnectPeers:       peers,
-		AssertFilterHeader: assertHeader,
+		DataDir:      neutrinoDataDir,
+		Database:     db,
+		ChainParams:  *params,
+		ConnectPeers: peers,
 	}
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
