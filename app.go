@@ -29,7 +29,9 @@ func (a *App) Start() error {
 		return errors.New("Breez already started")
 	}
 
+	a.log.Info("app.start before bootstrap")
 	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
+		a.log.Info("app.start bootstrap error %v", err)
 		return err
 	}
 

@@ -52,6 +52,16 @@ func ResetChainService(workingDir string) error {
 
 // Bootstrapped returns true if bootstrap was done, fals otherwise.
 func Bootstrapped(workingDir string) (bool, error) {
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return false, err
+	}
+
+	// In case we are not in mainnet we don't shorten the bootstrap.
+	if config.Network != "mainnet" {
+		return true, nil
+	}
+
 	tipHeight, err := chainTipHeight(workingDir)
 	if err != nil {
 		return false, err
@@ -83,7 +93,7 @@ func Bootstrap(workingDir string) error {
 		return err
 	}
 	logger = logBackend.Logger("CHAIN")
-
+	logger.Infof("Bootstrap started")
 	if service != nil {
 		return errors.New("Chain service already created, can't bootstrap")
 	}
@@ -93,6 +103,7 @@ func Bootstrap(workingDir string) error {
 		logger.Errorf("Bootstrapped returned error: %v", err)
 		return err
 	}
+	logger.Infof("Bootstrap bootstrapped = %v", bootstrapped)
 	if bootstrapped {
 		return nil
 	}
