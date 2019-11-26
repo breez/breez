@@ -68,6 +68,9 @@ github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54 h1:dJyqc8UXhQ
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191105101129-de445157afef h1:mJ+XH3J6ylHi1yy+TvDCtblSDNjvH7ZHBuMIh2Ryv3c=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191105101129-de445157afef/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20191107151654-3ef9430040f8/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20191121084932-69bac9366152 h1:yV+9jiCswCAJEe4hunCpcutj2Z1BnLh9YvuI61iJlJo=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20191121084932-69bac9366152/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0 h1:nSQkvsVdZP4GBURecXCaSCPg8AOQrR12j5mWpWbR1FA=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0/go.mod h1:vzLU75ll8qbRJIzW5dvK/UXtR9c2FecJ6VNOM8chyVM=
 github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335 h1:vA6MyZVCHKFdRyijR2rF2edJL223UCmty6xlPDXbATg=
@@ -76,10 +79,14 @@ github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78 h1:cNfpI+1PIM8PuWzT
 github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78 h1:OogFYBfD77g3z6+MNnq2QVMx6YhPfyTK+chfTCzgHX0=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
+github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a h1:b3Ll7sd4/9zzAC86Qk0Aa3rmmkI2TZmj88D/7led7w4=
+github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
 github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
-github.com/btcsuite/btcd v0.20.0-beta h1:PamBMopnHxO2nEIsU89ibVVnqnXR2yFTgGNc+PdG68o=
+github.com/btcsuite/btcd v0.20.0-beta h1:DnZGUjFbRkpytojHWwy6nfUSA7vFrzWXDLpFNzt74ZA=
 github.com/btcsuite/btcd v0.20.0-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
+github.com/btcsuite/btcd v0.20.1-beta h1:Ik4hyJqN8Jfyv3S4AGBOmyouMsYE3EdYODkMbQjwPGw=
+github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9VhRV3jjAVU7DJVjMaK+IsvSeZvFo=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20180706230648-ab6388e0c60a/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=

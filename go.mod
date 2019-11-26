@@ -1,7 +1,7 @@
 module github.com/breez/breez
 
 require (
-	github.com/btcsuite/btcd v0.20.0-beta
+	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/btcsuite/btcwallet v0.10.0
@@ -29,8 +29,8 @@ replace (
 	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.10.1-0.20191103104723-0e068b848776
 	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.1.1-0.20191103104723-0e068b848776
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191103104723-0e068b848776
-	github.com/lightninglabs/neutrino v0.10.0 => github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78
-	github.com/lightningnetwork/lnd v0.8.0-beta => github.com/breez/lnd v0.8.0-beta-rc3.0.20191107151654-3ef9430040f8
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.8.0-beta-rc3.0.20191121084932-69bac9366152
 )
 
 go 1.12

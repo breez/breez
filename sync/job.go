@@ -163,7 +163,7 @@ syncHeaders:
 		}
 
 		// Get filter
-		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.PersistToDisk(), neutrino.OptimisticBatch())
+		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.OptimisticBatch())
 		if err != nil {
 			s.log.Errorf("fail to download block filter", err)
 			return false, err
