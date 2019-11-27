@@ -142,7 +142,13 @@ func (d *Daemon) startDaemon() error {
 		params := []string{"lightning-libs",
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
-			"--bitcoin.startbeforesynced",
+		}
+		txSpentURL, _, err := d.breezDB.GetTxSpentURL(d.cfg.TxSpentURL)
+		if err == nil {
+			closed, err := closedChannels(chanDB, txSpentURL)
+			if err == nil && closed == 0 {
+				params = append(params, "--bitcoin.startbeforesynced")
+			}
 		}
 		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
 

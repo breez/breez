@@ -204,6 +204,14 @@ func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
 	return a.breezDB.GetPeers(a.cfg.JobCfg.ConnectedPeers)
 }
 
+func (a *App) SetTxSpentURL(txSpentURL string) error {
+	return a.breezDB.SetTxSpentURL(txSpentURL)
+}
+
+func (a *App) GetTxSpentURL() (txSpentURL string, isDefault bool, err error) {
+	return a.breezDB.GetTxSpentURL(a.cfg.TxSpentURL)
+}
+
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
 }

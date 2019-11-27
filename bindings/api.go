@@ -591,6 +591,18 @@ func SetPeers(request []byte) error {
 	return err
 }
 
+func GetTxSpentURL() (string, error) {
+	txSpentURL, _, err := getBreezApp().GetTxSpentURL()
+	if err != nil {
+		return "", err
+	}
+	return txSpentURL, nil
+}
+
+func SetTxSpentURL(txSpentURL string) error {
+	return getBreezApp().SetTxSpentURL(txSpentURL)
+}
+
 func TestPeer(peer string) error {
 	return chainservice.TestPeer(peer)
 }
