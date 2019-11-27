@@ -281,3 +281,8 @@ message LNUrlWithdraw {
     int64 max_amount = 2;
     string default_description = 3;
 }
+
+message LNUrlWithdrawRequest {
+    string url = 1;
+    string payment_request = 2;
+}
