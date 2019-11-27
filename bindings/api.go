@@ -15,6 +15,7 @@ import (
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/drophintcache"
 	"github.com/breez/breez/dropwtx"
+	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/btcsuite/btclog"
@@ -22,8 +23,9 @@ import (
 )
 
 const (
-	forceRescan    = "FORCE_RESCAN"
-	forceBootstrap = "FORCE_BOOTSTRAP"
+	forceRescan        = "FORCE_RESCAN"
+	forceBootstrap     = "FORCE_BOOTSTRAP"
+	disabledTxSpentURL = "<DISABLED>"
 )
 
 var (
@@ -591,20 +593,42 @@ func SetPeers(request []byte) error {
 	return err
 }
 
-func GetTxSpentURL() (string, error) {
-	txSpentURL, _, err := getBreezApp().GetTxSpentURL()
-	if err != nil {
-		return "", err
-	}
-	return txSpentURL, nil
-}
-
-func SetTxSpentURL(txSpentURL string) error {
-	return getBreezApp().SetTxSpentURL(txSpentURL)
-}
-
 func TestPeer(peer string) error {
 	return chainservice.TestPeer(peer)
+}
+
+func GetTxSpentURL() ([]byte, error) {
+	var t data.TxSpentURL
+	txSpentURL, isDefault, err := getBreezApp().GetTxSpentURL()
+	if err != nil {
+		return nil, err
+	}
+	t.IsDefault = isDefault
+	if txSpentURL == disabledTxSpentURL {
+		t.Disabled = true
+	} else {
+		t.URL = txSpentURL
+	}
+	return marshalResponse(&t, nil)
+}
+
+func SetTxSpentURL(request []byte) error {
+	var t data.TxSpentURL
+	if err := proto.Unmarshal(request, &t); err != nil {
+		return err
+	}
+	URL := t.URL
+	if t.IsDefault {
+		URL = ""
+	}
+	if t.Disabled {
+		URL = disabledTxSpentURL
+	}
+	return getBreezApp().SetTxSpentURL(URL)
+}
+
+func TestTxSpentURL(txSpentURL string) error {
+	return lnnode.TestTxSpentURL(txSpentURL)
 }
 
 func Rate() ([]byte, error) {

@@ -145,7 +145,7 @@ func (d *Daemon) startDaemon() error {
 		}
 		txSpentURL, _, err := d.breezDB.GetTxSpentURL(d.cfg.TxSpentURL)
 		if err == nil {
-			closed, err := closedChannels(chanDB, txSpentURL)
+			closed, err := closedChannels(d.log, chanDB, txSpentURL)
 			if err == nil && closed == 0 {
 				params = append(params, "--bitcoin.startbeforesynced")
 			}
