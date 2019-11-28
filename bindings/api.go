@@ -631,6 +631,11 @@ func TestTxSpentURL(txSpentURL string) error {
 	return lnnode.TestTxSpentURL(txSpentURL)
 }
 
+func HasClosedChannels() (bool, error) {
+	c, err := getBreezApp().ClosedChannels()
+	return c > 0, err
+}
+
 func Rate() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.Rates())
 }

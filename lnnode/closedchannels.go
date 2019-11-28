@@ -1,6 +1,7 @@
 package lnnode
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 type txInfo struct {
@@ -76,4 +78,37 @@ func closedChannels(log btclog.Logger, db *channeldb.DB, txSpentURL string) (int
 		}
 	}
 	return closed, nil
+}
+
+func (d *Daemon) ClosedChannels() (int, error) {
+	txSpentURL, _, err := d.breezDB.GetTxSpentURL(d.cfg.TxSpentURL)
+	if err != nil {
+		d.log.Errorf("Error in d.breezDB.GetTxSpentURL: %v", err)
+		return 0, err
+	}
+	lnclient := d.APIClient()
+	if lnclient == nil {
+		return 0, errors.New("lnclient not ready")
+	}
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	count := 0
+	for _, c := range channels.Channels {
+		cp := c.ChannelPoint
+		cDetails := strings.Split(cp, ":")
+		if len(cDetails) < 2 {
+			return count, errors.New("Bad ChannelPoint")
+		}
+		vout, err := strconv.ParseUint(cDetails[1], 10, 64)
+		if err != nil {
+			return count, err
+		}
+		spent, _, err := isSpent(txSpentURL, cDetails[0], uint32(vout))
+		if err != nil {
+			return count, err
+		}
+		if spent {
+			count++
+		}
+	}
+	return count, nil
 }

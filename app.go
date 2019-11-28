@@ -212,6 +212,10 @@ func (a *App) GetTxSpentURL() (txSpentURL string, isDefault bool, err error) {
 	return a.breezDB.GetTxSpentURL(a.cfg.TxSpentURL)
 }
 
+func (a *App) ClosedChannels() (int, error) {
+	return a.lnDaemon.ClosedChannels()
+}
+
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
 }
