@@ -7,17 +7,17 @@ import (
 	"net/http"
 
 	"github.com/breez/breez/data"
-	lnurllib "github.com/fiatjaf/go-lnurl"
+	"github.com/fiatjaf/go-lnurl"
 )
 
-func (a *Service) HandleLNURL(lnurl string) (*data.LNUrlResponse, error) {
-	iparams, err := lnurllib.HandleLNURL(lnurl)
+func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) {
+	iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
 		return nil, err
 	}
 
 	switch params := iparams.(type) {
-	case lnurllib.LNURLWithdrawResponse:
+	case lnurl.LNURLWithdrawResponse:
 		qs := params.CallbackURL.Query()
 		qs.Set("k1", params.K1)
 		params.CallbackURL.RawQuery = qs.Encode()
@@ -48,7 +48,7 @@ func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
 		return err
 	}
 
-	var lnurlresp lnurllib.LNURLResponse
+	var lnurlresp lnurl.LNURLResponse
 	err = json.NewDecoder(resp.Body).Decode(&lnurlresp)
 	if err != nil {
 		return err
