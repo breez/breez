@@ -8,16 +8,20 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0
 	github.com/coreos/bbolt v1.3.3
+	github.com/fiatjaf/go-lnurl v0.0.0-20191124022530-2d6fd496b032
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/lightninglabs/neutrino v0.10.0
 	github.com/lightningnetwork/lnd v0.8.0-beta
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
+	github.com/tidwall/gjson v1.3.5 // indirect
 	github.com/urfave/cli v1.18.0
-	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/tools v0.0.0-20191127064951-724660f1afeb // indirect
+	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/api v0.13.0
 	google.golang.org/grpc v1.20.1
 	gopkg.in/macaroon.v2 v2.0.0

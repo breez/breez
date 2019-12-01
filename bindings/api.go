@@ -592,6 +592,14 @@ func ConnectToLnurl(lnurl string) error {
 	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
+func FetchLnurl(lnurl string) ([]byte, error) {
+	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
+}
+
+func WithdrawLnurl(bolt11 string) error {
+	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

@@ -29,6 +29,7 @@ type Service struct {
 	daemonAPI          lnnode.API
 	connectedNotifier  *channelActiveNotifier
 	onServiceEvent     func(data.NotificationEvent)
+	lnurlWithdrawing   string
 
 	notification *notificationRequest
 
