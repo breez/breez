@@ -53,8 +53,9 @@ func GetLogWriter(workingDir string) (*io.PipeWriter, error) {
 
 func initLog(workingDir string) {
 	initBackend.Do(func() {
-		cfg, initError := config.GetConfig(workingDir)
-		if initError != nil {
+		cfg, err := config.GetConfig(workingDir)
+		if err != nil {
+			initError = err
 			return
 		}
 

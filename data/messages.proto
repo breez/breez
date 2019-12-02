@@ -275,3 +275,15 @@ message LSPInformation {
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }
+
+message LNUrlResponse {
+    oneof action {
+        LNUrlWithdraw withdraw = 1;
+    }
+}
+
+message LNUrlWithdraw {
+    int64 min_amount = 1;
+    int64 max_amount = 2;
+    string default_description = 3;
+}

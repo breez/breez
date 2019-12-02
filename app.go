@@ -29,6 +29,12 @@ func (a *App) Start() error {
 		return errors.New("Breez already started")
 	}
 
+	a.log.Info("app.start before bootstrap")
+	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
+		a.log.Info("app.start bootstrap error %v", err)
+		return err
+	}
+
 	services := []Service{
 		a.lnDaemon,
 		a.ServicesClient,
@@ -218,12 +224,4 @@ func (a *App) ClosedChannels() (int, error) {
 
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
-}
-
-func (a *App) NeedsBootstrap() (bool, error) {
-	return chainservice.NeedsBootstrap(a.cfg.WorkingDir, a.log)
-}
-
-func (a *App) BootstrapHeaders(bootstrapDir string) error {
-	return chainservice.BootstrapHeaders(a.cfg.WorkingDir, bootstrapDir)
 }

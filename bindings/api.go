@@ -162,22 +162,6 @@ func SetBackupEncryptionKey(key []byte, encryptionType string) error {
 	return getBreezApp().BackupManager.SetEncryptionKey(encKey, encryptionType)
 }
 
-// NeedsBootstrap checks if bootstrap header is needed.
-func NeedsBootstrap() bool {
-	need, err := getBreezApp().NeedsBootstrap()
-	if err != nil {
-		fmt.Println("Error in NeedsBootstrap ", err)
-		return false
-	}
-	fmt.Println("Needs Boottrap = ", need)
-	return need
-}
-
-// BootstrapHeaders bootstrap the chain with existing header files.
-func BootstrapHeaders(bootstrapDir string) error {
-	return getBreezApp().BootstrapHeaders(bootstrapDir)
-}
-
 /*
 Start the lightning client
 */
@@ -650,6 +634,14 @@ func ConnectToLSP(id string) error {
 
 func ConnectToLnurl(lnurl string) error {
 	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
+}
+
+func FetchLnurl(lnurl string) ([]byte, error) {
+	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
+}
+
+func WithdrawLnurl(bolt11 string) error {
+	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
