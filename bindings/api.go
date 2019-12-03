@@ -632,10 +632,6 @@ func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
 }
 
-func ConnectToLnurl(lnurl string) error {
-	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
-}
-
 func FetchLnurl(lnurl string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
 }

@@ -3,8 +3,10 @@ package account
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
+	"strings"
 
 	"github.com/breez/breez/data"
 	"github.com/fiatjaf/go-lnurl"
@@ -35,9 +37,50 @@ func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) 
 				},
 			},
 		}, nil
+	case lnurl.LNURLChannelResponse:
+		lsp := &lnurlLSP{&params}
+		err := a.openChannel(lsp, true)
+		return nil, err
 	default:
 		return nil, errors.New("Unsupported LNUrl")
 	}
+}
+
+// implement lsp interface (connect.go)
+type lnurlLSP struct {
+	*lnurl.LNURLChannelResponse
+}
+
+func (lsp *lnurlLSP) Connect(a *Service) error {
+	s := strings.Split(lsp.URI, "@")
+	if len(s) != 2 {
+		return fmt.Errorf("Malformed URI: %v", lsp.URI)
+	}
+	return a.ConnectPeer(s[0], s[1])
+}
+
+func (lsp *lnurlLSP) OpenChannel(a *Service, pubkey string) error {
+	//<callback>?k1=<k1>&remoteid=<Local LN node ID>&private=<1/0>
+	q := lsp.CallbackURL.Query()
+	q.Set("k1", lsp.K1)
+	q.Set("remoteid", pubkey)
+	q.Set("private", "1")
+	lsp.CallbackURL.RawQuery = q.Encode()
+	res, err := http.Get(lsp.CallbackURL.String())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	decoder := json.NewDecoder(res.Body)
+	var r lnurl.LNURLResponse
+	err = decoder.Decode(&r)
+	if err != nil {
+		return err
+	}
+	if r.Status == "ERROR" {
+		return fmt.Errorf("Error: %v", r.Reason)
+	}
+	return nil
 }
 
 func (a *Service) FinishLNURLWithdraw(bolt11 string) error {

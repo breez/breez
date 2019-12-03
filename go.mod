@@ -8,7 +8,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0
 	github.com/coreos/bbolt v1.3.3
-	github.com/fiatjaf/go-lnurl v0.0.0-20191124022530-2d6fd496b032
+	github.com/fiatjaf/go-lnurl v0.0.0-20191128151042-c0c61d18b008
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0

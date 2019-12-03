@@ -2,11 +2,7 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -150,84 +146,6 @@ func (lsp *regularLSP) OpenChannel(a *Service, pubkey string) error {
 	return nil
 }
 
-type lnurlLSP struct {
-	URI      string `json:"uri"`
-	CallBack string `json:"callback"`
-	K1       string `json:"k1"`
-
-	//Error fields
-	Status string `json:"status,omitempty"`
-	Reason string `json:"reason,omitempty"`
-}
-
-func NewLnurlLSP(lnurl string) (*lnurlLSP, error) {
-	hrp, data, err := decode(lnurl)
-	if err != nil {
-		return nil, err
-	}
-	if hrp != "lnurl" {
-		return nil, fmt.Errorf("invalid lnurl string")
-	}
-	url, err := convertBits(data, 5, 8, false)
-	if err != nil {
-		return nil, err
-	}
-	res, err := http.Get(string(url))
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	decoder := json.NewDecoder(res.Body)
-	var lnurlLSP lnurlLSP
-	err = decoder.Decode(&lnurlLSP)
-	if err != nil {
-		return nil, err
-	}
-	if lnurlLSP.Status == "ERROR" {
-		return nil, fmt.Errorf("Error: %v", lnurlLSP.Reason)
-	}
-	return &lnurlLSP, nil
-}
-
-func (lsp *lnurlLSP) Connect(a *Service) error {
-	s := strings.Split(lsp.URI, "@")
-	if len(s) != 2 {
-		return fmt.Errorf("Malformed URI: %v", lsp.URI)
-	}
-	return a.ConnectPeer(s[0], s[1])
-}
-
-func (lsp *lnurlLSP) OpenChannel(a *Service, pubkey string) error {
-	//<callback>?k1=<k1>&remoteid=<Local LN node ID>&private=<1/0>
-	u, err := url.Parse(lsp.CallBack)
-	if err != nil {
-		return err
-	}
-	q := u.Query()
-	q.Set("k1", lsp.K1)
-	q.Set("remoteid", pubkey)
-	q.Set("private", "1")
-	u.RawQuery = q.Encode()
-	res, err := http.Get(u.String())
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	decoder := json.NewDecoder(res.Body)
-	var r struct {
-		Status string `json:"status"`
-		Reason string `json:"reason"`
-	}
-	err = decoder.Decode(&r)
-	if err != nil {
-		return err
-	}
-	if r.Status == "ERROR" {
-		return fmt.Errorf("Error: %v", r.Reason)
-	}
-	return nil
-}
-
 type lsp interface {
 	Connect(a *Service) error
 	OpenChannel(a *Service, pubkey string) error
@@ -252,18 +170,6 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 	l := NewRegularLSP(lspID)
 	lsp := lsp(l)
 	return a.openChannel(lsp, false)
-}
-
-/*
-OpenLnurlChannel is responsible for creating a new channelusing a lnURL
-*/
-func (a *Service) OpenLnurlChannel(lnurl string) error {
-	l, err := NewLnurlLSP(lnurl)
-	if err != nil {
-		return err
-	}
-	lsp := lsp(l)
-	return a.openChannel(lsp, true)
 }
 
 func (a *Service) openChannel(l lsp, force bool) error {
