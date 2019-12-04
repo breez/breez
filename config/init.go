@@ -39,6 +39,7 @@ type Config struct {
 	ClosedChannelsURL  string `long:"closedchannelsurl"`
 	BugReportURL       string `long:"bugreporturl"`
 	BugReportURLSecret string `long:"bugreporturlsecret"`
+	TxSpentURL         string `long:"txspenturl"`
 
 	//Job Options
 	JobCfg JobConfig `group:"Job Options"`

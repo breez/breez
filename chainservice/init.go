@@ -71,10 +71,11 @@ func TestPeer(peer string) error {
 	}
 
 	neutrinoConfig := neutrino.Config{
-		DataDir:      neutrinoDataDir,
-		Database:     db,
-		ChainParams:  chaincfg.MainNetParams,
-		ConnectPeers: []string{peer},
+		DataDir:       neutrinoDataDir,
+		Database:      db,
+		ChainParams:   chaincfg.MainNetParams,
+		ConnectPeers:  []string{peer},
+		PersistToDisk: true,
 	}
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
 	if err != nil {
@@ -218,10 +219,11 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 		return nil, nil, err
 	}
 	neutrinoConfig := neutrino.Config{
-		DataDir:      neutrinoDataDir,
-		Database:     db,
-		ChainParams:  *params,
-		ConnectPeers: peers,
+		DataDir:       neutrinoDataDir,
+		Database:      db,
+		ChainParams:   *params,
+		ConnectPeers:  peers,
+		PersistToDisk: true,
 	}
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)

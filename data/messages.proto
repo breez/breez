@@ -233,6 +233,12 @@ message Peers {
     repeated string peer = 2;
 }
 
+message TxSpentURL {
+    string URL = 1;
+    bool isDefault = 2;
+    bool disabled = 3;
+}
+
 message rate {
     string coin = 1;
     double value = 2;

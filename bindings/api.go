@@ -13,7 +13,9 @@ import (
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
+	"github.com/breez/breez/drophintcache"
 	"github.com/breez/breez/dropwtx"
+	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/btcsuite/btclog"
@@ -21,8 +23,9 @@ import (
 )
 
 const (
-	forceRescan    = "FORCE_RESCAN"
-	forceBootstrap = "FORCE_BOOTSTRAP"
+	forceRescan        = "FORCE_RESCAN"
+	forceBootstrap     = "FORCE_BOOTSTRAP"
+	disabledTxSpentURL = "<DISABLED>"
 )
 
 var (
@@ -129,6 +132,8 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
 		err = dropwtx.Drop(workingDir)
 		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
+		err = drophintcache.Drop(workingDir)
+		appLogger.Log(fmt.Sprintf("Drop hint cache result: %v", err), "INFO")
 		if err == nil {
 			err = os.Remove(path.Join(workingDir, forceRescan))
 			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
@@ -574,6 +579,45 @@ func SetPeers(request []byte) error {
 
 func TestPeer(peer string) error {
 	return chainservice.TestPeer(peer)
+}
+
+func GetTxSpentURL() ([]byte, error) {
+	var t data.TxSpentURL
+	txSpentURL, isDefault, err := getBreezApp().GetTxSpentURL()
+	if err != nil {
+		return nil, err
+	}
+	t.IsDefault = isDefault
+	if txSpentURL == disabledTxSpentURL {
+		t.Disabled = true
+	} else {
+		t.URL = txSpentURL
+	}
+	return marshalResponse(&t, nil)
+}
+
+func SetTxSpentURL(request []byte) error {
+	var t data.TxSpentURL
+	if err := proto.Unmarshal(request, &t); err != nil {
+		return err
+	}
+	URL := t.URL
+	if t.IsDefault {
+		URL = ""
+	}
+	if t.Disabled {
+		URL = disabledTxSpentURL
+	}
+	return getBreezApp().SetTxSpentURL(URL)
+}
+
+func TestTxSpentURL(txSpentURL string) error {
+	return lnnode.TestTxSpentURL(txSpentURL)
+}
+
+func HasClosedChannels() (bool, error) {
+	c, err := getBreezApp().ClosedChannels()
+	return c > 0, err
 }
 
 func Rate() ([]byte, error) {

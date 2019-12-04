@@ -142,6 +142,7 @@ func (d *Daemon) startDaemon() error {
 		params := []string{"lightning-libs",
 			"--lnddir", deps.workingDir,
 			"--bitcoin." + d.cfg.Network,
+			"--bitcoin.startbeforesynced",
 		}
 		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
 

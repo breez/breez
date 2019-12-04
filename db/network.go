@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	peersKey = "peers"
+	peersKey      = "peers"
+	txSpentURLKey = "txspenturl"
 )
 
 func (db *DB) SetPeers(peers []string) error {
@@ -46,5 +47,25 @@ func (db *DB) GetPeers(defaults []string) (peers []string, isDefault bool, err e
 	} else {
 		isDefault = true
 	}
+	return
+}
+
+func (db *DB) SetTxSpentURL(txSpentURL string) error {
+	err := db.saveItem([]byte(networkBucket), []byte(txSpentURLKey), []byte(txSpentURL))
+	return err
+}
+
+func (db *DB) GetTxSpentURL(defaultURL string) (txSpentURL string, isDefault bool, err error) {
+	txSpentURL = defaultURL
+	var b []byte
+	b, err = db.fetchItem([]byte(networkBucket), []byte(txSpentURLKey))
+	if err != nil {
+		return
+	}
+	if len(b) == 0 {
+		isDefault = true
+		return
+	}
+	txSpentURL = string(b)
 	return
 }
