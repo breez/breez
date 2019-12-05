@@ -34,12 +34,19 @@ func Drop(workingDir string) error {
 // initialized so that we can assume their existence after startup.
 func deleteBuckets(db *channeldb.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		err := tx.DeleteBucket(spendHintBucket)
-		if err != nil {
-			return err
+		var err error
+		spendBucket := tx.Bucket(spendHintBucket)
+		if spendBucket != nil {
+			err = tx.DeleteBucket(spendHintBucket)
+			if err != nil {
+				return err
+			}
 		}
 
-		err = tx.DeleteBucket(confirmHintBucket)
+		confirmBucket := tx.Bucket(confirmHintBucket)
+		if confirmBucket != nil {
+			err = tx.DeleteBucket(confirmHintBucket)
+		}
 		return err
 	})
 }
