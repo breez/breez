@@ -640,6 +640,10 @@ func WithdrawLnurl(bolt11 string) error {
 	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
 }
 
+func OpenChannelLnurl() error {
+	return getBreezApp().AccountService.OpenLNURLChannel()
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

@@ -30,6 +30,7 @@ type Service struct {
 	connectedNotifier  *channelActiveNotifier
 	onServiceEvent     func(data.NotificationEvent)
 	lnurlWithdrawing   string
+	lnurlChanneling    *lnurlLSP
 
 	notification *notificationRequest
 

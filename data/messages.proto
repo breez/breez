@@ -279,6 +279,7 @@ message LSPList {
 message LNUrlResponse {
     oneof action {
         LNUrlWithdraw withdraw = 1;
+        LNUrlChannel channel = 2;
     }
 }
 
@@ -286,4 +287,8 @@ message LNUrlWithdraw {
     int64 min_amount = 1;
     int64 max_amount = 2;
     string default_description = 3;
+}
+
+message LNUrlChannel {
+    string RemoteNodeId = 1;
 }

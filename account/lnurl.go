@@ -38,9 +38,22 @@ func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) 
 			},
 		}, nil
 	case lnurl.LNURLChannelResponse:
+		urispl := strings.Split(params.URI, "@")
+		if len(urispl) != 2 {
+			return nil, errors.New("LSP provider returned invalid response: " + params.URI)
+		}
+		remoteid = urispl[0]
+
 		lsp := &lnurlLSP{&params}
-		err := a.openChannel(lsp, true)
-		return nil, err
+		a.lnurlChanneling = &lnurlLSP{&params}
+
+		return &data.LNUrlResponse{
+			Action: &data.LNUrlResponse_Channel{
+				&data.LNUrlChannel{
+					RemoteNodeId: remoteid,
+				},
+			},
+		}, nil
 	default:
 		return nil, errors.New("Unsupported LNUrl")
 	}
@@ -102,4 +115,9 @@ func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
 	}
 
 	return nil
+}
+
+func (a *Service) OpenLNURLChannel() error {
+	lsp := a.lnurlWithdrawing
+	return a.openChannel(lsp, true)
 }
