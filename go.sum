@@ -50,6 +50,8 @@ github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191103104723-0e068b848776 h1:xB4r3j
 github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191103104723-0e068b848776/go.mod h1:vc4gBprll6BP0UJ+AIGDaySoc7MdAmZf8kelfNb8CFY=
 github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c h1:C65UvG6DUE1nXQorQBy7WzcQYtgNy0NtsDUAVE8Ef+c=
 github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c/go.mod h1:vc4gBprll6BP0UJ+AIGDaySoc7MdAmZf8kelfNb8CFY=
+github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b h1:6yjSVYjgu1wvVPGYstcg4CIU8q+iRT7DnJdRGyMRd3o=
+github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227 h1:KcV5VLSF73Cywmpp0GQIm5m3OnI11uQMD9pgwnuk8Fc=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
 github.com/breez/lnd v0.6.1-beta.0.20190624142037-34c448b6bf67 h1:dB8ExDD/6HOKk+kss5JvpippQozvDHNIYlXXxOV7Fh0=
