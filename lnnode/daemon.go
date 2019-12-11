@@ -127,7 +127,7 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
-
+		deleteZombies(chanDB)
 		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
 			chanDBCleanUp()
