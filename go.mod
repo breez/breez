@@ -35,7 +35,7 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.1.1-0.20191121081139-3f579e0a038c
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.8.0-beta.0.20191212101524-70e19d1e5d35
 )
 
 go 1.12

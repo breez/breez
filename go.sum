@@ -52,6 +52,7 @@ github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c h1:C65UvG
 github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c/go.mod h1:vc4gBprll6BP0UJ+AIGDaySoc7MdAmZf8kelfNb8CFY=
 github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b h1:6yjSVYjgu1wvVPGYstcg4CIU8q+iRT7DnJdRGyMRd3o=
 github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.0.0-20191212101524-70e19d1e5d35/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227 h1:KcV5VLSF73Cywmpp0GQIm5m3OnI11uQMD9pgwnuk8Fc=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
 github.com/breez/lnd v0.6.1-beta.0.20190624142037-34c448b6bf67 h1:dB8ExDD/6HOKk+kss5JvpippQozvDHNIYlXXxOV7Fh0=
@@ -72,6 +73,8 @@ github.com/breez/lnd v0.7.0-beta-rc2.0.20190911134719-9a55dc568120 h1:FXsn2r+hvn
 github.com/breez/lnd v0.7.0-beta-rc2.0.20190911134719-9a55dc568120/go.mod h1:Np0ps80X1Oxm0/iWvglgSom/RnCmUSSeUxXwac6tOQo=
 github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951 h1:M5GaBoqM6QgnieW/mPmj7bDxmeSaWBjoBiQtasTwu5o=
 github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta.0.20191212101524-70e19d1e5d35 h1:7/ZBIeMeUb6XOnWzJC96qx0UID8xeQOuxp/ot+clRkc=
+github.com/breez/lnd v0.8.0-beta.0.20191212101524-70e19d1e5d35/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54 h1:dJyqc8UXhQdA+aMTdO2TZyXj8s5EpJREfh3CI5oG+oc=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191105101129-de445157afef h1:mJ+XH3J6ylHi1yy+TvDCtblSDNjvH7ZHBuMIh2Ryv3c=
