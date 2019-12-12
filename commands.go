@@ -254,9 +254,9 @@ var sendCoinsCommand = cli.Command{
 	Description: `
 	Send amt coins in satoshis to the BASE58 encoded bitcoin address addr.
 
-	Fees used when sending the transaction can be specified via the --conf_target, or 
+	Fees used when sending the transaction can be specified via the --conf_target, or
 	--sat_per_byte optional flags.
-	
+
 	Positional arguments and flags can be used interchangeably but not at the same time!
 	`,
 	Flags: []cli.Flag{
@@ -264,7 +264,13 @@ var sendCoinsCommand = cli.Command{
 			Name:  "addr",
 			Usage: "the BASE58 encoded bitcoin address to send coins to on-chain",
 		},
-		// TODO(roasbeef): switch to BTC on command line? int may not be sufficient
+		cli.BoolFlag{
+			Name: "sweepall",
+			Usage: "if set, then the amount field will be ignored, " +
+				"and all the wallet will attempt to sweep all " +
+				"outputs within the wallet to the target " +
+				"address",
+		},
 		cli.Int64Flag{
 			Name:  "amt",
 			Usage: "the number of bitcoin denominated in satoshis to send",
@@ -318,12 +324,16 @@ func sendCoins(ctx *cli.Context) error {
 		amt = ctx.Int64("amt")
 	case args.Present():
 		amt, err = strconv.ParseInt(args.First(), 10, 64)
-	default:
+	case !ctx.Bool("sweepall"):
 		return fmt.Errorf("Amount argument missing")
 	}
-
 	if err != nil {
 		return fmt.Errorf("unable to decode amount: %v", err)
+	}
+
+	if amt != 0 && ctx.Bool("sweepall") {
+		return fmt.Errorf("amount cannot be set if attempting to " +
+			"sweep all coins out of the wallet")
 	}
 
 	ctxb := context.Background()
@@ -334,6 +344,7 @@ func sendCoins(ctx *cli.Context) error {
 		Amount:     amt,
 		TargetConf: int32(ctx.Int64("conf_target")),
 		SatPerByte: ctx.Int64("sat_per_byte"),
+		SendAll:    ctx.Bool("sweepall"),
 	}
 	txid, err := client.SendCoins(ctxb, req)
 	if err != nil {
