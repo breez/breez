@@ -134,17 +134,16 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 }
 
 func stopService() error {
-
-	if walletDB != nil {
-		if err := walletDB.Close(); err != nil {
-			return err
-		}
-	}
 	if service != nil {
 		if err := service.Stop(); err != nil {
 			return err
 		}
 		service = nil
+	}
+	if walletDB != nil {
+		if err := walletDB.Close(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
