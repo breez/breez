@@ -120,18 +120,17 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 	}
 	appLogger.Log("Breez initialization started", "INFO")
 	startBeforeSync := true
-	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
-		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
-		err = chainservice.ResetChainService(workingDir)
-		appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
-		if err == nil {
-			err = os.Remove(path.Join(workingDir, forceBootstrap))
-			startBeforeSync = false
-			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
-		}
-	}
+	shouldForceRescan := false
+	shouldForceBootstrap := false
 	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
+		shouldForceRescan = true
+	}
+	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
+		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
+		shouldForceBootstrap = true
+	}
+	if shouldForceBootstrap || shouldForceRescan {
 		err = dropwtx.Drop(workingDir)
 		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
 		err = drophintcache.Drop(workingDir)
@@ -139,6 +138,15 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		if err == nil {
 			err = os.Remove(path.Join(workingDir, forceRescan))
 			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
+		}
+		if shouldForceBootstrap {
+			err = chainservice.ResetChainService(workingDir)
+			appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
+			if err == nil {
+				err = os.Remove(path.Join(workingDir, forceBootstrap))
+				startBeforeSync = false
+				appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
+			}
 		}
 	}
 	mu.Lock()
