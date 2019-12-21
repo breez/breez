@@ -262,7 +262,7 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	}
 	encKey := append([]byte(nil), encryptionKey...)
 	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
-	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
+	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices, true)
 	return err
 }
 
