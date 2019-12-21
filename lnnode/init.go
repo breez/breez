@@ -45,20 +45,22 @@ type Daemon struct {
 	routerClient      routerrpc.RouterClient
 	ntfnServer        *subscribe.Server
 	quitChan          chan struct{}
+	startBeforeSync   bool
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning
 // network daemon.
-func NewDaemon(cfg *config.Config, db *db.DB) (*Daemon, error) {
+func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, error) {
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Daemon{
-		cfg:        cfg,
-		breezDB:    db,
-		ntfnServer: subscribe.NewServer(),
-		log:        logBackend.Logger("DAEM"),
+		cfg:             cfg,
+		breezDB:         db,
+		ntfnServer:      subscribe.NewServer(),
+		log:             logBackend.Logger("DAEM"),
+		startBeforeSync: startBeforeSync,
 	}, nil
 }

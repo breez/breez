@@ -119,12 +119,14 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		return err
 	}
 	appLogger.Log("Breez initialization started", "INFO")
+	startBeforeSync := true
 	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
 		err = chainservice.ResetChainService(workingDir)
 		appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
 		if err == nil {
 			err = os.Remove(path.Join(workingDir, forceBootstrap))
+			startBeforeSync = false
 			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
 		}
 	}
@@ -140,7 +142,7 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		}
 	}
 	mu.Lock()
-	breezApp, err = breez.NewApp(workingDir, services)
+	breezApp, err = breez.NewApp(workingDir, services, startBeforeSync)
 	mu.Unlock()
 	if err != nil {
 		appLogger.Log("Breez initialization failed: %v", "INFO")
