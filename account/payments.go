@@ -14,6 +14,7 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
@@ -216,6 +217,18 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		return "", err
 	}
 
+	netInfo, err := lnclient.GetNetworkInfo(context.Background(), &lnrpc.NetworkInfoRequest{})
+	if err != nil {
+		a.log.Errorf("GetNetworkInfo error: %v", err)
+		return "", err
+	}
+	marshaller := jsonpb.Marshaler{}
+	netInfoData, err := marshaller.MarshalToString(netInfo)
+	if err != nil {
+		a.log.Errorf("failed to marshal network info: %v", err)
+		return "", err
+	}
+
 	if amount == 0 {
 		amount = decodedPayReq.NumSatoshis
 	}
@@ -225,6 +238,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 			"source_node":     lnInfo.IdentityPubkey,
 			"amount":          amount,
 			"payment_request": decodedPayReq,
+			"network_info":    netInfoData,
 		},
 	}
 
