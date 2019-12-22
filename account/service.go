@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/lnnode"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 const (
@@ -58,16 +59,20 @@ func (a *Service) watchDaemonEvents() (err error) {
 	for {
 		select {
 		case u := <-a.daemonSubscription.Updates():
-			switch u.(type) {
+			switch update := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.daemonReady, 1)
 				a.wg.Add(1)
 				go a.watchPayments()
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
+				a.syncClosedChannels()
 				a.onAccountChanged()
 			case lnnode.ChannelEvent:
 				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
+				if update.Type == lnrpc.ChannelEventUpdate_CLOSED_CHANNEL {
+					a.onClosedChannel(update.GetClosedChannel())
+				}
 				a.calculateAccountAndNotify()
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)

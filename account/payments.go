@@ -47,13 +47,22 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
 		paymentItem := &data.Payment{
-			Amount:            payment.Amount,
-			Fee:               payment.Fee,
-			CreationTimestamp: payment.CreationTimestamp,
-			RedeemTxID:        payment.RedeemTxID,
-			PaymentHash:       payment.PaymentHash,
-			Destination:       payment.Destination,
-			InvoiceMemo: &data.InvoiceMemo{
+			Amount:                     payment.Amount,
+			Fee:                        payment.Fee,
+			CreationTimestamp:          payment.CreationTimestamp,
+			RedeemTxID:                 payment.RedeemTxID,
+			PaymentHash:                payment.PaymentHash,
+			Destination:                payment.Destination,
+			PendingExpirationHeight:    payment.PendingExpirationHeight,
+			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
+			Preimage:                   payment.Preimage,
+			ClosedChannelPoint:         payment.ClosedChannelPoint,
+			IsChannelPending:           payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.ConfirmedClose,
+			IsChannelCloseConfimed:     payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.WaitingClose,
+			ClosedChannelTxID:          payment.ClosedChannelTxID,
+		}
+		if payment.Type != db.ClosedChannelPayment {
+			paymentItem.InvoiceMemo = &data.InvoiceMemo{
 				Description:     payment.Description,
 				Amount:          payment.Amount,
 				PayeeImageURL:   payment.PayeeImageURL,
@@ -61,10 +70,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 				PayerImageURL:   payment.PayerImageURL,
 				PayerName:       payment.PayerName,
 				TransferRequest: payment.TransferRequest,
-			},
-			PendingExpirationHeight:    payment.PendingExpirationHeight,
-			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
-			Preimage:                   payment.Preimage,
+			}
 		}
 		switch payment.Type {
 		case db.SentPayment:
@@ -75,6 +81,8 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			paymentItem.Type = data.Payment_DEPOSIT
 		case db.WithdrawalPayment:
 			paymentItem.Type = data.Payment_WITHDRAWAL
+		case db.ClosedChannelPayment:
+			paymentItem.Type = data.Payment_CLOSED_CHANNEL
 		}
 
 		paymentsList = append(paymentsList, paymentItem)
@@ -325,7 +333,12 @@ func parseTextMemo(memo string, invoiceMemo *data.InvoiceMemo) {
 func (a *Service) watchPayments() {
 	defer a.wg.Done()
 	lnclient := a.daemonAPI.APIClient()
-	a.syncSentPayments()
+	if err := a.syncSentPayments(); err != nil {
+		a.log.Errorf("failed to sync payments: %v", err)
+	}
+	if err := a.syncClosedChannels(); err != nil {
+		a.log.Errorf("failed to sync closed chanels: %v", err)
+	}
 	_, lastInvoiceSettledIndex := a.breezDB.FetchPaymentsSyncInfo()
 	a.log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -388,7 +401,6 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		chainInfo, chainErr := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if chainErr != nil {
 			a.log.Errorf("Failed get chain info", chainErr)
