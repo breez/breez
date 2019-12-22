@@ -8,6 +8,7 @@ import (
 
 // PaymentType is the type of payment
 type PaymentType byte
+type ChannelCloseStatus byte
 
 const (
 	//SentPayment is type for sent payments
@@ -21,6 +22,13 @@ const (
 
 	//WithdrawalPayment is type for payment got from remove funds
 	WithdrawalPayment = PaymentType(3)
+
+	//ClosedChannelPayment is type for payment got from a closed channel
+	ClosedChannelPayment = PaymentType(4)
+
+	WaitingClose   = ChannelCloseStatus(0)
+	PendingClose   = ChannelCloseStatus(1)
+	ConfirmedClose = ChannelCloseStatus(2)
 )
 
 /*
@@ -43,6 +51,11 @@ type PaymentInfo struct {
 	PendingExpirationHeight    uint32
 	PendingExpirationTimestamp int64
 	Preimage                   string
+
+	//For closed channels
+	ClosedChannelPoint  string
+	ClosedChannelStatus ChannelCloseStatus
+	ClosedChannelTxID   string
 }
 
 /*
@@ -51,21 +64,11 @@ AddAccountPayment adds a payment to the database
 func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, sentTime uint64) error {
 	db.log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
 	return db.Update(func(tx *bolt.Tx) error {
-		paymentBuf, err := serializePaymentInfo(accPayment)
+		id, err := db.addPayment(accPayment, tx, 0)
 		if err != nil {
 			return err
 		}
-
 		b := tx.Bucket([]byte(paymentsBucket))
-		id, err := b.NextSequence()
-		if err != nil {
-			return err
-		}
-
-		//write the payment value with the next sequence as key
-		if err := b.Put(itob(id), paymentBuf); err != nil {
-			return err
-		}
 
 		hashB := tx.Bucket([]byte(paymentsHashBucket))
 		if err := hashB.Put([]byte(accPayment.PaymentHash), itob(id)); err != nil {
@@ -96,6 +99,85 @@ func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, s
 		}
 		return nil
 	})
+}
+
+// AddChannelClosedPayment adds a payment that reflects channel close to the db.
+func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
+	db.log.Infof("AddChannelClosedPayment chanel point = %v", accPayment.ClosedChannelPoint)
+	return db.Update(func(tx *bolt.Tx) error {
+		chanIDKey := []byte(accPayment.ClosedChannelPoint)
+		existingPayment, paymentID, err := db.fetchClosedChannelPayment(tx, chanIDKey)
+		if err != nil {
+			return err
+		}
+
+		// the payment reflects this channel is already in db.
+		if existingPayment != nil && existingPayment.ClosedChannelStatus > accPayment.ClosedChannelStatus {
+			db.log.Infof("skipping closed channel payment %v", accPayment.ClosedChannelPoint)
+			return nil
+		}
+
+		db.log.Infof("adding not existing closed channel payment %v", accPayment.ClosedChannelPoint)
+
+		id, err := db.addPayment(accPayment, tx, paymentID)
+		if err != nil {
+			db.log.Infof("failed to add closed channel payment %v", err)
+			return err
+		}
+		db.log.Info("Closed channel payment added succesfully")
+		pb := tx.Bucket([]byte(paymentsBucket))
+		pb.Delete(chanIDKey[:])
+		b := tx.Bucket([]byte(closedChannelsBucket))
+		return b.Put(chanIDKey[:], itob(id))
+	})
+}
+
+func (db *DB) fetchClosedChannelPayment(tx *bolt.Tx, channelPoint []byte) (payment *PaymentInfo, index uint64, err error) {
+	b := tx.Bucket([]byte(closedChannelsBucket))
+
+	// the payment reflects this channel is already in db.
+	closeChanRecID := b.Get(channelPoint[:])
+	if closeChanRecID != nil {
+		paymentsBucket := tx.Bucket([]byte(paymentsBucket))
+		closeChanRec := paymentsBucket.Get(closeChanRecID)
+		if closeChanRec != nil {
+			payment, err = deserializePaymentInfo(closeChanRec)
+			index = btoi(closeChanRecID)
+		}
+	}
+	return
+}
+
+func (db *DB) addPayment(accPayment *PaymentInfo, tx *bolt.Tx, existingID uint64) (uint64, error) {
+	paymentBuf, err := serializePaymentInfo(accPayment)
+	if err != nil {
+		return 0, err
+	}
+
+	b := tx.Bucket([]byte(paymentsBucket))
+
+	id := existingID
+	if id == 0 {
+		nextSeq, err := b.NextSequence()
+		if err != nil {
+			return 0, err
+		}
+		id = nextSeq
+	}
+
+	//write the payment value with the next sequence as key
+	if err := b.Put(itob(id), paymentBuf); err != nil {
+		return 0, err
+	}
+
+	if accPayment.PaymentHash != "" {
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		if err := hashB.Put([]byte(accPayment.PaymentHash), itob(id)); err != nil {
+			return 0, err
+		}
+	}
+
+	return id, nil
 }
 
 /*

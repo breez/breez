@@ -28,6 +28,7 @@ const (
 	paymentsHashBucket     = "paymentsByHash"
 	paymentsSyncInfoBucket = "paymentsSyncInfo"
 	accountBucket          = "account"
+	closedChannelsBucket   = "closedChannelsBucket"
 
 	//encrypted sessions
 	encryptedSessionsBucket = "encrypted_sessions"
@@ -46,7 +47,7 @@ var (
 // DB is the structure for breez database
 type DB struct {
 	*bolt.DB
-	log    btclog.Logger
+	log btclog.Logger
 }
 
 // Get returns a Ch
@@ -138,6 +139,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return err
 		}
 
+		_, err = tx.CreateBucketIfNotExists([]byte(closedChannelsBucket))
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -145,8 +151,8 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 	}
 
 	breezDB := &DB{
-		DB:     db,
-		log:    log,
+		DB:  db,
+		log: log,
 	}
 
 	// remove invalidated btcd on upgrade.
