@@ -3,7 +3,6 @@ package chainservice
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"os"
 	"path"
 	"sync"
@@ -95,7 +94,8 @@ func Bootstrap(workingDir string) error {
 	logger = logBackend.Logger("CHAIN")
 	logger.Infof("Bootstrap started")
 	if service != nil {
-		return errors.New("Chain service already created, can't bootstrap")
+		logger.Info("Chain service already created, already bootstrapped")
+		return nil
 	}
 
 	bootstrapped, err := Bootstrapped(workingDir)
