@@ -43,6 +43,9 @@ message Account {
 
     // reflects if this account can receive/send payments.
     bool readyForPayments = 12;
+
+    // the last known block height.
+    int64 tipHeight = 13;
 }
 
 message Payment {
@@ -50,7 +53,8 @@ message Payment {
         DEPOSIT = 0;
         WITHDRAWAL = 1;
         SENT = 2;
-        RECEIVED = 3; 
+        RECEIVED = 3;
+        CLOSED_CHANNEL = 4; 
     }
     
     PaymentType type = 1;    
@@ -64,6 +68,10 @@ message Payment {
     int64 PendingExpirationTimestamp = 11;
     int64 fee = 12;
     string preimage = 13;
+    string closedChannelPoint = 14;
+	bool isChannelPending = 15;
+    bool isChannelCloseConfimed = 16;
+	string closedChannelTxID = 17;
 }
 
 message PaymentsList {
