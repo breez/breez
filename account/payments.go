@@ -350,9 +350,19 @@ func (a *Service) watchPayments() {
 	if err := a.syncSentPayments(); err != nil {
 		a.log.Errorf("failed to sync payments: %v", err)
 	}
-	if err := a.syncClosedChannels(); err != nil {
-		a.log.Errorf("failed to sync closed chanels: %v", err)
-	}
+	go func() {
+		retry := 0
+		for retry < 3 {
+			if err := a.syncClosedChannels(); err != nil {
+				a.log.Errorf("failed to sync closed chanels retry:%v error: %v", retry, err)
+				time.Sleep(4 * time.Second)
+				retry++
+				continue
+			}
+			return
+		}
+	}()
+
 	_, lastInvoiceSettledIndex := a.breezDB.FetchPaymentsSyncInfo()
 	a.log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
 	ctx, cancel := context.WithCancel(context.Background())
