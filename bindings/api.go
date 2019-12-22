@@ -119,17 +119,18 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		return err
 	}
 	appLogger.Log("Breez initialization started", "INFO")
-	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
-		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
-		err = chainservice.ResetChainService(workingDir)
-		appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
-		if err == nil {
-			err = os.Remove(path.Join(workingDir, forceBootstrap))
-			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
-		}
-	}
+	startBeforeSync := true
+	shouldForceRescan := false
+	shouldForceBootstrap := false
 	if _, err := os.Stat(path.Join(workingDir, forceRescan)); err == nil {
 		appLogger.Log(fmt.Sprintf("%v present. Run Drop", forceRescan), "INFO")
+		shouldForceRescan = true
+	}
+	if _, err := os.Stat(path.Join(workingDir, forceBootstrap)); err == nil {
+		appLogger.Log(fmt.Sprintf("%v present. Deleting neutrino files", forceBootstrap), "INFO")
+		shouldForceBootstrap = true
+	}
+	if shouldForceBootstrap || shouldForceRescan {
 		err = dropwtx.Drop(workingDir)
 		appLogger.Log(fmt.Sprintf("Drop result: %v", err), "INFO")
 		err = drophintcache.Drop(workingDir)
@@ -138,9 +139,18 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 			err = os.Remove(path.Join(workingDir, forceRescan))
 			appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceRescan, err), "INFO")
 		}
+		if shouldForceBootstrap {
+			err = chainservice.ResetChainService(workingDir)
+			appLogger.Log(fmt.Sprintf("Delete result: %v", err), "INFO")
+			if err == nil {
+				err = os.Remove(path.Join(workingDir, forceBootstrap))
+				startBeforeSync = false
+				appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
+			}
+		}
 	}
 	mu.Lock()
-	breezApp, err = breez.NewApp(workingDir, services)
+	breezApp, err = breez.NewApp(workingDir, services, startBeforeSync)
 	mu.Unlock()
 	if err != nil {
 		appLogger.Log("Breez initialization failed: %v", "INFO")
@@ -260,7 +270,7 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	}
 	encKey := append([]byte(nil), encryptionKey...)
 	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
-	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices)
+	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices, true)
 	return err
 }
 

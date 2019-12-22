@@ -70,7 +70,7 @@ func (a *AuthService) SignIn() (string, error) {
 }
 
 // NewApp create a new application
-func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
+func NewApp(workingDir string, applicationServices AppServices, startBeforeSync bool) (*App, error) {
 	app := &App{
 		quitChan:          make(chan struct{}),
 		notificationsChan: make(chan data.NotificationEvent),
@@ -101,7 +101,7 @@ func NewApp(workingDir string, applicationServices AppServices) (*App, error) {
 
 	app.log.Infof("New db")
 
-	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB)
+	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB, startBeforeSync)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create lnnode.Daemon: %v", err)
 	}
