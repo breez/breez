@@ -262,7 +262,6 @@ func (s *Service) onDaemonReady() error {
 	for _, a := range addresses {
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: a.PaymentHash})
 		if err != nil {
-			s.log.Errorf("failed to lookup invoice, %v", err)
 			continue
 		}
 		if err := s.onInvoice(invoice); err != nil {
