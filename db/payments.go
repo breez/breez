@@ -112,7 +112,7 @@ func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
 		}
 
 		// the payment reflects this channel is already in db.
-		if existingPayment != nil && existingPayment.ClosedChannelStatus > accPayment.ClosedChannelStatus {
+		if existingPayment != nil && existingPayment.ClosedChannelStatus >= accPayment.ClosedChannelStatus {
 			db.log.Infof("skipping closed channel payment %v", accPayment.ClosedChannelPoint)
 			return nil
 		}
