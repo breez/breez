@@ -263,6 +263,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		ReadyForPayments:    a.daemonAPI.HasActiveChannel(),
 		Enabled:             enabled,
 		ChannelPoint:        chanPoint,
+		TipHeight:           int64(lnInfo.BlockHeight),
 	}, nil
 }
 
