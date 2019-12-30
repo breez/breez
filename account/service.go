@@ -66,6 +66,7 @@ func (a *Service) watchDaemonEvents() (err error) {
 				go a.watchPayments()
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
+				time.Sleep(5 * time.Second)
 				a.syncClosedChannels()
 				a.onAccountChanged()
 			case lnnode.ChannelEvent:
