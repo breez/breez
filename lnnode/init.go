@@ -11,6 +11,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -26,6 +27,7 @@ type API interface {
 	SubSwapClient() submarineswaprpc.SubmarineSwapperClient
 	BreezBackupClient() breezbackuprpc.BreezBackuperClient
 	RouterClient() routerrpc.RouterClient
+	WalletKitClient() walletrpc.WalletKitClient
 }
 
 // Daemon contains data regarding the lightning daemon.
@@ -43,6 +45,7 @@ type Daemon struct {
 	subswapClient     submarineswaprpc.SubmarineSwapperClient
 	breezBackupClient breezbackuprpc.BreezBackuperClient
 	routerClient      routerrpc.RouterClient
+	walletKitClient   walletrpc.WalletKitClient
 	ntfnServer        *subscribe.Server
 	quitChan          chan struct{}
 	startBeforeSync   bool
