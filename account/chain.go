@@ -8,6 +8,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
+	"github.com/lightningnetwork/lnd/lnwallet"
 )
 
 const (
@@ -55,8 +57,17 @@ func (a *Service) SendWalletCoins(address string, satPerByteFee int64) (string, 
 /*
 GetDefaultSatPerByteFee returns the default sat per byte fee for on chain transactions
 */
-func (a *Service) GetDefaultSatPerByteFee() int64 {
-	return defaultSatPerByteFee
+func (a *Service) GetDefaultSatPerByteFee() (int64, error) {
+	walletKityClient := a.daemonAPI.WalletKitClient()
+	if walletKityClient == nil {
+		return 0, errors.New("API not ready")
+	}
+	feeResponse, err := walletKityClient.EstimateFee(context.Background(),
+		&walletrpc.EstimateFeeRequest{ConfTarget: 6})
+	if err != nil {
+		return 0, err
+	}
+	return int64(lnwallet.SatPerKWeight(feeResponse.SatPerKw).FeePerKVByte() / 1000), nil
 }
 
 /*
