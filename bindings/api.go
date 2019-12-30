@@ -437,7 +437,7 @@ func SendWalletCoins(sendCoinsRequest []byte) (string, error) {
 /*
 GetDefaultOnChainFeeRate is part of the binding inteface which is delegated to breez.GetDefaultOnChainFeeRate
 */
-func GetDefaultOnChainFeeRate() int64 {
+func GetDefaultOnChainFeeRate() (int64, error) {
 	return getBreezApp().AccountService.GetDefaultSatPerByteFee()
 }
 
