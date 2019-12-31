@@ -27,7 +27,7 @@ type Writer struct {
 }
 
 func (w *Writer) Write(b []byte) (int, error) {
-	os.Stdout.Write(b)
+	//os.Stdout.Write(b)
 	if w.writer != nil {
 		w.writer.Write(b)
 	}

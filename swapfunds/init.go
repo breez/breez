@@ -10,6 +10,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btclog"
 )
 
@@ -23,6 +24,7 @@ type Service struct {
 	breezDB        *db.DB
 	daemonAPI      lnnode.API
 	breezAPI       services.API
+	chainParams    *chaincfg.Params
 	sendPayment    func(payreq string, amount int64) (*account.PaymentResponse, error)
 	onServiceEvent func(data.NotificationEvent)
 	quitChan       chan struct{}
@@ -40,9 +42,19 @@ func NewService(
 	if err != nil {
 		return nil, err
 	}
+	var chainParams *chaincfg.Params
+	switch cfg.Network {
+	case "testnet":
+		chainParams = &chaincfg.TestNet3Params
+	case "simnet":
+		chainParams = &chaincfg.SimNetParams
+	case "mainnet":
+		chainParams = &chaincfg.MainNetParams
+	}
 
 	return &Service{
 		cfg:            cfg,
+		chainParams:    chainParams,
 		breezDB:        breezDB,
 		breezAPI:       breezAPI,
 		sendPayment:    sendPayment,

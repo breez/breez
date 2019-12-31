@@ -1,6 +1,7 @@
 module github.com/breez/breez
 
 require (
+	github.com/breez/boltz v0.0.0-20191225081427-963011ff8957
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
@@ -8,20 +9,19 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0
 	github.com/coreos/bbolt v1.3.3
+	github.com/deadsy/go-cli v0.0.0-20191117003156-1fbe7fd20d78 // indirect
 	github.com/fiatjaf/go-lnurl v0.0.0-20191128151042-c0c61d18b008
 	github.com/golang/protobuf v1.3.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/lightninglabs/neutrino v0.10.0
-	github.com/lightningnetwork/lnd v0.8.0-beta
+	github.com/lightningnetwork/lnd v0.8.0-beta-rc3.0.20191221022352-72a49d486ae4
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.3.5 // indirect
 	github.com/urfave/cli v1.18.0
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/tools v0.0.0-20191127064951-724660f1afeb // indirect
-	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/api v0.13.0
 	google.golang.org/grpc v1.20.1
 	gopkg.in/macaroon.v2 v2.0.0

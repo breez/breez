@@ -61,7 +61,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 	}
 	logger.Infof("creating shared channeldb service.")
 	graphDir := path.Join(workingDir, strings.Replace(directoryPattern, "{{network}}", config.Network, -1))
-	chanDB, err := channeldb.Open(graphDir, 		
+	chanDB, err := channeldb.Open(graphDir,
 		channeldb.OptionSetSyncFreelist(true))
 	if err != nil {
 		logger.Errorf("unable to open channeldb: %v", err)
