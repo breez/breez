@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	backupDelay = time.Duration(time.Second * 2)
+	backupDelay     = time.Duration(time.Second * 2)
 	ErrorNoProvider = errors.New("Provider is not set")
 )
 
@@ -205,7 +205,7 @@ func (b *Manager) Start() error {
 				provider := b.getProvider()
 				if provider == nil {
 					b.notifyBackupFailed(ErrorNoProvider)
-					continue					
+					continue
 				}
 
 				// If we have an encryption key let's encrypt the files.
@@ -333,19 +333,19 @@ func (b *Manager) getBackupIdentifier() (string, error) {
 	return "backup-id-" + hex.EncodeToString(id), nil
 }
 
-func (b *Manager) SetBackupProvider(providerName string) error {	
+func (b *Manager) SetBackupProvider(providerName string) error {
 	provider, err := createBackupProvider(providerName, b.authService, b.log)
 	if err != nil {
 		return err
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.provider = provider;
+	b.provider = provider
 	return nil
 }
 
 func (b *Manager) getProvider() Provider {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.provider;
+	return b.provider
 }

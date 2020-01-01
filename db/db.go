@@ -38,6 +38,9 @@ const (
 
 	//syncstatus
 	syncstatus = "syncstatus"
+
+	//reverse swap
+	reverseSwapBucket = "reverse_swap"
 )
 
 var (
@@ -135,6 +138,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte(syncstatus))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(reverseSwapBucket))
 		if err != nil {
 			return err
 		}

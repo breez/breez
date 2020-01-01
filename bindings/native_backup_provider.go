@@ -1,14 +1,14 @@
 package bindings
 
 import (
-	"strings"
 	"encoding/json"
+	"strings"
 
 	"github.com/breez/breez/backup"
 	"github.com/btcsuite/btclog"
 )
 
-// NativeBackupProvider is interface that serves as backup provider and is intended to be 
+// NativeBackupProvider is interface that serves as backup provider and is intended to be
 // implemented by the native platform and injected to breez library.
 // It is usefull when it is more nature to implement the provider in the native environment
 // rather than in go API.
@@ -27,7 +27,7 @@ type nativeProviderError struct {
 func (d *nativeProviderError) Error() string {
 	return d.err.Error()
 }
-func (d *nativeProviderError) IsAuthError() bool {	
+func (d *nativeProviderError) IsAuthError() bool {
 	if strings.Contains(d.err.Error(), "AuthError") {
 		return true
 	}

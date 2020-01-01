@@ -53,7 +53,7 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient, backupEventClient, subswapClient, breezBackupClient, routerClient, walletKitClient, err := newLightningClient(d.cfg)
+	lnclient, backupEventClient, subswapClient, breezBackupClient, routerClient, walletKitClient, chainNotifierClient, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
@@ -64,6 +64,7 @@ func (d *Daemon) startSubscriptions() error {
 	d.breezBackupClient = breezBackupClient
 	d.routerClient = routerClient
 	d.walletKitClient = walletKitClient
+	d.chainNotifierClient = chainNotifierClient
 	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})

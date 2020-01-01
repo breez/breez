@@ -11,6 +11,7 @@ import (
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
@@ -97,6 +98,12 @@ func (d *Daemon) WalletKitClient() walletrpc.WalletKitClient {
 	d.Lock()
 	defer d.Unlock()
 	return d.walletKitClient
+}
+
+func (d *Daemon) ChainNotifierClient() chainrpc.ChainNotifierClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.chainNotifierClient
 }
 
 // RestartDaemon is used to restart a daemon that from some reason failed to start

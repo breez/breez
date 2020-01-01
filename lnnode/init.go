@@ -9,6 +9,7 @@ import (
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
@@ -28,27 +29,29 @@ type API interface {
 	BreezBackupClient() breezbackuprpc.BreezBackuperClient
 	RouterClient() routerrpc.RouterClient
 	WalletKitClient() walletrpc.WalletKitClient
+	ChainNotifierClient() chainrpc.ChainNotifierClient
 }
 
 // Daemon contains data regarding the lightning daemon.
 type Daemon struct {
 	sync.Mutex
-	cfg               *config.Config
-	breezDB           *db.DB
-	started           int32
-	stopped           int32
-	daemonRunning     bool
-	nodePubkey        string
-	wg                sync.WaitGroup
-	log               btclog.Logger
-	lightningClient   lnrpc.LightningClient
-	subswapClient     submarineswaprpc.SubmarineSwapperClient
-	breezBackupClient breezbackuprpc.BreezBackuperClient
-	routerClient      routerrpc.RouterClient
-	walletKitClient   walletrpc.WalletKitClient
-	ntfnServer        *subscribe.Server
-	quitChan          chan struct{}
-	startBeforeSync   bool
+	cfg                 *config.Config
+	breezDB             *db.DB
+	started             int32
+	stopped             int32
+	daemonRunning       bool
+	nodePubkey          string
+	wg                  sync.WaitGroup
+	log                 btclog.Logger
+	lightningClient     lnrpc.LightningClient
+	subswapClient       submarineswaprpc.SubmarineSwapperClient
+	breezBackupClient   breezbackuprpc.BreezBackuperClient
+	routerClient        routerrpc.RouterClient
+	walletKitClient     walletrpc.WalletKitClient
+	chainNotifierClient chainrpc.ChainNotifierClient
+	ntfnServer          *subscribe.Server
+	quitChan            chan struct{}
+	startBeforeSync     bool
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning

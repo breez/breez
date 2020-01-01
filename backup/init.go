@@ -30,7 +30,7 @@ type Manager struct {
 	workingDir        string
 	db                *backupDB
 	provider          Provider
-	authService 	  AuthService
+	authService       AuthService
 	prepareBackupData DataPreparer
 	config            *config.Config
 	backupRequestChan chan struct{}
@@ -74,7 +74,7 @@ func NewManager(
 		prepareBackupData: prepareData,
 		config:            config,
 		log:               log,
-		authService: 	   authService,
+		authService:       authService,
 		backupRequestChan: make(chan struct{}, 10),
 		quitChan:          make(chan struct{}),
 	}, nil

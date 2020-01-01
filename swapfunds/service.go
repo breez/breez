@@ -44,6 +44,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 			switch update := u.(type) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
+				s.handleReverseSwapsPayments()
 			case lnnode.ChannelEvent:
 				s.SettlePendingTransfers()
 			case lnnode.TransactionEvent:

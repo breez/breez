@@ -654,6 +654,18 @@ func WithdrawLnurl(bolt11 string) error {
 	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
 }
 
+func NewReverseSwap(amt int64, claimAddress string) (string, error) {
+	return getBreezApp().SwapService.NewReverseSwap(amt, claimAddress)
+}
+
+func FetchReverseSwap(hash string) ([]byte, error) {
+	return marshalResponse(getBreezApp().SwapService.FetchReverseSwap(hash))
+}
+
+func PayReverseSwap(hash string) error {
+	return getBreezApp().SwapService.PayReverseSwap(hash)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

@@ -60,7 +60,7 @@ func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, con
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
 	ctx, cancel := context.WithTimeout(
 		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
-		15 * time.Second,
+		15*time.Second,
 	)
 	return breezservice.NewChannelOpenerClient(con), ctx, cancel
 }
