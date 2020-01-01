@@ -53,6 +53,8 @@ github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c/go.mod h1
 github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b h1:6yjSVYjgu1wvVPGYstcg4CIU8q+iRT7DnJdRGyMRd3o=
 github.com/breez/lnd v0.0.0-20191211103022-7d543c4ed84b/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.0.0-20191212101524-70e19d1e5d35/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.0.0-20200101072538-ad946ae712fe h1:gIvaCBE5rD8RLqIfynGlN5p4MmgIlUDl1z42Z3sJNrc=
+github.com/breez/lnd v0.0.0-20200101072538-ad946ae712fe/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227 h1:KcV5VLSF73Cywmpp0GQIm5m3OnI11uQMD9pgwnuk8Fc=
 github.com/breez/lnd v0.6.1-beta.0.20190624131800-19545133d227/go.mod h1:4Wrp1VCLASB0JC58WC8IX9sdpA4NaN4d+vFUFn8RB7s=
 github.com/breez/lnd v0.6.1-beta.0.20190624142037-34c448b6bf67 h1:dB8ExDD/6HOKk+kss5JvpippQozvDHNIYlXXxOV7Fh0=
@@ -75,6 +77,8 @@ github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951 h1:M5GaBoqM6Qgnie
 github.com/breez/lnd v0.8.0-beta.0.20191029113030-6106837f0951/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta.0.20191212101524-70e19d1e5d35 h1:7/ZBIeMeUb6XOnWzJC96qx0UID8xeQOuxp/ot+clRkc=
 github.com/breez/lnd v0.8.0-beta.0.20191212101524-70e19d1e5d35/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta.0.20191231135652-5312fc867694 h1:iH9YR/hKPfmXkZD98zvGmdELdmHYgCWWi+89Tkr4hpo=
+github.com/breez/lnd v0.8.0-beta.0.20191231135652-5312fc867694/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54 h1:dJyqc8UXhQdA+aMTdO2TZyXj8s5EpJREfh3CI5oG+oc=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191028104143-9e1c90371a54/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191105101129-de445157afef h1:mJ+XH3J6ylHi1yy+TvDCtblSDNjvH7ZHBuMIh2Ryv3c=
@@ -86,6 +90,8 @@ github.com/breez/lnd v0.8.0-beta-rc3.0.20191202085316-9ff5bc2a00f2 h1:+ZGrKE47ek
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191202085316-9ff5bc2a00f2/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191226115635-5c60d09842a4 h1:xIyBdK93kQZEs+O3pV9bwtwPFEtnGU0TthS4m9JLDkw=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191226115635-5c60d09842a4/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20191231134415-ca45ec97bb31 h1:pysGVrpaPtKig2LX7tpETjCbP5IL18sypcI2ibBPPuc=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20191231134415-ca45ec97bb31/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0 h1:nSQkvsVdZP4GBURecXCaSCPg8AOQrR12j5mWpWbR1FA=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0/go.mod h1:vzLU75ll8qbRJIzW5dvK/UXtR9c2FecJ6VNOM8chyVM=
 github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335 h1:vA6MyZVCHKFdRyijR2rF2edJL223UCmty6xlPDXbATg=
@@ -165,6 +171,7 @@ github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
+github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b h1:VKtxabqXZkF25pY9ekfRL6a582T4P37/31XEstQ5p58=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
 github.com/golang/lint v0.0.0-20180702182130-06c8688daad7/go.mod h1:tluoj9z5200jBnyusfRPU2LqT6J+DAorxEvtC7LHB+E=
 github.com/golang/mock v1.1.1/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfbm0A=
@@ -214,6 +221,7 @@ github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 h1:UUHMLvzt/31azWTN/ifG
 github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8/go.mod h1:vgyd7OREkbtVEN/8IXZe5Ooef3LQePvuBm9UWj6ZL8U=
 github.com/juju/retry v0.0.0-20180821225755-9058e192b216/go.mod h1:OohPQGsr4pnxwD5YljhQ+TZnuVRYpa5irjugL1Yuif4=
 github.com/juju/testing v0.0.0-20180920084828-472a3e8b2073/go.mod h1:63prj8cnj0tU0S9OHjGJn+b1h0ZghCndfnbQolrYTwA=
+github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 h1:Pp8RxiF4rSoXP9SED26WCfNB28/dwTDpPXS8XMJR8rc=
 github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2/go.mod h1:63prj8cnj0tU0S9OHjGJn+b1h0ZghCndfnbQolrYTwA=
 github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d/go.mod h1:6/KLg8Wz/y2KVGWEpkK9vMNGkOnu4k/cqs8Z1fKjTOk=
 github.com/juju/version v0.0.0-20180108022336-b64dbd566305/go.mod h1:kE8gK5X0CImdr7qpSKl3xB2PmpySSmfj7zVbkZFs81U=
@@ -224,8 +232,10 @@ github.com/kkdai/bstream v0.0.0-20181106074824-b3251f7901ec h1:n1NeQ3SgUHyISrjFF
 github.com/kkdai/bstream v0.0.0-20181106074824-b3251f7901ec/go.mod h1:J+Gs4SYgM6CZQHDETBtE9HaSEkGmuNXF86RwHhHUvq4=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
+github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
+github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/lightninglabs/gozmq v0.0.0-20180324010646-462a8a753885 h1:fTLuPUkaKIIV0+gA1IxiBDvDxtF8tzpSF6N6NfFGmsU=
 github.com/lightninglabs/gozmq v0.0.0-20180324010646-462a8a753885/go.mod h1:KUh15naRlx/TmUMFS/p4JJrCrE6F7RGF7rsnvuu45E4=
@@ -441,6 +451,7 @@ google.golang.org/grpc v1.22.0 h1:J0UbZOIrCAl+fpTOf8YLs4dJo8L/owV4LYVtAXQoPkw=
 google.golang.org/grpc v1.22.0/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyacEbxg=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/errgo.v1 v1.0.0 h1:n+7XfCyygBFb8sEjg6692xjC6Us50TFRO54+xYUEwjE=
 gopkg.in/errgo.v1 v1.0.0/go.mod h1:CxwszS/Xz1C49Ucd2i6Zil5UToP1EmyrFhKaMVbg1mk=
@@ -452,9 +463,11 @@ gopkg.in/macaroon-bakery.v2 v2.0.1/go.mod h1:B4/T17l+ZWGwxFSZQmlBwp25x+og7OkhETf
 gopkg.in/macaroon.v2 v2.0.0 h1:LVWycAfeJBUjCIqfR9gqlo7I8vmiXRr51YEOZ1suop8=
 gopkg.in/macaroon.v2 v2.0.0/go.mod h1:+I6LnTMkm/uV5ew/0nsulNjL16SK4+C8yDmRUzHR17I=
 gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce/go.mod h1:yeKp02qBN3iKW1OzL3MGk2IdtZzaj7SFntXj72NppTA=
+gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 h1:VpOs+IwYnYBaFnrNAeB8UUWtL3vEUnzSCL1nVjPhqrw=
 gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22/go.mod h1:yeKp02qBN3iKW1OzL3MGk2IdtZzaj7SFntXj72NppTA=
 gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7/go.mod h1:dt/ZhP58zS4L8KSrWDmTeBkI65Dw0HsyUHuEVlX15mw=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=

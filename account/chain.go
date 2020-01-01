@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
-	"github.com/lightningnetwork/lnd/lnwallet"
+	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
 )
 
 const (
@@ -67,7 +67,7 @@ func (a *Service) GetDefaultSatPerByteFee() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int64(lnwallet.SatPerKWeight(feeResponse.SatPerKw).FeePerKVByte() / 1000), nil
+	return int64(chainfee.SatPerKWeight(feeResponse.SatPerKw).FeePerKVByte() / 1000), nil
 }
 
 /*
