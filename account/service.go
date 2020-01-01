@@ -75,6 +75,8 @@ func (a *Service) watchDaemonEvents() (err error) {
 					a.syncClosedChannels()
 				}
 				a.calculateAccountAndNotify()
+			case lnnode.BackupNeededEvent:
+				a.calculateAccountAndNotify()
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)
 			}

@@ -141,9 +141,8 @@ func (s *Service) PayReverseSwap(hash string) error {
 		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 		return fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 	}
-	//TODO: handle errors of hold invoice payment
-	lnclient := s.daemonAPI.APIClient()
-	go lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{Amt: rs.LnAmount, PaymentRequest: rs.Invoice})
+
+	go s.sendPayment(rs.Invoice, rs.LnAmount)
 
 	err = s.subscribeLockupScript(rs)
 	if err != nil {
