@@ -125,6 +125,8 @@ message NotificationEvent {
         BACKUP_AUTH_FAILED = 10;
         BACKUP_NODE_CONFLICT = 11;
         BACKUP_REQUEST = 12;
+        PAYMENT_FAILED = 13;
+        PAYMENT_SUCCEEDED = 14;
     }
 
     NotificationType type = 1;
