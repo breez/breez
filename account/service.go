@@ -64,6 +64,7 @@ func (a *Service) watchDaemonEvents() (err error) {
 				atomic.StoreInt32(&a.daemonReady, 1)
 				a.wg.Add(1)
 				go a.watchPayments()
+				go a.watchCurrentInFlightPayments()
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
 				time.Sleep(5 * time.Second)

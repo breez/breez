@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"io"
-	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -12,6 +11,7 @@ import (
 )
 
 func (a *Service) watchCurrentInFlightPayments() error {
+	a.log.Info("watchCurrentInFlightPayments started")
 	paymentsResp, err := a.daemonAPI.APIClient().ListPayments(context.Background(), &lnrpc.ListPaymentsRequest{IncludeIncomplete: true})
 	if err != nil {
 		return err
@@ -29,6 +29,7 @@ func (a *Service) watchCurrentInFlightPayments() error {
 }
 
 func (a *Service) trackInFlightPayment(paymentHash string) error {
+	a.log.Infof("trackInFlightPayment started for hash = %v", paymentHash)
 	hashBytes, err := hex.DecodeString(paymentHash)
 	if err != nil {
 		return err
@@ -42,17 +43,14 @@ func (a *Service) trackInFlightPayment(paymentHash string) error {
 	for {
 		paymentStatus, err := trackStream.Recv()
 		if err == io.EOF || ctx.Err() == context.Canceled {
-			a.log.Errorf("watchInFlightPayment cancelled, shutting down")
-			return err
+			a.log.Infof("trackInFlightPayment completed for hash = %v", paymentHash)
+			return nil
 		}
 
 		a.log.Infof("In flight payment status = %v for hash %v", paymentStatus.State, paymentHash)
 		if err != nil {
 			a.log.Errorf("watchInFlightPayment Failed to get notification %v", err)
-			// in case of unexpected error, we will wait a bit so we won't get
-			// into infinite loop.
-			time.Sleep(2 * time.Second)
-			continue
+			return err
 		}
 
 		if paymentStatus.State != routerrpc.PaymentState_IN_FLIGHT {
