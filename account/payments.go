@@ -463,7 +463,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		payReqBytes, err := a.breezDB.FetchPaymentRequest(string(htlc.HashLock))
+		payReqBytes, err := a.breezDB.FetchPaymentRequest(hex.EncodeToString(htlc.HashLock))
 		if err != nil {
 			a.log.Errorf("createPendingPayment - failed to call fetchPaymentRequest %v", err)
 			return nil, err
