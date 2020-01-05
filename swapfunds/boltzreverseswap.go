@@ -62,11 +62,11 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 
 	a, err := btcutil.DecodeAddress(rs.LockupAddress, s.chainParams)
 	if err != nil {
-		return fmt.Errorf("btcutil.DecodeAddress(%v)", rs.LockupAddress, err)
+		return fmt.Errorf("btcutil.DecodeAddress(%v) %v", rs.LockupAddress, err)
 	}
 	script, err := txscript.PayToAddrScript(a)
 	if err != nil {
-		return fmt.Errorf("txscript.PayToAddrScript(%v)", a, err)
+		return fmt.Errorf("txscript.PayToAddrScript(%v) %v", a, err)
 	}
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -91,7 +91,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 			}
 			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
 			s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_STARTED, Data: []string{rs.Key}})
-			err = s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx(), 6)
+			err = s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx(), 2)
 			if err != nil {
 				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_FAILED, Data: []string{rs.Key, err.Error()}})
 			} else {
@@ -177,6 +177,7 @@ func (s *Service) handleReverseSwapsPayments() error {
 			s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 			continue
 		}
+		s.log.Infof("handling reverse swap: %v", rs)
 		err = s.subscribeLockupScript(rs)
 		if err != nil {
 			s.log.Errorf("s.subscribeLockupScript(%v): %v", rs, err)

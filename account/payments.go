@@ -118,7 +118,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-		a.notifyPaymentResult(false, decodedReq.PaymentHash)
+		a.notifyPaymentResult(false, paymentRequest, "")
 		return nil, err
 	}
 
@@ -128,11 +128,11 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 		if err != nil {
 			a.log.Errorf("failed to create trace report for failed payment %v", err)
 		}
-		a.notifyPaymentResult(false, decodedReq.PaymentHash)
+		a.notifyPaymentResult(false, paymentRequest, traceReport)
 		return &PaymentResponse{PaymentError: response.PaymentError, TraceReport: traceReport}, nil
 	}
 	a.log.Infof("sendPaymentForRequest finished successfully")
-	a.notifyPaymentResult(true, decodedReq.PaymentHash)
+	a.notifyPaymentResult(true, paymentRequest, "")
 	a.syncSentPayments()
 	return &PaymentResponse{PaymentError: ""}, nil
 }
