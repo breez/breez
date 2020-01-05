@@ -86,11 +86,17 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 			confEvent, err := stream.Recv()
 			if err != nil {
 				s.log.Criticalf("Failed to receive an event : %v", err)
+				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_FAILED, Data: []string{rs.Key, "internal error"}})
 				return
 			}
 			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
-			fmt.Printf("confEvent: %#v, rawTX: %x\n", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
-			s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx(), 6)
+			s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_STARTED, Data: []string{rs.Key}})
+			err = s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx(), 6)
+			if err != nil {
+				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_FAILED, Data: []string{rs.Key, err.Error()}})
+			} else {
+				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_SUCCEEDED, Data: []string{rs.Key}})
+			}
 		}
 	}()
 	go func() {

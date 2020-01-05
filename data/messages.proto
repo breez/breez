@@ -127,6 +127,9 @@ message NotificationEvent {
         BACKUP_REQUEST = 12;
         PAYMENT_FAILED = 13;
         PAYMENT_SUCCEEDED = 14;
+        REVERSE_SWAP_CLAIM_STARTED = 15;
+        REVERSE_SWAP_CLAIM_SUCCEEDED = 16;
+        REVERSE_SWAP_CLAIM_FAILED = 17;
     }
 
     NotificationType type = 1;
