@@ -56,18 +56,25 @@ func (a *Service) trackInFlightPayment(payment lnrpc.Payment) error {
 		}
 
 		if paymentStatus.State != routerrpc.PaymentState_IN_FLIGHT {
-			a.notifyPaymentResult(paymentStatus.State == routerrpc.PaymentState_SUCCEEDED, paymentRequest, "")
+			a.notifyPaymentResult(paymentStatus.State == routerrpc.PaymentState_SUCCEEDED, paymentRequest, "", "")
 			a.syncSentPayments()
 		}
 	}
 }
 
-func (a *Service) notifyPaymentResult(succeeded bool, paymentRequest string, traceReport string) {
+func (a *Service) notifyPaymentResult(succeeded bool, paymentRequest string, err string, traceReport string) {
 	event := data.NotificationEvent_PAYMENT_FAILED
 	if succeeded {
 		event = data.NotificationEvent_PAYMENT_SUCCEEDED
 	}
+	eventData := []string{paymentRequest}
+	if !succeeded {
+		eventData = append(eventData, err)
+		if traceReport != "" {
+			eventData = append(eventData, traceReport)
+		}
+	}
 	a.onServiceEvent(data.NotificationEvent{
 		Type: event,
-		Data: []string{paymentRequest, traceReport}})
+		Data: eventData})
 }

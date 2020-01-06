@@ -383,16 +383,12 @@ func GetPayments() ([]byte, error) {
 }
 
 /*
-PayBlankInvoice is part of the binding inteface which is delegated to breez.PayBlankInvoice
+SendPaymentForRequest is part of the binding inteface which is delegated to breez.PayBlankInvoice
 */
-func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
+func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	resp, err := getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
-	if err != nil {
-		return nil, err
-	}
-	return marshalResponse(&data.PaymentResponse{PaymentError: resp.PaymentError, TraceReport: resp.TraceReport}, err)
+	return getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*

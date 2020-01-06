@@ -154,7 +154,10 @@ func (s *Service) PayReverseSwap(hash string) error {
 		return fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 	}
 
-	go s.sendPayment(rs.Invoice, rs.LnAmount)
+	err = s.sendPayment(rs.Invoice, rs.LnAmount)
+	if err != nil {
+		return fmt.Errorf("s.sendPayment: %v", err)
+	}
 
 	err = s.subscribeLockupScript(rs)
 	if err != nil {
