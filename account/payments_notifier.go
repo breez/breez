@@ -18,17 +18,19 @@ func (a *Service) watchCurrentInFlightPayments() error {
 	}
 	for _, p := range paymentsResp.Payments {
 		if p.Status == lnrpc.Payment_IN_FLIGHT {
-			go func() {
-				if err := a.trackInFlightPayment(p.PaymentHash, p.PaymentRequest); err != nil {
+			go func(payment lnrpc.Payment) {
+				if err := a.trackInFlightPayment(payment); err != nil {
 					a.log.Errorf("Failed to watch payment %v, error: %v", p.PaymentHash, err)
 				}
-			}()
+			}(*p)
 		}
 	}
 	return nil
 }
 
-func (a *Service) trackInFlightPayment(paymentHash string, paymentRequest string) error {
+func (a *Service) trackInFlightPayment(payment lnrpc.Payment) error {
+	paymentHash := payment.PaymentHash
+	paymentRequest := payment.PaymentRequest
 	a.log.Infof("trackInFlightPayment started for hash = %v", paymentHash)
 	hashBytes, err := hex.DecodeString(paymentHash)
 	if err != nil {

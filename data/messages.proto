@@ -317,5 +317,6 @@ message ReverseSwap {
     int64 ln_amount = 8;
     int64 onchain_amount = 9;
     int64 timeout_block_height = 10;
+    int64 start_block_height = 11;
 }
 
