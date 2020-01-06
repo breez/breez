@@ -3,6 +3,7 @@ package swapfunds
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/breez/boltz"
@@ -53,13 +54,6 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte, confTarge
 }
 
 func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
-	lnClient := s.daemonAPI.APIClient()
-	info, err := lnClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		s.log.Errorf("lnClient.GetInfo: %v", err)
-		return fmt.Errorf("lnClient.GetInfo: %w", err)
-	}
-
 	a, err := btcutil.DecodeAddress(rs.LockupAddress, s.chainParams)
 	if err != nil {
 		return fmt.Errorf("btcutil.DecodeAddress(%v) %v", rs.LockupAddress, err)
@@ -70,15 +64,17 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	}
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
+	startHeight := uint32(rs.StartBlockHeight)
+	s.log.Infof("Registering with start block = %v", startHeight)
 	stream, err := client.RegisterConfirmationsNtfn(ctx, &chainrpc.ConfRequest{
 		NumConfs:   1,
-		HeightHint: info.BlockHeight,
+		HeightHint: startHeight,
 		Txid:       lntypes.ZeroHash[:],
 		Script:     script,
 	})
 	if err != nil {
-		s.log.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %v", info.BlockHeight, script, err)
-		return fmt.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %w", info.BlockHeight, script, err)
+		s.log.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %v", startHeight, script, err)
+		return fmt.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %w", startHeight, script, err)
 	}
 	//fmt.Printf("Register: %#v\n", rs)
 	go func() {
@@ -108,6 +104,15 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 }
 
 func (s *Service) NewReverseSwap(amt int64, claimAddress string) (string, error) {
+	lnClient := s.daemonAPI.APIClient()
+	if lnClient == nil {
+		return "", errors.New("daemon is not ready")
+	}
+	info, err := lnClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		return "", fmt.Errorf("lnClient.GetInfo: %w", err)
+	}
+
 	r, err := boltz.NewReverseSwap(btcutil.Amount(amt))
 	if err != nil {
 		s.log.Errorf("boltz.NewReverseSwap(%v): %v", amt, err)
@@ -129,6 +134,7 @@ func (s *Service) NewReverseSwap(amt int64, claimAddress string) (string, error)
 		LnAmount:           amt,
 		OnchainAmount:      r.OnchainAmount,
 		TimeoutBlockHeight: r.TimeoutBlockHeight,
+		StartBlockHeight:   int64(info.BlockHeight),
 	}
 	h, err := s.breezDB.SaveReverseSwap(rs)
 	if err != nil {
@@ -170,6 +176,7 @@ func (s *Service) handleReverseSwapsPayments() error {
 		chanDBCleanUp()
 		return fmt.Errorf("paymentControl.FetchInFlightPayments(): %w", err)
 	}
+	s.log.Infof("Fetched %v in flight payments", len(payments))
 	for _, p := range payments {
 		hash := p.Info.PaymentHash.String()
 		rs, err := s.breezDB.FetchReverseSwap(hash)
@@ -177,7 +184,10 @@ func (s *Service) handleReverseSwapsPayments() error {
 			s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 			continue
 		}
-		s.log.Infof("handling reverse swap: %v", rs)
+		if rs == nil {
+			continue
+		}
+		s.log.Infof("handling reverse swap: hash=%v, swap=%v", hash, rs)
 		err = s.subscribeLockupScript(rs)
 		if err != nil {
 			s.log.Errorf("s.subscribeLockupScript(%v): %v", rs, err)

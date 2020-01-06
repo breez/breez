@@ -42,6 +42,9 @@ func (db *DB) FetchReverseSwap(hash string) (*data.ReverseSwap, error) {
 	if err != nil {
 		return nil, err
 	}
+	if b == nil {
+		return nil, nil
+	}
 	var rs data.ReverseSwap
 	err = proto.Unmarshal(b, &rs)
 	if err != nil {
