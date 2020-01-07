@@ -18,29 +18,23 @@ import (
 	"github.com/lightningnetwork/lnd/lntypes"
 )
 
-func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte, confTarget int32) error {
+func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 	_, err := boltz.CheckTransaction(hex.EncodeToString(rawTx), rs.LockupAddress, rs.OnchainAmount)
 	if err != nil {
 		s.log.Errorf("boltz.CheckTransaction(%x, %v, %v): %v", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
 		return fmt.Errorf("boltz.CheckTransaction(%x, %v, %v): %w", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
 	}
-	// TODO: Check that there is enought time to claim
-	walletKitClient := s.daemonAPI.WalletKitClient()
-	f, err := walletKitClient.EstimateFee(context.Background(), &walletrpc.EstimateFeeRequest{ConfTarget: confTarget})
+	claimTx, err := boltz.ClaimTransaction(rs.Script, hex.EncodeToString(rawTx), rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee)
 	if err != nil {
-		s.log.Errorf("walletKitClient.EstimateFee(%v): %v", confTarget, err)
-		return fmt.Errorf("walletKitClient.EstimateFee(%v): %w", confTarget, err)
-	}
-	claimTx, err := boltz.ClaimTransaction(rs.Script, hex.EncodeToString(rawTx), rs.ClaimAddress, rs.Preimage, rs.Key, f.SatPerKw)
-	if err != nil {
-		s.log.Errorf("boltz.ClaimTransaction(%v, %x, %v, %v, %v): %v", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, f.SatPerKw, err)
-		return fmt.Errorf("walletKitClient.EstimateFee(%v, %x, %v, %v, %v): %w", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, f.SatPerKw, err)
+		s.log.Errorf("boltz.ClaimTransaction(%v, %x, %v, %v, %v): %v", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
+		return fmt.Errorf("walletKitClient.EstimateFee(%v, %x, %v, %v, %v): %w", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
 	}
 	tx, err := hex.DecodeString(claimTx)
 	if err != nil {
 		s.log.Errorf("hex.DecodeString(%v): %v", claimTx, err)
 		return fmt.Errorf("hex.DecodeString(%v): %w", claimTx, err)
 	}
+	walletKitClient := s.daemonAPI.WalletKitClient()
 	pr, err := walletKitClient.PublishTransaction(context.Background(), &walletrpc.Transaction{TxHex: tx})
 	if err != nil {
 		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", tx, err)
@@ -51,6 +45,26 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte, confTarge
 		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %v", tx, pr.PublishError)
 	}
 	return nil
+}
+
+func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error) {
+	blockRange := []int32{2, 6, 24}
+	walletKitClient := s.daemonAPI.WalletKitClient()
+	fees := make(map[int32]int64)
+	for _, b := range blockRange {
+		f, err := walletKitClient.EstimateFee(context.Background(), &walletrpc.EstimateFeeRequest{ConfTarget: b})
+		if err != nil {
+			s.log.Errorf("walletKitClient.EstimateFee(%v): %v", b, err)
+			return nil, fmt.Errorf("walletKitClient.EstimateFee(%v): %w", b, err)
+		}
+		fAmt, err := boltz.ClaimFee(claimAddress, f.SatPerKw)
+		if err != nil {
+			s.log.Errorf("boltz.ClaimFee(%v, %v): %v", claimAddress, f.SatPerKw, err)
+			return nil, fmt.Errorf("boltz.ClaimFee(%v, %v): %w", claimAddress, f.SatPerKw, err)
+		}
+		fees[b] = fAmt
+	}
+	return fees, nil
 }
 
 func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
@@ -87,7 +101,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 			}
 			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
 			s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_STARTED, Data: []string{rs.Key}})
-			err = s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx(), 2)
+			err = s.claimReverseSwap(rs, confEvent.GetConf().GetRawTx())
 			if err != nil {
 				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_FAILED, Data: []string{rs.Key, err.Error()}})
 			} else {
@@ -147,11 +161,30 @@ func (s *Service) FetchReverseSwap(hash string) (*data.ReverseSwap, error) {
 	return s.breezDB.FetchReverseSwap(hash)
 }
 
+func (s *Service) SetReverseSwapClaimFee(hash string, fee int64) error {
+	rs, err := s.breezDB.FetchReverseSwap(hash)
+	if err != nil {
+		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
+		return fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
+	}
+	rs.ClaimFee = fee
+	_, err = s.breezDB.SaveReverseSwap(rs)
+	if err != nil {
+		return fmt.Errorf("breezDB.SaveReverseSwap(%#v): %w", rs, err)
+	}
+	return nil
+}
+
 func (s *Service) PayReverseSwap(hash string) error {
 	rs, err := s.breezDB.FetchReverseSwap(hash)
 	if err != nil {
 		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 		return fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
+	}
+
+	if rs.ClaimFee == 0 {
+		s.log.Errorf("need to set claimFee for %v", hash)
+		return fmt.Errorf("need to set claimFee for %v", hash)
 	}
 
 	err = s.sendPayment(rs.Invoice, rs.LnAmount)

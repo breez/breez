@@ -318,5 +318,14 @@ message ReverseSwap {
     int64 onchain_amount = 9;
     int64 timeout_block_height = 10;
     int64 start_block_height = 11;
+    int64 claim_fee = 12;
 }
 
+message ReverseSwapClaimFee {
+    string hash = 1;
+    int64 fee = 2;
+}
+
+message ClaimFeeEstimates {
+    map<int32, int64> fees =1;
+}

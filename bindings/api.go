@@ -658,8 +658,21 @@ func NewReverseSwap(request []byte) (string, error) {
 	return getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
 }
 
+func SetReverseSwapClaimFee(request []byte) error {
+	var r data.ReverseSwapClaimFee
+	if err := proto.Unmarshal(request, &r); err != nil {
+		return err
+	}
+	return getBreezApp().SwapService.SetReverseSwapClaimFee(r.Hash, r.Fee)
+}
+
 func FetchReverseSwap(hash string) ([]byte, error) {
 	return marshalResponse(getBreezApp().SwapService.FetchReverseSwap(hash))
+}
+
+func ReverseSwapClaimFeeEstimates(claimAddress string) ([]byte, error) {
+	cf, err := getBreezApp().SwapService.ClaimFeeEstimates(claimAddress)
+	return marshalResponse(&data.ClaimFeeEstimates{Fees: cf}, err)
 }
 
 func PayReverseSwap(hash string) error {

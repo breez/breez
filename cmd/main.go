@@ -44,9 +44,14 @@ var cmdNewReverseSwap = cli.Leaf{
 			fmt.Println(fmt.Errorf("strconv.Atoi(%v): %w", args[0], err))
 			return
 		}
-		h, err := bindings.NewReverseSwap(int64(amt), args[1])
+		req, err := proto.Marshal(&data.ReverseSwapRequest{Amount: int64(amt), Address: args[1]})
 		if err != nil {
-			fmt.Println(fmt.Errorf("bindings.NewReverseSwap(%v): %w", amt, err))
+			fmt.Println(fmt.Errorf("proto.Marshal(%#v): %w", data.ReverseSwapRequest{Amount: int64(amt), Address: args[1]}, err))
+			return
+		}
+		h, err := bindings.NewReverseSwap(req)
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.NewReverseSwap(%#v): %w", data.ReverseSwapRequest{Amount: int64(amt), Address: args[1]}, err))
 			return
 		}
 		fmt.Printf("%s\n", h)
@@ -73,6 +78,52 @@ var cmdFetchReverseSwap = cli.Leaf{
 		fmt.Printf("%#v\n", rs)
 	},
 }
+var cmdReverseSwapClaimFeeEstimates = cli.Leaf{
+	Descr: "get blocks/fee pairs for the claim transaction of a reverse swap",
+	F: func(c *cli.CLI, args []string) {
+		if len(args) < 1 {
+			fmt.Println("need a claim address!")
+			return
+		}
+		b, err := bindings.ReverseSwapClaimFeeEstimates(args[0])
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.ReverseSwapClaimFeeEstimates(%v): %w", args[0], err))
+			return
+		}
+		var fees data.ClaimFeeEstimates
+		err = proto.Unmarshal(b, &fees)
+		if err != nil {
+			fmt.Println(fmt.Errorf("proto.Unmarshal(%x): %w", b, err))
+			return
+		}
+		fmt.Printf("%#v\n", fees.Fees)
+	},
+}
+var cmdSetReverseSwapClaimFee = cli.Leaf{
+	Descr: "set the fee for the claim transaction of a reverse swap",
+	F: func(c *cli.CLI, args []string) {
+		if len(args) < 2 {
+			fmt.Println("Error: Need a hash and a fee!")
+			return
+		}
+		fee, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println(fmt.Errorf("strconv.Atoi(%v): %w", args[1], err))
+			return
+		}
+		req, err := proto.Marshal(&data.ReverseSwapClaimFee{Hash: args[0], Fee: int64(fee)})
+		if err != nil {
+			fmt.Println(fmt.Errorf("proto.Marshal(%#v): %w", data.ReverseSwapClaimFee{Hash: args[0], Fee: int64(fee)}, err))
+			return
+		}
+		err = bindings.SetReverseSwapClaimFee(req)
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.SetReverseSwapClaimFee(%#v): %w", data.ReverseSwapClaimFee{Hash: args[0], Fee: int64(fee)}, err))
+			return
+		}
+		fmt.Printf("done.\n")
+	},
+}
 var cmdPayReverseSwap = cli.Leaf{
 	Descr: "pay reverse swap ln invoice",
 	F: func(c *cli.CLI, args []string) {
@@ -95,6 +146,8 @@ var menuRoot = cli.Menu{
 
 	{"newreverseswap", cmdNewReverseSwap},
 	{"fetchreverseswap", cmdFetchReverseSwap},
+	{"claimfeeestimates", cmdReverseSwapClaimFeeEstimates},
+	{"setreverseswapclaimfee", cmdSetReverseSwapClaimFee},
 	{"payreverseswap", cmdPayReverseSwap},
 }
 
