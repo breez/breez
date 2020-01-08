@@ -321,6 +321,14 @@ message ReverseSwap {
     int64 claim_fee = 12;
 }
 
+message ReverseSwapPaymentStatus {
+    string hash = 1;
+    int32 eta = 3;
+}
+message ReverseSwapPaymentStatuses {
+    repeated ReverseSwapPaymentStatus payments_status = 1;
+}
+
 message ReverseSwapClaimFee {
     string hash = 1;
     int64 fee = 2;

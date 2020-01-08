@@ -199,6 +199,44 @@ func (s *Service) PayReverseSwap(hash string) error {
 	return nil
 }
 
+func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error) {
+	chanDB, chanDBCleanUp, err := channeldbservice.Get(s.cfg.WorkingDir)
+	if err != nil {
+		s.log.Errorf("channeldbservice.Get(%v): %v", s.cfg.WorkingDir, err)
+		return nil, fmt.Errorf("channeldbservice.Get(%v): %w", s.cfg.WorkingDir, err)
+	}
+	paymentControl := channeldb.NewPaymentControl(chanDB)
+	payments, err := paymentControl.FetchInFlightPayments()
+	if err != nil {
+		s.log.Errorf("paymentControl.FetchInFlightPayments(): %v", err)
+		chanDBCleanUp()
+		return nil, fmt.Errorf("paymentControl.FetchInFlightPayments(): %w", err)
+	}
+	s.log.Infof("Fetched %v in flight payments", len(payments))
+	var statuses []*data.ReverseSwapPaymentStatus
+	for _, p := range payments {
+		hash := p.Info.PaymentHash.String()
+		rs, err := s.breezDB.FetchReverseSwap(hash)
+		if err != nil {
+			s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
+			return nil, fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %v", hash, err)
+		}
+		if rs == nil {
+			continue
+		}
+		s.log.Infof("gettting info about reverse swap: hash=%v, swap=%v", hash, rs)
+		status, txid, _, eta, err := boltz.GetTransaction(rs.Id, rs.LockupAddress, rs.OnchainAmount)
+		if err != nil {
+			s.log.Errorf("boltz.GetTransaction(%v, %v, %v): %v", rs.Id, rs.LockupAddress, rs.OnchainAmount, err)
+			return nil, fmt.Errorf("boltz.GetTransaction(%v, %v, %v): %w", rs.Id, rs.LockupAddress, rs.OnchainAmount, err)
+		}
+		s.log.Infof("Reverse swap: hash=%v, status=%v, txid=%v, eta=%v", hash, status, txid, eta)
+		statuses = append(statuses, &data.ReverseSwapPaymentStatus{Hash: hash, Eta: int32(eta)})
+	}
+	chanDBCleanUp()
+	return &data.ReverseSwapPaymentStatuses{PaymentsStatus: statuses}, nil
+}
+
 func (s *Service) handleReverseSwapsPayments() error {
 	chanDB, chanDBCleanUp, err := channeldbservice.Get(s.cfg.WorkingDir)
 	if err != nil {

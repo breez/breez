@@ -138,6 +138,25 @@ var cmdPayReverseSwap = cli.Leaf{
 		}
 	},
 }
+var cmdReverseSwapPaymentStatuses = cli.Leaf{
+	Descr: "get the status of the in-flight reverse swap payments",
+	F: func(c *cli.CLI, args []string) {
+		b, err := bindings.ReverseSwapPayments()
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.ReverseSwapPayments(): %w", err))
+			return
+		}
+		var s data.ReverseSwapPaymentStatuses
+		err = proto.Unmarshal(b, &s)
+		if err != nil {
+			fmt.Println(fmt.Errorf("proto.Unmarshal(%x): %w", b, err))
+			return
+		}
+		for _, ps := range s.PaymentsStatus {
+			fmt.Printf("hash:%v,eta:%v\n", ps.Hash, ps.Eta)
+		}
+	},
+}
 
 var menuRoot = cli.Menu{
 	{"exit", cmdExit},
@@ -149,6 +168,7 @@ var menuRoot = cli.Menu{
 	{"claimfeeestimates", cmdReverseSwapClaimFeeEstimates},
 	{"setreverseswapclaimfee", cmdSetReverseSwapClaimFee},
 	{"payreverseswap", cmdPayReverseSwap},
+	{"reverseswapstatus", cmdReverseSwapPaymentStatuses},
 }
 
 type breezApp struct{}

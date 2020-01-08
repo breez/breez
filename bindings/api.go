@@ -679,6 +679,10 @@ func PayReverseSwap(hash string) error {
 	return getBreezApp().SwapService.PayReverseSwap(hash)
 }
 
+func ReverseSwapPayments() ([]byte, error) {
+	return marshalResponse(getBreezApp().SwapService.ReverseSwapPayments())
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
