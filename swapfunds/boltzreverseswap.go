@@ -19,7 +19,22 @@ import (
 )
 
 func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
-	_, err := boltz.CheckTransaction(hex.EncodeToString(rawTx), rs.LockupAddress, rs.OnchainAmount)
+	lnClient := s.daemonAPI.APIClient()
+	if lnClient == nil {
+		s.log.Errorf("daemon is not ready")
+		return fmt.Errorf("daemon is not ready")
+	}
+	info, err := lnClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		s.log.Errorf("lnClient.GetInfo: %v", err)
+		return fmt.Errorf("lnClient.GetInfo: %w", err)
+	}
+	if rs.TimeoutBlockHeight <= int64(info.BlockHeight) {
+		s.log.Errorf("too late for the claim transaction: TimeoutBlockHeight=%v <= BlockHeight=%v", rs.TimeoutBlockHeight, info.BlockHeight)
+		return fmt.Errorf("too late for the claim transaction: TimeoutBlockHeight=%v <= BlockHeight=%v", rs.TimeoutBlockHeight, info.BlockHeight)
+	}
+
+	_, err = boltz.CheckTransaction(hex.EncodeToString(rawTx), rs.LockupAddress, rs.OnchainAmount)
 	if err != nil {
 		s.log.Errorf("boltz.CheckTransaction(%x, %v, %v): %v", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
 		return fmt.Errorf("boltz.CheckTransaction(%x, %v, %v): %w", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
