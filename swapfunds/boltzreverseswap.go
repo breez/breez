@@ -9,6 +9,7 @@ import (
 	"github.com/breez/boltz"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -44,20 +45,84 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("boltz.ClaimTransaction(%v, %x, %v, %v, %v): %v", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
 		return fmt.Errorf("walletKitClient.EstimateFee(%v, %x, %v, %v, %v): %w", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
 	}
-	tx, err := hex.DecodeString(claimTx)
+	txHex, err := hex.DecodeString(claimTx)
 	if err != nil {
 		s.log.Errorf("hex.DecodeString(%v): %v", claimTx, err)
 		return fmt.Errorf("hex.DecodeString(%v): %w", claimTx, err)
 	}
-	walletKitClient := s.daemonAPI.WalletKitClient()
-	pr, err := walletKitClient.PublishTransaction(context.Background(), &walletrpc.Transaction{TxHex: tx})
+	tx, err := btcutil.NewTxFromBytes(txHex)
 	if err != nil {
-		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", tx, err)
-		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %w", tx, err)
+		s.log.Errorf("btcutil.NewTxFromBytes(%v): %v", txHex, err)
+		return fmt.Errorf("btcutil.NewTxFromBytes(%v): %w", txHex, err)
+	}
+	confRequest := chainrpc.ConfRequest{
+		NumConfs:   1,
+		HeightHint: info.BlockHeight,
+		Txid:       tx.Hash().CloneBytes(),
+		Script:     tx.MsgTx().TxOut[0].PkScript,
+	}
+	err = s.breezDB.SaveUnconfirmedClaimTransaction(&confRequest)
+	if err != nil {
+		s.log.Errorf("s.breezDB.SaveUnconfirmedClaimTransaction(%#v): %v", confRequest, err)
+	}
+	err = s.subscribeClaimTransaction(&confRequest)
+	if err != nil {
+		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
+	}
+	walletKitClient := s.daemonAPI.WalletKitClient()
+	pr, err := walletKitClient.PublishTransaction(context.Background(), &walletrpc.Transaction{TxHex: txHex})
+	if err != nil {
+		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", txHex, err)
+		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %w", txHex, err)
 	}
 	if pr.PublishError != "" {
-		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", tx, pr.PublishError)
-		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %v", tx, pr.PublishError)
+		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", txHex, pr.PublishError)
+		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %v", txHex, pr.PublishError)
+	}
+	return nil
+}
+
+func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) error {
+	client := s.daemonAPI.ChainNotifierClient()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.log.Infof("Registering claim transaction notification %#v", confRequest)
+	stream, err := client.RegisterConfirmationsNtfn(ctx, confRequest)
+	if err != nil {
+		s.log.Errorf("client.RegisterConfirmationsNtfn(%#vv): %v", confRequest, err)
+		return fmt.Errorf("client.RegisterConfirmationsNtfn(%#v): %w", confRequest, err)
+	}
+	go func() {
+		for {
+			confEvent, err := stream.Recv()
+			if err != nil {
+				s.log.Criticalf("Failed to receive an event : %v", err)
+				return
+			}
+			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
+			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
+		}
+	}()
+	go func() {
+		<-s.quitChan
+		s.log.Infof("Canceling subscription")
+		cancel()
+	}()
+	return nil
+}
+
+func (s *Service) handleClaimTransaction() error {
+	confRequest, err := s.breezDB.FetchUnconfirmedClaimTransaction()
+	if err != nil {
+		s.log.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %v", err)
+		return fmt.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %w", err)
+	}
+	if confRequest == nil {
+		return nil
+	}
+	err = s.subscribeClaimTransaction(confRequest)
+	if err != nil {
+		s.log.Errorf("s.subscribeClaimTransaction(%v): %v", confRequest, err)
+		return fmt.Errorf("s.subscribeClaimTransaction(%v): %w", confRequest, err)
 	}
 	return nil
 }
@@ -212,6 +277,23 @@ func (s *Service) PayReverseSwap(hash string) error {
 		return fmt.Errorf("s.subscribeLockupScript(%v): %w", rs, err)
 	}
 	return nil
+}
+
+func (s *Service) UnconfirmedReverseSwapClaimTransaction() (string, error) {
+	confRequest, err := s.breezDB.FetchUnconfirmedClaimTransaction()
+	if err != nil {
+		s.log.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %v", err)
+		return "", fmt.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %w", err)
+	}
+	if confRequest == nil {
+		return "", nil
+	}
+	h, err := chainhash.NewHash(confRequest.Txid)
+	if err != nil {
+		return "", err
+	}
+	//tx, err :=  .NewTxFromBytes(confRequest.Txid)
+	return h.String(), nil
 }
 
 func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error) {

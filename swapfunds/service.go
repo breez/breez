@@ -45,6 +45,7 @@ func (s *Service) watchDaemonEvents() (err error) {
 			case lnnode.DaemonReadyEvent:
 				s.onDaemonReady()
 				s.handleReverseSwapsPayments()
+				s.handleClaimTransaction()
 			case lnnode.ChannelEvent:
 				s.SettlePendingTransfers()
 			case lnnode.TransactionEvent:

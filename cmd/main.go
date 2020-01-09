@@ -158,6 +158,14 @@ var cmdReverseSwapPaymentStatuses = cli.Leaf{
 	},
 }
 
+var cmdUnconfirmedReverseSwapClaimTransaction = cli.Leaf{
+	Descr: "get the txid of the unconfirmed reverse swap claim transaction, if any",
+	F: func(c *cli.CLI, args []string) {
+		h, err := bindings.UnconfirmedReverseSwapClaimTransaction()
+		fmt.Printf("txid: %v, err: %v\n", h, err)
+	},
+}
+
 var menuRoot = cli.Menu{
 	{"exit", cmdExit},
 	{"help", cmdHelp},
@@ -169,6 +177,7 @@ var menuRoot = cli.Menu{
 	{"setreverseswapclaimfee", cmdSetReverseSwapClaimFee},
 	{"payreverseswap", cmdPayReverseSwap},
 	{"reverseswapstatus", cmdReverseSwapPaymentStatuses},
+	{"unconfirmedreverseswapclaimtransaction", cmdUnconfirmedReverseSwapClaimTransaction},
 }
 
 type breezApp struct{}
