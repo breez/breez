@@ -205,11 +205,11 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 		s.log.Errorf("channeldbservice.Get(%v): %v", s.cfg.WorkingDir, err)
 		return nil, fmt.Errorf("channeldbservice.Get(%v): %w", s.cfg.WorkingDir, err)
 	}
+	defer chanDBCleanUp()
 	paymentControl := channeldb.NewPaymentControl(chanDB)
 	payments, err := paymentControl.FetchInFlightPayments()
 	if err != nil {
 		s.log.Errorf("paymentControl.FetchInFlightPayments(): %v", err)
-		chanDBCleanUp()
 		return nil, fmt.Errorf("paymentControl.FetchInFlightPayments(): %w", err)
 	}
 	s.log.Infof("Fetched %v in flight payments", len(payments))
@@ -233,7 +233,6 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 		s.log.Infof("Reverse swap: hash=%v, status=%v, txid=%v, eta=%v", hash, status, txid, eta)
 		statuses = append(statuses, &data.ReverseSwapPaymentStatus{Hash: hash, Eta: int32(eta)})
 	}
-	chanDBCleanUp()
 	return &data.ReverseSwapPaymentStatuses{PaymentsStatus: statuses}, nil
 }
 
@@ -243,11 +242,11 @@ func (s *Service) handleReverseSwapsPayments() error {
 		s.log.Errorf("channeldbservice.Get(%v): %v", s.cfg.WorkingDir, err)
 		return fmt.Errorf("channeldbservice.Get(%v): %w", s.cfg.WorkingDir, err)
 	}
+	defer chanDBCleanUp()
 	paymentControl := channeldb.NewPaymentControl(chanDB)
 	payments, err := paymentControl.FetchInFlightPayments()
 	if err != nil {
 		s.log.Errorf("paymentControl.FetchInFlightPayments(): %v", err)
-		chanDBCleanUp()
 		return fmt.Errorf("paymentControl.FetchInFlightPayments(): %w", err)
 	}
 	s.log.Infof("Fetched %v in flight payments", len(payments))
@@ -267,6 +266,5 @@ func (s *Service) handleReverseSwapsPayments() error {
 			s.log.Errorf("s.subscribeLockupScript(%v): %v", rs, err)
 		}
 	}
-	chanDBCleanUp()
 	return nil
 }
