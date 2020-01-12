@@ -1,6 +1,7 @@
 package swapfunds
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -55,17 +56,22 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("btcutil.NewTxFromBytes(%v): %v", txHex, err)
 		return fmt.Errorf("btcutil.NewTxFromBytes(%v): %w", txHex, err)
 	}
-	confRequest := chainrpc.ConfRequest{
-		NumConfs:   1,
-		HeightHint: info.BlockHeight,
-		Txid:       tx.Hash().CloneBytes(),
-		Script:     tx.MsgTx().TxOut[0].PkScript,
+	var confRequest *chainrpc.ConfRequest
+	txid := tx.Hash().CloneBytes()
+	confRequest, err = s.breezDB.FetchUnconfirmedClaimTransaction()
+	if err != nil || confRequest == nil || !bytes.Equal(confRequest.Txid, txid) {
+		confRequest := &chainrpc.ConfRequest{
+			NumConfs:   1,
+			HeightHint: info.BlockHeight,
+			Txid:       txid,
+			Script:     tx.MsgTx().TxOut[0].PkScript,
+		}
+		err = s.breezDB.SaveUnconfirmedClaimTransaction(confRequest)
+		if err != nil {
+			s.log.Errorf("s.breezDB.SaveUnconfirmedClaimTransaction(%#v): %v", confRequest, err)
+		}
 	}
-	err = s.breezDB.SaveUnconfirmedClaimTransaction(&confRequest)
-	if err != nil {
-		s.log.Errorf("s.breezDB.SaveUnconfirmedClaimTransaction(%#v): %v", confRequest, err)
-	}
-	err = s.subscribeClaimTransaction(&confRequest)
+	err = s.subscribeClaimTransaction(confRequest)
 	if err != nil {
 		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
 	}
