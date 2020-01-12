@@ -130,6 +130,7 @@ message NotificationEvent {
         REVERSE_SWAP_CLAIM_STARTED = 15;
         REVERSE_SWAP_CLAIM_SUCCEEDED = 16;
         REVERSE_SWAP_CLAIM_FAILED = 17;
+        REVERSE_SWAP_CLAIM_CONFIRMED = 18;
     }
 
     NotificationType type = 1;

@@ -41,7 +41,7 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("boltz.CheckTransaction(%x, %v, %v): %v", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
 		return fmt.Errorf("boltz.CheckTransaction(%x, %v, %v): %w", rawTx, rs.LockupAddress, rs.OnchainAmount, err)
 	}
-	claimTx, err := boltz.ClaimTransaction(rs.Script, hex.EncodeToString(rawTx), rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee)
+	claimTx, err := boltz.ClaimTransaction(rs.Script, hex.EncodeToString(rawTx), rs.ClaimAddress, rs.Preimage, rs.Key, 3000)
 	if err != nil {
 		s.log.Errorf("boltz.ClaimTransaction(%v, %x, %v, %v, %v): %v", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
 		return fmt.Errorf("walletKitClient.EstimateFee(%v, %x, %v, %v, %v): %w", rawTx, rs.ClaimAddress, rs.Preimage, rs.Key, rs.ClaimFee, err)
@@ -60,7 +60,7 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 	txid := tx.Hash().CloneBytes()
 	confRequest, err = s.breezDB.FetchUnconfirmedClaimTransaction()
 	if err != nil || confRequest == nil || !bytes.Equal(confRequest.Txid, txid) {
-		confRequest := &chainrpc.ConfRequest{
+		confRequest = &chainrpc.ConfRequest{
 			NumConfs:   1,
 			HeightHint: info.BlockHeight,
 			Txid:       txid,
@@ -91,7 +91,7 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) error {
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
-	s.log.Infof("Registering claim transaction notification %#v", confRequest)
+	s.log.Infof("Registering claim transaction notification %v", confRequest.Txid)
 	stream, err := client.RegisterConfirmationsNtfn(ctx, confRequest)
 	if err != nil {
 		s.log.Errorf("client.RegisterConfirmationsNtfn(%#vv): %v", confRequest, err)
@@ -105,6 +105,8 @@ func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) e
 				return
 			}
 			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
+			s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_CONFIRMED,
+				Data: []string{hex.EncodeToString(confEvent.GetConf().RawTx)}})
 			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
 		}
 	}()
