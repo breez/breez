@@ -2,11 +2,14 @@ package bindings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"sync"
 
+	"github.com/breez/boltz"
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
@@ -655,7 +658,19 @@ func NewReverseSwap(request []byte) (string, error) {
 	if err := proto.Unmarshal(request, &swapRequest); err != nil {
 		return "", err
 	}
-	return getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
+	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
+	if err != nil {
+		var badRequest *boltz.BadRequestError
+		if errors.As(err, &badRequest) {
+			err = errors.New(badRequest.Error())
+		} else {
+			var urlError *url.Error
+			if errors.As(err, &urlError) {
+				err = errors.New(urlError.Error())
+			}
+		}
+	}
+	return h, err
 }
 
 func SetReverseSwapClaimFee(request []byte) error {
