@@ -2,11 +2,14 @@ package bindings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"sync"
 
+	"github.com/breez/boltz"
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
@@ -383,16 +386,12 @@ func GetPayments() ([]byte, error) {
 }
 
 /*
-PayBlankInvoice is part of the binding inteface which is delegated to breez.PayBlankInvoice
+SendPaymentForRequest is part of the binding inteface which is delegated to breez.PayBlankInvoice
 */
-func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
+func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	resp, err := getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
-	if err != nil {
-		return nil, err
-	}
-	return marshalResponse(&data.PaymentResponse{PaymentError: resp.PaymentError, TraceReport: resp.TraceReport}, err)
+	return getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
 
 /*
@@ -654,16 +653,53 @@ func WithdrawLnurl(bolt11 string) error {
 	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
 }
 
-func NewReverseSwap(amt int64, claimAddress string) (string, error) {
-	return getBreezApp().SwapService.NewReverseSwap(amt, claimAddress)
+func NewReverseSwap(request []byte) (string, error) {
+	var swapRequest data.ReverseSwapRequest
+	if err := proto.Unmarshal(request, &swapRequest); err != nil {
+		return "", err
+	}
+	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
+	if err != nil {
+		var badRequest *boltz.BadRequestError
+		if errors.As(err, &badRequest) {
+			err = errors.New(badRequest.Error())
+		} else {
+			var urlError *url.Error
+			if errors.As(err, &urlError) {
+				err = errors.New(urlError.Error())
+			}
+		}
+	}
+	return h, err
+}
+
+func SetReverseSwapClaimFee(request []byte) error {
+	var r data.ReverseSwapClaimFee
+	if err := proto.Unmarshal(request, &r); err != nil {
+		return err
+	}
+	return getBreezApp().SwapService.SetReverseSwapClaimFee(r.Hash, r.Fee)
 }
 
 func FetchReverseSwap(hash string) ([]byte, error) {
 	return marshalResponse(getBreezApp().SwapService.FetchReverseSwap(hash))
 }
 
+func ReverseSwapClaimFeeEstimates(claimAddress string) ([]byte, error) {
+	cf, err := getBreezApp().SwapService.ClaimFeeEstimates(claimAddress)
+	return marshalResponse(&data.ClaimFeeEstimates{Fees: cf}, err)
+}
+
 func PayReverseSwap(hash string) error {
 	return getBreezApp().SwapService.PayReverseSwap(hash)
+}
+
+func ReverseSwapPayments() ([]byte, error) {
+	return marshalResponse(getBreezApp().SwapService.ReverseSwapPayments())
+}
+
+func UnconfirmedReverseSwapClaimTransaction() (string, error) {
+	return getBreezApp().SwapService.UnconfirmedReverseSwapClaimTransaction()
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

@@ -18,17 +18,19 @@ func (a *Service) watchCurrentInFlightPayments() error {
 	}
 	for _, p := range paymentsResp.Payments {
 		if p.Status == lnrpc.Payment_IN_FLIGHT {
-			go func() {
-				if err := a.trackInFlightPayment(p.PaymentHash); err != nil {
+			go func(payment lnrpc.Payment) {
+				if err := a.trackInFlightPayment(payment); err != nil {
 					a.log.Errorf("Failed to watch payment %v, error: %v", p.PaymentHash, err)
 				}
-			}()
+			}(*p)
 		}
 	}
 	return nil
 }
 
-func (a *Service) trackInFlightPayment(paymentHash string) error {
+func (a *Service) trackInFlightPayment(payment lnrpc.Payment) error {
+	paymentHash := payment.PaymentHash
+	paymentRequest := payment.PaymentRequest
 	a.log.Infof("trackInFlightPayment started for hash = %v", paymentHash)
 	hashBytes, err := hex.DecodeString(paymentHash)
 	if err != nil {
@@ -54,18 +56,25 @@ func (a *Service) trackInFlightPayment(paymentHash string) error {
 		}
 
 		if paymentStatus.State != routerrpc.PaymentState_IN_FLIGHT {
-			a.notifyPaymentResult(paymentStatus.State == routerrpc.PaymentState_SUCCEEDED, paymentHash)
+			a.notifyPaymentResult(paymentStatus.State == routerrpc.PaymentState_SUCCEEDED, paymentRequest, "", "")
 			a.syncSentPayments()
 		}
 	}
 }
 
-func (a *Service) notifyPaymentResult(succeeded bool, paymentHash string) {
+func (a *Service) notifyPaymentResult(succeeded bool, paymentRequest string, err string, traceReport string) {
 	event := data.NotificationEvent_PAYMENT_FAILED
 	if succeeded {
 		event = data.NotificationEvent_PAYMENT_SUCCEEDED
 	}
+	eventData := []string{paymentRequest}
+	if !succeeded {
+		eventData = append(eventData, err)
+		if traceReport != "" {
+			eventData = append(eventData, traceReport)
+		}
+	}
 	a.onServiceEvent(data.NotificationEvent{
 		Type: event,
-		Data: []string{paymentHash}})
+		Data: eventData})
 }

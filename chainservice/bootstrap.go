@@ -197,6 +197,10 @@ func ensureMinimumTip(db walletdb.DB, bootstrapDir string, startHeader *headerfs
 	// populating all the predefined checpoints
 	for i, ck := range checkpoints {
 		height := uint32(i * wire.CFCheckptInterval)
+		if height > startHeader.Height {
+			break
+		}
+
 		if _, err := headersFile.Seek(int64(height*headerfs.BlockHeaderSize), 0); err != nil {
 			return err
 		}

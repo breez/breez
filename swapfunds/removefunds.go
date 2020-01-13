@@ -39,7 +39,7 @@ func (s *Service) RemoveFund(amount int64, address string) (*data.RemoveFundRepl
 	s.breezDB.AddRedeemablePaymentHash(payreq.PaymentHash)
 
 	s.log.Infof("RemoveFunds: Sending payment...")
-	_, err = s.sendPayment(reply.PaymentRequest, 0)
+	err = s.sendPayment(reply.PaymentRequest, 0)
 	if err != nil {
 		s.log.Errorf("SendPaymentForRequest failed: %v", err)
 		return nil, err

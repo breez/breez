@@ -127,6 +127,10 @@ message NotificationEvent {
         BACKUP_REQUEST = 12;
         PAYMENT_FAILED = 13;
         PAYMENT_SUCCEEDED = 14;
+        REVERSE_SWAP_CLAIM_STARTED = 15;
+        REVERSE_SWAP_CLAIM_SUCCEEDED = 16;
+        REVERSE_SWAP_CLAIM_FAILED = 17;
+        REVERSE_SWAP_CLAIM_CONFIRMED = 18;
     }
 
     NotificationType type = 1;
@@ -298,6 +302,11 @@ message LNUrlWithdraw {
     string default_description = 3;
 }
 
+message ReverseSwapRequest {
+  string address = 1;
+  int64 amount = 2;
+}
+
 message ReverseSwap {
     string id = 1;
     string invoice = 2;
@@ -309,5 +318,23 @@ message ReverseSwap {
     int64 ln_amount = 8;
     int64 onchain_amount = 9;
     int64 timeout_block_height = 10;
+    int64 start_block_height = 11;
+    int64 claim_fee = 12;
 }
 
+message ReverseSwapPaymentStatus {
+    string hash = 1;
+    int32 eta = 3;
+}
+message ReverseSwapPaymentStatuses {
+    repeated ReverseSwapPaymentStatus payments_status = 1;
+}
+
+message ReverseSwapClaimFee {
+    string hash = 1;
+    int64 fee = 2;
+}
+
+message ClaimFeeEstimates {
+    map<int32, int64> fees =1;
+}

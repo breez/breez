@@ -101,40 +101,46 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (*PaymentResponse, error) {
+func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	if err := a.waitChannelActive(); err != nil {
-		return nil, err
+		return err
 	}
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := a.breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
-		return nil, err
+		return err
 	}
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
-	response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
-	if err != nil {
-		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-		a.notifyPaymentResult(false, decodedReq.PaymentHash)
-		return nil, err
-	}
 
-	if len(response.PaymentError) > 0 {
-		a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-		traceReport, err := a.createPaymentTraceReport(paymentRequest, amountSatoshi, response)
+	// At this stage we are ready to send asynchronously the payment through the daemon.
+
+	go func() {
+		response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 		if err != nil {
-			a.log.Errorf("failed to create trace report for failed payment %v", err)
+			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
+			a.notifyPaymentResult(false, paymentRequest, err.Error(), "")
+			return
 		}
-		a.notifyPaymentResult(false, decodedReq.PaymentHash)
-		return &PaymentResponse{PaymentError: response.PaymentError, TraceReport: traceReport}, nil
-	}
-	a.log.Infof("sendPaymentForRequest finished successfully")
-	a.notifyPaymentResult(true, decodedReq.PaymentHash)
-	a.syncSentPayments()
-	return &PaymentResponse{PaymentError: ""}, nil
+
+		if len(response.PaymentError) > 0 {
+			a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
+			traceReport, err := a.createPaymentTraceReport(paymentRequest, amountSatoshi, response)
+			if err != nil {
+				a.log.Errorf("failed to create trace report for failed payment %v", err)
+			}
+			a.notifyPaymentResult(false, paymentRequest, response.PaymentError, traceReport)
+			return
+		}
+		a.log.Infof("sendPaymentForRequest finished successfully")
+		a.notifyPaymentResult(true, paymentRequest, "", "")
+		a.syncSentPayments()
+	}()
+
+	return nil
 }
 
 /*
@@ -463,7 +469,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		payReqBytes, err := a.breezDB.FetchPaymentRequest(string(htlc.HashLock))
+		payReqBytes, err := a.breezDB.FetchPaymentRequest(hex.EncodeToString(htlc.HashLock))
 		if err != nil {
 			a.log.Errorf("createPendingPayment - failed to call fetchPaymentRequest %v", err)
 			return nil, err

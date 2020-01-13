@@ -3,7 +3,6 @@ package swapfunds
 import (
 	"sync"
 
-	"github.com/breez/breez/account"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
@@ -25,7 +24,7 @@ type Service struct {
 	daemonAPI      lnnode.API
 	breezAPI       services.API
 	chainParams    *chaincfg.Params
-	sendPayment    func(payreq string, amount int64) (*account.PaymentResponse, error)
+	sendPayment    func(payreq string, amount int64) error
 	onServiceEvent func(data.NotificationEvent)
 	quitChan       chan struct{}
 }
@@ -35,7 +34,7 @@ func NewService(
 	breezDB *db.DB,
 	breezAPI services.API,
 	daemonAPI lnnode.API,
-	sendPayment func(payreq string, amount int64) (*account.PaymentResponse, error),
+	sendPayment func(payreq string, amount int64) error,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
