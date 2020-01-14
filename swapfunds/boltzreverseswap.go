@@ -263,7 +263,7 @@ func (s *Service) SetReverseSwapClaimFee(hash string, fee int64) error {
 	return nil
 }
 
-func (s *Service) PayReverseSwap(hash string) error {
+func (s *Service) PayReverseSwap(hash, deviceID string) error {
 	rs, err := s.breezDB.FetchReverseSwap(hash)
 	if err != nil {
 		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)

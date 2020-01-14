@@ -322,6 +322,11 @@ message ReverseSwap {
     int64 claim_fee = 12;
 }
 
+message ReverseSwapPaymentRequest {
+    string hash = 1;
+    string device_id = 2;
+}
+
 message ReverseSwapPaymentStatus {
     string hash = 1;
     int32 eta = 3;

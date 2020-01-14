@@ -7,6 +7,7 @@ require (
 	github.com/deadsy/go-cli v0.0.0-20191117003156-1fbe7fd20d78
 	github.com/golang/protobuf v1.3.1
 	github.com/lightningnetwork/lnd v0.8.0-beta-rc3.0.20191221022352-72a49d486ae4
+	github.com/tidwall/gjson v1.3.5 // indirect
 )
 
 replace (

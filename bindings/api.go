@@ -690,8 +690,12 @@ func ReverseSwapClaimFeeEstimates(claimAddress string) ([]byte, error) {
 	return marshalResponse(&data.ClaimFeeEstimates{Fees: cf}, err)
 }
 
-func PayReverseSwap(hash string) error {
-	return getBreezApp().SwapService.PayReverseSwap(hash)
+func PayReverseSwap(request []byte) error {
+	var r data.ReverseSwapPaymentRequest
+	if err := proto.Unmarshal(request, &r); err != nil {
+		return err
+	}
+	return getBreezApp().SwapService.PayReverseSwap(r.Hash, r.DeviceId)
 }
 
 func ReverseSwapPayments() ([]byte, error) {

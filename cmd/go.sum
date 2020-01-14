@@ -32,6 +32,7 @@ github.com/breez/boltz v0.0.0-20200112184656-1f88898f12e7 h1:9bKgzhSClW8bmeXeegJ
 github.com/breez/boltz v0.0.0-20200112184656-1f88898f12e7/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
 github.com/breez/boltz v0.0.0-20200113092946-97ea5d6b6e8d h1:rSHcwi6dTIW7pGeJomNJOL0S3KoJ3kjZ2NEZQA0cumE=
 github.com/breez/boltz v0.0.0-20200113092946-97ea5d6b6e8d/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
+github.com/breez/breez/cmd v0.0.0-20200102185928-aedf95f696d5/go.mod h1:KQC/D0gJXfkpr4hPFGxlGhpJpo6Dd9pkAd1Pst4nI/Q=
 github.com/breez/btcwallet v0.10.1-0.20191121081139-3f579e0a038c h1:bJXiphd+OJvcZNRW7FnV3qFqF6h3iW5TWu2R6IYqRNo=
 github.com/breez/btcwallet v0.10.1-0.20191121081139-3f579e0a038c/go.mod h1:4TqBEuceheGNdeLNrelliLHJzmXauMM2vtWfuy1pFiM=
 github.com/breez/btcwallet/walletdb v1.1.1-0.20191121081139-3f579e0a038c h1:KeM/TF9PdyKqIs1FH0IQkDicr++B6R/+gHz0SABOWc0=
