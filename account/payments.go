@@ -12,10 +12,13 @@ import (
 
 	"time"
 
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lntypes"
 )
 
 const (
@@ -427,6 +430,13 @@ func (a *Service) syncSentPayments() error {
 
 func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 	var payments []*db.PaymentInfo
+	chanDB, chanDBCleanUp, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		a.log.Errorf("channeldbservice.Get(%v): %v", a.cfg.WorkingDir, err)
+		return nil, fmt.Errorf("channeldbservice.Get(%v): %w", a.cfg.WorkingDir, err)
+	}
+	defer chanDBCleanUp()
+	paymentControl := channeldb.NewPaymentControl(chanDB)
 	lnclient := a.daemonAPI.APIClient()
 	if a.daemonRPCReady() {
 		channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -441,7 +451,7 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 
 		for _, ch := range channelsRes.Channels {
 			for _, htlc := range ch.PendingHtlcs {
-				pendingItem, err := a.createPendingPayment(htlc, chainInfo.BlockHeight)
+				pendingItem, err := a.createPendingPayment(htlc, chainInfo.BlockHeight, paymentControl)
 				if err != nil {
 					return nil, err
 				}
@@ -453,14 +463,16 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 	return payments, nil
 }
 
-func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32) (*db.PaymentInfo, error) {
+func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32, pc *channeldb.PaymentControl) (*db.PaymentInfo, error) {
 	paymentType := db.SentPayment
 	if htlc.Incoming {
 		paymentType = db.ReceivedPayment
 	}
 
 	var paymentRequest string
+	var pendingPayment *channeldb.Payment
 	lnclient := a.daemonAPI.APIClient()
+
 	if htlc.Incoming {
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
 		if err != nil {
@@ -475,6 +487,11 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 			return nil, err
 		}
 		paymentRequest = string(payReqBytes)
+		pHash, err := lntypes.MakeHash(htlc.HashLock)
+		if err != nil {
+			return nil, err
+		}
+		pendingPayment, err = pc.FetchPayment(pHash)
 	}
 
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
@@ -505,7 +522,11 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		paymentData.TransferRequest = invoiceMemo.TransferRequest
 		paymentData.PaymentHash = decodedReq.PaymentHash
 		paymentData.Destination = decodedReq.Destination
-		paymentData.CreationTimestamp = decodedReq.Timestamp
+		if pendingPayment != nil {
+			paymentData.CreationTimestamp = decodedReq.Timestamp
+			paymentData.Amount = int64(pendingPayment.Info.Value.ToSatoshis())
+			paymentData.CreationTimestamp = pendingPayment.Info.CreationDate.Unix()
+		}
 	}
 
 	return paymentData, nil
