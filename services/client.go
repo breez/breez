@@ -65,6 +65,14 @@ func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, con
 	return breezservice.NewChannelOpenerClient(con), ctx, cancel
 }
 
+//NewPushTxNotifierClient creates a new PushTxNotifierClient
+func (c *Client) NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc) {
+	con := c.getBreezClientConnection()
+	c.log.Infof("NewPushTxNotifierClient - connection state = %v", con.GetState())
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	return breezservice.NewPushTxNotifierClient(con), ctx, cancel
+}
+
 func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 	c.log.Infof("getBreezClientConnection - before Ping;")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

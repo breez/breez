@@ -50,6 +50,10 @@ service SyncNotifier {
   rpc RegisterPeriodicSync(RegisterPeriodicSyncRequest) returns (RegisterPeriodicSyncResponse) {}
 }
 
+service PushTxNotifier {
+  rpc RegisterTxNotification(PushTxNotificationRequest) returns (PushTxNotificationResponse) {}
+}
+
 message RatesRequest {}
 message Rate {
   string coin = 1;
@@ -278,3 +282,21 @@ message RegisterPeriodicSyncRequest {
 }
 
 message RegisterPeriodicSyncResponse {}
+
+message BoltzReverseSwapLockupTx {
+  string boltz_id = 1;
+  uint32 timeout_block_height = 2;
+}
+message PushTxNotificationRequest {
+  string device_id = 1;
+  string title = 2;
+  string body = 3;
+  bytes tx_hash = 4;
+  bytes script = 5;
+  uint32 block_height_hint = 6;
+  oneof info {
+    BoltzReverseSwapLockupTx boltz_reverse_swap_lockup_tx_info = 7;
+  }
+}
+message PushTxNotificationResponse {
+}
