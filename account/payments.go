@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -285,6 +286,19 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 	}
 	invoiceMemo := a.extractMemo(decodedPayReq)
 	return invoiceMemo, nil
+}
+
+func (a *Service) GetPaymentRequestHash(paymentRequest string) (string, error) {
+	lnclient := a.daemonAPI.APIClient()
+	if lnclient == nil {
+		return "", errors.New("daemon is not ready")
+	}
+	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	if err != nil {
+		a.log.Errorf("DecodePaymentRequest error: %v", err)
+		return "", err
+	}
+	return decodedPayReq.PaymentHash, nil
 }
 
 /*

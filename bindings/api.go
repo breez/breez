@@ -418,6 +418,13 @@ func DecodePaymentRequest(paymentRequest string) ([]byte, error) {
 }
 
 /*
+GetPaymentRequestHash is part of the binding inteface which is delegated to breez.GetPaymentRequestHash
+*/
+func GetPaymentRequestHash(paymentRequest string) (string, error) {
+	return getBreezApp().AccountService.GetPaymentRequestHash(paymentRequest)
+}
+
+/*
 GetRelatedInvoice is part of the binding inteface which is delegated to breez.GetRelatedInvoice
 */
 func GetRelatedInvoice(paymentRequest string) ([]byte, error) {
