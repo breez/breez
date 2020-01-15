@@ -320,6 +320,7 @@ message ReverseSwap {
     int64 timeout_block_height = 10;
     int64 start_block_height = 11;
     int64 claim_fee = 12;
+    string claim_txid = 13;
 }
 
 message ReverseSwapPaymentRequest {
