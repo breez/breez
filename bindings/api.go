@@ -695,7 +695,12 @@ func PayReverseSwap(request []byte) error {
 	if err := proto.Unmarshal(request, &r); err != nil {
 		return err
 	}
-	return getBreezApp().SwapService.PayReverseSwap(r.Hash, r.DeviceId)
+	return getBreezApp().SwapService.PayReverseSwap(
+		r.Hash,
+		r.PushNotificationDetails.DeviceId,
+		r.PushNotificationDetails.Title,
+		r.PushNotificationDetails.Body,
+	)
 }
 
 func ReverseSwapPayments() ([]byte, error) {

@@ -314,7 +314,7 @@ message ReverseSwap {
     string lockup_address = 4;
     string preimage = 5;
     string key = 6;
-    string claimAddress = 7;
+    string claim_address = 7;
     int64 ln_amount = 8;
     int64 onchain_amount = 9;
     int64 timeout_block_height = 10;
@@ -324,7 +324,13 @@ message ReverseSwap {
 
 message ReverseSwapPaymentRequest {
     string hash = 1;
-    string device_id = 2;
+    PushNotificationDetails push_notification_details = 2;
+}
+
+message PushNotificationDetails {
+    string device_id = 1;
+    string title = 2;
+    string body = 3;
 }
 
 message ReverseSwapPaymentStatus {

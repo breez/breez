@@ -1,7 +1,7 @@
 module github.com/breez/breez
 
 require (
-	github.com/breez/boltz v0.0.0-20200113092946-97ea5d6b6e8d
+	github.com/breez/boltz v0.0.0-20200114203444-0c01ddb93028
 	github.com/breez/breez/cmd v0.0.0-20200102185928-aedf95f696d5 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f

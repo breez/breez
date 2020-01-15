@@ -131,9 +131,14 @@ var cmdPayReverseSwap = cli.Leaf{
 			fmt.Println("need the hash of a payment preimage!")
 			return
 		}
-		req, err := proto.Marshal(&data.ReverseSwapPaymentRequest{Hash: args[0], DeviceId: "<NA>"})
+		pr := data.ReverseSwapPaymentRequest{
+			Hash: args[0],
+			PushNotificationDetails: &data.PushNotificationDetails{
+				DeviceId: "<NA>", Title: "", Body: ""},
+		}
+		req, err := proto.Marshal(&pr)
 		if err != nil {
-			fmt.Println(fmt.Errorf("proto.Marshal(%#v): %w", data.ReverseSwapPaymentRequest{Hash: args[0], DeviceId: "<NA>"}, err))
+			fmt.Println(fmt.Errorf("proto.Marshal(%#v): %w", pr, err))
 			return
 		}
 		err = bindings.PayReverseSwap(req)

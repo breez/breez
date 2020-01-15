@@ -158,11 +158,11 @@ func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error
 func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	a, err := btcutil.DecodeAddress(rs.LockupAddress, s.chainParams)
 	if err != nil {
-		return fmt.Errorf("btcutil.DecodeAddress(%v) %v", rs.LockupAddress, err)
+		return fmt.Errorf("btcutil.DecodeAddress(%v) %w", rs.LockupAddress, err)
 	}
 	script, err := txscript.PayToAddrScript(a)
 	if err != nil {
-		return fmt.Errorf("txscript.PayToAddrScript(%v) %v", a, err)
+		return fmt.Errorf("txscript.PayToAddrScript(%v) %w", a, err)
 	}
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -263,7 +263,7 @@ func (s *Service) SetReverseSwapClaimFee(hash string, fee int64) error {
 	return nil
 }
 
-func (s *Service) PayReverseSwap(hash, deviceID string) error {
+func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	rs, err := s.breezDB.FetchReverseSwap(hash)
 	if err != nil {
 		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
