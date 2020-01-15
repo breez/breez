@@ -56,8 +56,15 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("btcutil.NewTxFromBytes(%v): %v", txHex, err)
 		return fmt.Errorf("btcutil.NewTxFromBytes(%v): %w", txHex, err)
 	}
-	var confRequest *chainrpc.ConfRequest
+
 	txid := tx.Hash().CloneBytes()
+	rs.ClaimTxid = tx.Hash().String()
+	_, err = s.breezDB.SaveReverseSwap(rs)
+	if err != nil {
+		s.log.Errorf("breezDB.SaveReverseSwap(%#v): %v", rs, err)
+	}
+
+	var confRequest *chainrpc.ConfRequest
 	confRequest, err = s.breezDB.FetchUnconfirmedClaimTransaction()
 	if err != nil || confRequest == nil || !bytes.Equal(confRequest.Txid, txid) {
 		confRequest = &chainrpc.ConfRequest{
