@@ -584,6 +584,14 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		Preimage:          paymentItem.PaymentPreimage,
 	}
 
+	swap, err := a.breezDB.FetchReverseSwap(decodedReq.PaymentHash)
+	if err != nil {
+		return err
+	}
+	if swap != nil {
+		paymentData.RedeemTxID = swap.ClaimTxid
+	}
+
 	err = a.breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
 	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_PAYMENT_SENT})
 	a.onAccountChanged()
