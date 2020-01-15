@@ -102,6 +102,7 @@ func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) e
 	stream, err := client.RegisterConfirmationsNtfn(ctx, confRequest)
 	if err != nil {
 		s.log.Errorf("client.RegisterConfirmationsNtfn(%#vv): %v", confRequest, err)
+		cancel()
 		return fmt.Errorf("client.RegisterConfirmationsNtfn(%#v): %w", confRequest, err)
 	}
 	go func() {
@@ -183,6 +184,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	})
 	if err != nil {
 		s.log.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %v", startHeight, script, err)
+		cancel()
 		return fmt.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %w", startHeight, script, err)
 	}
 	//fmt.Printf("Register: %#v\n", rs)
