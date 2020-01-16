@@ -19,7 +19,7 @@ func Drop(workingDir string) error {
 		return err
 	}
 
-	db, err := channeldb.Open(path.Join(workingDir, "data/chain/bitcoin/", cfg.Network, "channel.db"))
+	db, err := channeldb.Open(path.Join(workingDir, "data/graph/", cfg.Network))
 	if err != nil {
 		return err
 	}
