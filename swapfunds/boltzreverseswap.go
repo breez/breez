@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/breez/boltz"
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -102,6 +103,7 @@ func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) e
 	stream, err := client.RegisterConfirmationsNtfn(ctx, confRequest)
 	if err != nil {
 		s.log.Errorf("client.RegisterConfirmationsNtfn(%#vv): %v", confRequest, err)
+		cancel()
 		return fmt.Errorf("client.RegisterConfirmationsNtfn(%#v): %w", confRequest, err)
 	}
 	go func() {
@@ -162,6 +164,35 @@ func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error
 	return fees, nil
 }
 
+func (s *Service) remoteSubscribeLockupNotification(deviceID, title, body, boltzID string, lockupAddress string, heightHint int64, timeoutBlockHeight int64) error {
+	a, err := btcutil.DecodeAddress(lockupAddress, s.chainParams)
+	if err != nil {
+		return fmt.Errorf("btcutil.DecodeAddress(%v) %w", lockupAddress, err)
+	}
+	script, err := txscript.PayToAddrScript(a)
+	if err != nil {
+		return fmt.Errorf("txscript.PayToAddrScript(%v) %w", a, err)
+	}
+
+	c, ctx, cancel := s.breezAPI.NewPushTxNotifierClient()
+	defer cancel()
+	_, err = c.RegisterTxNotification(ctx, &breezservice.PushTxNotificationRequest{
+		DeviceId:        deviceID,
+		Title:           title,
+		Body:            body,
+		TxHash:          lntypes.ZeroHash[:],
+		Script:          script,
+		BlockHeightHint: uint32(heightHint),
+		Info: &breezservice.PushTxNotificationRequest_BoltzReverseSwapLockupTxInfo{
+			BoltzReverseSwapLockupTxInfo: &breezservice.BoltzReverseSwapLockupTx{
+				BoltzId:            boltzID,
+				TimeoutBlockHeight: uint32(timeoutBlockHeight),
+			},
+		},
+	})
+	return err
+}
+
 func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	a, err := btcutil.DecodeAddress(rs.LockupAddress, s.chainParams)
 	if err != nil {
@@ -183,6 +214,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	})
 	if err != nil {
 		s.log.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %v", startHeight, script, err)
+		cancel()
 		return fmt.Errorf("client.RegisterConfirmationsNtfn(%v, %x): %w", startHeight, script, err)
 	}
 	//fmt.Printf("Register: %#v\n", rs)
@@ -290,6 +322,10 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	err = s.subscribeLockupScript(rs)
 	if err != nil {
 		return fmt.Errorf("s.subscribeLockupScript(%v): %w", rs, err)
+	}
+	err = s.remoteSubscribeLockupNotification(deviceID, title, body, rs.Id, rs.LockupAddress, rs.StartBlockHeight, rs.TimeoutBlockHeight)
+	if err != nil {
+		s.log.Errorf("s.remoteSubscribeLockupNotification(%v, %v, %v, %v, %v, %v): %v", deviceID, title, body, rs.Id, rs.LockupAddress, rs.StartBlockHeight, err)
 	}
 	return nil
 }
