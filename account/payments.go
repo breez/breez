@@ -590,6 +590,8 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 	}
 	if swap != nil {
 		paymentData.RedeemTxID = swap.ClaimTxid
+		paymentData.Amount = swap.OnchainAmount - swap.ClaimFee
+		paymentData.Fee += paymentItem.Value - swap.OnchainAmount + swap.ClaimFee
 	}
 
 	err = a.breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
