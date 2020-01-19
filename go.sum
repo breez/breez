@@ -35,6 +35,8 @@ github.com/breez/boltz v0.0.0-20200113092946-97ea5d6b6e8d h1:rSHcwi6dTIW7pGeJomN
 github.com/breez/boltz v0.0.0-20200113092946-97ea5d6b6e8d/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
 github.com/breez/boltz v0.0.0-20200114203444-0c01ddb93028 h1:yrYmL71SIlL5z+1A64qexe6jGR+2eCI6nz4qizX95po=
 github.com/breez/boltz v0.0.0-20200114203444-0c01ddb93028/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
+github.com/breez/boltz v0.0.0-20200119185805-55a3911c6eb9 h1:ZZ3RTVAx2Vi7c2uNqYelGZzbvYivowXs1XKoyOcDFoY=
+github.com/breez/boltz v0.0.0-20200119185805-55a3911c6eb9/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
 github.com/breez/breez v0.0.0-20191222101539-d9f37e24beee/go.mod h1:vLjlLTw77vaHRByQbfiFBOxZNVKxUtDOe6O1As2S0rk=
 github.com/breez/breez/cmd v0.0.0-20200102185928-aedf95f696d5 h1:NxD4kAmNSUqnSsi7xz8ageSphy3IKXPKhz2WU3adC9k=
 github.com/breez/breez/cmd v0.0.0-20200102185928-aedf95f696d5/go.mod h1:KQC/D0gJXfkpr4hPFGxlGhpJpo6Dd9pkAd1Pst4nI/Q=

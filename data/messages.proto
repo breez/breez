@@ -323,6 +323,18 @@ message ReverseSwap {
     string claim_txid = 13;
 }
 
+message ReverseSwapFees {
+    double percentage = 1;
+    int64 lockup = 2;
+    int64 claim = 3;
+}
+
+message ReverseSwapInfo {
+    int64 min = 1;
+    int64 max = 2;
+    ReverseSwapFees fees = 3;
+}
+
 message ReverseSwapPaymentRequest {
     string hash = 1;
     PushNotificationDetails push_notification_details = 2;

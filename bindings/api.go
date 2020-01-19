@@ -680,6 +680,17 @@ func NewReverseSwap(request []byte) (string, error) {
 	return h, err
 }
 
+func ReverseSwapInfo() ([]byte, error) {
+	rsi, err := boltz.GetReverseSwapInfo()
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(&data.ReverseSwapInfo{
+		Min: rsi.Min, Max: rsi.Max, Fees: &data.ReverseSwapFees{
+			Percentage: rsi.Fees.Percentage, Lockup: rsi.Fees.Lockup, Claim: rsi.Fees.Claim},
+	})
+}
+
 func SetReverseSwapClaimFee(request []byte) error {
 	var r data.ReverseSwapClaimFee
 	if err := proto.Unmarshal(request, &r); err != nil {
