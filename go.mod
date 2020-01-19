@@ -21,6 +21,7 @@ require (
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20200116001909-b77594299b42 // indirect
 	google.golang.org/api v0.13.0
 	google.golang.org/grpc v1.20.1
 	gopkg.in/macaroon.v2 v2.0.0
@@ -33,8 +34,8 @@ replace (
 	github.com/btcsuite/btcwallet v0.10.0 => github.com/breez/btcwallet v0.10.1-0.20191121081139-3f579e0a038c
 	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.1.1-0.20191121081139-3f579e0a038c
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c
-	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.0.0-20200101072538-ad946ae712fe
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.10.1-0.20200116143640-44a93ea4c06a
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.8.0-beta-rc3.0.20200116133631-c9a52c9af49a
 )
 
 go 1.12
