@@ -148,6 +148,7 @@ func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return "", nil, err
 	}
+	purgeOversizeFilters(neutrinoDB)
 
 	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	return neutrinoDataDir, db, err
