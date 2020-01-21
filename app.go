@@ -12,6 +12,7 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
+	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
@@ -162,6 +163,15 @@ func (a *App) watchDaemonEvents() error {
 				if a.lnDaemon.HasActiveChannel() {
 					go a.ensureSafeToRunNode()
 				}
+			case lnnode.ChainSyncedEvent:
+				chainService, cleanupFn, err := chainservice.Get(a.cfg.WorkingDir, a.breezDB)
+				if err != nil {
+					a.log.Errorf("failed to get chain service on sync event")
+					break
+				}
+				err = chainService.FilterDB.PurgeFilters(filterdb.RegularFilter)
+				a.log.Errorf("purge compact filters finished error = %v", err)
+				cleanupFn()
 			}
 		case <-client.Quit():
 			return nil
