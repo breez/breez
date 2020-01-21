@@ -96,6 +96,8 @@ github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335 h1:vA6MyZVCHKFdRyij
 github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335/go.mod h1:vzLU75ll8qbRJIzW5dvK/UXtR9c2FecJ6VNOM8chyVM=
 github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78 h1:cNfpI+1PIM8PuWzT1lwUox+I1y15Wj7GDkMGPcVhntU=
 github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
+github.com/breez/neutrino v0.0.0-20200121095351-60bf3b6b810e h1:C4lO3aLmeTGmst0dScRRCYrHbUzC/XmB3rJgXhSnr7E=
+github.com/breez/neutrino v0.0.0-20200121095351-60bf3b6b810e/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78 h1:OogFYBfD77g3z6+MNnq2QVMx6YhPfyTK+chfTCzgHX0=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a h1:b3Ll7sd4/9zzAC86Qk0Aa3rmmkI2TZmj88D/7led7w4=
@@ -282,6 +284,8 @@ github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/tidwall/gjson v1.3.5 h1:2oW9FBNu8qt9jy5URgrzsVx/T/KSn3qn/smJQ0crlDQ=
 github.com/tidwall/gjson v1.3.5/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
+github.com/tidwall/gjson v1.4.0 h1:w6iOJZt9BJOzz4VD9CSnRCX/oleCsAZWi+1FFzZA+SA=
+github.com/tidwall/gjson v1.4.0/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/match v1.0.1 h1:PnKP62LPNxHKTwvHHZZzdOAOCtsJTjo6dZLCwpKm5xc=
 github.com/tidwall/match v1.0.1/go.mod h1:LujAq0jyVjBy028G1WhWfIzbpQfMO8bBZ6Tyb0+pL9E=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=

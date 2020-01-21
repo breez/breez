@@ -212,6 +212,18 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 	}
 	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
 
+	f, err := os.Stat(neutrinoDB)
+	if err == nil && f.Size() > 150000000 {
+		logger.Infof("compacting neutrino file size = %v", f.Size())
+		if err := deleteCompactFilters(neutrinoDB); err != nil {
+			logger.Errorf("Error in deleting compact filters %v", err)
+		}
+		f, err := os.Stat(neutrinoDB)
+		if err == nil {
+			logger.Infof("after compacting neutrino new size = %v", f.Size())
+		}
+	}
+
 	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	if err != nil {
 		return nil, nil, err
