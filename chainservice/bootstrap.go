@@ -31,22 +31,7 @@ var (
 func ResetChainService(workingDir string) error {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
-	config, err := config.GetConfig(workingDir)
-	if err != nil {
-		return err
-	}
-	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	if err = os.Remove(path.Join(neutrinoDataDir, "neutrino.db")); err != nil {
-		return err
-	}
-	if err = os.Remove(path.Join(neutrinoDataDir, "reg_filter_headers.bin")); err != nil {
-		return err
-	}
-	if err = os.Remove(path.Join(neutrinoDataDir, "block_headers.bin")); err != nil {
-		return err
-	}
-
-	return nil
+	return resetChainService(workingDir)
 }
 
 // Bootstrapped returns true if bootstrap was done, fals otherwise.
@@ -97,6 +82,7 @@ func Bootstrap(workingDir string) error {
 		logger.Info("Chain service already created, already bootstrapped")
 		return nil
 	}
+	ensureNeutrinoSize(workingDir)
 
 	bootstrapped, err := Bootstrapped(workingDir)
 	if err != nil {
@@ -136,22 +122,6 @@ func Bootstrap(workingDir string) error {
 	}
 
 	return nil
-}
-
-func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
-	config, err := config.GetConfig(workingDir)
-	if err != nil {
-		return "", nil, err
-	}
-	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
-	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
-		return "", nil, err
-	}
-	purgeOversizeFilters(neutrinoDB)
-
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
-	return neutrinoDataDir, db, err
 }
 
 // getLatestCheckpoint returns the latest checkpoint that is mined before the
