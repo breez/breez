@@ -10,21 +10,28 @@ const (
 	txMaxSize = 65536
 )
 
-func purgeOversizeFilters(neutrinoFile string) {
+func purgeOversizeFilters(neutrinoFile string) error {
 	f, err := os.Stat(neutrinoFile)
-	if err == nil {
-		logger.Infof("neutrino file size = %v", f.Size())
+	if os.IsNotExist(err) {
+		return nil
 	}
-	if err == nil && f.Size() > 150000000 {
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("neutrino file size = %v", f.Size())
+	if f.Size() > 150000000 {
 		logger.Infof("compacting neutrino file size = %v", f.Size())
 		if err := deleteCompactFilters(neutrinoFile); err != nil {
 			logger.Errorf("Error in deleting compact filters %v", err)
+			return err
 		}
 		f, err := os.Stat(neutrinoFile)
 		if err == nil {
 			logger.Infof("after compacting neutrino new size = %v", f.Size())
 		}
 	}
+	return nil
 }
 
 func deleteCompactFilters(neutrinoFile string) error {

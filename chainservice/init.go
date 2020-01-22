@@ -203,18 +203,9 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 		return nil, nil, err
 	}
 
-	//if neutrino directory or wallet directory do not exit then
-	//We exit silently.
-	dataPath := strings.Replace(directoryPattern, "{{network}}", cfg.Network, -1)
-	neutrinoDataDir := path.Join(workingDir, dataPath)
-	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
-		return nil, nil, err
-	}
-	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
+	ensureNeutrinoSize(workingDir)
 
-	purgeOversizeFilters(neutrinoDB)
-
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -227,4 +218,55 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
 	return chainService, db, err
+}
+
+func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return "", nil, err
+	}
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
+	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
+		return "", nil, err
+	}
+
+	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	return neutrinoDataDir, db, err
+}
+
+func ensureNeutrinoSize(workingDir string) error {
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return err
+	}
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
+	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
+	if err := purgeOversizeFilters(neutrinoDB); err != nil {
+		logger.Errorf("failed to purgeOversizeFilters %v, moving to reset chain service", err)
+		if err := resetChainService(workingDir); err != nil {
+			logger.Errorf("failed to reset chain service %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func resetChainService(workingDir string) error {
+	config, err := config.GetConfig(workingDir)
+	if err != nil {
+		return err
+	}
+	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
+	if err = os.Remove(path.Join(neutrinoDataDir, "neutrino.db")); err != nil {
+		logger.Errorf("failed to remove neutrino.db %v", err)
+	}
+	if err = os.Remove(path.Join(neutrinoDataDir, "reg_filter_headers.bin")); err != nil {
+		logger.Errorf("failed to remove reg_filter_headers.bin %v", err)
+	}
+	if err = os.Remove(path.Join(neutrinoDataDir, "block_headers.bin")); err != nil {
+		logger.Errorf("failed to remove block_headers.bin %v", err)
+	}
+
+	return nil
 }
