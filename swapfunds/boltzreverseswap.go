@@ -21,6 +21,27 @@ import (
 	"github.com/lightningnetwork/lnd/lntypes"
 )
 
+func (s *Service) lockupOutScript(lockupAddress string, rawTx []byte) ([]byte, error) {
+	tx, err := btcutil.NewTxFromBytes(rawTx)
+	if err != nil {
+		return nil, fmt.Errorf("btcutil.NewTxFromBytes(%x): %w", rawTx, err)
+	}
+	//var out *wire.OutPoint
+	//var amt btcutil.Amount
+	var script []byte
+	for _, txout := range tx.MsgTx().TxOut {
+		class, addresses, requiredsigs, err := txscript.ExtractPkScriptAddrs(txout.PkScript, s.chainParams)
+		if err != nil {
+			return nil, fmt.Errorf("txscript.ExtractPkScriptAddrs(%x) %w", txout.PkScript, err)
+		}
+		if class == txscript.WitnessV0ScriptHashTy && requiredsigs == 1 &&
+			len(addresses) == 1 && addresses[0].EncodeAddress() == lockupAddress {
+			script = txout.PkScript
+		}
+	}
+	return script, nil
+}
+
 func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 	lnClient := s.daemonAPI.APIClient()
 	if lnClient == nil {
@@ -83,6 +104,21 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 	if err != nil {
 		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
 	}
+
+	var spendRequest *chainrpc.SpendRequest
+	outScript, err := s.lockupOutScript(rs.LockupAddress, rawTx)
+	if err != nil {
+		s.log.Errorf("lockupOutScript(%v, %x): %v", rs.LockupAddress, rawTx, err)
+	}
+	spendRequest = &chainrpc.SpendRequest{
+		Script:     outScript,
+		HeightHint: confRequest.HeightHint,
+	}
+	err = s.subscribeSpendTransaction(spendRequest)
+	if err != nil {
+		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
+	}
+
 	walletKitClient := s.daemonAPI.WalletKitClient()
 	pr, err := walletKitClient.PublishTransaction(context.Background(), &walletrpc.Transaction{TxHex: txHex})
 	if err != nil {
@@ -93,6 +129,35 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("walletKitClient.PublishTransaction(%x): %v", txHex, pr.PublishError)
 		return fmt.Errorf("walletKitClient.PublishTransaction(%x): %v", txHex, pr.PublishError)
 	}
+	return nil
+}
+
+func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest) error {
+	client := s.daemonAPI.ChainNotifierClient()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.log.Infof("Registering spend notification %x", spendRequest.Script)
+	stream, err := client.RegisterSpendNtfn(ctx, spendRequest)
+	if err != nil {
+		s.log.Errorf("client.RegisterSpendNtfn(%#v): %v", spendRequest, err)
+		cancel()
+		return fmt.Errorf("client.RegisterSpendNtfn(%#v): %w", spendRequest, err)
+	}
+	go func() {
+		for {
+			SpendEvent, err := stream.Recv()
+			if err != nil {
+				s.log.Criticalf("Failed to receive an event : %v", err)
+				return
+			}
+			s.log.Infof("spendEvent: %#v; rawTX:%x", SpendEvent.GetSpend(), SpendEvent.GetSpend().RawSpendingTx)
+			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
+		}
+	}()
+	go func() {
+		<-s.quitChan
+		s.log.Infof("Canceling subscription")
+		cancel()
+	}()
 	return nil
 }
 

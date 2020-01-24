@@ -1,7 +1,7 @@
 module github.com/breez/breez
 
 require (
-	github.com/breez/boltz v0.0.0-20200119185805-55a3911c6eb9
+	github.com/breez/boltz v0.0.0-20200125173807-d4eb28eda0f7
 	github.com/breez/breez/cmd v0.0.0-20200102185928-aedf95f696d5 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
@@ -19,6 +19,7 @@ require (
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.4.0 // indirect
 	github.com/urfave/cli v1.18.0
+	golang.org/x/mobile v0.0.0-20200123024942-82c397c4c527 // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
