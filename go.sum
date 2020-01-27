@@ -101,6 +101,8 @@ github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78 h1:cNfpI+1PIM8PuWzT
 github.com/breez/neutrino v0.0.0-20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.0.0-20200121095351-60bf3b6b810e h1:C4lO3aLmeTGmst0dScRRCYrHbUzC/XmB3rJgXhSnr7E=
 github.com/breez/neutrino v0.0.0-20200121095351-60bf3b6b810e/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
+github.com/breez/neutrino v0.0.0-20200127114934-f8266b64c9f4 h1:uNPJCEQ4o+dS3WgX85m7lpFv1dPCT4pR69SPN/CGNtY=
+github.com/breez/neutrino v0.0.0-20200127114934-f8266b64c9f4/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78 h1:OogFYBfD77g3z6+MNnq2QVMx6YhPfyTK+chfTCzgHX0=
 github.com/breez/neutrino v0.10.1-0.20191029090218-7acdb874aa78/go.mod h1:C3KhCMk1Mcx3j8v0qRVWM1Ow6rIJSvSPnUAq00ZNAfk=
 github.com/breez/neutrino v0.10.1-0.20191121084819-28462a8edb3a h1:b3Ll7sd4/9zzAC86Qk0Aa3rmmkI2TZmj88D/7led7w4=
