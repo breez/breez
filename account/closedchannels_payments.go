@@ -45,7 +45,7 @@ func (a *Service) syncClosedChannels() error {
 
 func (a *Service) onWaitingClosedChannel(waitingClose *lnrpc.PendingChannelsResponse_WaitingCloseChannel) error {
 	a.log.Infof("onWaitingClosedChannel %v", waitingClose.Channel.ChannelPoint)
-	if waitingClose.LimboBalance == 0 {
+	if waitingClose.Channel.LocalBalance == 0 {
 		a.log.Infof("closed channel skipped due to zero amount")
 		return nil
 	}
@@ -53,7 +53,7 @@ func (a *Service) onWaitingClosedChannel(waitingClose *lnrpc.PendingChannelsResp
 		Type:                db.ClosedChannelPayment,
 		ClosedChannelPoint:  waitingClose.Channel.ChannelPoint,
 		ClosedChannelStatus: db.WaitingClose,
-		Amount:              waitingClose.LimboBalance,
+		Amount:              waitingClose.Channel.LocalBalance,
 		Fee:                 0,
 		CreationTimestamp:   time.Now().Unix(),
 		Description:         "Closed Channel",
@@ -82,7 +82,7 @@ func (a *Service) onPendingClosedChannel(pendingChannel *lnrpc.PendingChannelsRe
 
 func (a *Service) onPendingForceClosedChannel(forceClosed *lnrpc.PendingChannelsResponse_ForceClosedChannel) error {
 	a.log.Infof("onPendingForceClosedChannel %v", forceClosed.Channel.ChannelPoint)
-	if forceClosed.LimboBalance == 0 {
+	if forceClosed.Channel.LocalBalance == 0 {
 		a.log.Infof("closed channel skipped due to zero amount")
 		return nil
 	}
@@ -92,7 +92,7 @@ func (a *Service) onPendingForceClosedChannel(forceClosed *lnrpc.PendingChannels
 		ClosedChannelStatus:     db.PendingClose,
 		ClosedChannelTxID:       forceClosed.ClosingTxid,
 		PendingExpirationHeight: forceClosed.MaturityHeight,
-		Amount:                  forceClosed.LimboBalance,
+		Amount:                  forceClosed.Channel.LocalBalance,
 		Fee:                     0,
 		CreationTimestamp:       time.Now().Unix(),
 		Description:             "Closed Channel",
