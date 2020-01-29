@@ -86,37 +86,36 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 		s.log.Errorf("breezDB.SaveReverseSwap(%#v): %v", rs, err)
 	}
 
-	var confRequest *chainrpc.ConfRequest
-	confRequest, err = s.breezDB.FetchUnconfirmedClaimTransaction()
-	if err != nil || confRequest == nil || !bytes.Equal(confRequest.Txid, txid) {
-		confRequest = &chainrpc.ConfRequest{
-			NumConfs:   1,
-			HeightHint: info.BlockHeight,
-			Txid:       txid,
-			Script:     tx.MsgTx().TxOut[0].PkScript,
-		}
-		err = s.breezDB.SaveUnconfirmedClaimTransaction(confRequest)
+	var unspendLockupInformation *data.UnspendLockupInformation
+	unspendLockupInformation, err = s.breezDB.FetchUnspendLockupInformation()
+	if err != nil || unspendLockupInformation == nil || !bytes.Equal(unspendLockupInformation.ClaimTxHash, txid) {
+		outScript, err := s.lockupOutScript(rs.LockupAddress, rawTx)
 		if err != nil {
-			s.log.Errorf("s.breezDB.SaveUnconfirmedClaimTransaction(%#v): %v", confRequest, err)
+			s.log.Errorf("lockupOutScript(%v, %x): %v", rs.LockupAddress, rawTx, err)
+		} else {
+			unspendLockupInformation = &data.UnspendLockupInformation{
+				LockupScript: outScript,
+				ClaimTxHash:  txid,
+				HeightHint:   info.BlockHeight,
+			}
+			confRequest, err := s.breezDB.FetchUnconfirmedClaimTransaction()
+			if err == nil && confRequest != nil && bytes.Equal(confRequest.Txid, txid) {
+				unspendLockupInformation.HeightHint = confRequest.HeightHint
+			}
+			err = s.breezDB.SaveUnspendLockupInformation(unspendLockupInformation)
+			if err != nil {
+				s.log.Errorf("s.breezDB.SaveUnspendLockupInformation(%#v): %v", unspendLockupInformation, err)
+			}
 		}
-	}
-	err = s.subscribeClaimTransaction(confRequest)
-	if err != nil {
-		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
 	}
 
-	var spendRequest *chainrpc.SpendRequest
-	outScript, err := s.lockupOutScript(rs.LockupAddress, rawTx)
-	if err != nil {
-		s.log.Errorf("lockupOutScript(%v, %x): %v", rs.LockupAddress, rawTx, err)
+	spendRequest := &chainrpc.SpendRequest{
+		Script:     unspendLockupInformation.LockupScript,
+		HeightHint: unspendLockupInformation.HeightHint,
 	}
-	spendRequest = &chainrpc.SpendRequest{
-		Script:     outScript,
-		HeightHint: confRequest.HeightHint,
-	}
-	err = s.subscribeSpendTransaction(spendRequest)
+	err = s.subscribeSpendTransaction(spendRequest, txid)
 	if err != nil {
-		s.log.Errorf("s.subscribeClaimTransaction(%#v): %v", confRequest, err)
+		s.log.Errorf("s.subscribeSpendTransaction(%#v, %x): %v", spendRequest, txid, err)
 	}
 
 	walletKitClient := s.daemonAPI.WalletKitClient()
@@ -132,7 +131,7 @@ func (s *Service) claimReverseSwap(rs *data.ReverseSwap, rawTx []byte) error {
 	return nil
 }
 
-func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest) error {
+func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest, txid []byte) error {
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
 	s.log.Infof("Registering spend notification %x", spendRequest.Script)
@@ -150,38 +149,12 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest)
 				return
 			}
 			s.log.Infof("spendEvent: %#v; rawTX:%x", SpendEvent.GetSpend(), SpendEvent.GetSpend().RawSpendingTx)
+			err = s.breezDB.SaveUnspendLockupInformation(nil)
 			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
-		}
-	}()
-	go func() {
-		<-s.quitChan
-		s.log.Infof("Canceling subscription")
-		cancel()
-	}()
-	return nil
-}
-
-func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) error {
-	client := s.daemonAPI.ChainNotifierClient()
-	ctx, cancel := context.WithCancel(context.Background())
-	s.log.Infof("Registering claim transaction notification %v", confRequest.Txid)
-	stream, err := client.RegisterConfirmationsNtfn(ctx, confRequest)
-	if err != nil {
-		s.log.Errorf("client.RegisterConfirmationsNtfn(%#vv): %v", confRequest, err)
-		cancel()
-		return fmt.Errorf("client.RegisterConfirmationsNtfn(%#v): %w", confRequest, err)
-	}
-	go func() {
-		for {
-			confEvent, err := stream.Recv()
-			if err != nil {
-				s.log.Criticalf("Failed to receive an event : %v", err)
-				return
+			if bytes.Equal(SpendEvent.GetSpend().SpendingTxHash, txid) {
+				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_CONFIRMED,
+					Data: []string{hex.EncodeToString(SpendEvent.GetSpend().RawSpendingTx)}})
 			}
-			s.log.Infof("confEvent: %#v; rawTX:%x", confEvent.GetConf(), confEvent.GetConf().GetRawTx())
-			s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_CONFIRMED,
-				Data: []string{hex.EncodeToString(confEvent.GetConf().RawTx)}})
-			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
 		}
 	}()
 	go func() {
@@ -193,18 +166,22 @@ func (s *Service) subscribeClaimTransaction(confRequest *chainrpc.ConfRequest) e
 }
 
 func (s *Service) handleClaimTransaction() error {
-	confRequest, err := s.breezDB.FetchUnconfirmedClaimTransaction()
+	unspendLockupInformation, err := s.breezDB.FetchUnspendLockupInformation()
 	if err != nil {
-		s.log.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %v", err)
-		return fmt.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %w", err)
+		s.log.Errorf("s.breezDB.FetchUnspendLockupInformation(): %v", err)
+		return fmt.Errorf("s.breezDB.FetchUnspendLockupInformation(): %w", err)
 	}
-	if confRequest == nil {
+	if unspendLockupInformation == nil {
 		return nil
 	}
-	err = s.subscribeClaimTransaction(confRequest)
+	spendRequest := &chainrpc.SpendRequest{
+		Script:     unspendLockupInformation.LockupScript,
+		HeightHint: unspendLockupInformation.HeightHint,
+	}
+	err = s.subscribeSpendTransaction(spendRequest, unspendLockupInformation.ClaimTxHash)
 	if err != nil {
-		s.log.Errorf("s.subscribeClaimTransaction(%v): %v", confRequest, err)
-		return fmt.Errorf("s.subscribeClaimTransaction(%v): %w", confRequest, err)
+		s.log.Errorf("s.subscribeSpendTransaction(%v, %x): %v", spendRequest, unspendLockupInformation.ClaimTxHash, err)
+		return fmt.Errorf("s.subscribeSpendTransaction(%v, %x): %w", spendRequest, unspendLockupInformation.ClaimTxHash, err)
 	}
 	return nil
 }
@@ -396,20 +373,23 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 }
 
 func (s *Service) UnconfirmedReverseSwapClaimTransaction() (string, error) {
-	confRequest, err := s.breezDB.FetchUnconfirmedClaimTransaction()
+	unspendLockupInformation, err := s.breezDB.FetchUnspendLockupInformation()
 	if err != nil {
-		s.log.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %v", err)
-		return "", fmt.Errorf("s.breezDB.FetchUnconfirmedClaimTransaction(): %w", err)
+		s.log.Errorf("s.breezDB.FetchUnspendLockupInformation(): %v", err)
+		return "", fmt.Errorf("s.breezDB.FetchUnspendLockupInformation(): %w", err)
 	}
-	if confRequest == nil {
+	if unspendLockupInformation == nil {
 		return "", nil
 	}
-	h, err := chainhash.NewHash(confRequest.Txid)
+	h, err := chainhash.NewHash(unspendLockupInformation.ClaimTxHash)
 	if err != nil {
 		return "", err
 	}
-	//tx, err :=  .NewTxFromBytes(confRequest.Txid)
 	return h.String(), nil
+}
+
+func (s *Service) ResetUnconfirmedReverseSwapClaimTransaction() error {
+	return s.breezDB.SaveUnspendLockupInformation(nil)
 }
 
 func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error) {

@@ -362,3 +362,9 @@ message ReverseSwapClaimFee {
 message ClaimFeeEstimates {
     map<int32, int64> fees =1;
 }
+
+message UnspendLockupInformation {
+    uint32 height_hint = 1;
+    bytes lockup_script = 2;
+    bytes claim_tx_hash = 3;
+}

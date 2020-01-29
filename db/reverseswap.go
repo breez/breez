@@ -13,6 +13,7 @@ import (
 
 var (
 	unconfirmedClaimTransactionKey = []byte("unconfirmed_claim_transaction")
+	unspendLockupTransactionKey    = []byte("unspend_lockup_transaction")
 )
 
 // SaveReverseSwap saves the reverse swap information
@@ -98,4 +99,46 @@ func (db *DB) FetchUnconfirmedClaimTransaction() (*chainrpc.ConfRequest, error) 
 		return nil, fmt.Errorf("proto.Unmarshal(%x): %w", b, err)
 	}
 	return &confRequest, nil
+}
+
+// SaveUnspendLockupInformation saves the unconfirmed claim transaction
+// set unspendLockupTransaction to nil when the transaction is confirmed
+func (db *DB) SaveUnspendLockupInformation(unspendLockupTransaction *data.UnspendLockupInformation) error {
+	if unspendLockupTransaction == nil {
+		return db.Update(func(tx *bbolt.Tx) error {
+			rsb := tx.Bucket([]byte(reverseSwapBucket))
+			return rsb.Delete(unspendLockupTransactionKey)
+		})
+	}
+	data, err := proto.Marshal(unspendLockupTransaction)
+	if err != nil {
+		return fmt.Errorf("proto.Marshal(%#v): %w", unspendLockupTransaction, err)
+	}
+	return db.Update(func(tx *bbolt.Tx) error {
+		rsb := tx.Bucket([]byte(reverseSwapBucket))
+		return rsb.Put(unspendLockupTransactionKey, data)
+	})
+}
+
+// FetchUnspendLockupInformation returns the current unconfirmed claim
+// transaction, or nil if there is no unconfimed claim transaction.
+func (db *DB) FetchUnspendLockupInformation() (*data.UnspendLockupInformation, error) {
+	var b []byte
+	err := db.View(func(tx *bbolt.Tx) error {
+		rsb := tx.Bucket([]byte(reverseSwapBucket))
+		b = rsb.Get(unspendLockupTransactionKey)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	var unspendLockupTransaction data.UnspendLockupInformation
+	err = proto.Unmarshal(b, &unspendLockupTransaction)
+	if err != nil {
+		return nil, fmt.Errorf("proto.Unmarshal(%x): %w", b, err)
+	}
+	return &unspendLockupTransaction, nil
 }
