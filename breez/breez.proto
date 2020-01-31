@@ -23,6 +23,7 @@ service Pos {
 service Information {
   rpc Ping (PingRequest) returns (PingReply) {}
   rpc Rates (RatesRequest) returns (RatesReply) {}
+  rpc BreezAppVersions(BreezAppVersionsRequest) returns (BreezAppVersionsReply) {}
 }
 
 service ChannelOpener {
@@ -299,4 +300,9 @@ message PushTxNotificationRequest {
   }
 }
 message PushTxNotificationResponse {
+}
+
+message BreezAppVersionsRequest {}
+message BreezAppVersionsReply {
+  repeated string version = 1;
 }

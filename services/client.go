@@ -90,6 +90,18 @@ func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 	return c.connection
 }
 
+//Versions returns the list of Breez app version authorized by the server
+func (c *Client) Versions() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ic := breezservice.NewInformationClient(c.connection)
+	r, err := ic.BreezAppVersions(ctx, &breezservice.BreezAppVersionsRequest{})
+	if err != nil {
+		return []string{}, err
+	}
+	return r.Version, nil
+}
+
 //Rates returns the rates obtained from the server
 func (c *Client) Rates() (*data.Rates, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

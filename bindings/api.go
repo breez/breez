@@ -733,6 +733,10 @@ func ResetUnconfirmedReverseSwapClaimTransaction() error {
 	return getBreezApp().SwapService.ResetUnconfirmedReverseSwapClaimTransaction()
 }
 
+func CheckVersion() error {
+	return getBreezApp().CheckVersion()
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
