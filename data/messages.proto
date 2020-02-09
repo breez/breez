@@ -368,3 +368,14 @@ message UnspendLockupInformation {
     bytes lockup_script = 2;
     bytes claim_tx_hash = 3;
 }
+
+message TransactionDetails {
+    bytes tx = 1;
+    string tx_hash = 2;
+    int64 fees = 3;
+}
+
+message SweepAllCoinsTransactions {
+    int64 amt = 1;
+    map<int32, TransactionDetails> transactions = 2;
+}

@@ -15,11 +15,11 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/lightninglabs/neutrino v0.10.0
-	github.com/lightningnetwork/lnd v0.8.0-beta-rc3.0.20191221022352-72a49d486ae4
+	github.com/lightningnetwork/lnd v0.8.0-beta-rc3.0.20191221022352-72a49d486aei4
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.4.0 // indirect
 	github.com/urfave/cli v1.18.0
-	golang.org/x/mobile v0.0.0-20200123024942-82c397c4c527 // indirect
+	golang.org/x/mobile v0.0.0-20200205170228-0df4eb238546 // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
@@ -37,7 +37,7 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.1.1-0.20191121081139-3f579e0a038c
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20191121081139-3f579e0a038c
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.0.0-20200127114934-f8266b64c9f4
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.8.0-beta-rc3.0.20200116133631-c9a52c9af49a
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.8.0-beta-rc3.0.20200209132404-a80a459cb48c
 )
 
 go 1.12

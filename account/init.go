@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/breez/breez/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
@@ -30,6 +32,7 @@ type Service struct {
 	connectedNotifier  *channelActiveNotifier
 	onServiceEvent     func(data.NotificationEvent)
 	lnurlWithdrawing   string
+	activeParams       *chaincfg.Params
 
 	notification *notificationRequest
 
@@ -54,6 +57,18 @@ func NewService(
 		return nil, err
 	}
 
+	var activeParams *chaincfg.Params
+
+	if cfg.Network == "testnet" {
+		activeParams = &chaincfg.TestNet3Params
+	} else if cfg.Network == "simnet" {
+		activeParams = &chaincfg.SimNetParams
+	} else if cfg.Network == "mainnet" {
+		activeParams = &chaincfg.MainNetParams
+	} else {
+		return nil, fmt.Errorf("unknown network type: %v", cfg.Network)
+	}
+
 	return &Service{
 		cfg:               cfg,
 		log:               logBackend.Logger("ACCNT"),
@@ -63,5 +78,6 @@ func NewService(
 		breezAPI:          breezAPI,
 		onServiceEvent:    onServiceEvent,
 		quitChan:          make(chan struct{}),
+		activeParams:      activeParams,
 	}, nil
 }

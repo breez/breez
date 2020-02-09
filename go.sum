@@ -17,7 +17,9 @@ github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da h1:KjTM2ks9d14ZYCvmH
 github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da/go.mod h1:eHEWzANqSiWQsof+nXEI9bUVUyV6F53Fp89EuCh2EAA=
 github.com/aead/siphash v1.0.1 h1:FwHfE/T45KPKYuuSAKyyvE+oPWcaQ+CUmFW0bPlM+kg=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
+github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc h1:cAKDfWh5VpdgMhJosfJnn5/FoN2SRZ4p7fJNX58YPaU=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
+github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0 h1:HWo1m869IqiPhD389kmkxeTalrjNbbJTC8LXupb+sl0=
@@ -93,6 +95,8 @@ github.com/breez/lnd v0.8.0-beta-rc3.0.20191231134415-ca45ec97bb31 h1:pysGVrpaPt
 github.com/breez/lnd v0.8.0-beta-rc3.0.20191231134415-ca45ec97bb31/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20200116133631-c9a52c9af49a h1:w9bOxXiK5ysD2bby7HJicoWTUDhxwQA6PCEi2rpggYw=
 github.com/breez/lnd v0.8.0-beta-rc3.0.20200116133631-c9a52c9af49a/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20200209132404-a80a459cb48c h1:jroDZKDI/JCl3WPhdB5w6VsP5Key7AQaJH3jWHeH7yI=
+github.com/breez/lnd v0.8.0-beta-rc3.0.20200209132404-a80a459cb48c/go.mod h1:nq06y2BDv7vwWeMmwgB7P3pT7/Uj7sGf5FzHISVD6t4=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0 h1:nSQkvsVdZP4GBURecXCaSCPg8AOQrR12j5mWpWbR1FA=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0/go.mod h1:vzLU75ll8qbRJIzW5dvK/UXtR9c2FecJ6VNOM8chyVM=
 github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335 h1:vA6MyZVCHKFdRyijR2rF2edJL223UCmty6xlPDXbATg=
@@ -262,6 +266,7 @@ github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+W
 github.com/onsi/gomega v1.4.1/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.4.3 h1:RE1xgDvH7imwFD45h+u2SgIfERHlS2yNG4DObb5BSKU=
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
+github.com/pkg/errors v0.8.0 h1:WdK/asTD0HN+q6hsWO3/vpuAkAr+tw6aNJNDFFf0+qw=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -280,6 +285,7 @@ github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084/go.mod h1:TjEm7z
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/rogpeppe/fastuuid v1.2.0 h1:Ppwyp6VYCF1nvBTXL3trRso7mXMlRrw9ooo375wvi2s=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
+github.com/sirupsen/logrus v1.2.0 h1:juTguoYk5qI21pwyTXY3B3Y5cOTH3ZUyZCg1v/mihuo=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a h1:9elIjnK0pnl65k1okjwH2TpVluj7arj7M3dQ8Lj/8cg=
@@ -327,6 +333,8 @@ golang.org/x/mobile v0.0.0-20200121160505-1d4ecbb920e2 h1:TS20rpqvAKnsQyB5U8xbPW
 golang.org/x/mobile v0.0.0-20200121160505-1d4ecbb920e2/go.mod h1:xVnulspMBrznVIwB4CQrGc712u7ETbNKUJ+GCqGLaEc=
 golang.org/x/mobile v0.0.0-20200123024942-82c397c4c527 h1:470B1IvA7JOANiTULBeEJCIcp53VWOsgckscR836cN8=
 golang.org/x/mobile v0.0.0-20200123024942-82c397c4c527/go.mod h1:skQtrUTUwhdJvXM/2KKJzY8pDgNr9I/FOMqDVRPBUS4=
+golang.org/x/mobile v0.0.0-20200205170228-0df4eb238546 h1:QFxjytBOLRQIflAzMBX/HiTlfJ70XOikgAX7Tbu1BRU=
+golang.org/x/mobile v0.0.0-20200205170228-0df4eb238546/go.mod h1:skQtrUTUwhdJvXM/2KKJzY8pDgNr9I/FOMqDVRPBUS4=
 golang.org/x/mod v0.1.0/go.mod h1:0QHyrYULN0/3qlju5TqG8bIK38QM8yzMo5ekMj3DlcY=
 golang.org/x/mod v0.1.1-0.20191105210325-c90efee705ee/go.mod h1:QqPTAvyqsEbceGzBzNggFXnrqF1CaUcvgkdR5Ot7KZg=
 golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd h1:ePuNC7PZ6O5BzgPn9bZayERXBdfZjUYoXEf5BTfDfh8=
@@ -425,6 +433,7 @@ google.golang.org/grpc v1.18.0/go.mod h1:6QZJwpn2B+Zp71q/5VxRsJ6NXXVCE5NRUHRo+f3
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.20.1 h1:Hz2g2wirWK7H0qIIhGIqRGTuMwTE8HEKFnDZZ7lm9NU=
 google.golang.org/grpc v1.20.1/go.mod h1:10oTOabMzJvdu6/UiuZezV6QK5dSlG84ov/aaiqXj38=
+gopkg.in/alecthomas/kingpin.v2 v2.2.6 h1:jMFz6MfLP0/4fUyZle81rXUoxOBFi19VUFKVDOQfozc=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=

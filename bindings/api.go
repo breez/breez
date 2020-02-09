@@ -737,6 +737,16 @@ func CheckVersion() error {
 	return getBreezApp().CheckVersion()
 }
 
+func SweepAllCoinsTransactions(address string) ([]byte, error) {
+	return marshalResponse(
+		getBreezApp().AccountService.SweepAllCoinsTransactions(address),
+	)
+}
+
+func PublishTransaction(tx []byte) error {
+	return getBreezApp().AccountService.PublishTransaction(tx)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

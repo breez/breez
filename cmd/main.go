@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -176,6 +177,51 @@ var cmdUnconfirmedReverseSwapClaimTransaction = cli.Leaf{
 	},
 }
 
+var cmdSweepAllCoinsTransactions = cli.Leaf{
+	Descr: "sweep all coins transactions",
+	F: func(c *cli.CLI, args []string) {
+		if len(args) < 1 {
+			fmt.Println("need an address")
+			return
+		}
+		b, err := bindings.SweepAllCoinsTransactions(args[0])
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.SweepAllCoinsTransactions(): %w", err))
+			return
+		}
+		var transactions data.SweepAllCoinsTransactions
+		err = proto.Unmarshal(b, &transactions)
+		if err != nil {
+			fmt.Println(fmt.Errorf("proto.Unmarshal(%x): %w", b, err))
+			return
+		}
+		fmt.Printf("Amount: %v\n", transactions.Amt)
+		for confTarget, t := range transactions.Transactions {
+			fmt.Printf("\ntarget: %v\n fees: %v\n txHash: %v\n tx: %x\n",
+				confTarget, t.Fees, t.TxHash, t.Tx)
+		}
+	},
+}
+
+var cmdPublishTransaction = cli.Leaf{
+	Descr: "publish a transaction",
+	F: func(c *cli.CLI, args []string) {
+		if len(args) < 1 {
+			fmt.Println("need an transaction")
+			return
+		}
+		tx, err := hex.DecodeString(args[0])
+		if err != nil {
+			fmt.Println(fmt.Errorf("hex.DecodeString(%v): %w", args[0], err))
+		}
+		err = bindings.PublishTransaction(tx)
+		if err != nil {
+			fmt.Println(fmt.Errorf("bindings.PublishTransaction(%x): %w", tx, err))
+		}
+		fmt.Println("done.")
+	},
+}
+
 var menuRoot = cli.Menu{
 	{"exit", cmdExit},
 	{"help", cmdHelp},
@@ -188,6 +234,8 @@ var menuRoot = cli.Menu{
 	{"payreverseswap", cmdPayReverseSwap},
 	{"reverseswapstatus", cmdReverseSwapPaymentStatuses},
 	{"unconfirmedreverseswapclaimtransaction", cmdUnconfirmedReverseSwapClaimTransaction},
+	{"sendallcoinstransactions", cmdSweepAllCoinsTransactions},
+	{"publishtransaction", cmdPublishTransaction},
 }
 
 type breezApp struct{}

@@ -14,6 +14,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
@@ -41,6 +42,7 @@ func newLightningClient(cfg *config.Config) (
 	routerrpc.RouterClient,
 	walletrpc.WalletKitClient,
 	chainrpc.ChainNotifierClient,
+	signrpc.SignerClient,
 	error) {
 
 	appWorkingDir := cfg.WorkingDir
@@ -49,7 +51,7 @@ func newLightningClient(cfg *config.Config) (
 	tlsCertPath := filepath.Join(appWorkingDir, defaultTLSCertFilename)
 	creds, err := credentials.NewClientTLSFromFile(tlsCertPath, "")
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	// Create a dial options array.
@@ -61,11 +63,11 @@ func newLightningClient(cfg *config.Config) (
 	macPath := filepath.Join(macaroonDir, defaultMacaroonFilename)
 	macBytes, err := ioutil.ReadFile(macPath)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, nil, err
 	}
 	mac := &macaroon.Macaroon{}
 	if err = mac.UnmarshalBinary(macBytes); err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	// Now we append the macaroon credentials to the dial options.
@@ -74,7 +76,7 @@ func newLightningClient(cfg *config.Config) (
 
 	conn, err := lnd.MemDial()
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	// We need to use a custom dialer so we can also connect to unix sockets
@@ -87,7 +89,7 @@ func newLightningClient(cfg *config.Config) (
 	)
 	grpcCon, err := grpc.Dial("localhost", opts...)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	return lnrpc.NewLightningClient(grpcCon),
@@ -97,5 +99,6 @@ func newLightningClient(cfg *config.Config) (
 		routerrpc.NewRouterClient(grpcCon),
 		walletrpc.NewWalletKitClient(grpcCon),
 		chainrpc.NewChainNotifierClient(grpcCon),
+		signrpc.NewSignerClient(grpcCon),
 		nil
 }
