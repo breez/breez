@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
 
 	"github.com/breez/breez/data"
+	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -102,8 +104,14 @@ func (a *Service) SweepAllCoinsTransactions(address string) (*data.SweepAllCoins
 			nil,
 			NewRpcSigner(a.daemonAPI.SignerClient()),
 		)
+
 		if err != nil {
-			return nil, fmt.Errorf("sweep.CraftSweepAllTx(): %w", confTarget, err)
+			// ignore validation errors of crafting specific transaction.
+			var ruleErr blockchain.RuleError
+			if errors.As(err, &ruleErr) {
+				continue
+			}
+			return nil, fmt.Errorf("sweep.CraftSweepAllTx(): %w", err)
 		}
 
 		var amtOut int64
