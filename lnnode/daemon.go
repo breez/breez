@@ -29,6 +29,7 @@ func (d *Daemon) Start() error {
 		return err
 	}
 
+	checkMacaroons(d.cfg)
 	if err := d.startDaemon(); err != nil {
 		return fmt.Errorf("Failed to start daemon: %v", err)
 	}

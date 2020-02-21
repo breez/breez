@@ -3,6 +3,8 @@ package lnnode
 import (
 	"io/ioutil"
 	"net"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,8 +26,9 @@ import (
 )
 
 const (
-	defaultTLSCertFilename  = "tls.cert"
-	defaultMacaroonFilename = "admin.macaroon"
+	defaultTLSCertFilename   = "tls.cert"
+	defaultMacaroonFilename  = "admin.macaroon"
+	currentAdminMacaroonSize = 252
 )
 
 var (
@@ -33,6 +36,19 @@ var (
 	// set this to ~50Mb atm.
 	maxMsgRecvSize = grpc.MaxCallRecvMsgSize(1 * 1024 * 1024 * 50)
 )
+
+func checkMacaroons(cfg *config.Config) {
+	mDir := path.Join(cfg.WorkingDir, "data", "chain", "bitcoin", cfg.Network)
+	fi, err := os.Stat(path.Join(mDir, defaultMacaroonFilename))
+	if err != nil {
+		return
+	}
+	if fi.Size() < currentAdminMacaroonSize {
+		os.Remove(path.Join(mDir, defaultMacaroonFilename))
+		os.Remove(path.Join(mDir, "invoice.macaroon"))
+		os.Remove(path.Join(mDir, "readonly.macaroon"))
+	}
+}
 
 // NewLightningClient returns an instance of lnrpc.LightningClient
 func newLightningClient(cfg *config.Config) (
