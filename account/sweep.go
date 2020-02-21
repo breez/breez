@@ -284,7 +284,7 @@ func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescr
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("srpc.ComputeInputScript: %w", tx, err)
+		return nil, fmt.Errorf("srpc.ComputeInputScript: %w", err)
 	}
 	var hashPrevOuts, hashSequence, hashOutputs chainhash.Hash
 	if err := hashPrevOuts.SetBytes(r.SigHashes.HashPrevOuts); err != nil {
