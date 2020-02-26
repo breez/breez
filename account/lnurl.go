@@ -35,6 +35,16 @@ func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) 
 				},
 			},
 		}, nil
+	case lnurl.LNURLChannelResponse:
+		return &data.LNUrlResponse{
+			Action: &data.LNUrlResponse_Channel{
+				Channel: &data.LNURLChannel{
+					K1:       params.K1,
+					Callback: params.Callback,
+					Uri:      params.URI,
+				},
+			},
+		}, nil
 	default:
 		return nil, errors.New("Unsupported LNUrl")
 	}

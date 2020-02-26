@@ -255,12 +255,26 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 }
 
 /*
-OpenLnurlChannel is responsible for creating a new channelusing a lnURL
+OpenLnurlChannel is responsible for creating a new channel using a lnURL
 */
 func (a *Service) OpenLnurlChannel(lnurl string) error {
 	l, err := NewLnurlLSP(lnurl)
 	if err != nil {
 		return err
+	}
+	lsp := lsp(l)
+	return a.openChannel(lsp, true)
+}
+
+/*
+OpenDirectLnurlChannel is responsible for creating a new channel using lnURL
+ data
+*/
+func (a *Service) OpenDirectLnurlChannel(k1, callback, URI string) error {
+	l := &lnurlLSP{
+		K1:       k1,
+		CallBack: callback,
+		URI:      URI,
 	}
 	lsp := lsp(l)
 	return a.openChannel(lsp, true)

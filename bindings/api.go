@@ -652,6 +652,14 @@ func ConnectToLnurl(lnurl string) error {
 	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
+func ConnectDirectToLnurl(channel []byte) error {
+	var c data.LNURLChannel
+	if err := proto.Unmarshal(channel, &c); err != nil {
+		return err
+	}
+	return getBreezApp().AccountService.OpenDirectLnurlChannel(c.K1, c.Callback, c.Uri)
+}
+
 func FetchLnurl(lnurl string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
 }

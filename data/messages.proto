@@ -293,6 +293,7 @@ message LSPList {
 message LNUrlResponse {
     oneof action {
         LNUrlWithdraw withdraw = 1;
+        LNURLChannel channel = 2;
     }
 }
 
@@ -300,6 +301,12 @@ message LNUrlWithdraw {
     int64 min_amount = 1;
     int64 max_amount = 2;
     string default_description = 3;
+}
+
+message LNURLChannel {
+    string k1 = 1;
+    string callback = 2;
+    string uri = 3;
 }
 
 message ReverseSwapRequest {
