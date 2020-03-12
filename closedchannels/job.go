@@ -191,7 +191,7 @@ func firstFileNumberToDownload(dirname string) (uint64, error) {
 			}
 			if s, err := strconv.ParseUint(filename, 10, 64); err == nil {
 				if s >= n {
-					n = s + 1
+					n = s
 				}
 			}
 		}
@@ -221,9 +221,17 @@ func downloadFile(filename string, url string) (int, error) {
 	defer out.Close()
 
 	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	written, err := io.Copy(out, resp.Body)
 	if err != nil {
 		return http.StatusOK, err
+	}
+	fi, err := os.Stat(filename + deletedSuffix)
+	if err == nil {
+		if fi.Size() == written {
+			return http.StatusOK, nil
+		} else {
+			os.Rename(filename+deletedSuffix, filename)
+		}
 	}
 	err = os.Rename(out.Name(), filename)
 	return http.StatusOK, err
