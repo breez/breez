@@ -184,7 +184,7 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
 		routeHints = append(routeHints, &lnrpc.RouteHint{
 			HopHints: []*lnrpc.HopHint{
-				&lnrpc.HopHint{
+				{
 					NodeId:                    h.RemotePubkey,
 					ChanId:                    h.ChanId,
 					FeeBaseMsat:               uint32(remotePolicy.FeeBaseMsat),
@@ -633,7 +633,9 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		a.log.Criticalf("Unable to add reveived payment : %v", err)
 		return err
 	}
-	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_INVOICE_PAID})
+	a.onServiceEvent(data.NotificationEvent{
+		Type: data.NotificationEvent_INVOICE_PAID,
+		Data: []string{invoice.PaymentRequest}})
 	a.onAccountChanged()
 	return nil
 }
