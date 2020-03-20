@@ -92,9 +92,10 @@ func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 
 //Versions returns the list of Breez app version authorized by the server
 func (c *Client) Versions() ([]string, error) {
+	con := c.getBreezClientConnection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	ic := breezservice.NewInformationClient(c.connection)
+	ic := breezservice.NewInformationClient(con)
 	r, err := ic.BreezAppVersions(ctx, &breezservice.BreezAppVersionsRequest{})
 	if err != nil {
 		return []string{}, err
@@ -104,9 +105,10 @@ func (c *Client) Versions() ([]string, error) {
 
 //Rates returns the rates obtained from the server
 func (c *Client) Rates() (*data.Rates, error) {
+	con := c.getBreezClientConnection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	ic := breezservice.NewInformationClient(c.connection)
+	ic := breezservice.NewInformationClient(con)
 	rates, err := ic.Rates(ctx, &breezservice.RatesRequest{})
 	if err != nil {
 		return nil, err
@@ -120,12 +122,13 @@ func (c *Client) Rates() (*data.Rates, error) {
 
 //LSPList returns the list of the LSPs
 func (c *Client) LSPList() (*data.LSPList, error) {
+	con := c.getBreezClientConnection()
 	ctx, cancel := context.WithTimeout(
 		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
 		endpointTimeout*time.Second,
 	)
 	defer cancel()
-	ic := breezservice.NewChannelOpenerClient(c.connection)
+	ic := breezservice.NewChannelOpenerClient(con)
 	lsps, err := ic.LSPList(ctx, &breezservice.LSPListRequest{})
 	if err != nil {
 		return nil, err
