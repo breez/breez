@@ -20,9 +20,7 @@ func (c *Client) Start() error {
 	if atomic.SwapInt32(&c.started, 1) == 1 {
 		return nil
 	}
-	con, err := dial(c.cfg.BreezServer)
-	c.connection = con
-	return err
+	return nil
 }
 
 func (c *Client) Stop() (err error) {
@@ -77,15 +75,30 @@ func (c *Client) getBreezClientConnection() *grpc.ClientConn {
 	c.log.Infof("getBreezClientConnection - before Ping;")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	ic := breezservice.NewInformationClient(c.connection)
+	con := c.ensureConnection(false)
+	ic := breezservice.NewInformationClient(con)
 	_, err := ic.Ping(ctx, &breezservice.PingRequest{})
 	c.log.Infof("getBreezClientConnection - after Ping; err: %v", err)
 	if grpc.Code(err) == codes.DeadlineExceeded {
-		c.Lock()
-		defer c.Unlock()
-		c.connection.Close()
-		c.connection, err = dial(c.cfg.BreezServer)
+		con = c.ensureConnection(true)
 		c.log.Infof("getBreezClientConnection - new connection; err: %v", err)
+	}
+	return con
+}
+
+func (c *Client) ensureConnection(closeOldConnection bool) *grpc.ClientConn {
+	c.Lock()
+	defer c.Unlock()
+	if closeOldConnection && c.connection != nil {
+		c.connection.Close()
+		c.connection = nil
+	}
+	if c.connection == nil {
+		con, err := dial(c.cfg.BreezServer)
+		if err != nil {
+			c.log.Errorf("failed to dial to grpc connection: %v", err)
+		}
+		c.connection = con
 	}
 	return c.connection
 }
