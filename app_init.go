@@ -147,6 +147,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.ServicesClient,
 		app.lnDaemon,
 		app.AccountService.SendPaymentForRequest,
+		app.AccountService.GetAccountLimits,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New SwapService")

@@ -14,19 +14,20 @@ import (
 )
 
 type Service struct {
-	started        int32
-	stopped        int32
-	wg             sync.WaitGroup
-	mu             sync.Mutex
-	cfg            *config.Config
-	log            btclog.Logger
-	breezDB        *db.DB
-	daemonAPI      lnnode.API
-	breezAPI       services.API
-	chainParams    *chaincfg.Params
-	sendPayment    func(payreq string, amount int64) error
-	onServiceEvent func(data.NotificationEvent)
-	quitChan       chan struct{}
+	started          int32
+	stopped          int32
+	wg               sync.WaitGroup
+	mu               sync.Mutex
+	cfg              *config.Config
+	log              btclog.Logger
+	breezDB          *db.DB
+	daemonAPI        lnnode.API
+	breezAPI         services.API
+	chainParams      *chaincfg.Params
+	sendPayment      func(payreq string, amount int64) error
+	getAccountLimits func() (maxReceive, maxPay, maxReserve int64, err error)
+	onServiceEvent   func(data.NotificationEvent)
+	quitChan         chan struct{}
 }
 
 func NewService(
@@ -35,6 +36,7 @@ func NewService(
 	breezAPI services.API,
 	daemonAPI lnnode.API,
 	sendPayment func(payreq string, amount int64) error,
+	getAccountLimits func() (maxReceive, maxPay, maxReserve int64, err error),
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
 	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
@@ -52,14 +54,15 @@ func NewService(
 	}
 
 	return &Service{
-		cfg:            cfg,
-		chainParams:    chainParams,
-		breezDB:        breezDB,
-		breezAPI:       breezAPI,
-		sendPayment:    sendPayment,
-		onServiceEvent: onServiceEvent,
-		log:            logBackend.Logger("FUNDS"),
-		daemonAPI:      daemonAPI,
-		quitChan:       make(chan struct{}),
+		cfg:              cfg,
+		chainParams:      chainParams,
+		breezDB:          breezDB,
+		breezAPI:         breezAPI,
+		sendPayment:      sendPayment,
+		getAccountLimits: getAccountLimits,
+		onServiceEvent:   onServiceEvent,
+		log:              logBackend.Logger("FUNDS"),
+		daemonAPI:        daemonAPI,
+		quitChan:         make(chan struct{}),
 	}, nil
 }
