@@ -11,6 +11,7 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"golang.org/x/sync/singleflight"
@@ -439,15 +440,16 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		}
 		paymentRequest = invoice.PaymentRequest
 	} else {
-		addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
+		invoice, errorReason, err := s.createSwapInvoice(addressInfo)
 		if err != nil {
 			s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 				a.ErrorMessage = err.Error()
+				a.SwapErrorReason = int32(errorReason)
 				return nil
 			})
 			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
-		paymentRequest = addInvoice.PaymentRequest
+		paymentRequest = invoice.PaymentRequest
 	}
 
 	c, ctx, cancel := s.breezAPI.NewFundManager()
@@ -477,6 +479,28 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		return deadlineExceeded, fmt.Errorf("failed to get payment for address %v, err = %v", addressInfo.Address, paymentError)
 	}
 	return deadlineExceeded, nil
+}
+
+func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (invoice *lnrpc.AddInvoiceResponse, reason data.SwapError, err error) {
+	maxReceive, _, _, err := s.getAccountLimits()
+	if err != nil {
+		s.log.Error("unable to get account limits")
+		return nil, data.SwapError_NO_ERROR, err
+	}
+
+	if addressInfo.ConfirmedAmount > int64(lnd.MaxPaymentMSat.ToSatoshis()) || addressInfo.ConfirmedAmount > maxReceive {
+		s.log.Errorf("invoice limit exceeded amount: %v, max able to receive: %v", addressInfo.ConfirmedAmount, maxReceive)
+		return nil, data.SwapError_FUNDS_EXCEED_LIMIT, errors.New("invoice limit exceeded")
+	}
+
+	lnclient := s.daemonAPI.APIClient()
+	addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
+	if err != nil {
+		s.log.Error("unable to create invoice: %v", err)
+		return nil, data.SwapError_NO_ERROR, err
+	}
+
+	return addInvoice, data.SwapError_NO_ERROR, nil
 }
 
 func (s *Service) onUnspentChanged() {

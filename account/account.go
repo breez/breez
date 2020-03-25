@@ -36,6 +36,13 @@ func (a *Service) GetAccountInfo() (*data.Account, error) {
 	return account, err
 }
 
+/*
+GetAccountLimits returns the account limits.
+*/
+func (a *Service) GetAccountLimits() (maxReceive, maxPay, maxReserve int64, err error) {
+	return a.getReceivePayLimit()
+}
+
 // EnableAccount controls whether the account will be enabled or disabled.
 // When disbled, no attempt will be made to open a channel with breez node.
 func (a *Service) EnableAccount(enabled bool) error {
@@ -93,7 +100,7 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 	return data.Account_DISCONNECTED, "", nil
 }
 
-func (a *Service) getRecievePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
+func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
@@ -234,7 +241,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
-	maxAllowedToReceive, maxAllowedToPay, maxChanReserve, err := a.getRecievePayLimit()
+	maxAllowedToReceive, maxAllowedToPay, maxChanReserve, err := a.getReceivePayLimit()
 	if err != nil {
 		return nil, err
 	}
