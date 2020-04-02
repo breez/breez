@@ -389,7 +389,7 @@ func (a *Service) watchPayments() {
 	}()
 
 	_, lastInvoiceSettledIndex := a.breezDB.FetchPaymentsSyncInfo()
-	a.log.Infof("last invoice settled index ", lastInvoiceSettledIndex)
+	a.log.Infof("last invoice settled index %v", lastInvoiceSettledIndex)
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := lnclient.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{SettleIndex: lastInvoiceSettledIndex})
 	if err != nil {
@@ -484,7 +484,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	}
 
 	var paymentRequest string
-	var pendingPayment *channeldb.Payment
+	var pendingPayment *channeldb.MPPayment
 	lnclient := a.daemonAPI.APIClient()
 
 	if htlc.Incoming {
@@ -539,7 +539,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		if pendingPayment != nil {
 			paymentData.CreationTimestamp = decodedReq.Timestamp
 			paymentData.Amount = int64(pendingPayment.Info.Value.ToSatoshis())
-			paymentData.CreationTimestamp = pendingPayment.Info.CreationDate.Unix()
+			paymentData.CreationTimestamp = pendingPayment.Info.CreationTime.Unix()
 		}
 	}
 
