@@ -11,6 +11,7 @@ import (
 )
 
 func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) {
+	a.log.Infof("HandleLNURL %v", encodedLnurl)
 	iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
 		return nil, err
@@ -22,6 +23,7 @@ func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) 
 		qs.Set("k1", params.K1)
 		params.CallbackURL.RawQuery = qs.Encode()
 		a.lnurlWithdrawing = params.CallbackURL.String()
+		a.log.Infof("lnurl response: %v", a.lnurlWithdrawing)
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_Withdraw{
 				&data.LNUrlWithdraw{
