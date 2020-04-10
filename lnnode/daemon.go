@@ -166,7 +166,7 @@ func (d *Daemon) startDaemon() error {
 			"--bitcoin." + d.cfg.Network,
 		}
 		if d.startBeforeSync {
-			params = append(params, "--bitcoin.startbeforesynced")
+			params = append(params, "--initial-headers-sync-delta=2h")
 		}
 		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
 

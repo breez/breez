@@ -125,7 +125,6 @@ func parseCommandArgs(commands []cli.Command, command string) ([]string, error) 
 	commandFound := false
 
 	for _, command := range commands {
-		fmt.Printf("Comparing %v to %v", commandArguments[0], command.Name)
 		if command.Name == commandArguments[0] {
 			commandFound = true
 		}
@@ -248,9 +247,6 @@ func RunCommand(command string, connection *grpc.ClientConn) (string, error) {
 	app.Commands = append(app.Commands, invoicesCommands()...)
 	app.Commands = append(app.Commands, routerCommands()...)
 	app.Commands = append(app.Commands, walletCommands()...)
-	for _, c := range app.Commands {
-		fmt.Println(c.Name)
-	}
 	parsed, err := parseCommandArgs(app.Commands, command)
 	if err != nil {
 		return "", err
