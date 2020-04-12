@@ -547,44 +547,41 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 }
 
 func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
-	paymentRequest, err := a.breezDB.FetchPaymentRequest(paymentItem.PaymentHash)
-	if err != nil {
-		return err
-	}
-	var invoiceMemo *data.InvoiceMemo
-	if paymentRequest != nil && len(paymentRequest) > 0 {
-		if invoiceMemo, err = a.DecodePaymentRequest(string(paymentRequest)); err != nil {
-			return err
-		}
-	}
-
-	paymentType := db.SentPayment
-	lnclient := a.daemonAPI.APIClient()
-	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentRequest)})
-	if err != nil {
-		return err
-	}
-	if decodedReq.Destination == a.cfg.SwapperPubkey {
-		paymentType = db.WithdrawalPayment
-	}
 
 	paymentData := &db.PaymentInfo{
-		Type:              paymentType,
+		Type:              db.SentPayment,
 		Amount:            paymentItem.Value,
 		Fee:               paymentItem.Fee,
 		CreationTimestamp: paymentItem.CreationDate,
-		Description:       invoiceMemo.Description,
-		PayeeImageURL:     invoiceMemo.PayeeImageURL,
-		PayeeName:         invoiceMemo.PayeeName,
-		PayerImageURL:     invoiceMemo.PayerImageURL,
-		PayerName:         invoiceMemo.PayerName,
-		TransferRequest:   invoiceMemo.TransferRequest,
-		PaymentHash:       decodedReq.PaymentHash,
-		Destination:       decodedReq.Destination,
+		PaymentHash:       paymentItem.PaymentHash,
 		Preimage:          paymentItem.PaymentPreimage,
 	}
 
-	swap, err := a.breezDB.FetchReverseSwap(decodedReq.PaymentHash)
+	if len(paymentItem.PaymentRequest) > 0 {
+		invoiceMemo, err := a.DecodePaymentRequest(paymentItem.PaymentRequest)
+		if err != nil {
+			return err
+		}
+
+		paymentData.Description = invoiceMemo.Description
+		paymentData.PayeeImageURL = invoiceMemo.PayeeImageURL
+		paymentData.PayeeName = invoiceMemo.PayeeName
+		paymentData.PayerImageURL = invoiceMemo.PayerImageURL
+		paymentData.PayerName = invoiceMemo.PayerName
+		paymentData.TransferRequest = invoiceMemo.TransferRequest
+
+		lnclient := a.daemonAPI.APIClient()
+		decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: string(paymentItem.PaymentRequest)})
+		if err != nil {
+			return err
+		}
+		paymentData.Destination = decodedReq.Destination
+		if decodedReq.Destination == a.cfg.SwapperPubkey {
+			paymentData.Type = db.WithdrawalPayment
+		}
+	}
+
+	swap, err := a.breezDB.FetchReverseSwap(paymentItem.PaymentHash)
 	if err != nil {
 		return err
 	}
