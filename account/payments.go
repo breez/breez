@@ -3,6 +3,7 @@ package account
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -20,6 +21,7 @@ import (
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/record"
 )
 
 const (
@@ -122,6 +124,33 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
 	a.sendPaymentAsync(&lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	return nil
+}
+
+// SendSpontaneousPayment send a payment without a payment request.
+func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) error {
+	destBytes, err := hex.DecodeString(destNode)
+	if err != nil {
+		return err
+	}
+	req := &lnrpc.SendRequest{
+		Dest:              destBytes,
+		Amt:               amount,
+		DestCustomRecords: make(map[uint64][]byte),
+	}
+
+	// Since this is a spontaneous payment we need to generate the pre-image and hash by ourselves.
+	var preimage lntypes.Preimage
+	if _, err := rand.Read(preimage[:]); err != nil {
+		return err
+	}
+	req.DestCustomRecords[record.KeySendType] = preimage[:]
+	hash := preimage.Hash()
+	req.PaymentHash = hash[:]
+
+	// Also use the 'tip' key to set the description.
+	req.DestCustomRecords[7629168] = []byte(description)
+	a.sendPaymentAsync(req)
 	return nil
 }
 
