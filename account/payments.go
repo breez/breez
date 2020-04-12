@@ -121,30 +121,33 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
+	a.sendPaymentAsync(&lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	return nil
+}
 
+func (a *Service) sendPaymentAsync(sendRequest *lnrpc.SendRequest) {
+	lnclient := a.daemonAPI.APIClient()
 	go func() {
-		response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
 		if err != nil {
 			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-			a.notifyPaymentResult(false, paymentRequest, err.Error(), "")
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, err.Error(), "")
 			return
 		}
 
 		if len(response.PaymentError) > 0 {
 			a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-			traceReport, err := a.createPaymentTraceReport(paymentRequest, amountSatoshi, response)
+			traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
 			if err != nil {
 				a.log.Errorf("failed to create trace report for failed payment %v", err)
 			}
-			a.notifyPaymentResult(false, paymentRequest, response.PaymentError, traceReport)
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, response.PaymentError, traceReport)
 			return
 		}
 		a.log.Infof("sendPaymentForRequest finished successfully")
-		a.notifyPaymentResult(true, paymentRequest, "", "")
+		a.notifyPaymentResult(true, sendRequest.PaymentRequest, "", "")
 		a.syncSentPayments()
 	}()
-
-	return nil
 }
 
 /*
