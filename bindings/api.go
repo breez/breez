@@ -397,7 +397,7 @@ func SendPaymentForRequest(payInvoiceRequest []byte) error {
 /*
 SendSpontaneousPayment is part of the binding inteface which is delegated to breez.SendSpontaneousPayment
 */
-func SendSpontaneousPayment(spontaneousPayment []byte) error {
+func SendSpontaneousPayment(spontaneousPayment []byte) (string, error) {
 	decodedRequest := &data.SpontaneousPaymentRequest{}
 	proto.Unmarshal(spontaneousPayment, decodedRequest)
 	return getBreezApp().AccountService.SendSpontaneousPayment(

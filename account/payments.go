@@ -123,15 +123,15 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	a.sendPaymentAsync(&lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	a.sendPaymentAsync(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 	return nil
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) error {
+func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
-		return err
+		return "", err
 	}
 	req := &lnrpc.SendRequest{
 		Dest:              destBytes,
@@ -142,7 +142,7 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	// Since this is a spontaneous payment we need to generate the pre-image and hash by ourselves.
 	var preimage lntypes.Preimage
 	if _, err := rand.Read(preimage[:]); err != nil {
-		return err
+		return "", err
 	}
 	req.DestCustomRecords[record.KeySendType] = preimage[:]
 	hash := preimage.Hash()
@@ -150,17 +150,19 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 
 	// Also use the 'tip' key to set the description.
 	req.DestCustomRecords[7629168] = []byte(description)
-	a.sendPaymentAsync(req)
-	return nil
+
+	hashStr := hex.EncodeToString(hash[:])
+	a.sendPaymentAsync(hashStr, req)
+	return hashStr, nil
 }
 
-func (a *Service) sendPaymentAsync(sendRequest *lnrpc.SendRequest) {
+func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRequest) {
 	lnclient := a.daemonAPI.APIClient()
 	go func() {
 		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
 		if err != nil {
 			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, err.Error(), "")
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
 			return
 		}
 
@@ -170,11 +172,11 @@ func (a *Service) sendPaymentAsync(sendRequest *lnrpc.SendRequest) {
 			if err != nil {
 				a.log.Errorf("failed to create trace report for failed payment %v", err)
 			}
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, response.PaymentError, traceReport)
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, response.PaymentError, traceReport)
 			return
 		}
 		a.log.Infof("sendPaymentForRequest finished successfully")
-		a.notifyPaymentResult(true, sendRequest.PaymentRequest, "", "")
+		a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 		a.syncSentPayments()
 	}()
 }
