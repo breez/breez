@@ -93,6 +93,12 @@ message PayInvoiceRequest {
     string paymentRequest = 2;
 }
 
+message SpontaneousPaymentRequest {
+    int64 amount = 1;
+    string destNode = 2;
+    string description = 3;
+}
+
 message InvoiceMemo {
     string description = 1;
     int64 amount = 2;
