@@ -623,6 +623,10 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		if err != nil {
 			return err
 		}
+		pathLength := len(paymentItem.Path)
+		if pathLength > 0 {
+			paymentData.Destination = paymentItem.Path[pathLength-1]
+		}
 		paymentData.Description = string(message)
 	}
 
