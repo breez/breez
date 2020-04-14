@@ -386,13 +386,25 @@ func GetPayments() ([]byte, error) {
 }
 
 /*
-SendPaymentForRequest is part of the binding inteface which is delegated to breez.PayBlankInvoice
+SendPaymentForRequest is part of the binding inteface which is delegated to breez.SendPaymentForRequest
 */
 func SendPaymentForRequest(payInvoiceRequest []byte) error {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
 	return getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
 }
+
+/*
+SendSpontaneousPayment is part of the binding inteface which is delegated to breez.SendSpontaneousPayment
+*/
+func SendSpontaneousPayment(spontaneousPayment []byte) (string, error) {
+	decodedRequest := &data.SpontaneousPaymentRequest{}
+	proto.Unmarshal(spontaneousPayment, decodedRequest)
+	return getBreezApp().AccountService.SendSpontaneousPayment(
+		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount)
+}
+
+//SpontaneousPaymentRequest
 
 /*
 SendPaymentFailureBugReport is part of the binding inteface which is delegated to breez.SendPaymentFailureBugReport

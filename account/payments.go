@@ -3,6 +3,7 @@ package account
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -20,6 +21,7 @@ import (
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/record"
 )
 
 const (
@@ -121,30 +123,62 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
+	a.sendPaymentAsync(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	return nil
+}
 
+// SendSpontaneousPayment send a payment without a payment request.
+func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
+	destBytes, err := hex.DecodeString(destNode)
+	if err != nil {
+		return "", err
+	}
+	req := &lnrpc.SendRequest{
+		Dest:              destBytes,
+		Amt:               amount,
+		DestCustomRecords: make(map[uint64][]byte),
+	}
+
+	// Since this is a spontaneous payment we need to generate the pre-image and hash by ourselves.
+	var preimage lntypes.Preimage
+	if _, err := rand.Read(preimage[:]); err != nil {
+		return "", err
+	}
+	req.DestCustomRecords[record.KeySendType] = preimage[:]
+	hash := preimage.Hash()
+	req.PaymentHash = hash[:]
+
+	// Also use the 'tip' key to set the description.
+	req.DestCustomRecords[7629168] = []byte(description)
+
+	hashStr := hex.EncodeToString(hash[:])
+	a.sendPaymentAsync(hashStr, req)
+	return hashStr, nil
+}
+
+func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRequest) {
+	lnclient := a.daemonAPI.APIClient()
 	go func() {
-		response, err := lnclient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
 		if err != nil {
 			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-			a.notifyPaymentResult(false, paymentRequest, err.Error(), "")
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
 			return
 		}
 
 		if len(response.PaymentError) > 0 {
 			a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-			traceReport, err := a.createPaymentTraceReport(paymentRequest, amountSatoshi, response)
+			traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
 			if err != nil {
 				a.log.Errorf("failed to create trace report for failed payment %v", err)
 			}
-			a.notifyPaymentResult(false, paymentRequest, response.PaymentError, traceReport)
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, response.PaymentError, traceReport)
 			return
 		}
 		a.log.Infof("sendPaymentForRequest finished successfully")
-		a.notifyPaymentResult(true, paymentRequest, "", "")
+		a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 		a.syncSentPayments()
 	}()
-
-	return nil
 }
 
 /*
