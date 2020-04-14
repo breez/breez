@@ -67,6 +67,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			IsChannelPending:           payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.ConfirmedClose,
 			IsChannelCloseConfimed:     payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.WaitingClose,
 			ClosedChannelTxID:          payment.ClosedChannelTxID,
+			IsKeySend:                  payment.IsKeySend,
 		}
 		if payment.Type != db.ClosedChannelPayment {
 			paymentItem.InvoiceMemo = &data.InvoiceMemo{
@@ -150,8 +151,11 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 
 	// Also use the 'tip' key to set the description.
 	req.DestCustomRecords[7629168] = []byte(description)
-
 	hashStr := hex.EncodeToString(hash[:])
+	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
+		return "", err
+	}
+
 	a.sendPaymentAsync(hashStr, req)
 	return hashStr, nil
 }
@@ -613,6 +617,13 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		if decodedReq.Destination == a.cfg.SwapperPubkey {
 			paymentData.Type = db.WithdrawalPayment
 		}
+	} else {
+		paymentData.IsKeySend = true
+		message, err := a.breezDB.FetchTipMessage(paymentItem.PaymentHash)
+		if err != nil {
+			return err
+		}
+		paymentData.Description = string(message)
 	}
 
 	swap, err := a.breezDB.FetchReverseSwap(paymentItem.PaymentHash)

@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	versionBucket        = "version"
-	incomingPayReqBucket = "paymentRequests"
+	versionBucket          = "version"
+	incomingPayReqBucket   = "paymentRequests"
+	keysendTipMessagBucket = "keysendTipMessagBucket"
 
 	//add funds
 	addressesBucket           = "subswap_addresses"
@@ -92,6 +93,10 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
 		_, err = tx.CreateBucketIfNotExists([]byte(incomingPayReqBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(keysendTipMessagBucket))
 		if err != nil {
 			return err
 		}

@@ -51,6 +51,7 @@ type PaymentInfo struct {
 	PendingExpirationHeight    uint32
 	PendingExpirationTimestamp int64
 	Preimage                   string
+	IsKeySend                  bool
 
 	//For closed channels
 	ClosedChannelPoint  string
@@ -239,6 +240,16 @@ func (db *DB) SavePaymentRequest(payReqHash string, payReq []byte) error {
 // FetchPaymentRequest fetches a payment request by a payment hash
 func (db *DB) FetchPaymentRequest(payReqHash string) ([]byte, error) {
 	return db.fetchItem([]byte(incomingPayReqBucket), []byte(payReqHash))
+}
+
+// SaveTipMessage saves a tip message related to payment hash into the database
+func (db *DB) SaveTipMessage(payReqHash string, message []byte) error {
+	return db.saveItem([]byte(keysendTipMessagBucket), []byte(payReqHash), message)
+}
+
+// FetchTipMessage fetches a a tip message related to payment hash
+func (db *DB) FetchTipMessage(payReqHash string) ([]byte, error) {
+	return db.fetchItem([]byte(keysendTipMessagBucket), []byte(payReqHash))
 }
 
 func serializePaymentInfo(s *PaymentInfo) ([]byte, error) {
