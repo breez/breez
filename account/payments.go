@@ -549,6 +549,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
 	paymentData := &db.PaymentInfo{
 		Type:                       paymentType,
+		IsKeySend:                  len(pendingPayment.Info.PaymentRequest) == 0,
 		Amount:                     htlc.Amount,
 		CreationTimestamp:          time.Now().Unix(),
 		PendingExpirationHeight:    htlc.ExpirationHeight,
