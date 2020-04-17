@@ -525,13 +525,16 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	var pendingPayment *channeldb.MPPayment
 	lnclient := a.daemonAPI.APIClient()
 
+	a.log.Infof("createPendingPayment")
 	if htlc.Incoming {
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
 		if err != nil {
 			a.log.Errorf("createPendingPayment - failed to call LookupInvoice %v", err)
 			return nil, err
 		}
-		paymentRequest = invoice.PaymentRequest
+		if invoice != nil {
+			paymentRequest = invoice.PaymentRequest
+		}
 	} else {
 		payReqBytes, err := a.breezDB.FetchPaymentRequest(hex.EncodeToString(htlc.HashLock))
 		if err != nil {
@@ -549,7 +552,6 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
 	paymentData := &db.PaymentInfo{
 		Type:                       paymentType,
-		IsKeySend:                  len(pendingPayment.Info.PaymentRequest) == 0,
 		Amount:                     htlc.Amount,
 		CreationTimestamp:          time.Now().Unix(),
 		PendingExpirationHeight:    htlc.ExpirationHeight,
@@ -575,11 +577,13 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		paymentData.TransferRequest = invoiceMemo.TransferRequest
 		paymentData.PaymentHash = decodedReq.PaymentHash
 		paymentData.Destination = decodedReq.Destination
-		if pendingPayment != nil {
-			paymentData.CreationTimestamp = decodedReq.Timestamp
-			paymentData.Amount = int64(pendingPayment.Info.Value.ToSatoshis())
-			paymentData.CreationTimestamp = pendingPayment.Info.CreationTime.Unix()
-		}
+	}
+
+	if pendingPayment != nil {
+		paymentData.IsKeySend = len(pendingPayment.Info.PaymentRequest) == 0
+		paymentData.PaymentHash = hex.EncodeToString(pendingPayment.Info.PaymentHash[:])
+		paymentData.Amount = int64(pendingPayment.Info.Value.ToSatoshis())
+		paymentData.CreationTimestamp = pendingPayment.Info.CreationTime.Unix()
 	}
 
 	return paymentData, nil
