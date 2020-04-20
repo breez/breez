@@ -32,10 +32,14 @@ func (a *Service) ValidateAddress(address string) error {
 		return errors.New("unknown network type " + a.cfg.Network)
 	}
 
-	_, err := btcutil.DecodeAddress(address, network)
+	addr, err := btcutil.DecodeAddress(address, network)
 	if err != nil {
 		a.log.Errorf("Error parsing %s as address\t", address)
 		return err
+	}
+	if _, ok := addr.(*btcutil.AddressPubKey); ok {
+		a.log.Errorf("Using pay-to-pubkey address %s is considered as an error\t", address)
+		return btcutil.ErrUnknownAddressType
 	}
 
 	return nil
