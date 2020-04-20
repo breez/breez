@@ -13,6 +13,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 
 	breezservice "github.com/breez/breez/breez"
+	"github.com/breez/breez/data"
 )
 
 var (
@@ -313,7 +314,10 @@ func (a *Service) connectAndOpenChannel(l lsp, force bool) error {
 		if err != nil {
 			return err
 		}
-
+		pendingChannels, err := a.getPendingChannelPoint()
+		if err != nil && len(pendingChannels) > 0 {
+			a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_LSP_CHANNEL_OPENED})
+		}
 		a.onRoutingNodePendingChannel()
 	}
 	return nil
