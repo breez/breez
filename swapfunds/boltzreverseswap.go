@@ -135,7 +135,9 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest,
 	client := s.daemonAPI.ChainNotifierClient()
 	ctx, cancel := context.WithCancel(context.Background())
 	s.log.Infof("Registering spend notification %x", spendRequest.Script)
+	s.log.Infof("Chain Notifier Client is %v", client)
 	stream, err := client.RegisterSpendNtfn(ctx, spendRequest)
+	s.log.Infof("After Register spend %v", spendRequest)
 	if err != nil {
 		s.log.Errorf("client.RegisterSpendNtfn(%#v): %v", spendRequest, err)
 		cancel()
@@ -148,6 +150,7 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest,
 				s.log.Criticalf("Failed to receive an event : %v", err)
 				return
 			}
+			s.log.Infof("Got spend event %v", SpendEvent)
 			s.log.Infof("spendEvent: %#v; rawTX:%x", SpendEvent.GetSpend(), SpendEvent.GetSpend().RawSpendingTx)
 			err = s.breezDB.SaveUnspendLockupInformation(nil)
 			err = s.breezDB.SaveUnconfirmedClaimTransaction(nil)
@@ -408,12 +411,15 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 	s.log.Infof("Fetched %v in flight payments", len(payments))
 	var statuses []*data.ReverseSwapPaymentStatus
 	for _, p := range payments {
+		s.log.Infof("Checking payment %v", p)
 		hash := p.Info.PaymentHash.String()
+		s.log.Infof("Checking payment hash %v", hash)
 		rs, err := s.breezDB.FetchReverseSwap(hash)
 		if err != nil {
 			s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
 			return nil, fmt.Errorf("s.breezDB.FetchReverseSwap(%v): %v", hash, err)
 		}
+		s.log.Infof("AfterFetchReverseSwap %v", rs)
 		if rs == nil {
 			continue
 		}
