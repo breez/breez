@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/breez/boltz"
 	breezservice "github.com/breez/breez/breez"
@@ -148,6 +149,9 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest,
 			SpendEvent, err := stream.Recv()
 			if err != nil {
 				s.log.Criticalf("Failed to receive an event : %v", err)
+				time.AfterFunc(time.Second*10, func() {
+					s.subscribeSpendTransaction(spendRequest, txid)
+				})
 				return
 			}
 			s.log.Infof("Got spend event %v", SpendEvent)
@@ -161,9 +165,13 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest,
 		}
 	}()
 	go func() {
-		<-s.quitChan
-		s.log.Infof("Canceling subscription")
-		cancel()
+		select {
+		case <-ctx.Done():
+			s.log.Infof("Cancelling subscribeSpendTransaction")
+			cancel()
+		case <-s.quitChan:
+			cancel()
+		}
 	}()
 	return nil
 }
@@ -268,6 +276,9 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 			confEvent, err := stream.Recv()
 			if err != nil {
 				s.log.Criticalf("Failed to receive an event : %v", err)
+				time.AfterFunc(time.Second*10, func() {
+					s.subscribeLockupScript(rs)
+				})
 				s.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_REVERSE_SWAP_CLAIM_FAILED, Data: []string{rs.Key, "internal error"}})
 				return
 			}
@@ -282,9 +293,13 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 		}
 	}()
 	go func() {
-		<-s.quitChan
-		s.log.Infof("Canceling subscription")
-		cancel()
+		select {
+		case <-ctx.Done():
+			s.log.Infof("Cancelling subscribeLockupScript")
+			cancel()
+		case <-s.quitChan:
+			cancel()
+		}
 	}()
 	return nil
 }
@@ -463,6 +478,7 @@ func (s *Service) handleReverseSwapsPayments() error {
 		err = s.subscribeLockupScript(rs)
 		if err != nil {
 			s.log.Errorf("s.subscribeLockupScript(%v): %v", rs, err)
+			return err
 		}
 	}
 	return nil
