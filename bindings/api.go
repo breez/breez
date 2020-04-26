@@ -1,6 +1,7 @@
 package bindings
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -607,6 +608,14 @@ func SetPeers(request []byte) error {
 
 func TestPeer(peer string) error {
 	return chainservice.TestPeer(peer)
+}
+
+func DeleteNodeChannelsFromGraph(nid string) error {
+	nodePub, err := hex.DecodeString(nid)
+	if err != nil {
+		return nil
+	}
+	return getBreezApp().DeleteNodeChannelsFromGraph(nodePub)
 }
 
 func GetTxSpentURL() ([]byte, error) {

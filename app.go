@@ -5,14 +5,18 @@ package breez
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/breez/breez/chainservice"
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
+	"github.com/coreos/bbolt"
 	"github.com/lightninglabs/neutrino/filterdb"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
@@ -235,4 +239,36 @@ func (a *App) ClosedChannels() (int, error) {
 
 func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
+}
+
+func (a *App) DeleteNodeChannelsFromGraph(nodePub []byte) error {
+	chanDB, chanDBCleanUp, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		a.log.Errorf("channeldbservice.Get(%v): %v", a.cfg.WorkingDir, err)
+		return fmt.Errorf("channeldbservice.Get(%v): %w", a.cfg.WorkingDir, err)
+	}
+	defer chanDBCleanUp()
+	graph := chanDB.ChannelGraph()
+	var chanIDs []uint64
+	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
+		return graph.ForEachNodeChannel(tx, nodePub, func(tx *bbolt.Tx,
+			channelEdgeInfo *channeldb.ChannelEdgeInfo,
+			_ *channeldb.ChannelEdgePolicy,
+			_ *channeldb.ChannelEdgePolicy) error {
+			chanIDs = append(chanIDs, channelEdgeInfo.ChannelID)
+			return nil
+		})
+	})
+	if err != nil {
+		a.log.Errorf("DeleteNodeFromGraph->ForEachNodeChannel error = %v", err)
+		return fmt.Errorf("ForEachNodeChannel: %w", err)
+	}
+
+	err = graph.DeleteChannelEdges(chanIDs...)
+	if err != nil {
+		a.log.Errorf("DeleteNodeFromGraph->DeleteChannelEdges error = %v", err)
+		return fmt.Errorf("DeleteChannelEdges: %w", err)
+	}
+	a.log.Errorf("Deleted channels from/to %x", nodePub)
+	return nil
 }

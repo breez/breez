@@ -19,7 +19,9 @@ require (
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.6.0 // indirect
 	github.com/urfave/cli v1.18.0
+	go.etcd.io/bbolt v1.3.3
 	golang.org/x/crypto v0.0.0-20200109152110-61a87790db17
+	golang.org/x/mobile v0.0.0-20200329125638-4c31acba0007 // indirect
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
