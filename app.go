@@ -18,6 +18,7 @@ import (
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnwire"
 )
 
 //Service is the interface to be implemeted by all breez services
@@ -241,7 +242,7 @@ func (a *App) LastSyncedHeaderTimestamp() (int64, error) {
 	return a.breezDB.FetchLastSyncedHeaderTimestamp()
 }
 
-func (a *App) DeleteNodeChannelsFromGraph(nodePub []byte) error {
+func (a *App) DeleteNonTLVNodesFromGraph() error {
 	chanDB, chanDBCleanUp, err := channeldbservice.Get(a.cfg.WorkingDir)
 	if err != nil {
 		a.log.Errorf("channeldbservice.Get(%v): %v", a.cfg.WorkingDir, err)
@@ -249,26 +250,44 @@ func (a *App) DeleteNodeChannelsFromGraph(nodePub []byte) error {
 	}
 	defer chanDBCleanUp()
 	graph := chanDB.ChannelGraph()
-	var chanIDs []uint64
+
+	cids := make(map[uint64]struct{})
+	nodes := 0
 	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
-		return graph.ForEachNodeChannel(tx, nodePub, func(tx *bbolt.Tx,
-			channelEdgeInfo *channeldb.ChannelEdgeInfo,
-			_ *channeldb.ChannelEdgePolicy,
-			_ *channeldb.ChannelEdgePolicy) error {
-			chanIDs = append(chanIDs, channelEdgeInfo.ChannelID)
-			return nil
+		return graph.ForEachNode(tx, func(tx *bbolt.Tx, lightningNode *channeldb.LightningNode) error {
+			if lightningNode.Features.HasFeature(lnwire.TLVOnionPayloadOptional) {
+				return nil
+			}
+			nodes++
+			return lightningNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+				channelEdgeInfo *channeldb.ChannelEdgeInfo,
+				_ *channeldb.ChannelEdgePolicy,
+				_ *channeldb.ChannelEdgePolicy) error {
+				cids[channelEdgeInfo.ChannelID] = struct{}{}
+				return nil
+			})
 		})
 	})
 	if err != nil {
 		a.log.Errorf("DeleteNodeFromGraph->ForEachNodeChannel error = %v", err)
 		return fmt.Errorf("ForEachNodeChannel: %w", err)
 	}
-
+	a.log.Infof("About to delete %v channels from %v non tlv nodes.", len(cids), nodes)
+	var chanIDs []uint64
+	for cid := range cids {
+		chanIDs = append(chanIDs, cid)
+	}
 	err = graph.DeleteChannelEdges(chanIDs...)
 	if err != nil {
 		a.log.Errorf("DeleteNodeFromGraph->DeleteChannelEdges error = %v", err)
 		return fmt.Errorf("DeleteChannelEdges: %w", err)
 	}
-	a.log.Errorf("Deleted channels from/to %x", nodePub)
+
+	err = graph.PruneGraphNodes()
+	if err != nil {
+		a.log.Errorf("DeleteNodeFromGraph->PruneGraphNodes error = %v", err)
+		return fmt.Errorf("PruneGraphNodes(): %w", err)
+	}
+	a.log.Infof("Deleted %v channels from %v non tlv nodes.", len(chanIDs), nodes)
 	return nil
 }
