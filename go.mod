@@ -19,7 +19,6 @@ require (
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.6.0 // indirect
 	github.com/urfave/cli v1.18.0
-	go.etcd.io/bbolt v1.3.3
 	golang.org/x/crypto v0.0.0-20200109152110-61a87790db17
 	golang.org/x/mobile v0.0.0-20200329125638-4c31acba0007 // indirect
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0
@@ -36,7 +35,7 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.2.1-0.20200401131525-febcccb250bf
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20200401131525-febcccb250bf
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20200329110104-3ef20f2cdeed
-	github.com/lightningnetwork/lnd v0.9.2-beta => github.com/breez/lnd v0.9.2-beta.0.20200424090704-2a676e3301f1
+	github.com/lightningnetwork/lnd v0.9.2-beta => github.com/breez/lnd v0.9.2-beta.0.20200428130737-e41bb2f9e19a
 	github.com/lightningnetwork/lnd/cert => github.com/lightningnetwork/lnd/cert v1.0.2-0.20200401010500-77df8e3a4386
 )
 
