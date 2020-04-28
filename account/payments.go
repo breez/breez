@@ -176,7 +176,14 @@ func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRe
 			if err != nil {
 				a.log.Errorf("failed to create trace report for failed payment %v", err)
 			}
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, response.PaymentError, traceReport)
+			errorMsg := response.PaymentError
+			if strings.Contains(errorMsg, "unable to find a path to destination") {
+				_, maxPay, _, err := a.getReceivePayLimit()
+				if err == nil && maxPay-sendRequest.Amt < 50 {
+					errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
+				}
+			}
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, errorMsg, traceReport)
 			return
 		}
 		a.log.Infof("sendPaymentForRequest finished successfully")
