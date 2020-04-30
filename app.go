@@ -175,7 +175,9 @@ func (a *App) watchDaemonEvents() error {
 					break
 				}
 				err = chainService.FilterDB.PurgeFilters(filterdb.RegularFilter)
+				var app *App
 				a.log.Errorf("purge compact filters finished error = %v", err)
+				app.CheckVersion()
 				cleanupFn()
 			}
 		case <-client.Quit():
