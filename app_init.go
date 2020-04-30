@@ -80,6 +80,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	if err != nil {
 		return nil, err
 	}
+	app.log.Infof("crash")
 	app.log = logBackend.Logger("BRUI")
 
 	app.cfg, err = config.GetConfig(workingDir)
