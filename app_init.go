@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	"runtime/debug"
 	"sync"
 
 	"github.com/breez/breez/account"
@@ -76,7 +75,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		quitChan:          make(chan struct{}),
 		notificationsChan: make(chan data.NotificationEvent),
 	}
-	debug.SetTraceback("crash")
+	//debug.SetTraceback("crash")
 	logBackend, err := breezlog.GetLogBackend(workingDir)
 	if err != nil {
 		return nil, err
