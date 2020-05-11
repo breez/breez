@@ -29,7 +29,6 @@ type Service struct {
 	breezAPI           services.API
 	log                btclog.Logger
 	daemonAPI          lnnode.API
-	connectedNotifier  *channelActiveNotifier
 	onServiceEvent     func(data.NotificationEvent)
 	lnurlWithdrawing   string
 	activeParams       *chaincfg.Params
@@ -70,14 +69,13 @@ func NewService(
 	}
 
 	return &Service{
-		cfg:               cfg,
-		log:               logBackend.Logger("ACCNT"),
-		connectedNotifier: newChannelActiveNotifier(),
-		daemonAPI:         daemonAPI,
-		breezDB:           breezDB,
-		breezAPI:          breezAPI,
-		onServiceEvent:    onServiceEvent,
-		quitChan:          make(chan struct{}),
-		activeParams:      activeParams,
+		cfg:            cfg,
+		log:            logBackend.Logger("ACCNT"),
+		daemonAPI:      daemonAPI,
+		breezDB:        breezDB,
+		breezAPI:       breezAPI,
+		onServiceEvent: onServiceEvent,
+		quitChan:       make(chan struct{}),
+		activeParams:   activeParams,
 	}, nil
 }

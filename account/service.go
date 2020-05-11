@@ -71,7 +71,6 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.syncClosedChannels()
 				a.onAccountChanged()
 			case lnnode.ChannelEvent:
-				a.connectedNotifier.setActive(a.daemonAPI.HasActiveChannel())
 				if update.Type == lnrpc.ChannelEventUpdate_CLOSED_CHANNEL {
 					a.syncClosedChannels()
 				}

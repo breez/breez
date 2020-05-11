@@ -110,7 +110,7 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
-	if err := a.waitChannelActive(); err != nil {
+	if err := a.waitReadyForPayment(); err != nil {
 		return err
 	}
 	lnclient := a.daemonAPI.APIClient()
@@ -130,6 +130,9 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
+	if err := a.waitReadyForPayment(); err != nil {
+		return "", err
+	}
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
@@ -204,7 +207,7 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-	if err := a.waitChannelActive(); err != nil {
+	if err := a.waitReadyForPayment(); err != nil {
 		return "", err
 	}
 	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
