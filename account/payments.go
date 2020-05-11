@@ -110,9 +110,6 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
-	if err := a.waitReadyForPayment(); err != nil {
-		return err
-	}
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
@@ -166,6 +163,11 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRequest) {
 	lnclient := a.daemonAPI.APIClient()
 	go func() {
+		if err := a.waitReadyForPayment(); err != nil {
+			a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
+			return
+		}
 		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
 		if err != nil {
 			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
