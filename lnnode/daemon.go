@@ -65,6 +65,8 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 	if err != nil {
 		return err
 	}
+	defer client.Cancel()
+
 	if d.IsReadyForPayment() {
 		return nil
 	}
@@ -73,7 +75,6 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 	timeToFinishGrace := activeGraceDuration - (time.Now().Sub(d.startTime))
 	graceTimer := time.After(timeToFinishGrace)
 	timeoutTimer := time.After(timeout)
-	defer client.Cancel()
 	for {
 		select {
 		case event := <-client.Updates():
