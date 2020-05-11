@@ -2,6 +2,7 @@ package lnnode
 
 import (
 	"sync"
+	"time"
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
@@ -24,6 +25,8 @@ import (
 type API interface {
 	SubscribeEvents() (*subscribe.Client, error)
 	HasActiveChannel() bool
+	IsReadyForPayment() bool
+	WaitReadyForPayment(timeout time.Duration) error
 	NodePubkey() string
 	APIClient() lnrpc.LightningClient
 	SubSwapClient() submarineswaprpc.SubmarineSwapperClient
@@ -41,6 +44,7 @@ type Daemon struct {
 	breezDB             *db.DB
 	started             int32
 	stopped             int32
+	startTime           time.Time
 	daemonRunning       bool
 	nodePubkey          string
 	wg                  sync.WaitGroup

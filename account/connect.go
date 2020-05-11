@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -19,52 +18,6 @@ import (
 var (
 	waitConnectTimeout = time.Second * 60
 )
-
-type channelActiveNotifier struct {
-	sync.Mutex
-	ntfnChan chan struct{}
-	isActive bool
-}
-
-// newChannelActiveNotifier creates a new channelActiveNotifier
-func newChannelActiveNotifier() *channelActiveNotifier {
-	return &channelActiveNotifier{
-		ntfnChan: make(chan struct{}),
-	}
-}
-
-func (n *channelActiveNotifier) active() bool {
-	n.Lock()
-	defer n.Unlock()
-	return n.isActive
-}
-
-func (n *channelActiveNotifier) setActive(active bool) {
-
-	if n.active() == active {
-		return
-	}
-
-	n.Lock()
-	n.isActive = active
-
-	if !active {
-		n.ntfnChan = make(chan struct{})
-		n.Unlock()
-	} else {
-		ntfnChan := n.ntfnChan
-		n.Unlock()
-		if ntfnChan != nil {
-			close(ntfnChan)
-		}
-	}
-}
-
-func (n *channelActiveNotifier) notifyWhenActive() <-chan struct{} {
-	n.Lock()
-	defer n.Unlock()
-	return n.ntfnChan
-}
 
 // ConnectChannelsPeers connects to all peers associated with a non active channel.
 func (a *Service) ConnectChannelsPeers() error {
@@ -234,16 +187,8 @@ type lsp interface {
 	OpenChannel(a *Service, pubkey string) error
 }
 
-func (a *Service) waitChannelActive() error {
-	if a.daemonAPI.HasActiveChannel() {
-		return nil
-	}
-	select {
-	case <-a.connectedNotifier.notifyWhenActive():
-		return nil
-	case <-time.After(waitConnectTimeout):
-		return fmt.Errorf("Timeout has exceeded while trying to process your request.")
-	}
+func (a *Service) waitReadyForPayment() error {
+	return a.daemonAPI.WaitReadyForPayment(waitConnectTimeout)
 }
 
 /*

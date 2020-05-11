@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
@@ -19,11 +20,16 @@ import (
 	"github.com/lightningnetwork/lnd/signal"
 )
 
+const (
+	activeGraceDuration = time.Second * 10
+)
+
 // Start is used to start the lightning network daemon.
 func (d *Daemon) Start() error {
 	if atomic.SwapInt32(&d.started, 1) == 1 {
 		return errors.New("Daemon already started")
 	}
+	d.startTime = time.Now()
 
 	if err := d.ntfnServer.Start(); err != nil {
 		return err
@@ -51,6 +57,59 @@ func (d *Daemon) HasActiveChannel() bool {
 		return false
 	}
 	return len(channels.Channels) > 0
+}
+
+// WaitReadyForPayment is waiting untill we are ready to pay
+func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
+	client, err := d.ntfnServer.Subscribe()
+	if err != nil {
+		return err
+	}
+	if d.IsReadyForPayment() {
+		return nil
+	}
+
+	d.log.Infof("WaitReadyForPayment - not yet ready for payment, waiting...")
+	timeToFinishGrace := activeGraceDuration - (time.Now().Sub(d.startTime))
+	graceTimer := time.After(timeToFinishGrace)
+	timeoutTimer := time.After(timeout)
+	defer client.Cancel()
+	for {
+		select {
+		case event := <-client.Updates():
+			switch event.(type) {
+			case ChannelEvent:
+				d.log.Infof("WaitReadyForPayment got channel event %v", d.IsReadyForPayment())
+				if d.IsReadyForPayment() {
+					return nil
+				}
+			}
+		case <-graceTimer:
+			d.log.Infof("WaitReadyForPayment got grace timer event %v", d.IsReadyForPayment())
+			if d.IsReadyForPayment() {
+				return nil
+			}
+		case <-timeoutTimer:
+			d.log.Info("WaitReadyForPayment got timeout event")
+			return fmt.Errorf("Timeout has exceeded while trying to process your request.")
+		}
+	}
+}
+
+// IsReadyForPayment returns true if we can pay
+func (d *Daemon) IsReadyForPayment() bool {
+	endGrace := d.startTime.Add(activeGraceDuration)
+	inGrace := time.Now().Before(endGrace)
+	lnclient := d.APIClient()
+	if lnclient == nil {
+		return false
+	}
+	hasInactive, err := d.hasInactiveChannel(lnclient)
+	if err != nil {
+		d.log.Errorf("Error in hasInactiveChannel(): %v", err)
+		return false
+	}
+	return d.HasActiveChannel() && (!inGrace || !hasInactive)
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -209,4 +268,15 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 		}
 	case <-d.quitChan:
 	}
+}
+
+func (d *Daemon) hasInactiveChannel(client lnrpc.LightningClient) (bool, error) {
+	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		InactiveOnly: true,
+	})
+	if err != nil {
+		d.log.Errorf("Error in hasInactiveChannel() > ListChannels(): %v", err)
+		return false, err
+	}
+	return len(channels.Channels) > 0, nil
 }
