@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	activeGraceDuration = time.Second * 10
+	activeGraceDuration = time.Second * 15
 )
 
 // Start is used to start the lightning network daemon.
