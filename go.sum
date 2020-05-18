@@ -131,6 +131,8 @@ github.com/breez/lnd v0.9.2-beta.0.20200517184039-f5028d9f42f0 h1:ilfjUXFtOPx1Oy
 github.com/breez/lnd v0.9.2-beta.0.20200517184039-f5028d9f42f0/go.mod h1:b/C+RH/zlpgjyBpWQ2mpHUIwdlFO1g1mSk+GNz1pN94=
 github.com/breez/lnd v0.9.2-beta.0.20200518125208-c109bffe0e02 h1:HmGFxvXHeO3+Fed1nlxZXuz59Zgq6Gnuk82g7BpJqWM=
 github.com/breez/lnd v0.9.2-beta.0.20200518125208-c109bffe0e02/go.mod h1:b/C+RH/zlpgjyBpWQ2mpHUIwdlFO1g1mSk+GNz1pN94=
+github.com/breez/lnd v0.9.2-beta.0.20200518132526-998445464202 h1:wgbP+3tUKN7YceI+j88lrcjU/vkiOxuyd98V3VN4grI=
+github.com/breez/lnd v0.9.2-beta.0.20200518132526-998445464202/go.mod h1:b/C+RH/zlpgjyBpWQ2mpHUIwdlFO1g1mSk+GNz1pN94=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0 h1:nSQkvsVdZP4GBURecXCaSCPg8AOQrR12j5mWpWbR1FA=
 github.com/breez/neutrino v0.0.0-20190722075828-b444018978e0/go.mod h1:vzLU75ll8qbRJIzW5dvK/UXtR9c2FecJ6VNOM8chyVM=
 github.com/breez/neutrino v0.0.0-20190911134610-a52c5cbdf335 h1:vA6MyZVCHKFdRyijR2rF2edJL223UCmty6xlPDXbATg=
