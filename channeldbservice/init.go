@@ -1,9 +1,12 @@
 package channeldbservice
 
 import (
+	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
@@ -13,6 +16,7 @@ import (
 
 const (
 	directoryPattern = "data/graph/{{network}}/"
+	dbName           = "channel.db"
 )
 
 var (
@@ -46,6 +50,37 @@ func release() error {
 	return chanDB.Close()
 }
 
+func compactDB(graphDir string) error {
+	dbPath := path.Join(graphDir, dbName)
+	f, err := os.Stat(dbPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if f.Size() <= 200000000 {
+		return nil
+	}
+	newFile, err := ioutil.TempFile(graphDir, "cdb-compact")
+	if err != nil {
+		return err
+	}
+	if err = chainservice.BoltCopy(dbPath, newFile.Name(),
+		func(keyPath [][]byte, k []byte, v []byte) bool { return false }); err != nil {
+		return err
+	}
+	if err = os.Rename(dbPath, dbPath+".old"); err != nil {
+		return err
+	}
+	if err = os.Rename(newFile.Name(), dbPath); err != nil {
+		logger.Criticalf("Error when renaming the new channeldb file: %v", err)
+		return err
+	}
+	logger.Infof("channel.db was compacted because it's too big")
+	return nil
+}
+
 func createService(workingDir string) (*channeldb.DB, error) {
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
@@ -59,8 +94,13 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		logger = logBackend.Logger("CHANNELDB")
 		logger.SetLevel(btclog.LevelDebug)
 	}
-	logger.Infof("creating shared channeldb service.")
+
 	graphDir := path.Join(workingDir, strings.Replace(directoryPattern, "{{network}}", config.Network, -1))
+	if err = compactDB(graphDir); err != nil {
+		logger.Errorf("Error in compactDB: %v", err)
+	}
+
+	logger.Infof("creating shared channeldb service.")
 	chanDB, err := channeldb.Open(graphDir,
 		channeldb.OptionSetSyncFreelist(true))
 	if err != nil {
