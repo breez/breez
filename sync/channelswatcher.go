@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"fmt"
+
 	"github.com/breez/breez/channeldbservice"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
@@ -8,6 +10,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
+	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/input"
 )
 
@@ -73,6 +76,24 @@ func NewChannelsWatcher(
 
 		log.Infof("watching channel id: %v", c.ShortChannelID.String())
 		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
+
+		// query spend hint for channel
+		hintCache, err := chainntnfs.NewHeightHintCache(chandb)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create height hint cache for channel %v", err)
+		}
+		spentRequest, err := chainntnfs.NewSpendRequest(&fundingOut, pkScript)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create spent request %v", err)
+		}
+		startBlock, err := hintCache.QuerySpendHint(spentRequest)
+		if err != nil && err != chainntnfs.ErrSpendHintNotFound {
+			return nil, fmt.Errorf("failed to query spent hint %v", err)
+		}
+		log.Info("Query hint for channel %v = %v", fundingOut.String(), startBlock)
+		if channelBlockHeight < uint64(startBlock) {
+			channelBlockHeight = uint64(startBlock)
+		}
 		if firstChannelBlockHeight == 0 || channelBlockHeight < firstChannelBlockHeight {
 			firstChannelBlockHeight = channelBlockHeight
 		}
@@ -103,7 +124,8 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if startHeight == 0 && b.firstChannelBlockHeight > 0 {
+	b.log.Info("fetchChannelsWatcherBlockHeight = %v", startHeight)
+	if b.firstChannelBlockHeight > startHeight {
 		startHeight = b.firstChannelBlockHeight
 	}
 
@@ -134,6 +156,13 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 				OnFilteredBlockConnected: b.onFilteredBlockConnected,
 			},
 		),
+		neutrino.ProgressHandler(func(lastBlock uint32) {
+			// in case we didn't find any closed channels, we update the last
+			// watcher state.
+			if !b.closedChannelDetected && lastBlock%100 == 0 {
+				b.db.setChannelsWatcherBlockHeight(uint64(lastBlock))
+			}
+		}),
 	)
 
 	for _, c := range b.watchedScripts {
