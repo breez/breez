@@ -40,7 +40,7 @@ func deleteCompactFilters(neutrinoFile string) error {
 	if _, err := os.Stat(targetFilePath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	err := boltCopy(neutrinoFile, targetFilePath, func(keyPath [][]byte, k []byte, v []byte) bool {
+	err := BoltCopy(neutrinoFile, targetFilePath, func(keyPath [][]byte, k []byte, v []byte) bool {
 		return len(keyPath) == 0 && v == nil && string(k) == filterBucket
 	})
 	if err != nil {
@@ -49,7 +49,7 @@ func deleteCompactFilters(neutrinoFile string) error {
 	return os.Rename(targetFilePath, neutrinoFile)
 }
 
-func boltCopy(srcfile, destfile string, skip skipFunc) error {
+func BoltCopy(srcfile, destfile string, skip skipFunc) error {
 	// Open source database.
 	src, err := bbolt.Open(srcfile, 0444, nil)
 	if err != nil {
