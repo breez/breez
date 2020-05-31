@@ -575,16 +575,6 @@ func RatchetDecrypt(request []byte) (string, error) {
 	return doubleratchet.RatchetDecrypt(unmarshaledRequest.SessionID, unmarshaledRequest.EncryptedMessage)
 }
 
-// BootstrapFiles is part of the binding inteface which is delegated to bootstrap.PutFiles
-func BootstrapFiles(request []byte) error {
-	req := &data.BootstrapFilesRequest{}
-	if err := proto.Unmarshal(request, req); err != nil {
-		return err
-	}
-
-	return bootstrap.PutFiles(req.GetWorkingDir(), req.GetFullPaths())
-}
-
 func GetPeers() ([]byte, error) {
 	var p data.Peers
 	peers, isDefault, err := getBreezApp().GetPeers()
@@ -765,6 +755,10 @@ func SweepAllCoinsTransactions(address string) ([]byte, error) {
 	return marshalResponse(
 		getBreezApp().AccountService.SweepAllCoinsTransactions(address),
 	)
+}
+
+func SyncGraphFromFile(sourceFilePath string) error {
+	return bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
 }
 
 func PublishTransaction(tx []byte) error {
