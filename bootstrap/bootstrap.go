@@ -14,7 +14,8 @@ const (
 )
 
 var (
-	channelInfos = make(map[uint64]*channeldb.ChannelEdgeInfo)
+	edgeBucket   = []byte("graph-edge")
+	zombieBucket = []byte("zombie-index")
 )
 
 // SyncGraphDB syncs the channeldb from another db.
@@ -38,6 +39,11 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		cleanup()
 	}()
 
+	// delete the zombies from the destination db as we replace it.
+	if err := deleteZombies(channelDB); err != nil {
+		return err
+	}
+
 	// buckets we want to copy from source to destination.
 	bucketsToCopy := map[string]struct{}{
 		"graph-edge": {},
@@ -59,7 +65,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return append(path, string(key))
 	}
 
-	return Merge(channelDB.DB, sourceDB,
+	return merge(channelDB.DB, sourceDB,
 		func(keyPath [][]byte, k []byte, v []byte) bool {
 			pathElements := extractPathElements(keyPath, k)
 			_, shouldCopy := bucketsToCopy[pathElements[0]]
@@ -77,7 +83,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 
 // Merge copies from source to dest and ignoring items using the skip function.
 // It is different from Compact in that it tries to create a bucket only if not exists.
-func Merge(dst, src *bbolt.DB, skip skipFunc) error {
+func merge(dst, src *bbolt.DB, skip skipFunc) error {
 	// commit regularly, or we'll run out of memory for large datasets if using one transaction.
 	var size int64
 	tx, err := dst.Begin(true)
@@ -190,4 +196,19 @@ func walkBucket(b *bbolt.Bucket, keypath [][]byte, k, v []byte, seq uint64, fn w
 		}
 		return walkBucket(b, keypath, k, v, b.Sequence(), fn, skip)
 	})
+}
+
+func deleteZombies(chanDB *channeldb.DB) error {
+	err := chanDB.Update(func(tx *bbolt.Tx) error {
+		edges := tx.Bucket(edgeBucket)
+		if edges == nil {
+			return channeldb.ErrGraphNoEdgesFound
+		}
+		zombies := edges.Bucket(zombieBucket)
+		if zombies == nil {
+			return nil
+		}
+		return edges.DeleteBucket(zombieBucket)
+	})
+	return err
 }

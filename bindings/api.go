@@ -758,7 +758,10 @@ func SweepAllCoinsTransactions(address string) ([]byte, error) {
 }
 
 func SyncGraphFromFile(sourceFilePath string) error {
-	return bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	Log("SyncGraphFromFile started", "INFO")
+	err := bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	Log("SyncGraphFromFile finished", "INFO")
+	return err
 }
 
 func PublishTransaction(tx []byte) error {
