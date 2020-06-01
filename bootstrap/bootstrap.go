@@ -33,11 +33,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open channeldb %v", err)
 	}
-	channelDB.DB.NoSync = true
-	defer func() {
-		channelDB.DB.NoSync = false
-		cleanup()
-	}()
+	defer cleanup()
 
 	// delete the zombies from the destination db as we replace it.
 	if err := deleteZombies(channelDB); err != nil {
