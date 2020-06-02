@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
@@ -290,4 +291,11 @@ func (a *App) DeleteNonTLVNodesFromGraph() error {
 	}
 	a.log.Infof("Deleted %v channels from %v non tlv nodes.", len(chanIDs), nodes)
 	return nil
+}
+
+func (a *App) GraphUrl() (string, error) {
+	if a.breezDB == nil {
+		return "", fmt.Errorf("breezDB still not initialized")
+	}
+	return bootstrap.GraphURL(a.GetWorkingDir(), a.breezDB)
 }
