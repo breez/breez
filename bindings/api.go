@@ -603,6 +603,10 @@ func DeleteNonTLVNodesFromGraph() error {
 	return getBreezApp().DeleteNonTLVNodesFromGraph()
 }
 
+func GraphURL() (string, error) {
+	return getBreezApp().GraphUrl()
+}
+
 func GetTxSpentURL() ([]byte, error) {
 	var t data.TxSpentURL
 	txSpentURL, isDefault, err := getBreezApp().GetTxSpentURL()
