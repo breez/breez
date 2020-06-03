@@ -599,8 +599,8 @@ func TestPeer(peer string) error {
 	return chainservice.TestPeer(peer)
 }
 
-func DeleteNonTLVNodesFromGraph() error {
-	return getBreezApp().DeleteNonTLVNodesFromGraph()
+func DeleteGraph() error {
+	return getBreezApp().DeleteGraph()
 }
 
 func GraphURL() (string, error) {
