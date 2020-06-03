@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	threshold = 4 * 24 * time.Hour
+	threshold = 3 * time.Hour
 )
 
 func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
