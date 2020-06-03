@@ -6,11 +6,6 @@ import (
 
 	"github.com/breez/breez/channeldbservice"
 	"github.com/coreos/bbolt"
-	"github.com/lightningnetwork/lnd/channeldb"
-)
-
-const (
-	txMaxSize = 65536
 )
 
 var (
@@ -34,11 +29,6 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return fmt.Errorf("failed to open channeldb %v", err)
 	}
 	defer cleanup()
-
-	// delete the zombies from the destination db as we replace it.
-	if err := deleteZombies(channelDB); err != nil {
-		return err
-	}
 
 	// buckets we want to copy from source to destination.
 	bucketsToCopy := map[string]struct{}{
@@ -81,30 +71,18 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 // It is different from Compact in that it tries to create a bucket only if not exists.
 func merge(dst, src *bbolt.DB, skip skipFunc) error {
 	// commit regularly, or we'll run out of memory for large datasets if using one transaction.
-	var size int64
 	tx, err := dst.Begin(true)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if err := walk(src, func(keys [][]byte, k, v []byte, seq uint64) error {
-		// On each key/value, check if we have exceeded tx size.
-		sz := int64(len(k) + len(v))
-		if size+sz > txMaxSize {
-			// Commit previous transaction.
-			if err := tx.Commit(); err != nil {
-				return err
-			}
+	// delete the zombies from the destination db as we replace it.
+	if err := deleteZombies(tx); err != nil {
+		return err
+	}
 
-			// Start new transaction.
-			tx, err = dst.Begin(true)
-			if err != nil {
-				return err
-			}
-			size = 0
-		}
-		size += sz
+	if err := walk(src, func(keys [][]byte, k, v []byte, seq uint64) error {
 
 		// Create bucket on the root transaction if this is the first level.
 		nk := len(keys)
@@ -194,17 +172,14 @@ func walkBucket(b *bbolt.Bucket, keypath [][]byte, k, v []byte, seq uint64, fn w
 	})
 }
 
-func deleteZombies(chanDB *channeldb.DB) error {
-	err := chanDB.Update(func(tx *bbolt.Tx) error {
-		edges := tx.Bucket(edgeBucket)
-		if edges == nil {
-			return channeldb.ErrGraphNoEdgesFound
-		}
-		zombies := edges.Bucket(zombieBucket)
-		if zombies == nil {
-			return nil
-		}
-		return edges.DeleteBucket(zombieBucket)
-	})
-	return err
+func deleteZombies(tx *bbolt.Tx) error {
+	edges := tx.Bucket(edgeBucket)
+	if edges == nil {
+		return nil
+	}
+	zombies := edges.Bucket(zombieBucket)
+	if zombies == nil {
+		return nil
+	}
+	return edges.DeleteBucket(zombieBucket)
 }
