@@ -24,7 +24,7 @@ type Service struct {
 	daemonAPI        lnnode.API
 	breezAPI         services.API
 	chainParams      *chaincfg.Params
-	sendPayment      func(payreq string, amount int64) error
+	sendPayment      func(payreq string, amount int64) (string, error)
 	getAccountLimits func() (maxReceive, maxPay, maxReserve int64, err error)
 	onServiceEvent   func(data.NotificationEvent)
 	quitChan         chan struct{}
@@ -35,7 +35,7 @@ func NewService(
 	breezDB *db.DB,
 	breezAPI services.API,
 	daemonAPI lnnode.API,
-	sendPayment func(payreq string, amount int64) error,
+	sendPayment func(payreq string, amount int64) (string, error),
 	getAccountLimits func() (maxReceive, maxPay, maxReserve int64, err error),
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 

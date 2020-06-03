@@ -388,20 +388,24 @@ func GetPayments() ([]byte, error) {
 /*
 SendPaymentForRequest is part of the binding inteface which is delegated to breez.SendPaymentForRequest
 */
-func SendPaymentForRequest(payInvoiceRequest []byte) error {
+func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
-	return getBreezApp().AccountService.SendPaymentForRequest(decodedRequest.PaymentRequest, decodedRequest.Amount)
+	traceReport, err := getBreezApp().AccountService.SendPaymentForRequest(
+		decodedRequest.PaymentRequest, decodedRequest.Amount)
+	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: err.Error()}, nil)
 }
 
 /*
 SendSpontaneousPayment is part of the binding inteface which is delegated to breez.SendSpontaneousPayment
 */
-func SendSpontaneousPayment(spontaneousPayment []byte) (string, error) {
+func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 	decodedRequest := &data.SpontaneousPaymentRequest{}
 	proto.Unmarshal(spontaneousPayment, decodedRequest)
-	return getBreezApp().AccountService.SendSpontaneousPayment(
+	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(
 		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount)
+
+	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: err.Error()}, nil)
 }
 
 //SpontaneousPaymentRequest
