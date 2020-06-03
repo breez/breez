@@ -374,11 +374,6 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 		return fmt.Errorf("need to set claimFee for %v", hash)
 	}
 
-	err = s.sendPayment(rs.Invoice, rs.LnAmount)
-	if err != nil {
-		return fmt.Errorf("s.sendPayment: %v", err)
-	}
-
 	err = s.subscribeLockupScript(rs)
 	if err != nil {
 		return fmt.Errorf("s.subscribeLockupScript(%v): %w", rs, err)
@@ -386,6 +381,10 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	err = s.remoteSubscribeLockupNotification(deviceID, title, body, rs.Id, rs.LockupAddress, rs.StartBlockHeight, rs.TimeoutBlockHeight)
 	if err != nil {
 		s.log.Errorf("s.remoteSubscribeLockupNotification(%v, %v, %v, %v, %v, %v): %v", deviceID, title, body, rs.Id, rs.LockupAddress, rs.StartBlockHeight, err)
+	}
+	err = s.sendPayment(rs.Invoice, rs.LnAmount)
+	if err != nil {
+		return fmt.Errorf("s.sendPayment: %v", err)
 	}
 	return nil
 }

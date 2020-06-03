@@ -121,18 +121,17 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	a.sendPaymentAsync(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
-	return nil
+	return a.sendPayment(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
+func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) error {
 	if err := a.waitReadyForPayment(); err != nil {
-		return "", err
+		return err
 	}
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
-		return "", err
+		return err
 	}
 	req := &lnrpc.SendRequest{
 		Dest:              destBytes,
@@ -143,7 +142,7 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	// Since this is a spontaneous payment we need to generate the pre-image and hash by ourselves.
 	var preimage lntypes.Preimage
 	if _, err := rand.Read(preimage[:]); err != nil {
-		return "", err
+		return err
 	}
 	req.DestCustomRecords[record.KeySendType] = preimage[:]
 	hash := preimage.Hash()
@@ -153,48 +152,46 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	req.DestCustomRecords[7629168] = []byte(description)
 	hashStr := hex.EncodeToString(hash[:])
 	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
-		return "", err
+		return err
 	}
 
-	a.sendPaymentAsync(hashStr, req)
-	return hashStr, nil
+	return a.sendPayment(hashStr, req)
 }
 
-func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRequest) {
+func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest) error {
 	lnclient := a.daemonAPI.APIClient()
-	go func() {
-		if err := a.waitReadyForPayment(); err != nil {
-			a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
-			return
-		}
-		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
-		if err != nil {
-			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
-			return
-		}
+	if err := a.waitReadyForPayment(); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
+		return err
+	}
+	response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
+	if err != nil {
+		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
+		a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
+		return err
+	}
 
-		if len(response.PaymentError) > 0 {
-			a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-			traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
-			if err != nil {
-				a.log.Errorf("failed to create trace report for failed payment %v", err)
-			}
-			errorMsg := response.PaymentError
-			if strings.Contains(errorMsg, "unable to find a path to destination") {
-				_, maxPay, _, err := a.getReceivePayLimit()
-				if err == nil && maxPay-sendRequest.Amt < 50 {
-					errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
-				}
-			}
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, errorMsg, traceReport)
-			return
+	if len(response.PaymentError) > 0 {
+		a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
+		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
+		if err != nil {
+			a.log.Errorf("failed to create trace report for failed payment %v", err)
 		}
-		a.log.Infof("sendPaymentForRequest finished successfully")
-		a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
-		a.syncSentPayments()
-	}()
+		errorMsg := response.PaymentError
+		if strings.Contains(errorMsg, "unable to find a path to destination") {
+			_, maxPay, _, err := a.getReceivePayLimit()
+			if err == nil && maxPay-sendRequest.Amt < 50 {
+				errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
+			}
+		}
+		a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, errorMsg, traceReport)
+		return errors.New(errorMsg)
+	}
+	a.log.Infof("sendPaymentForRequest finished successfully")
+	a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
+	go a.syncSentPayments()
+	return nil
 }
 
 /*
