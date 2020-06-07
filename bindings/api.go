@@ -391,9 +391,14 @@ SendPaymentForRequest is part of the binding inteface which is delegated to bree
 func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 	decodedRequest := &data.PayInvoiceRequest{}
 	proto.Unmarshal(payInvoiceRequest, decodedRequest)
+
+	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendPaymentForRequest(
 		decodedRequest.PaymentRequest, decodedRequest.Amount)
-	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: err.Error()}, nil)
+	if err != nil {
+		errorStr = err.Error()
+	}
+	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil)
 }
 
 /*
@@ -402,10 +407,15 @@ SendSpontaneousPayment is part of the binding inteface which is delegated to bre
 func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 	decodedRequest := &data.SpontaneousPaymentRequest{}
 	proto.Unmarshal(spontaneousPayment, decodedRequest)
+
+	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(
 		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount)
 
-	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: err.Error()}, nil)
+	if err != nil {
+		errorStr = err.Error()
+	}
+	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil)
 }
 
 //SpontaneousPaymentRequest
