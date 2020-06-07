@@ -3,6 +3,7 @@ package breez
 //protoc -I data data/messages.proto --go_out=plugins=grpc:data
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -253,14 +254,40 @@ func (a *App) DeleteGraph() error {
 
 	cids := make(map[uint64]struct{})
 	nodes := 0
+	ourNode, err := graph.SourceNode()
+	if err != nil {
+		a.log.Errorf("graph.SourceNode() error = %v", err)
+		return fmt.Errorf("graph.SourceNode(): %w", err)
+	}
+	ourCids := make(map[uint64]struct{})
+	ourNodeKeyBytes := ourNode.PubKeyBytes
+	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
+		return ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+			channelEdgeInfo *channeldb.ChannelEdgeInfo,
+			_ *channeldb.ChannelEdgePolicy,
+			_ *channeldb.ChannelEdgePolicy) error {
+			ourCids[channelEdgeInfo.ChannelID] = struct{}{}
+			return nil
+		})
+	})
+	if err != nil {
+		a.log.Errorf("ourNode.ForEachChannel error = %v", err)
+		return fmt.Errorf("ourNode.ForEachChannel: %w", err)
+	}
 	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
 		return graph.ForEachNode(tx, func(tx *bbolt.Tx, lightningNode *channeldb.LightningNode) error {
+			if bytes.Equal(lightningNode.PubKeyBytes[:], ourNodeKeyBytes[:]) {
+				return nil
+			}
 			nodes++
 			return lightningNode.ForEachChannel(tx, func(tx *bbolt.Tx,
 				channelEdgeInfo *channeldb.ChannelEdgeInfo,
 				_ *channeldb.ChannelEdgePolicy,
 				_ *channeldb.ChannelEdgePolicy) error {
-				cids[channelEdgeInfo.ChannelID] = struct{}{}
+				//Add the channel only if it's not connected to our node
+				if _, ok := ourCids[channelEdgeInfo.ChannelID]; !ok {
+					cids[channelEdgeInfo.ChannelID] = struct{}{}
+				}
 				return nil
 			})
 		})
