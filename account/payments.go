@@ -108,21 +108,20 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) error {
+func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := a.breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
-		return err
+		return "", err
 	}
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	a.sendPaymentAsync(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
-	return nil
+	return a.sendPayment(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
@@ -156,45 +155,39 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 		return "", err
 	}
 
-	a.sendPaymentAsync(hashStr, req)
-	return hashStr, nil
+	return a.sendPayment(hashStr, req)
 }
 
-func (a *Service) sendPaymentAsync(paymentHash string, sendRequest *lnrpc.SendRequest) {
+func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest) (string, error) {
 	lnclient := a.daemonAPI.APIClient()
-	go func() {
-		if err := a.waitReadyForPayment(); err != nil {
-			a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
-			return
-		}
-		response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
-		if err != nil {
-			a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, err.Error(), "")
-			return
-		}
+	if err := a.waitReadyForPayment(); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
+	response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
+	if err != nil {
+		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
+		return "", err
+	}
 
-		if len(response.PaymentError) > 0 {
-			a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-			traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
-			if err != nil {
-				a.log.Errorf("failed to create trace report for failed payment %v", err)
-			}
-			errorMsg := response.PaymentError
-			if strings.Contains(errorMsg, "unable to find a path to destination") {
-				_, maxPay, _, err := a.getReceivePayLimit()
-				if err == nil && maxPay-sendRequest.Amt < 50 {
-					errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
-				}
-			}
-			a.notifyPaymentResult(false, sendRequest.PaymentRequest, paymentHash, errorMsg, traceReport)
-			return
+	if len(response.PaymentError) > 0 {
+		a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
+		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
+		if err != nil {
+			a.log.Errorf("failed to create trace report for failed payment %v", err)
 		}
-		a.log.Infof("sendPaymentForRequest finished successfully")
-		a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
-		a.syncSentPayments()
-	}()
+		errorMsg := response.PaymentError
+		if strings.Contains(errorMsg, "unable to find a path to destination") {
+			_, maxPay, _, err := a.getReceivePayLimit()
+			if err == nil && maxPay-sendRequest.Amt < 50 {
+				errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
+			}
+		}
+		return traceReport, errors.New(errorMsg)
+	}
+	a.log.Infof("sendPaymentForRequest finished successfully")
+	go a.syncSentPayments()
+	return "", nil
 }
 
 /*
