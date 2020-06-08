@@ -133,7 +133,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 }
 
 func stopService() error {
-	if service != nil {
+	if service != nil && service.IsStarted() {
 		if err := service.Stop(); err != nil {
 			return err
 		}
