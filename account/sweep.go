@@ -250,7 +250,7 @@ func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("srpc.SignOutputRaw: %w", tx, err)
+		return nil, fmt.Errorf("srpc.SignOutputRaw %#v: %w", tx, err)
 	}
 	return r.RawSigs[0], nil
 }
