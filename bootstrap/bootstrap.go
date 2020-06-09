@@ -48,7 +48,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return append(path, string(key))
 	}
 
-	ourNode, channelNodes, channels, policies, err := ourData(channelDB)
+	ourNode, err := ourNode(channelDB)
 	if err != nil {
 		return err
 	}
@@ -59,9 +59,20 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 	}
 	defer tx.Rollback()
 
-	// add our data to the source db.
-	if err := putOurData(sourceChanDB, ourNode, channelNodes, channels, policies); err != nil {
-		return err
+	if ourNode == nil && hasSourceNode(tx) {
+		return errors.New("source node was set before sync transaction, rolling back.")
+	}
+
+	if ourNode != nil {
+		channelNodes, channels, policies, err := ourData(tx, ourNode)
+		if err != nil {
+			return err
+		}
+
+		// add our data to the source db.
+		if err := putOurData(sourceChanDB, ourNode, channelNodes, channels, policies); err != nil {
+			return err
+		}
 	}
 
 	// clear graph data from the destination db

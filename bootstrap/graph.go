@@ -82,40 +82,55 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 	return url, nil
 }
 
-func ourData(chanDB *channeldb.DB) (*channeldb.LightningNode, []*channeldb.LightningNode, []*channeldb.ChannelEdgeInfo, []*channeldb.ChannelEdgePolicy, error) {
-	graph := chanDB.ChannelGraph()
-	ourNode, err := graph.SourceNode()
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("graph.SourceNode(): %w", err)
+func hasSourceNode(tx *bbolt.Tx) bool {
+	nodes := tx.Bucket([]byte("graph-node"))
+	if nodes == nil {
+		return false
 	}
+	selfPub := nodes.Get([]byte("source"))
+	return selfPub != nil
+}
+
+func ourNode(chanDB *channeldb.DB) (*channeldb.LightningNode, error) {
+	graph := chanDB.ChannelGraph()
+	node, err := graph.SourceNode()
+	if err == channeldb.ErrSourceNodeNotSet || err == channeldb.ErrGraphNotFound {
+		return nil, nil
+	}
+	return node, err
+}
+
+func ourData(tx *bbolt.Tx, ourNode *channeldb.LightningNode) (
+	[]*channeldb.LightningNode, []*channeldb.ChannelEdgeInfo, []*channeldb.ChannelEdgePolicy, error) {
 
 	nodeMap := make(map[string]*channeldb.LightningNode)
 	var edges []*channeldb.ChannelEdgeInfo
 	var policies []*channeldb.ChannelEdgePolicy
 
-	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
-		return ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
-			channelEdgeInfo *channeldb.ChannelEdgeInfo,
-			toPolicy *channeldb.ChannelEdgePolicy,
-			fromPolicy *channeldb.ChannelEdgePolicy) error {
+	err := ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+		channelEdgeInfo *channeldb.ChannelEdgeInfo,
+		toPolicy *channeldb.ChannelEdgePolicy,
+		fromPolicy *channeldb.ChannelEdgePolicy) error {
 
-			nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
-			edges = append(edges, channelEdgeInfo)
-			policies = append(policies, toPolicy, fromPolicy)
-			return nil
-		})
+		nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
+		edges = append(edges, channelEdgeInfo)
+		policies = append(policies, toPolicy, fromPolicy)
+		return nil
 	})
+
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("ourNode.ForEachChannel: %w", err)
+		return nil, nil, nil, fmt.Errorf("ourNode.ForEachChannel: %w", err)
 	}
 	var nodes []*channeldb.LightningNode
 	for _, node := range nodeMap {
 		nodes = append(nodes, node)
 	}
-	return ourNode, nodes, edges, policies, nil
+	return nodes, edges, policies, nil
 }
 
-func putOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode, edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
+func putOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode,
+	edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
+
 	graph := chanDB.ChannelGraph()
 
 	err := graph.SetSourceNode(node)
