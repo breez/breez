@@ -1,27 +1,29 @@
 package bootstrap
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/breez/breez/channeldbservice"
 	"github.com/coreos/bbolt"
-)
-
-var (
-	edgeBucket   = []byte("graph-edge")
-	zombieBucket = []byte("zombie-index")
+	"github.com/lightningnetwork/lnd/channeldb"
 )
 
 // SyncGraphDB syncs the channeldb from another db.
 func SyncGraphDB(workingDir, sourceDBPath string) error {
 
+	dir, fileName := filepath.Split(sourceDBPath)
+	if fileName != "channel.db" {
+		return errors.New("file name must be channel.db")
+	}
+
 	// open the source database.
-	sourceDB, err := bbolt.Open(sourceDBPath, 0600, nil)
+	sourceChanDB, err := channeldb.Open(dir)
 	if err != nil {
 		return err
 	}
-	defer sourceDB.Close()
+	defer sourceChanDB.Close()
 
 	// open the destination database.
 	channelDB, cleanup, err := channeldbservice.Get(workingDir)
@@ -37,11 +39,6 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		"graph-node": {},
 	}
 
-	// paths that we want to exclude from copying.
-	skippedPaths := map[string]struct{}{
-		"graph-node.source": {},
-	}
-
 	// utility function to convert bolts key to a string path.
 	extractPathElements := func(bytesPath [][]byte, key []byte) []string {
 		var path []string
@@ -51,36 +48,44 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return append(path, string(key))
 	}
 
-	return merge(channelDB.DB, sourceDB,
-		func(keyPath [][]byte, k []byte, v []byte) bool {
-			pathElements := extractPathElements(keyPath, k)
-			_, shouldCopy := bucketsToCopy[pathElements[0]]
-			if shouldCopy {
-				itemPath := strings.Join(pathElements, ".")
-				if _, exists := skippedPaths[itemPath]; exists {
-					fmt.Printf("skipping item %v\n", itemPath)
-					return true
-				}
-			}
+	ourNode, channelNodes, channels, policies, err := ourData(channelDB)
+	if err != nil {
+		return err
+	}
 
-			return !shouldCopy
-		})
-}
-
-// Merge copies from source to dest and ignoring items using the skip function.
-// It is different from Compact in that it tries to create a bucket only if not exists.
-func merge(dst, src *bbolt.DB, skip skipFunc) error {
-	// commit regularly, or we'll run out of memory for large datasets if using one transaction.
-	tx, err := dst.Begin(true)
+	tx, err := channelDB.DB.Begin(true)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// delete the zombies from the destination db as we replace it.
-	if err := deleteZombies(tx); err != nil {
+	// add our data to the source db.
+	if err := putOurData(sourceChanDB, ourNode, channelNodes, channels, policies); err != nil {
 		return err
 	}
+
+	// clear graph data from the destination db
+	for b := range bucketsToCopy {
+		if err := tx.DeleteBucket([]byte(b)); err != nil {
+			return err
+		}
+	}
+
+	err = merge(tx, sourceChanDB.DB,
+		func(keyPath [][]byte, k []byte, v []byte) bool {
+			pathElements := extractPathElements(keyPath, k)
+			_, shouldCopy := bucketsToCopy[pathElements[0]]
+			return !shouldCopy
+		})
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// Merge copies from source to dest and ignoring items using the skip function.
+// It is different from Compact in that it tries to create a bucket only if not exists.
+func merge(tx *bbolt.Tx, src *bbolt.DB, skip skipFunc) error {
 
 	if err := walk(src, func(keys [][]byte, k, v []byte, seq uint64) error {
 
@@ -126,7 +131,7 @@ func merge(dst, src *bbolt.DB, skip skipFunc) error {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // walkFunc is the type of the function called for keys (buckets and "normal"
@@ -170,16 +175,4 @@ func walkBucket(b *bbolt.Bucket, keypath [][]byte, k, v []byte, seq uint64, fn w
 		}
 		return walkBucket(b, keypath, k, v, b.Sequence(), fn, skip)
 	})
-}
-
-func deleteZombies(tx *bbolt.Tx) error {
-	edges := tx.Bucket(edgeBucket)
-	if edges == nil {
-		return nil
-	}
-	zombies := edges.Bucket(zombieBucket)
-	if zombies == nil {
-		return nil
-	}
-	return edges.DeleteBucket(zombieBucket)
 }
