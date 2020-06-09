@@ -115,7 +115,7 @@ func ourData(chanDB *channeldb.DB) (*channeldb.LightningNode, []*channeldb.Light
 	return ourNode, nodes, edges, policies, nil
 }
 
-func PutOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode, edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
+func putOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode, edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
 	graph := chanDB.ChannelGraph()
 
 	err := graph.SetSourceNode(node)
