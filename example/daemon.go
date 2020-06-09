@@ -25,7 +25,7 @@ func daemonSample() {
 	}
 
 	defer release()
-	lnDaemon, err := lnnode.NewDaemon(cfg, db)
+	lnDaemon, err := lnnode.NewDaemon(cfg, db, true)
 	if err != nil {
 		fmt.Println("Failed to create daemon", err)
 		os.Exit(1)
