@@ -117,29 +117,28 @@ func ourData(chanDB *channeldb.DB) (*channeldb.LightningNode, []*channeldb.Light
 
 func PutOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode, edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
 	graph := chanDB.ChannelGraph()
-	var retErr error // we return the first error
 
 	err := graph.SetSourceNode(node)
-	if err != nil && retErr == nil {
-		retErr = fmt.Errorf("graph.SetSourceNode(%x): %w", node.PubKeyBytes, err)
+	if err != nil {
+		return fmt.Errorf("graph.SetSourceNode(%x): %w", node.PubKeyBytes, err)
 	}
 	for _, n := range nodes {
 		err = graph.AddLightningNode(n)
-		if err != nil && retErr == nil {
-			retErr = fmt.Errorf("graph.AddLightningNode(%x): %w", n.PubKeyBytes, err)
+		if err != nil {
+			return fmt.Errorf("graph.AddLightningNode(%x): %w", n.PubKeyBytes, err)
 		}
 	}
 	for _, edge := range edges {
 		err = graph.AddChannelEdge(edge)
-		if err != nil && retErr == nil {
-			retErr = fmt.Errorf("graph.AddChannelEdge(%x): %w", edge.ChannelID, err)
+		if err != nil && err != channeldb.ErrEdgeAlreadyExist {
+			return fmt.Errorf("graph.AddChannelEdge(%x): %w", edge.ChannelID, err)
 		}
 	}
 	for _, policy := range policies {
 		err = graph.UpdateEdgePolicy(policy)
-		if err != nil && retErr == nil {
-			retErr = fmt.Errorf("graph.UpdateEdgePolicy(): %w", err)
+		if err != nil {
+			return fmt.Errorf("graph.UpdateEdgePolicy(): %w", err)
 		}
 	}
-	return retErr
+	return nil
 }
