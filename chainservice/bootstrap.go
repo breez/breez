@@ -34,8 +34,20 @@ func ResetChainService(workingDir string) error {
 	return resetChainService(workingDir)
 }
 
-// Bootstrapped returns true if bootstrap was done, fals otherwise.
+// Bootstrapped returns true if bootstrap was done, false otherwise.
 func Bootstrapped(workingDir string) (bool, error) {
+	bootstrapMu.Lock()
+	defer bootstrapMu.Unlock()
+
+	if service != nil {
+		logger.Info("Chain service already created, already bootstrapped")
+		return true, nil
+	}
+	return bootstrapped(workingDir)
+}
+
+// Bootstrapped returns true if bootstrap was done, false otherwise.
+func bootstrapped(workingDir string) (bool, error) {
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return false, err
@@ -84,7 +96,7 @@ func Bootstrap(workingDir string) error {
 	}
 	ensureNeutrinoSize(workingDir)
 
-	bootstrapped, err := Bootstrapped(workingDir)
+	bootstrapped, err := bootstrapped(workingDir)
 	if err != nil {
 		logger.Errorf("Bootstrapped returned error: %v", err)
 		return err
