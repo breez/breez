@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"encoding/hex"
 	"fmt"
 	"path"
 	"time"
@@ -79,4 +80,66 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 	}
 
 	return url, nil
+}
+
+func ourData(chanDB *channeldb.DB) (*channeldb.LightningNode, []*channeldb.LightningNode, []*channeldb.ChannelEdgeInfo, []*channeldb.ChannelEdgePolicy, error) {
+	graph := chanDB.ChannelGraph()
+	ourNode, err := graph.SourceNode()
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("graph.SourceNode(): %w", err)
+	}
+
+	nodeMap := make(map[string]*channeldb.LightningNode)
+	var edges []*channeldb.ChannelEdgeInfo
+	var policies []*channeldb.ChannelEdgePolicy
+
+	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
+		return ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+			channelEdgeInfo *channeldb.ChannelEdgeInfo,
+			toPolicy *channeldb.ChannelEdgePolicy,
+			fromPolicy *channeldb.ChannelEdgePolicy) error {
+
+			nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
+			edges = append(edges, channelEdgeInfo)
+			policies = append(policies, toPolicy, fromPolicy)
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("ourNode.ForEachChannel: %w", err)
+	}
+	var nodes []*channeldb.LightningNode
+	for _, node := range nodeMap {
+		nodes = append(nodes, node)
+	}
+	return ourNode, nodes, edges, policies, nil
+}
+
+func PutOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode, edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
+	graph := chanDB.ChannelGraph()
+	var retErr error // we return the first error
+
+	err := graph.SetSourceNode(node)
+	if err != nil && retErr == nil {
+		retErr = fmt.Errorf("graph.SetSourceNode(%x): %w", node.PubKeyBytes, err)
+	}
+	for _, n := range nodes {
+		err = graph.AddLightningNode(n)
+		if err != nil && retErr == nil {
+			retErr = fmt.Errorf("graph.AddLightningNode(%x): %w", n.PubKeyBytes, err)
+		}
+	}
+	for _, edge := range edges {
+		err = graph.AddChannelEdge(edge)
+		if err != nil && retErr == nil {
+			retErr = fmt.Errorf("graph.AddChannelEdge(%x): %w", edge.ChannelID, err)
+		}
+	}
+	for _, policy := range policies {
+		err = graph.UpdateEdgePolicy(policy)
+		if err != nil && retErr == nil {
+			retErr = fmt.Errorf("graph.UpdateEdgePolicy(): %w", err)
+		}
+	}
+	return retErr
 }
