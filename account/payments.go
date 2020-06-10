@@ -268,10 +268,14 @@ func (a *Service) SendPaymentFailureBugReport(jsonReport string) error {
 func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, paymentResponse *lnrpc.SendResponse) (string, error) {
 	lnclient := a.daemonAPI.APIClient()
 
-	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
-	if err != nil {
-		a.log.Errorf("DecodePaymentRequest error: %v", err)
-		return "", err
+	var decodedPayReq *lnrpc.PayReq
+	var err error
+	if paymentRequest != "" {
+		decodedPayReq, err = lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+		if err != nil {
+			a.log.Errorf("DecodePaymentRequest error: %v", err)
+			return "", err
+		}
 	}
 
 	lnInfo, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
@@ -292,7 +296,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		return "", err
 	}
 
-	if amount == 0 {
+	if amount == 0 && decodedPayReq != nil {
 		amount = decodedPayReq.NumSatoshis
 	}
 
