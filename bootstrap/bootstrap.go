@@ -77,7 +77,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 
 	// clear graph data from the destination db
 	for b := range bucketsToCopy {
-		if err := tx.DeleteBucket([]byte(b)); err != nil {
+		if err := tx.DeleteBucket([]byte(b)); err != nil && err != bbolt.ErrBucketNotFound {
 			return err
 		}
 	}
