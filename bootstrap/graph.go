@@ -10,37 +10,105 @@ import (
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
+	"github.com/breez/breez/log"
+	"github.com/btcsuite/btclog"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnwire"
 )
 
 const (
-	threshold = 3 * time.Hour
+	threshold = 3 * 24 * time.Hour
+	minEdges  = 25000
 )
 
+var (
+	edgeBucket      = []byte("graph-edge")
+	edgeIndexBucket = []byte("edge-index")
+)
+
+func getURL(workingDir string, db *channeldb.DB, tx *bbolt.Tx) (string, error) {
+	meta, err := db.FetchMeta(tx)
+	if err != nil {
+		logger.Errorf("chanDB.FetchMeta(): %v", err)
+		return "", fmt.Errorf("chanDB.FetchMeta(): %w", err)
+	}
+	cfg, err := config.GetConfig(workingDir)
+	if err != nil {
+		logger.Errorf("config.GetConfig(%v): %v", workingDir, err)
+		return "", fmt.Errorf("config.GetConfig(%v): %w", workingDir, err)
+	}
+
+	filename := "graph-" + fmt.Sprintf("%04x", meta.DbVersionNumber) + ".db"
+	url := path.Join(cfg.BootstrapURL, cfg.Network, "/graph/", filename)
+	return url, nil
+}
+
 func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
+
+	if logger == nil {
+		logBackend, err := log.GetLogBackend(workingDir)
+		if err != nil {
+			return "", err
+		}
+		logger = logBackend.Logger("BOOTSTRAP")
+		logger.SetLevel(btclog.LevelDebug)
+	}
+
 	// open the destination database.
 	chanDB, chanDBCleanUp, err := channeldbservice.Get(workingDir)
 	if err != nil {
+		logger.Errorf("failed to open channeldb: %v", err)
 		return "", fmt.Errorf("failed to open channeldb: %w", err)
 	}
 	defer chanDBCleanUp()
 
+	var url string
+	var done bool
+	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
+		url, err = getURL(workingDir, chanDB, tx)
+		if err != nil {
+			logger.Errorf("getURL(): %v", err)
+			return fmt.Errorf("getURL(): %w", err)
+		}
+		edges := tx.Bucket(edgeBucket)
+		if edges == nil {
+			done = true
+			return nil
+		}
+		edgeIndex := edges.Bucket(edgeIndexBucket)
+		if edgeIndex == nil {
+			done = true
+			return nil
+		}
+		if edgeIndex.Stats().KeyN < minEdges {
+			done = true
+			return nil
+		}
+		return nil
+	})
+	if done {
+		logger.Infof("Downloading before checking chainservice: %v", url)
+		return url, nil
+	}
+
 	chainService, chainServiceCleanUp, err := chainservice.Get(workingDir, breezDB)
 	if err != nil {
 		//chanDBCleanUp()
+		logger.Errorf("failed to create chainservice: %v", err)
 		return "", fmt.Errorf("failed to create chainservice: %w", err)
 	}
 	defer chainServiceCleanUp()
 
 	chanID, err := chanDB.ChannelGraph().HighestChanID()
 	if err != nil {
+		logger.Errorf("chanDB.ChannelGraph().HighestChanID(): %v", err)
 		return "", fmt.Errorf("chanDB.ChannelGraph().HighestChanID(): %w", err)
 	}
 
 	bs, err := chainService.BestBlock()
 	if err != nil {
+		logger.Errorf("chainService.BestBlock(): %v", err)
 		return "", fmt.Errorf("chainService.BestBlock(): %w", err)
 	}
 
@@ -50,10 +118,12 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 	if uint32(bs.Height) > scid.BlockHeight {
 		hash, err := chainService.GetBlockHash(int64(scid.BlockHeight))
 		if err != nil {
+			logger.Errorf("chainService.GetBlockHash(%v): %v", scid.BlockHeight, err)
 			return "", fmt.Errorf("chainService.GetBlockHash(%v): %w", scid.BlockHeight, err)
 		}
 		header, err := chainService.GetBlockHeader(hash)
 		if err != nil {
+			logger.Errorf("chainService.GetBlockHeader%v): %v", scid.BlockHeight, err)
 			return "", fmt.Errorf("chainService.GetBlockHeader(%v): %w", scid.BlockHeight, err)
 		}
 		t = header.Timestamp
@@ -61,24 +131,11 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 		t = t.Add(time.Duration(int(scid.BlockHeight)-int(bs.Height)) * 10 * time.Minute)
 	}
 
-	url := ""
-	if time.Now().After(t.Add(threshold)) {
-		cfg, err := config.GetConfig(workingDir)
-		if err != nil {
-			return "", fmt.Errorf("config.GetConfig(%v): %w", workingDir, err)
-		}
-		var meta *channeldb.Meta
-		err = chanDB.View(func(tx *bbolt.Tx) error {
-			meta, err = chanDB.FetchMeta(tx)
-			return err
-		})
-		if err != nil {
-			return "", fmt.Errorf("chanDB.FetchMeta(): %w", err)
-		}
-		filename := "graph-" + fmt.Sprintf("%04x", meta.DbVersionNumber) + ".db"
-		url = path.Join(cfg.BootstrapURL, cfg.Network, "/graph/", filename)
+	if time.Now().Before(t.Add(threshold)) {
+		logger.Infof("Not downloading graphdb because: %v < %v + %v", time.Now(), t, threshold)
+		return "", nil
 	}
-
+	logger.Infof("Downloading graphdb because: %v >= %v + %v", time.Now(), t, threshold)
 	return url, nil
 }
 

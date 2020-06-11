@@ -6,8 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/breez/breez/channeldbservice"
+	"github.com/btcsuite/btclog"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
+)
+
+var (
+	logger btclog.Logger
 )
 
 // SyncGraphDB syncs the channeldb from another db.
