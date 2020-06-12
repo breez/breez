@@ -209,6 +209,14 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
+		c, err := chanDB.FetchAllChannels()
+		if err != nil {
+			d.log.Errorf("error when calling chanDB.FetchAllChannels(): %v", err)
+		} else {
+			if len(c) == 0 {
+				d.startBeforeSync = false
+			}
+		}
 		deleteZombies(chanDB)
 		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
