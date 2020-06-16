@@ -171,7 +171,12 @@ func ourData(tx *bbolt.Tx, ourNode *channeldb.LightningNode) (
 
 		nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
 		edges = append(edges, channelEdgeInfo)
-		policies = append(policies, toPolicy, fromPolicy)
+		if toPolicy != nil {
+			policies = append(policies, toPolicy)
+		}
+		if fromPolicy != nil {
+			policies = append(policies, fromPolicy)
+		}
 		return nil
 	})
 
