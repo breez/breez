@@ -188,6 +188,9 @@ func (d *Daemon) RestartDaemon() error {
 func (d *Daemon) du(currentPath string, info os.FileInfo) int64 {
 	size := info.Size()
 	if !info.IsDir() {
+		if size > 20*1024*1024 {
+			d.log.Errorf("%v: %v", info.Name, humanize.Bytes(uint64(size)))
+		}
 		return size
 	}
 
