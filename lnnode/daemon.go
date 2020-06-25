@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
+	"github.com/dustin/go-humanize"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
@@ -183,6 +185,34 @@ func (d *Daemon) RestartDaemon() error {
 	return d.startDaemon()
 }
 
+func (d *Daemon) du(currentPath string, info os.FileInfo) int64 {
+	size := info.Size()
+	if !info.IsDir() {
+		return size
+	}
+
+	dir, err := os.Open(currentPath)
+	if err != nil {
+		d.log.Errorf("os.Open(%v) error: %v", currentPath, err)
+		return size
+	}
+	defer dir.Close()
+
+	fis, err := dir.Readdir(-1)
+	if err != nil {
+		d.log.Errorf("dir.Readdir(-1) error: %v", err)
+		return 0
+	}
+	for _, fi := range fis {
+		if fi.Name() == "." || fi.Name() == ".." {
+			continue
+		}
+		size += d.du(currentPath+"/"+fi.Name(), fi)
+	}
+	d.log.Errorf("%v: %v", currentPath, humanize.Bytes(uint64(size)))
+	return size
+}
+
 func (d *Daemon) startDaemon() error {
 	d.Lock()
 	defer d.Unlock()
@@ -196,6 +226,12 @@ func (d *Daemon) startDaemon() error {
 	d.wg.Add(2)
 	go d.notifyWhenReady(readyChan)
 	d.daemonRunning = true
+
+	info, err := os.Lstat(d.cfg.WorkingDir)
+	if err != nil {
+		d.log.Errorf("os.Lstat(%v) error: %v", d.cfg.WorkingDir, err)
+	}
+	d.du(d.cfg.WorkingDir, info)
 
 	// Run the daemon
 	go func() {
