@@ -228,12 +228,6 @@ func (d *Daemon) startDaemon() error {
 	go d.notifyWhenReady(readyChan)
 	d.daemonRunning = true
 
-	info, err := os.Lstat(d.cfg.WorkingDir)
-	if err != nil {
-		d.log.Errorf("os.Lstat(%v) error: %v", d.cfg.WorkingDir, err)
-	}
-	d.du(d.cfg.WorkingDir, info)
-
 	// Run the daemon
 	go func() {
 		defer func() {
