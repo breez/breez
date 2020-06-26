@@ -81,6 +81,20 @@ func compactDB(graphDir string) error {
 	return nil
 }
 
+func deleteOldDB(graphDir string) error {
+	oldDBPath := path.Join(graphDir, dbName+".old")
+	err := os.Remove(oldDBPath)
+	logger.Infof("os.Remove(%v): %v", oldDBPath, err)
+	return err
+}
+
+func deleteOldBootstrap(workingDir string) error {
+	bootstrap := path.Join(workingDir, "bootstrap")
+	err := os.RemoveAll(bootstrap)
+	logger.Infof("os.RemoveAll(%v): %v", bootstrap, err)
+	return err
+}
+
 func createService(workingDir string) (*channeldb.DB, error) {
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
@@ -107,6 +121,8 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		logger.Errorf("unable to open channeldb: %v", err)
 		return nil, err
 	}
+	deleteOldDB(graphDir)
+	deleteOldBootstrap(workingDir)
 
 	logger.Infof("channeldb was opened successfuly")
 	return chanDB, err
