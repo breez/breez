@@ -6,7 +6,7 @@ require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/btcsuite/btcwallet v0.11.1-0.20200219004649-ae9416ad7623
-	github.com/btcsuite/btcwallet/walletdb v1.3.0
+	github.com/btcsuite/btcwallet/walletdb v1.2.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.0.0
 	github.com/coreos/bbolt v1.3.3
 	github.com/dustin/go-humanize v1.0.0
@@ -32,9 +32,9 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
-	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.11.1-0.20200708094144-e298190c0982
-	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.3.1-0.20200708094144-e298190c0982
-	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20200708094144-e298190c0982
+	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.11.1-0.20200401131525-febcccb250bf
+	github.com/btcsuite/btcwallet/walletdb v1.1.0 => github.com/breez/btcwallet/walletdb v1.2.1-0.20200401131525-febcccb250bf
+	github.com/btcsuite/btcwallet/wtxmgr v1.0.0 => github.com/breez/btcwallet/wtxmgr v1.0.1-0.20200401131525-febcccb250bf
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20200608093930-695c8f6c62f0
 	github.com/lightningnetwork/lnd v0.9.2-beta => github.com/breez/lnd v0.9.2-beta.0.20200607180902-5923de09295e
 	github.com/lightningnetwork/lnd/cert => github.com/lightningnetwork/lnd/cert v1.0.2-0.20200401010500-77df8e3a4386
