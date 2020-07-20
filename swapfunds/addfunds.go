@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"golang.org/x/sync/singleflight"
@@ -21,6 +21,7 @@ import (
 
 const (
 	transferFundsRequest = "Bitcoin Transfer"
+	maxPaymentAllowedSat = math.MaxUint32 / 1000
 )
 
 var (
@@ -488,7 +489,7 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (invoice *l
 		return nil, data.SwapError_NO_ERROR, err
 	}
 
-	if addressInfo.ConfirmedAmount > int64(lnd.MaxPaymentMSat.ToSatoshis()) || addressInfo.ConfirmedAmount > maxReceive {
+	if addressInfo.ConfirmedAmount > maxPaymentAllowedSat || addressInfo.ConfirmedAmount > maxReceive {
 		s.log.Errorf("invoice limit exceeded amount: %v, max able to receive: %v", addressInfo.ConfirmedAmount, maxReceive)
 		return nil, data.SwapError_FUNDS_EXCEED_LIMIT, errors.New("invoice limit exceeded")
 	}

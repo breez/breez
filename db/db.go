@@ -68,11 +68,7 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 }
 
 func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
-	logBackend, err := breezlog.GetLogBackend(workingDir)
-	if err != nil {
-		return nil, nil, err
-	}
-	log := logBackend.Logger("BRDB")
+	log, err := breezlog.GetLogger(workingDir, "BRDB")
 
 	db, err := openDB(path.Join(workingDir, "breez.db"), log)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/config"
-	"github.com/breez/breez/log"
+	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
@@ -66,11 +66,10 @@ func bootstrapped(workingDir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	logBackend, err := log.GetLogBackend(workingDir)
+	logger, err = breezlog.GetLogger(workingDir, "CHAIN")
 	if err != nil {
 		return false, err
 	}
-	logger = logBackend.Logger("CHAIN")
 	logger.Infof("using birthday %v for bootstrap", birthday)
 	lastCheckpiont := getLatestCheckpoint(*birthday)
 	return tipHeight >= lastCheckpiont.Height, nil
@@ -84,11 +83,11 @@ func Bootstrap(workingDir string) error {
 	bootstrapMu.Lock()
 	defer bootstrapMu.Unlock()
 
-	logBackend, err := log.GetLogBackend(workingDir)
+	var err error
+	logger, err = breezlog.GetLogger(workingDir, "CHAIN")
 	if err != nil {
 		return err
 	}
-	logger = logBackend.Logger("CHAIN")
 	logger.Infof("Bootstrap started")
 	if service != nil {
 		logger.Info("Chain service already created, already bootstrapped")

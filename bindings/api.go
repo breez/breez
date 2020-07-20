@@ -242,11 +242,10 @@ func NewClosedChannelsJob(workingDir string) (JobController, error) {
 GetLogger creates a logger that logs to the same breez central log file
 */
 func GetLogger(appDir string) (Logger, error) {
-	backend, err := breezlog.GetLogBackend(appDir)
+	logger, err := breezlog.GetLogger(appDir, "BIND")
 	if err != nil {
 		return nil, err
 	}
-	logger := backend.Logger("BIND")
 	return &BreezLogger{logger}, nil
 }
 

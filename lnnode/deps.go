@@ -1,9 +1,6 @@
 package lnnode
 
 import (
-	"io"
-
-	breezlog "github.com/breez/breez/log"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
@@ -24,15 +21,6 @@ ReadyChan returns the channel passed to LND for getting ready signal
 */
 func (d *Dependencies) ReadyChan() chan interface{} {
 	return d.readyChan
-}
-
-/*
-LogPipeWriter returns the io.PipeWriter streamed to the log file.
-This will be passed as dependency to LND so breez will have a shared log file
-*/
-func (d *Dependencies) LogPipeWriter() *io.PipeWriter {
-	writer, _ := breezlog.GetLogWriter(d.workingDir)
-	return writer
 }
 
 /*

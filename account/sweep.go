@@ -173,7 +173,7 @@ func (u *rpcUtxoSource) ListUnspentWitness(minConfs, maxConfs int32) ([]*lnwalle
 	for _, utxo := range utxoOutputs.Utxos {
 
 		var addrType lnwallet.AddressType
-		switch utxo.Type {
+		switch utxo.AddressType {
 		case lnrpc.AddressType_WITNESS_PUBKEY_HASH:
 			addrType = lnwallet.WitnessPubKey
 

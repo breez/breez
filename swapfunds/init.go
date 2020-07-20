@@ -39,7 +39,7 @@ func NewService(
 	getAccountLimits func() (maxReceive, maxPay, maxReserve int64, err error),
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "FUNDS")
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func NewService(
 		sendPayment:      sendPayment,
 		getAccountLimits: getAccountLimits,
 		onServiceEvent:   onServiceEvent,
-		log:              logBackend.Logger("FUNDS"),
+		log:              logger,
 		daemonAPI:        daemonAPI,
 		quitChan:         make(chan struct{}),
 	}, nil

@@ -15,7 +15,8 @@ var (
 )
 
 func deleteZombies(chanDB *channeldb.DB) error {
-	err := chanDB.Update(func(tx *bbolt.Tx) error {
+	boltDB := chanDB.Backend.(interface{}).(*bbolt.DB)
+	err := boltDB.Update(func(tx *bbolt.Tx) error {
 		edges := tx.Bucket(edgeBucket)
 		if edges == nil {
 			return channeldb.ErrGraphNoEdgesFound

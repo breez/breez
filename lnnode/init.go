@@ -64,7 +64,7 @@ type Daemon struct {
 // NewDaemon is used to create a new daemon that wraps a lightning
 // network daemon.
 func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, error) {
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "DAEM")
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, er
 		cfg:             cfg,
 		breezDB:         db,
 		ntfnServer:      subscribe.NewServer(),
-		log:             logBackend.Logger("DAEM"),
+		log:             logger,
 		startBeforeSync: startBeforeSync,
 	}, nil
 }

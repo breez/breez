@@ -1,21 +1,17 @@
 package log
 
 import (
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/breez/breez/config"
 	"github.com/btcsuite/btclog"
-	"github.com/jrick/logrotate/rotator"
+	"github.com/lightningnetwork/lnd/build"
 )
 
 var (
 	initBackend sync.Once
-	logBackend  *btclog.Backend
-	logWriter   *io.PipeWriter
+	logWriter   *build.RotatingLogWriter
 	initError   error
 )
 
@@ -35,18 +31,21 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 /*
-GetLogBackend ensure log backend is initialized and return the LogBackend singleton.
+GetLogger ensure log backend is initialized and return a logger.
 */
-func GetLogBackend(workingDir string) (*btclog.Backend, error) {
+func GetLogger(workingDir string, logger string) (btclog.Logger, error) {
 	initLog(workingDir)
-	return logBackend, initError
+	if initError != nil {
+		return nil, initError
+	}
+	return logWriter.GenSubLogger(logger), nil
 }
 
 /*
 GetLogWriter ensure log backend is initialized and return the writer singleton.
 This writer is sent to other systems to they can use the same log file.
 */
-func GetLogWriter(workingDir string) (*io.PipeWriter, error) {
+func GetLogWriter(workingDir string) (*build.RotatingLogWriter, error) {
 	initLog(workingDir)
 	return logWriter, initError
 }
@@ -58,28 +57,14 @@ func initLog(workingDir string) {
 			initError = err
 			return
 		}
+		buildLogWriter := build.NewRotatingLogWriter()
 
 		filename := workingDir + "/logs/bitcoin/" + cfg.Network + "/lnd.log"
-		logWriter, _, initError = initLogRotator(filename, 10, 3)
-		if initError == nil {
-			logBackend = btclog.NewBackend(&Writer{logWriter})
+		err = buildLogWriter.InitLogRotator(filename, 10, 3)
+		if err != nil {
+			initError = err
+			return
 		}
+		logWriter = buildLogWriter
 	})
-}
-
-func initLogRotator(logFile string, MaxLogFileSize int, MaxLogFiles int) (*io.PipeWriter, *rotator.Rotator, error) {
-	logDir, _ := filepath.Split(logFile)
-	err := os.MkdirAll(logDir, 0700)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create log directory: %v", err)
-	}
-	r, err := rotator.New(logFile, int64(MaxLogFileSize*1024), false, MaxLogFiles)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create file rotator: %v", err)
-	}
-
-	pr, pw := io.Pipe()
-	go r.Run(pr)
-
-	return pw, r, nil
 }

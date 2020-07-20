@@ -11,7 +11,7 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
-	"github.com/breez/breez/log"
+	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -105,11 +105,10 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		return nil, nil, err
 	}
 	if logger == nil {
-		logBackend, err := log.GetLogBackend(workingDir)
+		logger, err = breezlog.GetLogger(workingDir, "CHAIN")
 		if err != nil {
 			return nil, nil, err
 		}
-		logger = logBackend.Logger("CHAIN")
 		logger.Infof("After get logger")
 		logger.SetLevel(btclog.LevelDebug)
 		neutrino.UseLogger(logger)

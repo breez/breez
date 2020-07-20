@@ -8,7 +8,7 @@ import (
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
-	"github.com/breez/breez/log"
+	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -101,11 +101,10 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		return nil, err
 	}
 	if logger == nil {
-		logBackend, err := log.GetLogBackend(workingDir)
+		logger, err = breezlog.GetLogger(workingDir, "CHANNELDB")
 		if err != nil {
 			return nil, err
 		}
-		logger = logBackend.Logger("CHANNELDB")
 		logger.SetLevel(btclog.LevelDebug)
 	}
 

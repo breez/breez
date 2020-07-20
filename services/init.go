@@ -62,12 +62,12 @@ type Client struct {
 
 // NewClient creates a new client struct
 func NewClient(cfg *config.Config) (*Client, error) {
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "CLIENT")
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
 		cfg: cfg,
-		log: logBackend.Logger("CLIENT"),
+		log: logger,
 	}, nil
 }

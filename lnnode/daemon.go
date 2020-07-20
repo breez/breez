@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
+	breezlog "github.com/breez/breez/log"
 	"github.com/dustin/go-humanize"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -267,7 +268,13 @@ func (d *Daemon) startDaemon() error {
 		if d.startBeforeSync {
 			params = append(params, "--initial-headers-sync-delta=2h")
 		}
-		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
+		lndConfig := lnd.DefaultConfig()
+		writer, err := breezlog.GetLogWriter(deps.workingDir)
+		if err != nil {
+			d.log.Errorf("Breez main function returned with error: %v", err)
+		}
+		lndConfig.LogWriter = writer
+		err = lnd.Main(&lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
 
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)

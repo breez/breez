@@ -76,11 +76,11 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		notificationsChan: make(chan data.NotificationEvent),
 	}
 
-	logBackend, err := breezlog.GetLogBackend(workingDir)
+	logger, err := breezlog.GetLogger(workingDir, "BRUI")
 	if err != nil {
 		return nil, err
 	}
-	app.log = logBackend.Logger("BRUI")
+	app.log = logger
 
 	app.cfg, err = config.GetConfig(workingDir)
 	if err != nil {
@@ -116,13 +116,17 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		return nil, fmt.Errorf("Failed to start doubleratchet: %v", err)
 	}
 
+	backupLogger, err := breezlog.GetLogger(workingDir, "BCKP")
+	if err != nil {
+		return nil, err
+	}
 	app.BackupManager, err = backup.NewManager(
 		applicationServices.BackupProviderName(),
 		&AuthService{appServices: applicationServices},
 		app.onServiceEvent,
 		app.prepareBackupInfo,
 		app.cfg,
-		logBackend.Logger("BCKP"),
+		backupLogger,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to start backup manager: %v", err)
