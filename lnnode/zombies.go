@@ -1,6 +1,7 @@
 package lnnode
 
 import (
+	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
@@ -15,8 +16,11 @@ var (
 )
 
 func deleteZombies(chanDB *channeldb.DB) error {
-	boltDB := chanDB.Backend.(interface{}).(*bbolt.DB)
-	err := boltDB.Update(func(tx *bbolt.Tx) error {
+	boltDB, err := bdb.UnderlineDB(chanDB.Backend)
+	if err != nil {
+		return err
+	}
+	err = boltDB.Update(func(tx *bbolt.Tx) error {
 		edges := tx.Bucket(edgeBucket)
 		if edges == nil {
 			return channeldb.ErrGraphNoEdgesFound

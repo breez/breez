@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/breez/breez/channeldbservice"
 	breezlog "github.com/breez/breez/log"
 	"github.com/dustin/go-humanize"
+	"github.com/jessevdk/go-flags"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
@@ -261,21 +263,11 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		params := []string{"lightning-libs",
-			"--lnddir", deps.workingDir,
-			"--bitcoin." + d.cfg.Network,
-		}
-		if d.startBeforeSync {
-			params = append(params, "--initial-headers-sync-delta=2h")
-		}
-		lndConfig := lnd.DefaultConfig()
-		writer, err := breezlog.GetLogWriter(deps.workingDir)
+		lndConfig, err := d.createConfig(deps.workingDir)
 		if err != nil {
-			d.log.Errorf("Breez main function returned with error: %v", err)
+			d.log.Errorf("failed to create config %v", err)
 		}
-		lndConfig.LogWriter = writer
-		err = lnd.Main(&lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
-
+		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
 		}
@@ -284,6 +276,41 @@ func (d *Daemon) startDaemon() error {
 		cleanupFn()
 	}()
 	return nil
+}
+
+func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
+	lndConfig := lnd.DefaultConfig()
+	lndConfig.Bitcoin.Active = true
+	if d.cfg.Network == "mainnet" {
+		lndConfig.Bitcoin.MainNet = true
+	} else {
+		lndConfig.Bitcoin.TestNet3 = true
+	}
+	lndConfig.LndDir = workingDir
+	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
+
+	cfg := lndConfig
+	if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
+		d.log.Errorf("Failed to parse config %v", err)
+		return nil, err
+	}
+	if d.startBeforeSync {
+		lndConfig.InitialHeadersSyncDelta = time.Hour * 2
+	}
+
+	writer, err := breezlog.GetLogWriter(workingDir)
+	if err != nil {
+		d.log.Errorf("GetLogWriter function returned with error: %v", err)
+		return nil, err
+	}
+	cfg.LogWriter = writer
+	cfg.MinBackoff = time.Second * 20
+	conf, err := lnd.ValidateConfig(cfg, "")
+	if err != nil {
+		d.log.Errorf("ValidateConfig returned with error: %v", err)
+		return nil, err
+	}
+	return conf, nil
 }
 
 func (d *Daemon) stopDaemon() {

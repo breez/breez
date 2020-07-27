@@ -7,6 +7,7 @@ import (
 
 	"github.com/breez/breez/channeldbservice"
 	"github.com/btcsuite/btclog"
+	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
@@ -36,9 +37,10 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return fmt.Errorf("failed to open channeldb %v", err)
 	}
 	defer cleanup()
-
-	destDB := channelDBDest.Backend.(interface{}).(*bbolt.DB)
-	sourceDB := channelDBSource.Backend.(interface{}).(*bbolt.DB)
+	sourceDB, err := bdb.UnderlineDB(channelDBSource.Backend)
+	if err != nil {
+		return err
+	}
 
 	// buckets we want to copy from source to destination.
 	bucketsToCopy := map[string]struct{}{
@@ -61,7 +63,11 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return err
 	}
 
-	tx, err := destDB.Begin(true)
+	kvdbTx, err := channelDBDest.BeginReadWriteTx()
+	if err != nil {
+		return err
+	}
+	tx, err := bdb.UnderlineTX(kvdbTx)
 	if err != nil {
 		return err
 	}
@@ -72,7 +78,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 	}
 
 	if ourNode != nil {
-		channelNodes, channels, policies, err := ourData(tx, ourNode)
+		channelNodes, channels, policies, err := ourData(kvdbTx, ourNode)
 		if err != nil {
 			return err
 		}
