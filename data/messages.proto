@@ -111,6 +111,11 @@ message InvoiceMemo {
     int64 expiry = 8;
 }
 
+message AddInvoiceRequest {
+    InvoiceMemo invoiceDetails = 1;
+    LSPInformation lspInfo = 2;
+}
+
 message Invoice {   
     InvoiceMemo memo = 1;
     bool settled = 2;    
@@ -293,6 +298,9 @@ message LSPInformation {
     uint32 time_lock_delta = 9;
     /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
     int64 min_htlc_msat = 10;
+
+    int64 channel_fee_start_amount = 11;
+    float channel_fee_rate = 12;
 }
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id

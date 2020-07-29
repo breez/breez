@@ -200,6 +200,11 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 	return a.openChannel(lsp, false)
 }
 
+// ConnectLSPPeer connects to the LSP peer.
+func (a *Service) ConnectLSPPeer(lspID string) error {
+	return NewRegularLSP(lspID).Connect(a)
+}
+
 /*
 OpenLnurlChannel is responsible for creating a new channel using a lnURL
 */

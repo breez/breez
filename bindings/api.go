@@ -430,9 +430,9 @@ func SendPaymentFailureBugReport(report string) error {
 AddInvoice is part of the binding inteface which is delegated to breez.AddInvoice
 */
 func AddInvoice(invoice []byte) (paymentRequest string, err error) {
-	decodedInvoiceMemo := &data.InvoiceMemo{}
-	proto.Unmarshal(invoice, decodedInvoiceMemo)
-	return getBreezApp().AccountService.AddInvoice(decodedInvoiceMemo)
+	decodedRequest := &data.AddInvoiceRequest{}
+	proto.Unmarshal(invoice, decodedRequest)
+	return getBreezApp().AccountService.AddInvoice(decodedRequest)
 }
 
 /*
@@ -669,6 +669,10 @@ func LSPList() ([]byte, error) {
 
 func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
+}
+
+func ConnectToLSPPeer(id string) error {
+	return getBreezApp().AccountService.ConnectLSPPeer(id)
 }
 
 func ConnectToLnurl(lnurl string) error {

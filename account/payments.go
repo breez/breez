@@ -21,6 +21,7 @@ import (
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
 )
 
@@ -193,56 +194,83 @@ func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest
 /*
 AddInvoice encapsulate a given amount and description in a payment request
 */
-func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
+func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, err error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	// Format the standard invoice memo
+	invoice := invoiceRequest.InvoiceDetails
 	memo := formatTextMemo(invoice)
 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-	if err := a.waitReadyForPayment(); err != nil {
-		return "", err
-	}
-	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		PrivateOnly: true,
-	})
+
+	maxReceive, _, _, err := a.getReceivePayLimit()
 	if err != nil {
+		a.log.Infof("failed to get account limits %v", err)
 		return "", err
 	}
+
+	// in case we don't need a new channel, we make sure the
+	// existing channels are active.
+	if maxReceive >= invoice.Amount {
+		if err := a.waitReadyForPayment(); err != nil {
+			return "", err
+		}
+	}
+
 	var routeHints []*lnrpc.RouteHint
-	for _, h := range channelsRes.Channels {
-		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
-			ChanId: h.ChanId,
-		})
-		if err != nil {
-			a.log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
-			continue
+	maxReceiveMsat := maxReceive * 1000
+	amountMsat := invoice.Amount * 1000
+	smallAmountMsat := amountMsat
+	// We need the LSP to open a channel.
+	if maxReceiveMsat < amountMsat {
+		// In case we don't have enough capacity we need to request a channel.
+		lspInfo := invoiceRequest.LspInfo
+		if lspInfo == nil {
+			return "", errors.New("not enough capacity and missing LSP information")
 		}
-		remotePolicy := ci.Node1Policy
-		if ci.Node2Pub == h.RemotePubkey {
-			remotePolicy = ci.Node2Policy
+
+		// Calculate the channel fee.
+		amountForFeeMsat := float64(amountMsat - (lspInfo.ChannelFeeStartAmount * 1000))
+		channelFeeMsat := amountForFeeMsat * float64(lspInfo.ChannelFeeRate)
+		if channelFeeMsat < 0 {
+			channelFeeMsat = 0
 		}
-		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
+
+		fakeChanID := &lnwire.ShortChannelID{BlockHeight: 1, TxIndex: 0, TxPosition: 0}
 		routeHints = append(routeHints, &lnrpc.RouteHint{
 			HopHints: []*lnrpc.HopHint{
 				{
-					NodeId:                    h.RemotePubkey,
-					ChanId:                    h.ChanId,
-					FeeBaseMsat:               uint32(remotePolicy.FeeBaseMsat),
-					FeeProportionalMillionths: uint32(remotePolicy.FeeRateMilliMsat),
-					CltvExpiryDelta:           remotePolicy.TimeLockDelta,
+					NodeId:                    lspInfo.Pubkey,
+					ChanId:                    fakeChanID.ToUint64(),
+					FeeBaseMsat:               uint32(lspInfo.BaseFeeMsat),
+					FeeProportionalMillionths: uint32(lspInfo.FeeRate * 1000000),
+					CltvExpiryDelta:           lspInfo.TimeLockDelta,
 				},
 			},
 		})
+
+		smallAmountMsat = amountMsat - int64(channelFeeMsat)
 	}
+
+	// create invoice with the lower amount.
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
-		Memo: memo, Private: true, Value: invoice.Amount,
+		Memo: memo, Private: true, ValueMsat: smallAmountMsat,
 		Expiry: invoice.Expiry, RouteHints: routeHints,
 	})
 	if err != nil {
 		return "", err
+	}
+	payeeInvoice := response.PaymentRequest
+
+	// create invoice with the larger amount and send to LSP the details.
+	if smallAmountMsat < amountMsat {
+		payeeInvoice, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate LSP invoice %w", err)
+		}
+		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
 	}
 	a.log.Infof("Generated Invoice: %v", response.PaymentRequest)
 	return response.PaymentRequest, nil
