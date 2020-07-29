@@ -15,14 +15,10 @@ import (
 	"github.com/lightningnetwork/lnd/zpay32"
 )
 
-const (
-	fakeShortChannelID = 402099585968178542
-)
-
 func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (string, error) {
 	invoice, err := zpay32.Decode(payReq, a.activeParams)
 	if err != nil {
-		return "", fmt.Errorf("zpay32.Decode() error: %v", err)
+		return "", fmt.Errorf("zpay32.Decode() error: %w", err)
 	}
 
 	signerClient := a.daemonAPI.SignerClient()
