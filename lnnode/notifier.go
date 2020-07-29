@@ -7,6 +7,12 @@ import (
 
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -53,27 +59,19 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient,
-		backupEventClient,
-		subswapClient,
-		breezBackupClient,
-		routerClient,
-		walletKitClient,
-		chainNotifierClient,
-		signerClient,
-		err := newLightningClient(d.cfg)
+	grpcCon, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
 
 	d.Lock()
-	d.lightningClient = lnclient
-	d.subswapClient = subswapClient
-	d.breezBackupClient = breezBackupClient
-	d.routerClient = routerClient
-	d.walletKitClient = walletKitClient
-	d.chainNotifierClient = chainNotifierClient
-	d.signerClient = signerClient
+	d.lightningClient = lnrpc.NewLightningClient(grpcCon)
+	d.subswapClient = submarineswaprpc.NewSubmarineSwapperClient(grpcCon)
+	d.breezBackupClient = breezbackuprpc.NewBreezBackuperClient(grpcCon)
+	d.routerClient = routerrpc.NewRouterClient(grpcCon)
+	d.walletKitClient = walletrpc.NewWalletKitClient(grpcCon)
+	d.chainNotifierClient = chainrpc.NewChainNotifierClient(grpcCon)
+	d.signerClient = signrpc.NewSignerClient(grpcCon)
 	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
@@ -86,10 +84,11 @@ func (d *Daemon) startSubscriptions() error {
 	d.nodePubkey = info.IdentityPubkey
 	d.Unlock()
 
+	backupEventClient := backuprpc.NewBackupClient(grpcCon)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	d.wg.Add(6)
-	go d.subscribeChannels(lnclient, ctx)
+	go d.subscribeChannels(d.lightningClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(backupEventClient, ctx)
