@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/lightningnetwork/lnd/keychain"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/zpay32"
@@ -85,4 +88,69 @@ func toCompact(sig *btcec.Signature, pubKey *btcec.PublicKey, hash []byte) ([]by
 		}
 	}
 	return nil, errors.New("The signature doesn't correspond to the pubKey")
+}
+
+func (a *Service) trackZeroConfInvoice() error {
+
+	invoicesClient := a.daemonAPI.InvoicesClient()
+	if invoicesClient == nil {
+		return errors.New("trackZeroConfInvoice: api not ready")
+	}
+
+	lnClient := a.daemonAPI.APIClient()
+	if lnClient == nil {
+		return errors.New("trackZeroConfInvoice: api not ready")
+	}
+
+	invoiceHashes, err := a.breezDB.FetchZeroConfHashes()
+	if err != nil {
+		return fmt.Errorf("trackZeroConfInvoice: failed to fetch zero conf hashes %w", err)
+	}
+
+	for _, invoiceHash := range invoiceHashes {
+		stream, err := invoicesClient.SubscribeSingleInvoice(context.Background(), &invoicesrpc.SubscribeSingleInvoiceRequest{
+			RHash: invoiceHash,
+		})
+		if err != nil {
+			return fmt.Errorf("trackZeroConfInvoice: failed to subscribe zero-conf invoice %w", err)
+		}
+
+		go func() {
+			for {
+				invoice, err := stream.Recv()
+				a.log.Infof("trackZeroConfInvoice: invoice received")
+				if err != nil {
+					a.log.Criticalf("trackZeroConfInvoice: failed to receive an invoice : %v", err)
+					return
+				}
+				if invoice.State == lnrpc.Invoice_ACCEPTED {
+					a.log.Infof("trackZeroConfInvoice: invoice accepted")
+					for _, htlc := range invoice.Htlcs {
+						if lnwire.NewShortChanIDFromInt(htlc.ChanId).IsFake() {
+							channelTrusted := false
+							for _, hint := range invoice.RouteHints {
+								for _, hop := range hint.HopHints {
+									if hop.ChanId == htlc.ChanId {
+										channelTrusted = true
+										break
+									}
+								}
+							}
+							if channelTrusted {
+								invoicesClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
+									Preimage: invoice.RPreimage,
+								})
+							}
+						}
+					}
+					return
+				}
+
+				if invoice.Expiry < time.Now().Unix() {
+					a.breezDB.RemoveZeroConfHash(invoice.RHash)
+				}
+			}
+		}()
+	}
+	return nil
 }
