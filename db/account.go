@@ -1,5 +1,7 @@
 package db
 
+import "github.com/coreos/bbolt"
+
 // SaveAccount saves an account information to the database
 func (db *DB) SaveAccount(account []byte) error {
 	return db.saveItem([]byte(accountBucket), []byte("account"), account)
@@ -26,4 +28,28 @@ func (db *DB) AccountEnabled() (bool, error) {
 		return false, err
 	}
 	return bytes == nil || bytes[0] == 1, nil
+}
+
+// AddZeroConfHash saves a zero conf hash to track.
+func (db *DB) AddZeroConfHash(hash []byte) error {
+	return db.saveItem([]byte(zeroConfInvoicesBucket), hash, []byte{})
+}
+
+// RemoveZeroConfHash removes a zero conf hash from tracking.
+func (db *DB) RemoveZeroConfHash(hash []byte) error {
+	return db.deleteItem([]byte(zeroConfInvoicesBucket), hash)
+}
+
+// FetchZeroConfHashes fetches all zero conf hashes to track
+func (db *DB) FetchZeroConfHashes() ([][]byte, error) {
+	var hashes [][]byte
+	err := db.View((func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(zeroConfInvoicesBucket))
+		b.ForEach(func(k, v []byte) error {
+			hashes = append(hashes, k)
+			return nil
+		})
+		return nil
+	}))
+	return hashes, err
 }
