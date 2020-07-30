@@ -18,6 +18,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
@@ -177,6 +178,12 @@ func (d *Daemon) SignerClient() signrpc.SignerClient {
 	d.Lock()
 	defer d.Unlock()
 	return d.signerClient
+}
+
+func (d *Daemon) InvoicesClient() invoicesrpc.InvoicesClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.invoicesClient
 }
 
 // RestartDaemon is used to restart a daemon that from some reason failed to start

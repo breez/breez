@@ -11,6 +11,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
@@ -34,6 +35,7 @@ type API interface {
 	RouterClient() routerrpc.RouterClient
 	WalletKitClient() walletrpc.WalletKitClient
 	ChainNotifierClient() chainrpc.ChainNotifierClient
+	InvoicesClient() invoicesrpc.InvoicesClient
 	SignerClient() signrpc.SignerClient
 }
 
@@ -55,6 +57,7 @@ type Daemon struct {
 	routerClient        routerrpc.RouterClient
 	walletKitClient     walletrpc.WalletKitClient
 	chainNotifierClient chainrpc.ChainNotifierClient
+	invoicesClient      invoicesrpc.InvoicesClient
 	signerClient        signrpc.SignerClient
 	ntfnServer          *subscribe.Server
 	quitChan            chan struct{}

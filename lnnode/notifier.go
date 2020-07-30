@@ -9,6 +9,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
@@ -72,6 +73,7 @@ func (d *Daemon) startSubscriptions() error {
 	d.walletKitClient = walletrpc.NewWalletKitClient(grpcCon)
 	d.chainNotifierClient = chainrpc.NewChainNotifierClient(grpcCon)
 	d.signerClient = signrpc.NewSignerClient(grpcCon)
+	d.invoicesClient = invoicesrpc.NewInvoiceClient(grpcCon)
 	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
