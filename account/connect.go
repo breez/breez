@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,10 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
 
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/lspd"
 )
 
 var (
@@ -88,7 +92,7 @@ func (lsp *regularLSP) Connect(a *Service) error {
 	l, ok := r.Lsps[lsp.lspID]
 	if !ok {
 		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
-		return fmt.Errorf("The LSP ID is not in the LSPList: %v", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %w", lsp.lspID)
 	}
 
 	return a.ConnectPeer(l.Pubkey, l.Host)
@@ -100,6 +104,54 @@ func (lsp *regularLSP) OpenChannel(a *Service, pubkey string) error {
 	_, err := c.OpenLSPChannel(ctx, &breezservice.OpenLSPChannelRequest{LspId: lsp.lspID, Pubkey: pubkey})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (lsp *regularLSP) RegisterPayment(a *Service, paymentHash, paymentSecret []byte, incomingAmountMsat, outgoingAmountMsat int64) error {
+
+	destination, err := hex.DecodeString(a.daemonAPI.NodePubkey())
+	if err != nil {
+		a.log.Infof("hex.DecodeString(%v) error: %v", a.daemonAPI.NodePubkey(), err)
+		return fmt.Errorf("hex.DecodeString(%v) error: %w", a.daemonAPI.NodePubkey(), err)
+	}
+	pi := &lspd.PaymentInformation{
+		PaymentHash:        paymentHash,
+		PaymentSecret:      paymentSecret,
+		Destination:        destination,
+		IncomingAmountMsat: incomingAmountMsat,
+		OutgoingAmountMsat: outgoingAmountMsat,
+	}
+	data, err := proto.Marshal(pi)
+
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+	list, err := c.LSPList(ctx, &breezservice.LSPListRequest{Pubkey: a.daemonAPI.NodePubkey()})
+	if err != nil {
+		a.log.Infof("LSPList() error: %v", err)
+		return fmt.Errorf("LSPList() error: %w", err)
+	}
+	l, ok := list.Lsps[lsp.lspID]
+	if !ok {
+		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %w", lsp.lspID)
+	}
+
+	pubkey, err := btcec.ParsePubKey(l.LspPubkey, btcec.S256())
+	if err != nil {
+		a.log.Infof("btcec.ParsePubKey(%x) error: %v", l.LspPubkey, err)
+		return fmt.Errorf("btcec.ParsePubKey(%x) error: %w", l.LspPubkey, err)
+	}
+	blob, err := btcec.Encrypt(pubkey, data)
+	if err != nil {
+		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
+		return fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
+	}
+
+	_, err = c.RegisterPayment(ctx, &breezservice.RegisterPaymentRequest{LspId: lsp.lspID, Blob: blob})
+	if err != nil {
+		a.log.Infof("RegisterPayment() error: %v", err)
+		return fmt.Errorf("RegisterPayment() error: %w", err)
 	}
 	return nil
 }
