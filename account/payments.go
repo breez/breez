@@ -14,10 +14,14 @@ import (
 
 	"time"
 
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/breez/breez/lspd"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
@@ -266,14 +270,23 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 
 	// create invoice with the larger amount and send to LSP the details.
 	if smallAmountMsat < amountMsat {
-		payeeInvoice, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
+		var paymentAddress []byte
+		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
 		if err != nil {
 			return "", fmt.Errorf("failed to generate LSP invoice %w", err)
 		}
 		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
+		lspInfo := invoiceRequest.LspInfo
+		pubKey, err := hex.DecodeString(lspInfo.Pubkey)
+		if err != nil {
+			return "", fmt.Errorf("failed to decode LSP pubkey %w", err)
+		}
+		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
+			return "", fmt.Errorf("failed to register payment with LSP %w", err)
+		}
 	}
-	a.log.Infof("Generated Invoice: %v", response.PaymentRequest)
-	return response.PaymentRequest, nil
+	a.log.Infof("Generated Invoice: %v", payeeInvoice)
+	return payeeInvoice, nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.
@@ -725,5 +738,44 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		Type: data.NotificationEvent_INVOICE_PAID,
 		Data: []string{invoice.PaymentRequest}})
 	a.onAccountChanged()
+	return nil
+}
+
+func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmountMsat,
+	outgoingAmountMsat int64, lspPubkey []byte, lspID string) error {
+
+	destination, err := hex.DecodeString(a.daemonAPI.NodePubkey())
+	if err != nil {
+		a.log.Infof("hex.DecodeString(%v) error: %v", a.daemonAPI.NodePubkey(), err)
+		return fmt.Errorf("hex.DecodeString(%v) error: %w", a.daemonAPI.NodePubkey(), err)
+	}
+	pi := &lspd.PaymentInformation{
+		PaymentHash:        paymentHash,
+		PaymentSecret:      paymentSecret,
+		Destination:        destination,
+		IncomingAmountMsat: incomingAmountMsat,
+		OutgoingAmountMsat: outgoingAmountMsat,
+	}
+	data, err := proto.Marshal(pi)
+
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+
+	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
+	if err != nil {
+		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
+		return fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)
+	}
+	blob, err := btcec.Encrypt(pubkey, data)
+	if err != nil {
+		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
+		return fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
+	}
+
+	_, err = c.RegisterPayment(ctx, &breezservice.RegisterPaymentRequest{LspId: lspID, Blob: blob})
+	if err != nil {
+		a.log.Infof("RegisterPayment() error: %v", err)
+		return fmt.Errorf("RegisterPayment() error: %w", err)
+	}
 	return nil
 }
