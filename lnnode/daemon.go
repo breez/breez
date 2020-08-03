@@ -306,6 +306,9 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 			d.log.Criticalf("Can't start daemon subscriptions, shutting down: %v", err)
 			go d.stopDaemon()
 		}
+		if err := d.populateChannelsGraph(); err != nil {
+			d.log.Errorf("failed to populate graph %v", err)
+		}
 	case <-d.quitChan:
 	}
 }
