@@ -18,27 +18,27 @@ import (
 	"github.com/lightningnetwork/lnd/zpay32"
 )
 
-func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (string, error) {
+func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (string, []byte, error) {
 	invoice, err := zpay32.Decode(payReq, a.activeParams)
 	if err != nil {
-		return "", fmt.Errorf("zpay32.Decode() error: %w", err)
+		return "", nil, fmt.Errorf("zpay32.Decode() error: %w", err)
 	}
 
 	signerClient := a.daemonAPI.SignerClient()
 	if signerClient == nil {
-		return "", fmt.Errorf("API is not ready")
+		return "", nil, fmt.Errorf("API is not ready")
 	}
 	nodeKey := a.daemonAPI.NodePubkey()
 	if nodeKey == "" {
-		return "", errors.New("node public key wasn't initialized")
+		return "", nil, errors.New("node public key wasn't initialized")
 	}
 	pubkeyBytes, err := hex.DecodeString(nodeKey)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	pubKey, err := btcec.ParsePubKey(pubkeyBytes, btcec.S256())
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	m := lnwire.MilliSatoshi(newAmount)
@@ -63,7 +63,7 @@ func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (
 	if err != nil {
 		log.Printf("invoice.Encode() error: %v", err)
 	}
-	return newInvoice, nil
+	return newInvoice, (*invoice.PaymentAddr)[:], nil
 }
 
 func toCompact(sig *btcec.Signature, pubKey *btcec.PublicKey, hash []byte) ([]byte, error) {
