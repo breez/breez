@@ -281,9 +281,13 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		if err != nil {
 			return "", fmt.Errorf("failed to decode LSP pubkey %w", err)
 		}
+		if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
+			return "", fmt.Errorf("failed to add zero-conf invoice %w", err)
+		}
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
 			return "", fmt.Errorf("failed to register payment with LSP %w", err)
 		}
+		a.trackInvoice(response.RHash)
 	}
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
 	return payeeInvoice, nil
