@@ -152,8 +152,8 @@ func (a *Daemon) populateChannelsGraph() error {
 			TimeLockDelta:             uint16(144),
 			MinHTLC:                   c.LocalChanCfg.MinHTLC,
 			MaxHTLC:                   c.LocalChanCfg.MaxPendingAmount,
-			FeeBaseMSat:               lnwire.MilliSatoshi(100),
-			FeeProportionalMillionths: lnwire.MilliSatoshi(1000),
+			FeeBaseMSat:               lnwire.MilliSatoshi(1000),
+			FeeProportionalMillionths: lnwire.MilliSatoshi(1),
 		}
 
 		if chanFlags == 1 {
@@ -171,18 +171,18 @@ func (a *Daemon) populateChannelsGraph() error {
 			TimeLockDelta:             uint16(144),
 			MinHTLC:                   c.LocalChanCfg.MinHTLC,
 			MaxHTLC:                   c.LocalChanCfg.MaxPendingAmount,
-			FeeBaseMSat:               lnwire.MilliSatoshi(100),
-			FeeProportionalMillionths: lnwire.MilliSatoshi(1000),
+			FeeBaseMSat:               lnwire.MilliSatoshi(1000),
+			FeeProportionalMillionths: lnwire.MilliSatoshi(1),
 		}
 
-		if err := chandb.ChannelGraph().AddChannelEdge(edge); err != nil {
-			return fmt.Errorf("failed to add channel edge %w", err)
-		}
+		// if err := chandb.ChannelGraph().AddChannelEdge(edge); err != nil {
+		// 	return fmt.Errorf("failed to add channel edge %w", err)
+		// }
 		if err := chandb.ChannelGraph().UpdateEdgePolicy(policy1); err != nil {
-			return fmt.Errorf("failed to add channel edge policy 1 %w", err)
+			a.log.Errorf("failed to add channel edge policy 1 %v", err)
 		}
 		if err := chandb.ChannelGraph().UpdateEdgePolicy(policy2); err != nil {
-			return fmt.Errorf("failed to add channel edge policy 2 %w", err)
+			a.log.Errorf("failed to add channel edge policy 2 %v", err)
 		}
 	}
 	return nil
