@@ -375,6 +375,10 @@ func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().SwapService.RemoveFund(request.Amount, request.Address))
 }
 
+func PopulateChannelPolicy() {
+	getBreezApp().PopulateChannelPolicy()
+}
+
 /*
 GetLogPath is part of the binding inteface which is delegated to breez.GetLogPath
 */

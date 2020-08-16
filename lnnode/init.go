@@ -85,7 +85,7 @@ func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, er
 	}, nil
 }
 
-func (a *Daemon) populateChannelsGraph() error {
+func (a *Daemon) PopulateChannelsGraph() error {
 	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
 	if err != nil {
 		return fmt.Errorf("failed to populate channels graph %w", err)

@@ -334,3 +334,9 @@ func (a *App) BackupFiles() (string, error) {
 	jsonRes, err := json.Marshal(res.Files)
 	return string(jsonRes), err
 }
+
+func (a *App) PopulateChannelPolicy() {
+	if err := a.lnDaemon.PopulateChannelsGraph(); err != nil {
+		a.log.Errorf("failed to populate graph %v", err)
+	}
+}
