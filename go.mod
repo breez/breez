@@ -9,7 +9,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.3.4-0.20200616004619-ca24ed58cf8a
 	github.com/btcsuite/btcwallet/wtxmgr v1.2.1-0.20200616004619-ca24ed58cf8a
 	github.com/coreos/bbolt v1.3.3
-	github.com/deadsy/go-cli v0.0.0-20200429132810-10d02883df98 // indirect
+	github.com/deadsy/go-cli v0.0.0-20200429132810-10d02883df98
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fiatjaf/go-lnurl v0.0.0-20200322141859-984f796c1153
 	github.com/golang/protobuf v1.3.3
@@ -21,10 +21,10 @@ require (
 	github.com/tidwall/gjson v1.6.0 // indirect
 	github.com/urfave/cli v1.18.0
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
-	golang.org/x/mobile v0.0.0-20200329125638-4c31acba0007 // indirect
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69 // indirect
 	google.golang.org/api v0.20.0
 	google.golang.org/grpc v1.28.0
 	gopkg.in/macaroon.v2 v2.0.0
@@ -40,4 +40,4 @@ replace (
 	github.com/lightningnetwork/lnd/cert => github.com/lightningnetwork/lnd/cert v1.0.2-0.20200401010500-77df8e3a4386
 )
 
-go 1.12
+go 1.13
