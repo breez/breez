@@ -122,7 +122,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	// and BackupID (it will only exist if this node has been restored)
 	p.log.Infof("GoogleDriveProvider going over fetched snapshots")
 	for _, f := range r.Files {
-		p.log.Infof("GoogleDriveProvider checking snapshot, name:%v, id:%v", f.Name, f.Id)
+		p.log.Infof("GoogleDriveProvider checking snapshot, name:%v, id:%v, size=%v", f.Name, f.Id, f.Size)
 		var backupID string
 		for k, v := range f.AppProperties {
 			if k == backupIDProperty {
@@ -236,6 +236,9 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 	if err != nil {
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
 		return "", &driveServiceError{err}
+	}
+	if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
+		p.log.Errorf("failed to delete stale snapshots %v", err)
 	}
 	p.log.Infof("UploadBackupFiles finished succesfully")
 	return a.User.EmailAddress, nil
