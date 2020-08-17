@@ -237,11 +237,9 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
 		return "", &driveServiceError{err}
 	}
-	go func() {
-		if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
-			p.log.Errorf("failed to delete stale snapshots %v", err)
-		}
-	}()
+	if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
+		p.log.Errorf("failed to delete stale snapshots %v", err)
+	}
 	p.log.Infof("UploadBackupFiles finished succesfully")
 	return a.User.EmailAddress, nil
 }
@@ -312,12 +310,10 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	if err != nil {
 		return nil, &driveServiceError{err}
 	}
-	go func() {
-		err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
-		if err != nil {
-			p.log.Errorf("failed to delete stale snapshots %v", err)
-		}
-	}()
+	err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
+	if err != nil {
+		return nil, &driveServiceError{err}
+	}
 	return downloaded, nil
 }
 
@@ -388,15 +384,19 @@ func (p *GoogleDriveProvider) deleteStaleSnapshots(nodeFolderID, activeBackupFol
 			return err
 		}
 
-		for _, b := range backupFiles.Files {
-			p.log.Infof("deleting file %v - name = %v", b.Id, b.Name)
-			if err := p.driveService.Files.Delete(b.Id).Do(); err != nil {
-				return err
+		go func() {
+			for _, b := range backupFiles.Files {
+				p.log.Infof("deleting file %v - name = %v", b.Id, b.Name)
+				if err := p.driveService.Files.Delete(b.Id).Do(); err != nil {
+					p.log.Infof("failed to delete file %v - name = %v", b.Id, b.Name)
+					return
+				}
 			}
-		}
-		if err := p.driveService.Files.Delete(f.Id).Do(); err != nil {
-			return err
-		}
+			if err := p.driveService.Files.Delete(f.Id).Do(); err != nil {
+				p.log.Infof("failed to folder %v - name = %v", f.Id, f.Name)
+				return
+			}
+		}()
 	}
 	return nil
 }
