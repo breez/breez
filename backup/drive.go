@@ -237,9 +237,11 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
 		return "", &driveServiceError{err}
 	}
-	if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
-		p.log.Errorf("failed to delete stale snapshots %v", err)
-	}
+	go func() {
+		if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
+			p.log.Errorf("failed to delete stale snapshots %v", err)
+		}
+	}()
 	p.log.Infof("UploadBackupFiles finished succesfully")
 	return a.User.EmailAddress, nil
 }
@@ -310,10 +312,12 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	if err != nil {
 		return nil, &driveServiceError{err}
 	}
-	err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
-	if err != nil {
-		return nil, &driveServiceError{err}
-	}
+	go func() {
+		err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
+		if err != nil {
+			p.log.Errorf("failed to delete stale snapshots %v", err)
+		}
+	}()
 	return downloaded, nil
 }
 
@@ -363,15 +367,32 @@ func (p *GoogleDriveProvider) downloadFile(file *drive.File, dir string) (string
 
 // deleteStaleSnapshots delete all snapshots for a specific node except for the active one.
 func (p *GoogleDriveProvider) deleteStaleSnapshots(nodeFolderID, activeBackupFolderID string) error {
+
 	r, err := p.driveService.Files.List().Spaces("appDataFolder").
 		Q(fmt.Sprintf("'%v' in parents", nodeFolderID)).
 		Do()
 	if err != nil {
 		return err
 	}
+	p.log.Infof("going over snapshots, looking for %v", activeBackupFolderID)
 	for _, f := range r.Files {
+		p.log.Infof("going over snapshot %v size=%v", f.Id, f.Size)
 		if f.Id == activeBackupFolderID {
 			continue
+		}
+		backupFiles, err := p.driveService.Files.List().Spaces("appDataFolder").
+			Fields("files(name)", "files(id)").
+			Q(fmt.Sprintf("'%v' in parents", f.Id)).
+			Do()
+		if err != nil {
+			return err
+		}
+
+		for _, b := range backupFiles.Files {
+			p.log.Infof("deleting file %v - name = %v", b.Id, b.Name)
+			if err := p.driveService.Files.Delete(b.Id).Do(); err != nil {
+				return err
+			}
 		}
 		if err := p.driveService.Files.Delete(f.Id).Do(); err != nil {
 			return err
