@@ -274,10 +274,12 @@ func (d *Daemon) startDaemon() error {
 		if err != nil {
 			d.log.Errorf("failed to create config %v", err)
 		}
+		d.log.Infof("Stating LND Daemon")
 		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
 		}
+		d.log.Infof("LND Daemon Finished")
 
 		chanDBCleanUp()
 		cleanupFn()
@@ -290,8 +292,10 @@ func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
 	lndConfig.Bitcoin.Active = true
 	if d.cfg.Network == "mainnet" {
 		lndConfig.Bitcoin.MainNet = true
-	} else {
+	} else if d.cfg.Network == "testnet" {
 		lndConfig.Bitcoin.TestNet3 = true
+	} else {
+		lndConfig.Bitcoin.SimNet = true
 	}
 	lndConfig.LndDir = workingDir
 	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
@@ -312,6 +316,7 @@ func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
 	}
 	cfg.LogWriter = writer
 	cfg.MinBackoff = time.Second * 20
+	cfg.Bitcoin.SkipChannelConfirmation = true
 	conf, err := lnd.ValidateConfig(cfg, "")
 	if err != nil {
 		d.log.Errorf("ValidateConfig returned with error: %v", err)

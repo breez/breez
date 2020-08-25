@@ -94,7 +94,7 @@ func (c *Client) ensureConnection(closeOldConnection bool) *grpc.ClientConn {
 		c.connection = nil
 	}
 	if c.connection == nil {
-		con, err := dial(c.cfg.BreezServer)
+		con, err := dial(c.cfg.BreezServer, c.cfg.BreezServerNoTLS)
 		if err != nil {
 			c.log.Errorf("failed to dial to grpc connection: %v", err)
 		}
@@ -165,7 +165,10 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 	return &data.LSPList{Lsps: r}, nil
 }
 
-func dial(serverURL string) (*grpc.ClientConn, error) {
+func dial(serverURL string, noTLS bool) (*grpc.ClientConn, error) {
+	if noTLS {
+		return grpc.Dial(serverURL, grpc.WithInsecure())
+	}
 	cp := x509.NewCertPool()
 	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
 		return nil, fmt.Errorf("credentials: failed to append certificates")
