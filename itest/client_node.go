@@ -45,5 +45,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	rpcBinding := &bindings.RPC{}
+	rpcBinding.Start()
+
 	<-signal.ShutdownChannel()
+	fmt.Println("Shutdown requested")
+	os.Exit(0)
 }

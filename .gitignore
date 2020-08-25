@@ -1,2 +1,6 @@
 /build/
 /vendor/
+docker/alice_node/
+docker/breez_node/
+docker/bob_node/
+docker/test

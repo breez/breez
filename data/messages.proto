@@ -2,6 +2,31 @@ syntax = "proto3";
 
 package data;
 
+service BreezAPI {
+  rpc GetLSPList (LSPListRequest) returns (LSPList) {}
+  rpc ConnectToLSP (ConnectLSPRequest) returns (ConnectLSPReply) {}
+  rpc AddFundInit(AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc GetFundStatus(FundStatusRequest) returns (FundStatusReply) {}
+  rpc AddInvoice(AddInvoiceRequest) returns (AddInvoiceReply) {}
+  rpc PayInvoice(PayInvoiceRequest) returns (PaymentResponse) {}
+  rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonReply) {}
+}
+
+message RestartDaemonRequest{}
+message RestartDaemonReply{}
+
+message AddFundInitRequest{
+    string notificationToken = 1;
+}
+
+message FundStatusRequest {
+    string notificationToken = 1;
+}
+
+message AddInvoiceReply{
+    string paymentRequest = 1;
+}
+
 message ChainStatus {
     uint32 blockHeight = 1;
     bool syncedToChain = 2;
@@ -302,9 +327,18 @@ message LSPInformation {
     int64 channel_fee_start_amount = 11;
     float channel_fee_rate = 12;
 }
+
+message LSPListRequest {}
+
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }
+
+message ConnectLSPRequest {
+    string lsp_id = 1;
+}
+
+message ConnectLSPReply {}
 
 message LNUrlResponse {
     oneof action {

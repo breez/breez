@@ -15,6 +15,8 @@ services:
       - MINING_ADDRESS
     volumes:
       - shared:/rpc
+    ports:
+      - 18556:18556
     networks:
       nodes:
         ipv4_address: 10.5.0.5
@@ -27,15 +29,38 @@ services:
       context: ../
       dockerfile: docker/alice/Dockerfile
     volumes:
-      - ./alice_node:/root/.lnd
+      - ${TEST_DIR}/alice_node:/root/.lnd
     ports:
       - 9735:9735
       - 10009:10009
+      - 50053:50053
+    links:
+      - "btcd:blockchain"
+    depends_on:
+      - "btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.2
+  bob:
+    container_name: "bob"
+    domainname: bob.client
+    hostname: bob
+    build:
+      context: ../
+      dockerfile: docker/alice/Dockerfile
+    volumes:
+      - ${TEST_DIR}/bob_node:/root/.lnd
+    ports:
+      - 9737:9735
+      - 10011:10009
+      - 50054:50053
+    depends_on:
+      - "btcd"
     links:
       - "btcd:blockchain"
     networks:
       nodes:
-        ipv4_address: 10.5.0.2
+        ipv4_address: 10.5.0.10
   breez:
     container_name: "breez"
     domainname: breez_node.server
@@ -45,15 +70,37 @@ services:
       dockerfile: docker/breez/Dockerfile
     volumes:
       - shared:/rpc
-      - ./breez_node:/root/.lnd
+      - ${TEST_DIR}/breez_node:/root/.lnd
     ports:
       - 9736:9735
       - 10010:10009
     links:
       - "btcd:blockchain"
+    depends_on:
+      - "btcd"
     networks:
       nodes:
         ipv4_address: 10.5.0.3
+  subswap_node:
+    container_name: "subswap_node"
+    domainname: subswap_node.server
+    hostname: "subswap_node"
+    build:
+      context: ../
+      dockerfile: docker/breez/Dockerfile
+    volumes:
+      - shared:/rpc
+      - ${TEST_DIR}/subswap_node:/root/.lnd
+    ports:
+      - 9738:9735
+      - 10012:10009
+    links:
+      - "btcd:blockchain"
+    depends_on:
+      - "btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.11
   breez_server:
     container_name: "breez_server"
     build:
@@ -61,8 +108,12 @@ services:
       dockerfile: docker/breez_server/Dockerfile
     depends_on:
       - breez
+      - subswap_node
+      - lspd
+      - postgres
     volumes:
-      - ./breez_node:/root/breez_node
+      - ${TEST_DIR}/breez_node:/root/breez_node
+      - ${TEST_DIR}/subswap_node:/root/subswap_node
     links:
       - "postgres:postgres"
       - "redis:redis"
@@ -74,12 +125,13 @@ services:
     build:
       context: ../
       dockerfile: docker/lspd/Dockerfile
-    depends_on:
-      - breez_server
     volumes:
-      - ./breez_node:/root/breez_node
+      - ${TEST_DIR}/breez_node:/root/breez_node
     links:
       - "postgres_interceptor:postgres_interceptor"
+    depends_on:
+      - postgres_interceptor
+      - breez
     networks:
       nodes:
         ipv4_address: 10.5.0.9
@@ -101,7 +153,8 @@ services:
     networks:
       nodes:
         ipv4_address: 10.5.0.7
-    image: redis:5.0
+    build:
+      context: ./redis
 volumes:
   shared:
     driver: local

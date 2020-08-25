@@ -4,7 +4,7 @@ RUN apk add git go musl-dev make
 COPY ./docker/breez_server/.env .
 COPY ./docker/breez_server/start.sh .
 RUN chmod +x ./start.sh
-RUN git clone https://github.com/breez/server
+RUN git clone https://github.com/breez/server -b pay_to_open
 RUN cd server \
     && go build .
 RUN go get github.com/joho/godotenv/cmd/godotenv
