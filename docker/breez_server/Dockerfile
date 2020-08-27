@@ -2,6 +2,7 @@ FROM alpine:3.12 AS builder
 RUN apk update
 RUN apk add git go musl-dev make
 COPY ./docker/breez_server/.env .
+
 COPY ./docker/breez_server/start.sh .
 RUN chmod +x ./start.sh
 RUN git clone https://github.com/breez/server -b pay_to_open
@@ -16,5 +17,4 @@ COPY ./itest/generate_macaroon_hex.go .
 RUN go build ./generate_macaroon_hex.go
 RUN chmod +x ./generate_macaroon_hex
 RUN go get -tags 'postgres' -u github.com/golang-migrate/migrate/cmd/migrate
-#CMD /root/go/bin/godotenv ./server/server
 ENTRYPOINT ./start.sh

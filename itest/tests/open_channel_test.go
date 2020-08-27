@@ -24,6 +24,7 @@ func TestZeroConfSimple(t *testing.T) {
 	test := newTestFramework(t)
 	bobClient := lnrpc.NewLightningClient(test.bobNode)
 	breezClient := lnrpc.NewLightningClient(test.breezNode)
+	aliceClient := lnrpc.NewLightningClient(test.aliceNode)
 
 	openBreezChannel(t, test, test.bobBreezClient, test.bobNode)
 	invoice, err := bobClient.AddInvoice(context.Background(), &lnrpc.Invoice{
@@ -46,6 +47,12 @@ func TestZeroConfSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get lsp list %w", err)
 	}
+	aliceClient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+		Addr: &lnrpc.LightningAddress{
+			Host:   list.Lsps["lspd-secret"].Host,
+			Pubkey: list.Lsps["lspd-secret"].Pubkey,
+		},
+	})
 
 	reply, err := test.aliceBreezClient.AddInvoice(context.Background(), &data.AddInvoiceRequest{
 		InvoiceDetails: &data.InvoiceMemo{
@@ -73,6 +80,31 @@ func TestZeroConfSimple(t *testing.T) {
 // 	// subswap := lnrpc.NewLightningClient(test.subswapNode)
 // 	aliceClient := lnrpc.NewLightningClient(test.aliceNode)
 // 	breezClient := lnrpc.NewLightningClient(test.breezNode)
+
+// list, err := breezAPIClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+// if err != nil {
+// 	t.Fatalf("failed to get lsp list %w", err)
+// }
+
+// subswapAddr, err := subswap.NewAddress(context.Background(),
+// 	&lnrpc.NewAddressRequest{Type: lnrpc.AddressType_NESTED_PUBKEY_HASH})
+// if err != nil {
+// 	t.Fatalf("failed to get address from subswapper %w", err)
+// }
+// _, err = breezClient.SendCoins(context.Background(),
+// 	&lnrpc.SendCoinsRequest{Addr: subswapAddr.Address, Amount: 10000000})
+// if err != nil {
+// 	t.Fatalf("failed to send coins to local client %w", err)
+// }
+// test.GenerateBlocks(10)
+
+// subswap
+//lsp := list.Lsps["lspd-secret"]
+// lspAddress := &lnrpc.LightningAddress{
+// 	Pubkey: lsp.Pubkey,
+// 	Host:   lsp.Host,
+// }
+//initSwapperNode(t, subswap, lspAddress)
 
 // 	openChannel(t, test)
 
@@ -123,33 +155,7 @@ func TestZeroConfSimple(t *testing.T) {
 func openBreezChannel(t *testing.T, test *framework,
 	breezAPIClient data.BreezAPIClient, breezLNDCon *grpc.ClientConn) {
 	breezClient := lnrpc.NewLightningClient(test.breezNode)
-	//subswap := lnrpc.NewLightningClient(test.subswapNode)
 	localClient := lnrpc.NewLightningClient(breezLNDCon)
-
-	// list, err := breezAPIClient.GetLSPList(context.Background(), &data.LSPListRequest{})
-	// if err != nil {
-	// 	t.Fatalf("failed to get lsp list %w", err)
-	// }
-
-	// subswapAddr, err := subswap.NewAddress(context.Background(),
-	// 	&lnrpc.NewAddressRequest{Type: lnrpc.AddressType_NESTED_PUBKEY_HASH})
-	// if err != nil {
-	// 	t.Fatalf("failed to get address from subswapper %w", err)
-	// }
-	// _, err = breezClient.SendCoins(context.Background(),
-	// 	&lnrpc.SendCoinsRequest{Addr: subswapAddr.Address, Amount: 10000000})
-	// if err != nil {
-	// 	t.Fatalf("failed to send coins to local client %w", err)
-	// }
-	// test.GenerateBlocks(10)
-
-	// subswap
-	//lsp := list.Lsps["lspd-secret"]
-	// lspAddress := &lnrpc.LightningAddress{
-	// 	Pubkey: lsp.Pubkey,
-	// 	Host:   lsp.Host,
-	// }
-	//initSwapperNode(t, subswap, lspAddress)
 	test.GenerateBlocks(5)
 
 	_, err := breezAPIClient.ConnectToLSP(
@@ -158,24 +164,6 @@ func openBreezChannel(t *testing.T, test *framework,
 	if err != nil {
 		t.Fatalf("failed to connect to LSP: %v", err)
 	}
-	err = poll(func() bool {
-		res, err := localClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
-		if err != nil {
-			return false
-		}
-		return len(res.PendingOpenChannels) == 1
-	}, time.Second*10)
-	if err != nil {
-		t.Fatalf("failed to list local pending channels: %v", err)
-	}
-
-	// res, err := localClient.PendingChannels(context.Background(), &lnrpc.PendingChannelsRequest{})
-	// if err != nil {
-	// 	t.Fatalf("failed to list local pending channels: %v", err)
-	// }
-	// if len(res.PendingOpenChannels) != 1 {
-	// 	t.Fatalf("expected 1 pending channel, got %v channels", len(res.PendingOpenChannels))
-	// }
 	test.GenerateBlocks(5)
 
 	var bobChanID uint64
