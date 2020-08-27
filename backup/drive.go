@@ -310,10 +310,6 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	if err != nil {
 		return nil, &driveServiceError{err}
 	}
-	err = p.deleteStaleSnapshots(nodeFolder.Id, folderID)
-	if err != nil {
-		return nil, &driveServiceError{err}
-	}
 	return downloaded, nil
 }
 
