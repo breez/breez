@@ -40,7 +40,7 @@ var (
 
 	// subswapper
 	subswapDir     = os.Getenv("SUBSWAP_DIR")         //"/Users/roeierez/gopath4/src/github.com/breez/breez/docker/test/bob_node"
-	subswapAddress = os.Getenv("SUBSWAP_LND_ADDRESS") // "127.0.0.1:10011"
+	subswapAddress = os.Getenv("SUBSWAP_LND_ADDRESS") // "127.0.0.1:10012"
 
 	// btcd
 	btcdHost     = os.Getenv("BTCD_HOST")      //"127.0.0.1:18556"
@@ -59,6 +59,7 @@ type framework struct {
 }
 
 func setup() error {
+	fmt.Println("setup started")
 	os.Create(fmt.Sprintf("%v/shutdown", aliceDir))
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
 	time.Sleep(time.Second * 2)
@@ -68,6 +69,7 @@ func setup() error {
 	if err := waitForNodeSynced(bobDir, bobAddress); err != nil {
 		return err
 	}
+	fmt.Println("setup completed")
 	return nil
 }
 
@@ -128,6 +130,7 @@ func newTestFramework(test *testing.T) *framework {
 	if err != nil {
 		test.Fatalf("failed to create miner node %w", err)
 	}
+
 	//alice bree client
 	aliceBreezClient, err := getBreezClient(aliceBreezAddress)
 	if err != nil {

@@ -3,10 +3,11 @@ export ALICE_DIR=$TEST_DIR/alice_node
 export ALICE_LND_ADDRESS="127.0.0.1:10009"
 export BOB_DIR=$TEST_DIR/bob_node
 export BOB_LND_ADDRESS="127.0.0.1:10011"
+export BOB_BREEZ_ADDRESS="127.0.0.1:50054"
 export BREEZ_DIR=$TEST_DIR/breez_node
 export BREEZ_LND_ADDRESS="127.0.0.1:10010"
 export SUBSWAP_DIR=$TEST_DIR/subswap_node
-export SUBSWAP_ADDRESS="127.0.0.1:10012"
+export SUBSWAP_LND_ADDRESS="127.0.0.1:10012"
 export BTCD_HOST="127.0.0.1:18556"
 export BTCD_CERT_FILE=$TEST_DIR/btcd-rpc.cert
 
