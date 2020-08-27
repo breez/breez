@@ -128,20 +128,33 @@ func (a *Service) trackInvoice(invoiceHash []byte) error {
 			if invoice.State == lnrpc.Invoice_ACCEPTED {
 				a.log.Infof("trackZeroConfInvoice: invoice accepted")
 				allChannelsTrusted := true
-				// for _, htlc := range invoice.Htlcs {
-				// 	if lnwire.NewShortChanIDFromInt(htlc.ChanId).IsFake() {
-				// 		channelTrusted := false
-				// 		for _, hint := range invoice.RouteHints {
-				// 			for _, hop := range hint.HopHints {
-				// 				if hop.ChanId == htlc.ChanId {
-				// 					channelTrusted = true
-				// 					break
-				// 				}
-				// 			}
-				// 		}
-				// 		allChannelsTrusted = allChannelsTrusted && channelTrusted
-				// 	}
-				// }
+				edgeByChannelID := make(map[uint64]*lnrpc.ChannelEdge)
+				for _, htlc := range invoice.Htlcs {
+					if lnwire.NewShortChanIDFromInt(htlc.ChanId).IsFake() {
+						channelTrusted := false
+						edge, ok := edgeByChannelID[htlc.ChanId]
+						if !ok {
+							edge, err = a.daemonAPI.APIClient().GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+								ChanId: htlc.ChanId,
+							})
+							if err != nil {
+								a.log.Warnf("failed to fetch htlc channel with id: %v", htlc.ChanId)
+								continue
+							}
+							edgeByChannelID[htlc.ChanId] = edge
+						}
+
+						for _, hint := range invoice.RouteHints {
+							for _, hop := range hint.HopHints {
+								if hop.NodeId == edge.Node1Pub || hop.NodeId == edge.Node2Pub {
+									channelTrusted = true
+									break
+								}
+							}
+						}
+						allChannelsTrusted = allChannelsTrusted && channelTrusted
+					}
+				}
 				if allChannelsTrusted {
 					a.log.Infof("settlling invoice %x", invoice.RHash)
 					invoicesClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
