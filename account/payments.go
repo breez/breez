@@ -227,13 +227,16 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	maxReceiveMsat := maxReceive * 1000
 	amountMsat := invoice.Amount * 1000
 	smallAmountMsat := amountMsat
+	needOpenChannel := maxReceiveMsat < amountMsat
 	// We need the LSP to open a channel.
-	if maxReceiveMsat < amountMsat {
+	if needOpenChannel {
 		// In case we don't have enough capacity we need to request a channel.
 		lspInfo := invoiceRequest.LspInfo
 		if lspInfo == nil {
 			return "", errors.New("not enough capacity and missing LSP information")
 		}
+
+		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 
 		// Calculate the channel fee.
 		amountForFeeMsat := float64(amountMsat - (lspInfo.ChannelFeeStartAmount * 1000))
@@ -241,6 +244,8 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		if channelFeeMsat < 0 {
 			channelFeeMsat = 0
 		}
+		a.log.Infof("zero-conf fee calculation: lsp start from: %v, lsp fee rate: %v, total fees for channel: %v",
+			lspInfo.ChannelFeeStartAmount, lspInfo.ChannelFeeRate, channelFeeMsat)
 
 		fakeChanID := &lnwire.ShortChannelID{BlockHeight: 1, TxIndex: 0, TxPosition: 0}
 		routeHints = append(routeHints, &lnrpc.RouteHint{
@@ -269,7 +274,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	payeeInvoice := response.PaymentRequest
 
 	// create invoice with the larger amount and send to LSP the details.
-	if smallAmountMsat < amountMsat {
+	if needOpenChannel {
 		var paymentAddress []byte
 		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
 		if err != nil {
@@ -277,16 +282,14 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		}
 		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
 		lspInfo := invoiceRequest.LspInfo
-		pubKey, err := hex.DecodeString(lspInfo.Pubkey)
-		if err != nil {
-			return "", fmt.Errorf("failed to decode LSP pubkey %w", err)
-		}
+		pubKey := lspInfo.LspPubkey
 		if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
 			return "", fmt.Errorf("failed to add zero-conf invoice %w", err)
 		}
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
 			return "", fmt.Errorf("failed to register payment with LSP %w", err)
 		}
+		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
 		a.trackInvoice(response.RHash)
 	}
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
@@ -765,6 +768,7 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 	defer cancel()
 
+	a.log.Infof("Register Payment pubkey = %v", lspPubkey)
 	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
 	if err != nil {
 		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)

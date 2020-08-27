@@ -128,20 +128,20 @@ func (a *Service) trackInvoice(invoiceHash []byte) error {
 			if invoice.State == lnrpc.Invoice_ACCEPTED {
 				a.log.Infof("trackZeroConfInvoice: invoice accepted")
 				allChannelsTrusted := true
-				for _, htlc := range invoice.Htlcs {
-					if lnwire.NewShortChanIDFromInt(htlc.ChanId).IsFake() {
-						channelTrusted := false
-						for _, hint := range invoice.RouteHints {
-							for _, hop := range hint.HopHints {
-								if hop.ChanId == htlc.ChanId {
-									channelTrusted = true
-									break
-								}
-							}
-						}
-						allChannelsTrusted = allChannelsTrusted && channelTrusted
-					}
-				}
+				// for _, htlc := range invoice.Htlcs {
+				// 	if lnwire.NewShortChanIDFromInt(htlc.ChanId).IsFake() {
+				// 		channelTrusted := false
+				// 		for _, hint := range invoice.RouteHints {
+				// 			for _, hop := range hint.HopHints {
+				// 				if hop.ChanId == htlc.ChanId {
+				// 					channelTrusted = true
+				// 					break
+				// 				}
+				// 			}
+				// 		}
+				// 		allChannelsTrusted = allChannelsTrusted && channelTrusted
+				// 	}
+				// }
 				if allChannelsTrusted {
 					a.log.Infof("settlling invoice %x", invoice.RHash)
 					invoicesClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{

@@ -329,6 +329,7 @@ message LSPInformation {
 
     int64 channel_fee_start_amount = 12;
     float channel_fee_rate = 13;
+    bytes lsp_pubkey = 14;
 }
 
 message LSPListRequest {}

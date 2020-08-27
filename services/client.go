@@ -160,6 +160,7 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 			FeeRate:         l.FeeRate,
 			TimeLockDelta:   l.TimeLockDelta,
 			MinHtlcMsat:     l.MinHtlcMsat,
+			LspPubkey:       l.LspPubkey,
 		}
 	}
 	return &data.LSPList{Lsps: r}, nil
