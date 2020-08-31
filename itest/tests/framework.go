@@ -60,7 +60,14 @@ type framework struct {
 
 func setup() error {
 	fmt.Println("setup started")
-	os.Create(fmt.Sprintf("%v/shutdown", aliceDir))
+	miner, err := getMiner()
+	if err != nil {
+		return err
+	}
+	_, _ = miner.Generate(1)
+	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
+		return err
+	}
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
 	time.Sleep(time.Second * 2)
 	if err := waitForNodeSynced(aliceDir, aliceAddress); err != nil {
@@ -125,6 +132,9 @@ func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
 }
 
 func newTestFramework(test *testing.T) *framework {
+	if err := setup(); err != nil {
+		test.Fatalf("failed to setup test %v", err)
+	}
 	// miner
 	miner, err := getMiner()
 	if err != nil {
@@ -196,6 +206,64 @@ func (f *framework) GenerateBlocks(num uint32) {
 		}
 		f.test.Logf("node synced")
 	}
+}
+
+func (f *framework) initSwapperNode() {
+	t := f.test
+	subswapNode := lnrpc.NewLightningClient(f.subswapNode)
+	breezClient := lnrpc.NewLightningClient(f.breezNode)
+	swapChannels, err := subswapNode.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		t.Fatalf("failed to get sub swapper channels %v", err)
+	}
+	if len(swapChannels.Channels) > 0 {
+		return
+	}
+
+	list, err := f.aliceBreezClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+	if err != nil {
+		t.Fatalf("failed to get lsp list %w", err)
+	}
+	lsp := list.Lsps["lspd-secret"]
+
+	// breezInfo, err := breezClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	// if err != nil {
+	// 	t.Fatalf("failed to get breez node info %v", err)
+	// }
+	subswapAddr, err := subswapNode.NewAddress(context.Background(),
+		&lnrpc.NewAddressRequest{Type: lnrpc.AddressType_NESTED_PUBKEY_HASH})
+	if err != nil {
+		t.Fatalf("failed to get address from subswapper %w", err)
+	}
+	_, err = breezClient.SendCoins(context.Background(),
+		&lnrpc.SendCoinsRequest{Addr: subswapAddr.Address, Amount: 10000000})
+	if err != nil {
+		t.Fatalf("failed to send coins to local client %w", err)
+	}
+	f.GenerateBlocks(10)
+
+	// swapPeers, _ := subswapNode.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
+
+	// if len(swapPeers.Peers) == 0 {
+	_, err = subswapNode.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+		Addr: &lnrpc.LightningAddress{
+			Pubkey: lsp.Pubkey,
+			Host:   lsp.Host,
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to connect to breez from lsp %w", err)
+	}
+	//}
+	_, err = subswapNode.OpenChannelSync(context.Background(), &lnrpc.OpenChannelRequest{
+		NodePubkeyString:   lsp.Pubkey,
+		LocalFundingAmount: 1000000,
+		TargetConf:         1,
+	})
+	if err != nil {
+		t.Fatalf("failed to open channel to breez from lsp %w", err)
+	}
+
 }
 
 func getBreezClient(address string) (data.BreezAPIClient, error) {
