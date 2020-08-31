@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strings"
@@ -24,9 +25,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
+	"github.com/lightningnetwork/lnd/routing"
 )
 
 const (
@@ -115,6 +118,7 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
+	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
@@ -126,7 +130,13 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	return a.sendPayment(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	return a.sendPayment(decodedReq.PaymentHash, &routerrpc.SendPaymentRequest{
+		PaymentRequest: paymentRequest,
+		TimeoutSeconds: 60,
+		FeeLimitSat:    math.MaxInt64,
+		MaxParts:       20,
+		Amt:            amountSatoshi,
+	})
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
@@ -138,9 +148,12 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	if err != nil {
 		return "", err
 	}
-	req := &lnrpc.SendRequest{
+	req := &routerrpc.SendPaymentRequest{
 		Dest:              destBytes,
 		Amt:               amount,
+		TimeoutSeconds:    60,
+		FeeLimitSat:       math.MaxInt64,
+		MaxParts:          20,
 		DestCustomRecords: make(map[uint64][]byte),
 	}
 
@@ -163,26 +176,41 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	return a.sendPayment(hashStr, req)
 }
 
-func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest) (string, error) {
-	lnclient := a.daemonAPI.APIClient()
+func (a *Service) sendPayment(paymentHash string, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
-	response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
+	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return "", err
 	}
 
-	if len(response.PaymentError) > 0 {
-		a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
+	failureReason := lnrpc.PaymentFailureReason_FAILURE_REASON_NONE
+	for {
+		payment, err := response.Recv()
+		if err != nil {
+			return "", err
+		}
+		if payment.Status == lnrpc.Payment_IN_FLIGHT {
+			continue
+		}
+		if payment.Status != lnrpc.Payment_SUCCEEDED {
+			failureReason = payment.FailureReason
+		}
+		break
+	}
+
+	if failureReason != lnrpc.PaymentFailureReason_FAILURE_REASON_NONE {
+		a.log.Infof("sendPaymentForRequest finished with error, %v", failureReason.String())
+		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, failureReason.String())
 		if err != nil {
 			a.log.Errorf("failed to create trace report for failed payment %v", err)
 		}
-		errorMsg := response.PaymentError
-		if strings.Contains(errorMsg, "unable to find a path to destination") {
+		errorMsg := failureReason.String()
+		if failureReason == lnrpc.PaymentFailureReason_FAILURE_REASON_NO_ROUTE {
 			_, maxPay, _, err := a.getReceivePayLimit()
 			if err == nil && maxPay-sendRequest.Amt < 50 {
 				errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
@@ -273,6 +301,12 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	}
 	payeeInvoice := response.PaymentRequest
 
+	if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
+		return "", fmt.Errorf("failed to add zero-conf invoice %w", err)
+	}
+	a.trackInvoice(response.RHash)
+	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
+
 	// create invoice with the larger amount and send to LSP the details.
 	if needOpenChannel {
 		var paymentAddress []byte
@@ -283,14 +317,11 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
 		lspInfo := invoiceRequest.LspInfo
 		pubKey := lspInfo.LspPubkey
-		if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
-			return "", fmt.Errorf("failed to add zero-conf invoice %w", err)
-		}
+
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
 			return "", fmt.Errorf("failed to register payment with LSP %w", err)
 		}
 		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
-		a.trackInvoice(response.RHash)
 	}
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
 	return payeeInvoice, nil
@@ -313,7 +344,7 @@ func (a *Service) SendPaymentFailureBugReport(jsonReport string) error {
 	return nil
 }
 
-func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, paymentResponse *lnrpc.SendResponse) (string, error) {
+func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, errorMsg string) (string, error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	var decodedPayReq *lnrpc.PayReq
@@ -357,7 +388,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		},
 	}
 
-	responseMap["payment_error"] = paymentResponse.PaymentError
+	responseMap["payment_error"] = errorMsg
 
 	response, err := json.MarshalIndent(responseMap, "", "  ")
 	if err != nil {
