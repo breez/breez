@@ -125,7 +125,9 @@ func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
 		if err == nil && info.SyncedToChain && info.BlockHeight == bestBlock {
 			return nil
 		}
-		lastBlock = info.BlockHeight
+		if info != nil {
+			lastBlock = info.BlockHeight
+		}
 		time.Sleep(time.Second)
 	}
 	return fmt.Errorf("Timeout in waiting for node to sync to best block %v only have %v", bestBlock, lastBlock)

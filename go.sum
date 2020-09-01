@@ -36,6 +36,10 @@ github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9 h1:nnekk9
 github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9/go.mod h1:cJGqxXtqQbmXuL7RlXjIM18x0bGHy1407/85mQCLca4=
 github.com/breez/lnd v0.10.0-beta.rc6.0.20200727105921-9993269a3206 h1:QlgjeY+4i96CZZf/zqTqK3YohjwFbgJkJ96ziW16Wco=
 github.com/breez/lnd v0.10.0-beta.rc6.0.20200727105921-9993269a3206/go.mod h1:hleyedoscAZrxwiMUVbQniv1Yc7TtsC16li4vQFPObg=
+github.com/breez/lnd v0.10.0-beta.rc6.0.20200830084104-a59e777da831 h1:dAAxOpP2yP4Uv5tcEFpSvCjanWHpRdwjEo5Ds9XiDP4=
+github.com/breez/lnd v0.10.0-beta.rc6.0.20200830084104-a59e777da831/go.mod h1:hleyedoscAZrxwiMUVbQniv1Yc7TtsC16li4vQFPObg=
+github.com/breez/lnd v0.10.0-beta.rc6.0.20200830093627-c051928ee93a h1:nJ2i4MaInlYODTBAtKp1xs/4TBwGvN5a2GHtrFo9jIs=
+github.com/breez/lnd v0.10.0-beta.rc6.0.20200830093627-c051928ee93a/go.mod h1:hleyedoscAZrxwiMUVbQniv1Yc7TtsC16li4vQFPObg=
 github.com/breez/neutrino v0.11.1-0.20200707124028-efe899f4cedb h1:G5aCMrfvpiYzk7GRj11kuANZdhNKVSOfwy6UyBHggPI=
 github.com/breez/neutrino v0.11.1-0.20200707124028-efe899f4cedb/go.mod h1:MlZmoKa7CJP3eR1s5yB7Rm5aSyadpKkxqAwLQmog7N0=
 github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=

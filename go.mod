@@ -9,7 +9,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.3.4-0.20200616004619-ca24ed58cf8a
 	github.com/btcsuite/btcwallet/wtxmgr v1.2.1-0.20200616004619-ca24ed58cf8a
 	github.com/coreos/bbolt v1.3.3
-	github.com/deadsy/go-cli v0.0.0-20200429132810-10d02883df98
+	github.com/deadsy/go-cli v0.0.0-20200429132810-10d02883df98 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fiatjaf/go-lnurl v0.0.0-20200322141859-984f796c1153
 	github.com/golang/protobuf v1.3.3
@@ -36,7 +36,7 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.3.2-0.20200726120254-83f8f93c32e9
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20200707124028-efe899f4cedb
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.10.0-beta.rc6.0.20200727105921-9993269a3206
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.10.0-beta.rc6.0.20200830093627-c051928ee93a
 	github.com/lightningnetwork/lnd/cert => github.com/lightningnetwork/lnd/cert v1.0.2-0.20200401010500-77df8e3a4386
 )
 

@@ -102,7 +102,7 @@ func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
 		},
 		{
 			amountSat:        300_000,
-			expectedChannels: 2,
+			expectedChannels: 3,
 		},
 	})
 }
@@ -192,6 +192,7 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 		senderClient := test.bobBreezClient
 		//senderLNDClient := bobClient
 		//senderRouter := routerrpc.NewRouterClient(test.bobNode)
+		lessZero := amount < 0
 		if amount < 0 {
 			amount = amount * -1
 			breezClient = test.bobBreezClient
@@ -213,36 +214,9 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 		res, err := senderClient.PayInvoice(context.Background(), &data.PayInvoiceRequest{
 			PaymentRequest: reply.PaymentRequest,
 		})
-
-		// payreq, err := breezNodeClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{
-		// 	PayReq: reply.PaymentRequest,
-		// })
-		// t.Logf("routing hints %v", payreq.RouteHints)
-		// res, err := senderRouter.SendPaymentV2(context.Background(), &routerrpc.SendPaymentRequest{
-		// 	PaymentRequest: reply.PaymentRequest,
-		// 	MaxParts:       10,
-		// 	TimeoutSeconds: 20,
-		// 	FeeLimitSat:    1000,
-		// })
-		// res, err := senderLNDClient.SendPaymentSync(context.Background(), &lnrpc.SendRequest{
-		// 	PaymentRequest: reply.PaymentRequest,
-		// })
 		if err != nil || res.PaymentError != "" {
-			t.Fatalf("failed to send payment from Bob %v %v", err, res.PaymentError)
+			t.Fatalf("failed to send payment from Bob %v %v %v %v", err, res.PaymentError, lessZero, reply.PaymentRequest)
 		}
-		// for {
-		// 	payment, err := res.Recv()
-		// 	if err != nil {
-		// 		t.Fatalf("payment failed %v", err)
-		// 	}
-		// 	if payment.Status == lnrpc.Payment_IN_FLIGHT {
-		// 		continue
-		// 	}
-		// 	if payment.Status != lnrpc.Payment_SUCCEEDED {
-		// 		t.Fatalf("payment failed %v", payment.FailureReason.String())
-		// 	}
-		// 	break
-		// }
 
 		channelCount := 0
 		err = poll(func() bool {

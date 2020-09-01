@@ -251,18 +251,25 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		}
 	}
 
-	var routeHints []*lnrpc.RouteHint
+	lspInfo := invoiceRequest.LspInfo
+	if lspInfo == nil {
+		return "", errors.New("missing LSP information")
+	}
+
 	maxReceiveMsat := maxReceive * 1000
 	amountMsat := invoice.Amount * 1000
 	smallAmountMsat := amountMsat
+	lspHint, err := a.getLSPRoutingHints(lspInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to get LSP routing hints %w", err)
+	}
+
 	needOpenChannel := maxReceiveMsat < amountMsat
+	routeHints := []*lnrpc.RouteHint{lspHint}
 	// We need the LSP to open a channel.
 	if needOpenChannel {
+
 		// In case we don't have enough capacity we need to request a channel.
-		lspInfo := invoiceRequest.LspInfo
-		if lspInfo == nil {
-			return "", errors.New("not enough capacity and missing LSP information")
-		}
 
 		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 
@@ -275,26 +282,13 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		a.log.Infof("zero-conf fee calculation: lsp start from: %v, lsp fee rate: %v, total fees for channel: %v",
 			lspInfo.ChannelFeeStartAmount, lspInfo.ChannelFeeRate, channelFeeMsat)
 
-		fakeChanID := &lnwire.ShortChannelID{BlockHeight: 1, TxIndex: 0, TxPosition: 0}
-		routeHints = append(routeHints, &lnrpc.RouteHint{
-			HopHints: []*lnrpc.HopHint{
-				{
-					NodeId:                    lspInfo.Pubkey,
-					ChanId:                    fakeChanID.ToUint64(),
-					FeeBaseMsat:               uint32(lspInfo.BaseFeeMsat),
-					FeeProportionalMillionths: uint32(lspInfo.FeeRate * 1000000),
-					CltvExpiryDelta:           lspInfo.TimeLockDelta,
-				},
-			},
-		})
-
 		smallAmountMsat = amountMsat - int64(channelFeeMsat)
 	}
 
 	// create invoice with the lower amount.
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
-		Memo: memo, Private: true, ValueMsat: smallAmountMsat,
-		Expiry: invoice.Expiry, RouteHints: routeHints,
+		Memo: memo, ValueMsat: smallAmountMsat,
+		Expiry: invoice.Expiry, Private: true, RouteHints: routeHints,
 	})
 	if err != nil {
 		return "", err
@@ -325,6 +319,61 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	}
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
 	return payeeInvoice, nil
+}
+
+func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) (*lnrpc.RouteHint, error) {
+	lnclient := a.daemonAPI.APIClient()
+	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, h := range channelsRes.Channels {
+		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+			ChanId: h.ChanId,
+		})
+		if err != nil {
+			a.log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
+			continue
+		}
+		remotePolicy := ci.Node1Policy
+		if h.RemotePubkey == lspInfo.Pubkey && ci.Node2Pub == h.RemotePubkey {
+			remotePolicy = ci.Node2Policy
+		}
+		feeBaseMsat := uint32(lspInfo.BaseFeeMsat)
+		proportionalFee := uint32(lspInfo.FeeRate * 1000000)
+		cltvExpiryDelta := lspInfo.TimeLockDelta
+		if remotePolicy != nil {
+			feeBaseMsat = uint32(remotePolicy.FeeBaseMsat)
+			proportionalFee = uint32(remotePolicy.FeeRateMilliMsat)
+			cltvExpiryDelta = remotePolicy.TimeLockDelta
+		}
+		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
+		return &lnrpc.RouteHint{
+			HopHints: []*lnrpc.HopHint{
+				{
+					NodeId:                    h.RemotePubkey,
+					ChanId:                    h.ChanId,
+					FeeBaseMsat:               feeBaseMsat,
+					FeeProportionalMillionths: proportionalFee,
+					CltvExpiryDelta:           cltvExpiryDelta,
+				},
+			},
+		}, nil
+	}
+	fakeChanID := &lnwire.ShortChannelID{BlockHeight: 1, TxIndex: 0, TxPosition: 0}
+	return &lnrpc.RouteHint{
+		HopHints: []*lnrpc.HopHint{
+			{
+				NodeId:                    lspInfo.Pubkey,
+				ChanId:                    fakeChanID.ToUint64(),
+				FeeBaseMsat:               uint32(lspInfo.BaseFeeMsat),
+				FeeProportionalMillionths: uint32(lspInfo.FeeRate * 1000000),
+				CltvExpiryDelta:           lspInfo.TimeLockDelta,
+			},
+		},
+	}, nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.
