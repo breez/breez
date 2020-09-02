@@ -30,6 +30,11 @@ type ChannelEvent struct {
 	*lnrpc.ChannelEventUpdate
 }
 
+// PeerEvent is sent whenever a peer is connected/disconnected.
+type PeerEvent struct {
+	*lnrpc.PeerEvent
+}
+
 // TransactionEvent is sent when a new transaction is received.
 type TransactionEvent struct {
 	*lnrpc.Transaction
@@ -89,8 +94,9 @@ func (d *Daemon) startSubscriptions() error {
 	backupEventClient := backuprpc.NewBackupClient(grpcCon)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	d.wg.Add(6)
+	d.wg.Add(7)
 	go d.subscribeChannels(d.lightningClient, ctx)
+	go d.subscribePeers(d.lightningClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
 	go d.watchBackupEvents(backupEventClient, ctx)
@@ -107,6 +113,36 @@ func (d *Daemon) startSubscriptions() error {
 	}
 	d.log.Infof("Daemon ready! subscriptions started")
 	return nil
+}
+
+func (d *Daemon) subscribePeers(client lnrpc.LightningClient, ctx context.Context) error {
+	defer d.wg.Done()
+
+	subscription, err := client.SubscribePeerEvents(ctx, &lnrpc.PeerEventSubscription{})
+	if err != nil {
+		d.log.Errorf("Failed to subscribe peers %v", err)
+		return err
+	}
+
+	d.log.Infof("Peers subscription created")
+	for {
+		notification, err := subscription.Recv()
+		if err == io.EOF || ctx.Err() == context.Canceled {
+			d.log.Errorf("subscribePeers cancelled, shutting down")
+			return err
+		}
+
+		d.log.Infof("peer event type %v received for peer = %v", notification.Type, notification.PubKey)
+		if err != nil {
+			d.log.Errorf("subscribe peers Failed to get notification %v", err)
+			// in case of unexpected error, we will wait a bit so we won't get
+			// into infinite loop.
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		d.ntfnServer.SendUpdate(PeerEvent{notification})
+	}
 }
 
 func (d *Daemon) subscribeChannels(client lnrpc.LightningClient, ctx context.Context) error {

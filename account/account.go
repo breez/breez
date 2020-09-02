@@ -100,6 +100,19 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 	return data.Account_DISCONNECTED, "", nil
 }
 
+func (a *Service) getConnectedPeers() (peers []string, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	response, err := lnclient.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
+	if err != nil {
+		return nil, err
+	}
+	connectedPeers := make([]string, len(response.Peers))
+	for _, p := range response.Peers {
+		connectedPeers = append(connectedPeers, p.PubKey)
+	}
+	return connectedPeers, nil
+}
+
 func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -241,6 +254,11 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
+	connectedPeers, err := a.getConnectedPeers()
+	if err != nil {
+		return nil, err
+	}
+
 	maxAllowedToReceive, maxAllowedToPay, maxChanReserve, err := a.getReceivePayLimit()
 	if err != nil {
 		return nil, err
@@ -271,6 +289,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		Enabled:             enabled,
 		ChannelPoint:        chanPoint,
 		TipHeight:           int64(lnInfo.BlockHeight),
+		ConnectedPeers:      connectedPeers,
 	}, nil
 }
 

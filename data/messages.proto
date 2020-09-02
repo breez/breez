@@ -71,6 +71,9 @@ message Account {
 
     // the last known block height.
     int64 tipHeight = 13;
+
+    // public keys of peers this account is connected to.
+    repeated string connectedPeers = 14;
 }
 
 message Payment {
