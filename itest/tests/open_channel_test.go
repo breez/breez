@@ -106,6 +106,53 @@ func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
 		},
 	})
 }
+
+func Test_routing_hints_existing(t *testing.T) {
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        100_000,
+			expectedChannels: 1,
+		},
+		{
+			amountSat:        100_000,
+			expectedChannels: 2,
+		},
+	})
+
+	list, err := test.aliceBreezClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+	if err != nil {
+		t.Fatalf("failed to get lsp list %v", err)
+	}
+
+	reply, err := test.aliceBreezClient.AddInvoice(context.Background(), &data.AddInvoiceRequest{
+		LspInfo: list.Lsps["lspd-secret"],
+		InvoiceDetails: &data.InvoiceMemo{
+			Description: "Zero conf",
+			Amount:      1000,
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to add alice invoice %v", err)
+	}
+	aliceClient := lnrpc.NewLightningClient(test.aliceNode)
+	decodeReply, err := aliceClient.DecodePayReq(context.Background(), &lnrpc.PayReqString{
+		PayReq: reply.PaymentRequest,
+	})
+	if err != nil {
+		t.Fatalf("failed to decode alice invoice %v", err)
+	}
+	if len(decodeReply.RouteHints) != 1 {
+		t.Fatalf("expected 1 hint got %v", len(decodeReply.RouteHints))
+	}
+	hopChanID := decodeReply.RouteHints[0].HopHints[0].ChanId
+	channReply, err := aliceClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if channReply.Channels[0].ChanId != hopChanID && channReply.Channels[1].ChanId != hopChanID {
+		t.Fatalf("wrong hint")
+	}
+
+}
+
 func Test_zero_conf_close(t *testing.T) {
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
