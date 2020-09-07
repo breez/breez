@@ -150,7 +150,6 @@ func Test_routing_hints_existing(t *testing.T) {
 	if channReply.Channels[0].ChanId != hopChanID && channReply.Channels[1].ChanId != hopChanID {
 		t.Fatalf("wrong hint")
 	}
-
 }
 
 func Test_zero_conf_close(t *testing.T) {
@@ -166,9 +165,10 @@ func Test_zero_conf_close(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in list alice channels")
 	}
+
 	parts := strings.Split(ch.Channels[0].ChannelPoint, ":")
 	outputIndex, err := strconv.Atoi(parts[1])
-	_, err = aliceClient.CloseChannel(context.Background(), &lnrpc.CloseChannelRequest{
+	closeRes, err := aliceClient.CloseChannel(context.Background(), &lnrpc.CloseChannelRequest{
 		ChannelPoint: &lnrpc.ChannelPoint{
 			FundingTxid: &lnrpc.ChannelPoint_FundingTxidStr{
 				FundingTxidStr: parts[0],
@@ -180,7 +180,18 @@ func Test_zero_conf_close(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in close alice channel")
 	}
-	test.GenerateBlocks(6)
+	for {
+		closeUpdate, err := closeRes.Recv()
+		if err != nil {
+			t.Fatalf("failed in close channel event %v", err)
+		}
+		if pending, ok := closeUpdate.Update.(*lnrpc.CloseStatusUpdate_ClosePending); ok {
+			test.test.Logf("pending closed channel: %v", pending.ClosePending.Txid)
+			break
+		}
+	}
+	test.GenerateBlocks(8)
+
 	ch, err = aliceClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error in list alice channels")
@@ -237,15 +248,16 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 		amount := zeroConfTest.amountSat
 		breezClient := test.aliceBreezClient
 		senderClient := test.bobBreezClient
-		//senderLNDClient := bobClient
+		senderLNDNode := lnrpc.NewLightningClient(test.bobNode)
+		receiverLNDNode := lnrpc.NewLightningClient(test.aliceNode)
 		//senderRouter := routerrpc.NewRouterClient(test.bobNode)
 		lessZero := amount < 0
 		if amount < 0 {
 			amount = amount * -1
 			breezClient = test.bobBreezClient
-			//senderLNDClient = aliceClient
-			//senderRouter = routerrpc.NewRouterClient(test.aliceNode)
 			senderClient = test.aliceBreezClient
+			senderLNDNode = lnrpc.NewLightningClient(test.aliceNode)
+			receiverLNDNode = lnrpc.NewLightningClient(test.bobNode)
 		}
 		reply, err := breezClient.AddInvoice(context.Background(), &data.AddInvoiceRequest{
 			InvoiceDetails: &data.InvoiceMemo{
@@ -264,15 +276,56 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 		if err != nil || res.PaymentError != "" {
 			t.Fatalf("failed to send payment from Bob %v %v %v %v", err, res.PaymentError, lessZero, reply.PaymentRequest)
 		}
+		poll(func() bool {
+			senderChans, err := senderLNDNode.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+			if err != nil {
+				t.Fatalf("failed to list sender channels %v", err)
+			}
+			receiverChans, err := receiverLNDNode.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+			if err != nil {
+				t.Fatalf("failed to list sender channels %v", err)
+			}
+
+			for _, ch := range senderChans.Channels {
+				if len(ch.PendingHtlcs) > 0 {
+					return false
+				}
+			}
+			for _, ch := range receiverChans.Channels {
+				if len(ch.PendingHtlcs) > 0 {
+					return false
+				}
+			}
+			return true
+		}, time.Second*10)
 
 		channelCount := 0
 		err = poll(func() bool {
+			aliceInfo, err := aliceClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+			if err != nil {
+				return false
+			}
 			chanRes, err := aliceClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 			if err != nil {
 				t.Fatalf("failed to list local channels: %v", err)
 			}
 			channelCount = len(chanRes.Channels)
 			if channelCount != zeroConfTest.expectedChannels {
+				return false
+			}
+
+			breezChanRes, err := breezNodeClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+			if err != nil {
+				t.Fatalf("failed to list local breez: %v", err)
+			}
+
+			var remoteChannels []*lnrpc.Channel
+			for _, c := range breezChanRes.Channels {
+				if c.RemotePubkey == aliceInfo.IdentityPubkey {
+					remoteChannels = append(remoteChannels, c)
+				}
+			}
+			if len(remoteChannels) != len(chanRes.Channels) {
 				return false
 			}
 
@@ -310,7 +363,28 @@ func openBreezChannel(t *testing.T, test *framework,
 			t.Logf("expected 1 channel got %v", len(chanRes.Channels))
 			return false
 		}
-		bobChanID = chanRes.Channels[0].ChanId
+
+		breezChans, err := breezClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			t.Fatalf("failed to list local channels: %v", err)
+		}
+		if len(chanRes.Channels) != 1 {
+			t.Logf("expected 1 channel got %v", len(chanRes.Channels))
+			return false
+		}
+
+		var bobChannel *lnrpc.Channel
+		for _, c := range breezChans.Channels {
+			if c.ChanId == chanRes.Channels[0].ChanId {
+				bobChannel = c
+				break
+			}
+		}
+		if bobChannel == nil {
+			return false
+		}
+
+		bobChanID = bobChannel.ChanId
 		return true
 	}, time.Second*10)
 	if err != nil {
