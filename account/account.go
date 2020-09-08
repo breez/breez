@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout      = 5
+	maxPaymentAllowedSat  = math.MaxUint32 / 1000
+	endpointTimeout       = 5
+	maxGlobalReceiveLimit = 4_000_000
 )
 
 var (
@@ -41,6 +42,13 @@ GetAccountLimits returns the account limits.
 */
 func (a *Service) GetAccountLimits() (maxReceive, maxPay, maxReserve int64, err error) {
 	return a.getReceivePayLimit()
+}
+
+/*
+GetGlobalMaxReceiveLimit returns the account global max receive limit.
+*/
+func (a *Service) GetGlobalMaxReceiveLimit() (maxReceive int64, err error) {
+	return a.getReceiveGlobalLimit()
 }
 
 // EnableAccount controls whether the account will be enabled or disabled.
@@ -111,6 +119,19 @@ func (a *Service) getConnectedPeers() (peers []string, err error) {
 		connectedPeers = append(connectedPeers, p.PubKey)
 	}
 	return connectedPeers, nil
+}
+
+func (a *Service) getReceiveGlobalLimit() (maxReceive int64, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	channelBalance, err := lnclient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	if err != nil {
+		return 0, err
+	}
+	maxReceive = maxGlobalReceiveLimit - channelBalance.Balance
+	if maxReceive < 0 {
+		maxReceive = 0
+	}
+	return maxReceive, nil
 }
 
 func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
