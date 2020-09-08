@@ -17,6 +17,7 @@ message RestartDaemonReply{}
 
 message AddFundInitRequest{
     string notificationToken = 1;
+    string lspID = 2;
 }
 
 message FundStatusRequest {
@@ -137,6 +138,7 @@ message InvoiceMemo {
     string payerImageURL = 6;
     bool transferRequest = 7;
     int64 expiry = 8;
+    bytes preimage = 9;
 }
 
 message AddInvoiceRequest {
