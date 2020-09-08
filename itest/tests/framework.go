@@ -235,12 +235,12 @@ func (f *framework) initSwapperNode() {
 	subswapAddr, err := subswapNode.NewAddress(context.Background(),
 		&lnrpc.NewAddressRequest{Type: lnrpc.AddressType_NESTED_PUBKEY_HASH})
 	if err != nil {
-		t.Fatalf("failed to get address from subswapper %w", err)
+		t.Fatalf("failed to get address from subswapper %v", err)
 	}
 	_, err = breezClient.SendCoins(context.Background(),
 		&lnrpc.SendCoinsRequest{Addr: subswapAddr.Address, Amount: 10000000})
 	if err != nil {
-		t.Fatalf("failed to send coins to local client %w", err)
+		t.Fatalf("failed to send coins to local client %v", err)
 	}
 	f.GenerateBlocks(10)
 
@@ -254,7 +254,7 @@ func (f *framework) initSwapperNode() {
 		},
 	})
 	if err != nil {
-		t.Fatalf("failed to connect to breez from lsp %w", err)
+		t.Fatalf("failed to connect to breez from lsp %v", err)
 	}
 	//}
 	_, err = subswapNode.OpenChannelSync(context.Background(), &lnrpc.OpenChannelRequest{
@@ -263,7 +263,7 @@ func (f *framework) initSwapperNode() {
 		TargetConf:         1,
 	})
 	if err != nil {
-		t.Fatalf("failed to open channel to breez from lsp %w", err)
+		t.Fatalf("failed to open channel to breez from lsp %v", err)
 	}
 
 }
