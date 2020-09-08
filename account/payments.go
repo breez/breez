@@ -294,7 +294,8 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 
 	// create invoice with the lower amount.
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
-		Memo: memo, ValueMsat: smallAmountMsat,
+		RPreimage: invoice.Preimage,
+		Memo:      memo, ValueMsat: smallAmountMsat,
 		Expiry: invoice.Expiry, RouteHints: routingHints,
 	})
 	if err != nil {
