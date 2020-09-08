@@ -340,8 +340,13 @@ func EnableAccount(enabled bool) error {
 /*
 AddFundsInit is part of the binding inteface which is delegated to breez.AddFundsInit
 */
-func AddFundsInit(breezID string) ([]byte, error) {
-	return marshalResponse(getBreezApp().SwapService.AddFundsInit(breezID))
+func AddFundsInit(initRequest []byte) ([]byte, error) {
+	request := &data.AddFundInitRequest{}
+	if err := proto.Unmarshal(initRequest, request); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().SwapService.AddFundsInit(
+		request.NotificationToken, request.LspID))
 }
 
 //Refund transfers the funds in address to the user destination address

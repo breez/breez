@@ -27,7 +27,7 @@ func (r *RPC) ConnectToLSP(ctx context.Context, in *data.ConnectLSPRequest) (
 
 func (r *RPC) AddFundInit(ctx context.Context, in *data.AddFundInitRequest) (
 	*data.AddFundInitReply, error) {
-	return getBreezApp().SwapService.AddFundsInit(in.NotificationToken)
+	return getBreezApp().SwapService.AddFundsInit(in.NotificationToken, in.LspID)
 }
 
 func (r *RPC) GetFundStatus(ctx context.Context, in *data.FundStatusRequest) (

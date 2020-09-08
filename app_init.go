@@ -151,7 +151,9 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.ServicesClient,
 		app.lnDaemon,
 		app.AccountService.SendPaymentForRequest,
-		app.AccountService.GetAccountLimits,
+		app.AccountService.AddInvoice,
+		app.ServicesClient.LSPList,
+		app.AccountService.GetGlobalMaxReceiveLimit,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New SwapService")
