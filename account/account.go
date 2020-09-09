@@ -161,12 +161,8 @@ func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, er
 		if canPay < 0 {
 			canPay = 0
 		}
-		if maxAllowedToPay < canPay {
-			maxAllowedToPay = canPay
-		}
-		if maxChanReserve < chanReserve {
-			maxChanReserve = chanReserve
-		}
+		maxAllowedToPay += canPay
+		maxChanReserve += chanReserve
 	}
 
 	for _, b := range channels.Channels {
