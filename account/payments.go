@@ -124,6 +124,9 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	if err != nil {
 		return "", err
 	}
+	if decodedReq.NumSatoshis == amountSatoshi {
+		amountSatoshi = 0
+	}
 	if err := a.breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
 		return "", err
 	}
