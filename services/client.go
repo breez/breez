@@ -149,18 +149,19 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 	r := make(map[string]*data.LSPInformation)
 	for id, l := range lsps.Lsps {
 		r[id] = &data.LSPInformation{
-			Id:              id,
-			Name:            l.Name,
-			WidgetUrl:       l.WidgetUrl,
-			Pubkey:          l.Pubkey,
-			Host:            l.Host,
-			ChannelCapacity: l.ChannelCapacity,
-			TargetConf:      l.TargetConf,
-			BaseFeeMsat:     l.BaseFeeMsat,
-			FeeRate:         l.FeeRate,
-			TimeLockDelta:   l.TimeLockDelta,
-			MinHtlcMsat:     l.MinHtlcMsat,
-			LspPubkey:       l.LspPubkey,
+			Id:                  id,
+			Name:                l.Name,
+			WidgetUrl:           l.WidgetUrl,
+			Pubkey:              l.Pubkey,
+			Host:                l.Host,
+			ChannelCapacity:     l.ChannelCapacity,
+			TargetConf:          l.TargetConf,
+			BaseFeeMsat:         l.BaseFeeMsat,
+			FeeRate:             l.FeeRate,
+			TimeLockDelta:       l.TimeLockDelta,
+			MinHtlcMsat:         l.MinHtlcMsat,
+			ChannelFeePermyriad: l.ChannelFeePermyriad,
+			LspPubkey:           l.LspPubkey,
 		}
 	}
 	return &data.LSPList{Lsps: r}, nil

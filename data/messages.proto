@@ -332,9 +332,9 @@ message LSPInformation {
     /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
     int64 min_htlc_msat = 11;
 
-    int64 channel_fee_start_amount = 12;
-    float channel_fee_rate = 13;
-    bytes lsp_pubkey = 14;
+    int64 channel_fee_permyriad = 12;
+
+    bytes lsp_pubkey = 13;
 }
 
 message LSPListRequest {}

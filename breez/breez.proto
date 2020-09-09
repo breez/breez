@@ -95,10 +95,9 @@ message LSPInformation {
   /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
   int64 min_htlc_msat = 10 [json_name = "min_htlc_msat"];
 
-  int64 channel_fee_start_amount = 11;
-  float channel_fee_rate = 12;
+  int64 channel_fee_permyriad = 11;
 
-  bytes lsp_pubkey = 13;
+  bytes lsp_pubkey = 12;
 }
 message LSPListReply {
   map<string, LSPInformation> lsps = 1; // The key is the lsp id

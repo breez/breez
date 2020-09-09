@@ -283,16 +283,12 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 
 		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 
-		// Calculate the channel fee.
-		amountForFeeMsat := float64(amountMsat - (lspInfo.ChannelFeeStartAmount * 1000))
-		channelFeeMsat := amountForFeeMsat * float64(lspInfo.ChannelFeeRate)
-		if channelFeeMsat < 0 {
-			channelFeeMsat = 0
-		}
-		a.log.Infof("zero-conf fee calculation: lsp start from: %v, lsp fee rate: %v, total fees for channel: %v",
-			lspInfo.ChannelFeeStartAmount, lspInfo.ChannelFeeRate, channelFeeMsat)
+		// Calculate the channel fee such that it's an integral number of sat.
+		channelFeesMsat := amountMsat * lspInfo.ChannelFeePermyriad / 10_000 / 1_000 * 1_000
+		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v, total fees for channel: %v",
+			lspInfo.ChannelFeePermyriad, channelFeesMsat)
 
-		smallAmountMsat = amountMsat - int64(channelFeeMsat)
+		smallAmountMsat = amountMsat - channelFeesMsat
 	}
 
 	// create invoice with the lower amount.
