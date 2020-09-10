@@ -22,6 +22,7 @@ import (
 const (
 	transferFundsRequest = "Bitcoin Transfer"
 	maxPaymentAllowedSat = math.MaxUint32 / 1000
+	maxDepositAmount     = 3_500_000
 )
 
 var (
@@ -500,6 +501,9 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	if err != nil {
 		s.log.Error("unable to get account limits")
 		return "", data.SwapError_NO_ERROR, err
+	}
+	if maxReceive > maxDepositAmount {
+		maxReceive = maxDepositAmount
 	}
 
 	if addressInfo.ConfirmedAmount > maxPaymentAllowedSat || addressInfo.ConfirmedAmount > maxReceive {

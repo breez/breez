@@ -48,7 +48,8 @@ func (a *Service) GetAccountLimits() (maxReceive, maxPay, maxReserve int64, err 
 GetGlobalMaxReceiveLimit returns the account global max receive limit.
 */
 func (a *Service) GetGlobalMaxReceiveLimit() (maxReceive int64, err error) {
-	return a.getReceiveGlobalLimit()
+	receive, _, _, err := a.getReceivePayLimit()
+	return receive, err
 }
 
 // EnableAccount controls whether the account will be enabled or disabled.
@@ -121,17 +122,26 @@ func (a *Service) getConnectedPeers() (peers []string, err error) {
 	return connectedPeers, nil
 }
 
-func (a *Service) getReceiveGlobalLimit() (maxReceive int64, err error) {
+func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
-	channelBalance, err := lnclient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
 		return 0, err
 	}
-	maxReceive = maxGlobalReceiveLimit - channelBalance.Balance
-	if maxReceive < 0 {
-		maxReceive = 0
+
+	var maxAllowedReceive int64
+	for _, b := range channels.Channels {
+		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserveSat
+		if !b.Initiator {
+			// In case this is a remote initated channel we will take a buffer of half commit fee size
+			// to ensure the remote balance won't get too close to the channel reserve.
+			thisChannelCanReceive -= b.CommitFee / 2
+		}
+		if maxAllowedReceive < thisChannelCanReceive {
+			maxAllowedReceive = thisChannelCanReceive
+		}
 	}
-	return maxReceive, nil
+	return maxAllowedReceive, nil
 }
 
 func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
@@ -146,18 +156,16 @@ func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, er
 		return 0, 0, 0, err
 	}
 
+	channelBalance, err := lnclient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
 	var maxAllowedToReceive int64
 	var maxAllowedToPay int64
 	var maxChanReserve int64
 
-	processChannel := func(canReceive, canPay, chanReserve int64) {
-		if canReceive < 0 {
-			canReceive = 0
-		}
-		if maxAllowedToReceive < canReceive {
-			maxAllowedToReceive = canReceive
-		}
-
+	processChannel := func(canPay, chanReserve int64) {
 		if canPay < 0 {
 			canPay = 0
 		}
@@ -176,11 +184,15 @@ func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, er
 			// Otherwise we need to restrict how much we can pay at the same manner
 			thisChannelCanPay -= b.CommitFee / 2
 		}
-		processChannel(thisChannelCanReceive, thisChannelCanPay, b.LocalChanReserveSat)
+		processChannel(thisChannelCanPay, b.LocalChanReserveSat)
 	}
 
 	for _, b := range pendingChannels.PendingOpenChannels {
-		processChannel(0, 0, b.Channel.LocalChanReserveSat)
+		processChannel(0, b.Channel.LocalChanReserveSat)
+	}
+	maxAllowedToReceive = maxGlobalReceiveLimit - channelBalance.Balance
+	if maxAllowedToReceive < 0 {
+		maxAllowedToReceive = 0
 	}
 
 	return maxAllowedToReceive, maxAllowedToPay, maxChanReserve, nil

@@ -240,7 +240,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		invoice.Expiry = defaultInvoiceExpiry
 	}
 
-	maxReceive, _, _, err := a.getReceivePayLimit()
+	maxReceive, err := a.getMaxReceiveSingleChannel()
 	if err != nil {
 		a.log.Infof("failed to get account limits %v", err)
 		return "", err
