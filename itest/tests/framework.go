@@ -140,43 +140,43 @@ func newTestFramework(test *testing.T) *framework {
 	// miner
 	miner, err := getMiner()
 	if err != nil {
-		test.Fatalf("failed to create miner node %w", err)
+		test.Fatalf("failed to create miner node %v", err)
 	}
 
 	//alice bree client
 	aliceBreezClient, err := getBreezClient(aliceBreezAddress)
 	if err != nil {
-		test.Fatalf("failed to create alice breez client %w", err)
+		test.Fatalf("failed to create alice breez client %v", err)
 	}
 
 	// alice lnd grpc
 	aliceNode, err := newLightningConnection(aliceDir, aliceAddress)
 	if err != nil {
-		test.Fatalf("failed to connect to alice node %w", err)
+		test.Fatalf("failed to connect to alice node %v", err)
 	}
 
 	//bob breez client
 	bobBreezClient, err := getBreezClient(bobBreezAddress)
 	if err != nil {
-		test.Fatalf("failed to create alice breez client %w", err)
+		test.Fatalf("failed to create alice breez client %v", err)
 	}
 
 	// bob lnd grpc
 	bobNode, err := newLightningConnection(bobDir, bobAddress)
 	if err != nil {
-		test.Fatalf("failed to connect to bob node %w", err)
+		test.Fatalf("failed to connect to bob node %v", err)
 	}
 
 	// breez lnd grpc
 	breezNode, err := newLightningConnection(breezDir, breezAddress)
 	if err != nil {
-		test.Fatalf("failed to connect to bob node %w", err)
+		test.Fatalf("failed to connect to bob node %v", err)
 	}
 
 	// subswap lnd grpc
 	subswapNode, err := newLightningConnection(subswapDir, subswapAddress)
 	if err != nil {
-		test.Fatalf("failed to connect to subswap node %w", err)
+		test.Fatalf("failed to connect to subswap node %v", err)
 	}
 
 	return &framework{
@@ -224,7 +224,7 @@ func (f *framework) initSwapperNode() {
 
 	list, err := f.aliceBreezClient.GetLSPList(context.Background(), &data.LSPListRequest{})
 	if err != nil {
-		t.Fatalf("failed to get lsp list %w", err)
+		t.Fatalf("failed to get lsp list %v", err)
 	}
 	lsp := list.Lsps["lspd-secret"]
 
@@ -247,15 +247,15 @@ func (f *framework) initSwapperNode() {
 	// swapPeers, _ := subswapNode.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
 
 	// if len(swapPeers.Peers) == 0 {
-	_, err = subswapNode.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+	_, _ = subswapNode.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
 		Addr: &lnrpc.LightningAddress{
 			Pubkey: lsp.Pubkey,
 			Host:   lsp.Host,
 		},
 	})
-	if err != nil {
-		t.Fatalf("failed to connect to breez from lsp %v", err)
-	}
+	// if err != nil {
+	// 	t.Fatalf("failed to connect to breez from lsp %v", err)
+	// }
 	//}
 	_, err = subswapNode.OpenChannelSync(context.Background(), &lnrpc.OpenChannelRequest{
 		NodePubkeyString:   lsp.Pubkey,
