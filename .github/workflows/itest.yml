@@ -22,7 +22,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2.1.0
-      - uses: actions/cache@v2
 
       # Build the docker network stack
       - name: Build the stack
