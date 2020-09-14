@@ -25,7 +25,9 @@ jobs:
 
       # Build the docker network stack
       - name: Build the stack
-        run: ./docker/start-network.sh
+        run: |
+          docker-compose -f ./docker/simnet.yml build
+          ./docker/start-network.sh
 
       # Runs the tests
       - name: Run integration tests
