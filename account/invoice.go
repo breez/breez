@@ -63,7 +63,7 @@ func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (
 	if err != nil {
 		log.Printf("invoice.Encode() error: %v", err)
 	}
-	return newInvoice, (*invoice.PaymentAddr)[:], nil
+	return newInvoice, (*invoice.PaymentAddr)[:], err
 }
 
 func toCompact(sig *btcec.Signature, pubKey *btcec.PublicKey, hash []byte) ([]byte, error) {
