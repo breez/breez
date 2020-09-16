@@ -26,6 +26,7 @@ message FundStatusRequest {
 
 message AddInvoiceReply{
     string paymentRequest = 1;
+    int64 lsp_fee = 2;
 }
 
 message ChainStatus {
@@ -75,6 +76,9 @@ message Account {
 
     // public keys of peers this account is connected to.
     repeated string connectedPeers = 14;
+
+    //The max amount this node can receive without opening a new channel
+    int64 max_inbound_liquidity = 15;   
 }
 
 message Payment {

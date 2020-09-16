@@ -519,7 +519,7 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	if !ok {
 		return "", data.SwapError_NO_ERROR, errors.New("LSP is not selected")
 	}
-	addInvoice, err := s.addInvoice(&data.AddInvoiceRequest{
+	addInvoice, _, err := s.addInvoice(&data.AddInvoiceRequest{
 		InvoiceDetails: &data.InvoiceMemo{
 			Preimage:    addressInfo.Preimage,
 			Amount:      addressInfo.ConfirmedAmount,

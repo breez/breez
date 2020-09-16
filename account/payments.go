@@ -229,7 +229,7 @@ func (a *Service) sendPayment(paymentHash string, sendRequest *routerrpc.SendPay
 /*
 AddInvoice encapsulate a given amount and description in a payment request
 */
-func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, err error) {
+func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, lspFee int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	// Format the standard invoice memo
@@ -243,20 +243,20 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	maxReceive, err := a.getMaxReceiveSingleChannel()
 	if err != nil {
 		a.log.Infof("failed to get account limits %v", err)
-		return "", err
+		return "", 0, err
 	}
 
 	// in case we don't need a new channel, we make sure the
 	// existing channels are active.
 	if maxReceive >= invoice.Amount {
 		if err := a.waitReadyForPayment(); err != nil {
-			return "", err
+			return "", 0, err
 		}
 	}
 
 	lspInfo := invoiceRequest.LspInfo
 	if lspInfo == nil {
-		return "", errors.New("missing LSP information")
+		return "", 0, errors.New("missing LSP information")
 	}
 
 	maxReceiveMsat := maxReceive * 1000
@@ -264,23 +264,15 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	smallAmountMsat := amountMsat
 	needOpenChannel := maxReceiveMsat < amountMsat
 	var routingHints []*lnrpc.RouteHint
-	if needOpenChannel {
-		fakeHints, err := a.getFakeChannelRoutingHint(lspInfo)
-		if err != nil {
-			return "", err
-		}
-		routingHints = []*lnrpc.RouteHint{fakeHints}
-	} else {
-		if routingHints, err = a.getLSPRoutingHints(lspInfo); err != nil {
-			return "", fmt.Errorf("failed to get LSP routing hints %w", err)
-		}
-	}
 
 	// We need the LSP to open a channel.
 	if needOpenChannel {
 
-		// In case we don't have enough capacity we need to request a channel.
-
+		fakeHints, err := a.getFakeChannelRoutingHint(lspInfo)
+		if err != nil {
+			return "", 0, err
+		}
+		routingHints = []*lnrpc.RouteHint{fakeHints}
 		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 
 		// Calculate the channel fee such that it's an integral number of sat.
@@ -289,6 +281,10 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 			lspInfo.ChannelFeePermyriad, channelFeesMsat)
 
 		smallAmountMsat = amountMsat - channelFeesMsat
+	} else {
+		if routingHints, err = a.getLSPRoutingHints(lspInfo); err != nil {
+			return "", 0, fmt.Errorf("failed to get LSP routing hints %w", err)
+		}
 	}
 
 	// create invoice with the lower amount.
@@ -298,12 +294,12 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		Expiry: invoice.Expiry, RouteHints: routingHints,
 	})
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	payeeInvoice := response.PaymentRequest
 
 	if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
-		return "", fmt.Errorf("failed to add zero-conf invoice %w", err)
+		return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
 	}
 	a.trackInvoice(response.RHash)
 	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
@@ -313,19 +309,19 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		var paymentAddress []byte
 		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
 		if err != nil {
-			return "", fmt.Errorf("failed to generate LSP invoice %w", err)
+			return "", 0, fmt.Errorf("failed to generate LSP invoice %w", err)
 		}
 		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
 		lspInfo := invoiceRequest.LspInfo
 		pubKey := lspInfo.LspPubkey
 
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
-			return "", fmt.Errorf("failed to register payment with LSP %w", err)
+			return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
 		}
 		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
 	}
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
-	return payeeInvoice, nil
+	return payeeInvoice, (amountMsat - smallAmountMsat) / 1_000, nil
 }
 
 func (a *Service) getFakeChannelRoutingHint(lspInfo *data.LSPInformation) (*lnrpc.RouteHint, error) {

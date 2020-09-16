@@ -37,12 +37,13 @@ func (r *RPC) GetFundStatus(ctx context.Context, in *data.FundStatusRequest) (
 
 func (r *RPC) AddInvoice(ctx context.Context, in *data.AddInvoiceRequest) (
 	*data.AddInvoiceReply, error) {
-	payreq, err := getBreezApp().AccountService.AddInvoice(in)
+	payreq, lspFee, err := getBreezApp().AccountService.AddInvoice(in)
 	if err != nil {
 		return nil, err
 	}
 	return &data.AddInvoiceReply{
 		PaymentRequest: payreq,
+		LspFee:         lspFee,
 	}, nil
 }
 
