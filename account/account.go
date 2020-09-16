@@ -293,6 +293,11 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
+	maxInboundLiquidity, err := a.getMaxReceiveSingleChannel()
+	if err != nil {
+		return nil, err
+	}
+
 	routingNodeFeeRate, err := a.getRoutingNodeFeeRate(lnInfo.IdentityPubkey)
 	if err != nil {
 		a.log.Infof("Failed to get routing node fee %v", err)
@@ -319,6 +324,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		ChannelPoint:        chanPoint,
 		TipHeight:           int64(lnInfo.BlockHeight),
 		ConnectedPeers:      connectedPeers,
+		MaxInboundLiquidity: maxInboundLiquidity,
 	}, nil
 }
 
