@@ -41,7 +41,7 @@ do
     echo "waiting for breez RPC..."
 done
 docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address'
-export MINING_ADDRESS=$(docker exec -i -t breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address')
+export MINING_ADDRESS=$(docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address')
 docker exec btcd cat /rpc/rpc.cert > $TEST_DIR/btcd-rpc.cert
 
 # restart containers
