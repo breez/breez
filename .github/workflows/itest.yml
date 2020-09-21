@@ -27,11 +27,11 @@ jobs:
       - name: Build the stack
         run: |
           docker-compose -f ./docker/simnet.yml build
+          export TEST_DIR=$(pwd)/test
 
       # Runs the tests
       - name: Run integration tests
         env:
-          TEST_DIR:  "$GITHUB_WORKSPACE/test"
           ALICE_BREEZ_ADDRESS: "127.0.0.1:50053"
           ALICE_DIR: "$TEST_DIR/alice_node"
           ALICE_LND_ADDRESS: "127.0.0.1:10009"
