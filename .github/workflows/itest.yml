@@ -17,8 +17,6 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    env:
-      TEST_DIR: '${{ env.GITHUB_WORKSPACE }}/test'
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -33,18 +31,19 @@ jobs:
       # Runs the tests
       - name: Run integration tests
         env:
+          TEST_DIR: '${{ env.GITHUB_WORKSPACE }}/test'
           ALICE_BREEZ_ADDRESS: "127.0.0.1:50053"
-          ALICE_DIR: "${{ env.TEST_DIR }}/alice_node"
+          ALICE_DIR: "${{ env.GITHUB_WORKSPACE }}/test/alice_node"
           ALICE_LND_ADDRESS: "127.0.0.1:10009"
-          BOB_DIR: "${{ env.TEST_DIR }}/bob_node"
+          BOB_DIR: "${{ env.GITHUB_WORKSPACE }}/test/bob_node"
           BOB_LND_ADDRESS: "127.0.0.1:10011"
           BOB_BREEZ_ADDRESS: "127.0.0.1:50054"
-          BREEZ_DIR: "${{ env.TEST_DIR }}/breez_node"
+          BREEZ_DIR: "${{ env.GITHUB_WORKSPACE }}/test/breez_node"
           BREEZ_LND_ADDRESS: "127.0.0.1:10010"
-          SUBSWAP_DIR: "${{ env.TEST_DIR }}/subswap_node"
+          SUBSWAP_DIR: "${{ env.GITHUB_WORKSPACE }}/test/subswap_node"
           SUBSWAP_LND_ADDRESS: "127.0.0.1:10012"
           BTCD_HOST: "127.0.0.1:18556"
-          BTCD_CERT_FILE: "${{ env.TEST_DIR }}/btcd-rpc.cert"  
+          BTCD_CERT_FILE: "${{ env.GITHUB_WORKSPACE }}/test/btcd-rpc.cert"  
         run: |
           cd docker
           ./start-network.sh
