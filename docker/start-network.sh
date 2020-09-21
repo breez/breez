@@ -34,19 +34,19 @@ cp ./breez/lnd.conf $SUBSWAP_DIR
 docker-compose -f simnet.yml run -d --name breez breez
 
 #wait for breez rpc
-until docker exec -i -t breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+until docker exec breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
 do
     sleep 1
     docker ps
     echo "waiting for breez RPC..."
 done
-docker exec -i -t breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address'
+docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address'
 export MINING_ADDRESS=$(docker exec -i -t breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address')
-docker exec -it btcd cat /rpc/rpc.cert > $TEST_DIR/btcd-rpc.cert
+docker exec btcd cat /rpc/rpc.cert > $TEST_DIR/btcd-rpc.cert
 
 # restart containers
 docker-compose -f simnet.yml down
 docker-compose -f simnet.yml up -d
-docker exec -it btcd /start-btcctl.sh generate 400
+docker exec btcd /start-btcctl.sh generate 400
 
 #go test ../itest/tests
