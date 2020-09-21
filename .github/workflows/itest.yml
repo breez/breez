@@ -47,5 +47,6 @@ jobs:
           BTCD_HOST: "127.0.0.1:18556"
           BTCD_CERT_FILE: "$TEST_DIR/btcd-rpc.cert"  
         run: |
-          ./docker/start-network.sh
+          cd docker
+          ./start-network.sh
           go test ./itest/tests
