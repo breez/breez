@@ -107,23 +107,23 @@ func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
 	})
 }
 
-func Test_zero_conf_send_all(t *testing.T) {
-	test := newTestFramework(t)
-	runZeroConfMultiple(test, []zeroConfTest{
-		{
-			amountSat:        100_000,
-			expectedChannels: 1,
-		},
-		{
-			amountSat:        100_000,
-			expectedChannels: 2,
-		},
-		{
-			amountSat:        -199_000,
-			expectedChannels: 2,
-		},
-	})
-}
+// func Test_zero_conf_send_all(t *testing.T) {
+// 	test := newTestFramework(t)
+// 	runZeroConfMultiple(test, []zeroConfTest{
+// 		{
+// 			amountSat:        100_000,
+// 			expectedChannels: 1,
+// 		},
+// 		{
+// 			amountSat:        100_000,
+// 			expectedChannels: 2,
+// 		},
+// 		{
+// 			amountSat:        -199_000,
+// 			expectedChannels: 2,
+// 		},
+// 	})
+// }
 
 func Test_routing_hints_existing(t *testing.T) {
 	test := newTestFramework(t)
