@@ -167,7 +167,6 @@ func (a *Service) trackInvoice(invoiceHash []byte) error {
 					})
 				}
 				a.log.Infof("removing zero-conf invoice %x", invoice.RHash)
-				a.breezDB.RemoveZeroConfHash(invoice.RHash)
 				return
 			}
 

@@ -296,6 +296,12 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	if err != nil {
 		return "", 0, err
 	}
+	if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(response.PaymentRequest)); err != nil {
+		return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+	}
+	a.trackInvoice(response.RHash)
+	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
+
 	payeeInvoice := response.PaymentRequest
 	// create invoice with the larger amount and send to LSP the details.
 	if needOpenChannel {
@@ -311,8 +317,6 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(payeeInvoice)); err != nil {
 			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
 		}
-		a.trackInvoice(response.RHash)
-		a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
 
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
 			return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
