@@ -58,6 +58,11 @@ func (r *RPC) PayInvoice(ctx context.Context, in *data.PayInvoiceRequest) (
 	return &data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil
 }
 
+func (r *RPC) ListPayments(ctx context.Context, in *data.ListPaymentsRequest) (
+	*data.PaymentsList, error) {
+	return getBreezApp().AccountService.GetPayments()
+}
+
 func (r *RPC) RestartDaemon(ctx context.Context, in *data.RestartDaemonRequest) (
 	*data.RestartDaemonReply, error) {
 	if err := getBreezApp().RestartDaemon(); err != nil {

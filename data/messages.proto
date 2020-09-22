@@ -10,7 +10,10 @@ service BreezAPI {
   rpc AddInvoice(AddInvoiceRequest) returns (AddInvoiceReply) {}
   rpc PayInvoice(PayInvoiceRequest) returns (PaymentResponse) {}
   rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonReply) {}
+  rpc ListPayments(ListPaymentsRequest) returns (PaymentsList) {}
 }
+
+message ListPaymentsRequest{}
 
 message RestartDaemonRequest{}
 message RestartDaemonReply{}
