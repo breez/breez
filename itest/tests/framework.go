@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -101,9 +100,11 @@ func poll(pred func() bool, timeout time.Duration) error {
 
 func waitForNodeSynced(dir, address string) error {
 	fmt.Println("waiting for node to sync")
+	var lastError error
 	for i := 0; i < 10; i++ {
 		node, err := newLightningConnection(dir, address)
 		if err != nil {
+			lastError = err
 			time.Sleep(time.Second)
 			continue
 		}
@@ -113,9 +114,12 @@ func waitForNodeSynced(dir, address string) error {
 		if err == nil && info.SyncedToChain {
 			return nil
 		}
+		if err != nil {
+			lastError = err
+		}
 		time.Sleep(time.Second)
 	}
-	return errors.New("Timeout in waiting for node to sync")
+	return fmt.Errorf("Timeout in waiting for node to sync %w", lastError)
 }
 
 func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
