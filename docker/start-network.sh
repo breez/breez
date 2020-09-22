@@ -37,8 +37,7 @@ docker-compose -f simnet.yml run -d --name breez breez
 until docker exec breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
 do
     sleep 1
-    docker ps
-    echo "waiting for breez RPC..."
+    #echo "waiting for breez RPC..."
 done
 docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address'
 export MINING_ADDRESS=$(docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address')
