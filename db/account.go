@@ -31,8 +31,13 @@ func (db *DB) AccountEnabled() (bool, error) {
 }
 
 // AddZeroConfHash saves a zero conf hash to track.
-func (db *DB) AddZeroConfHash(hash []byte) error {
-	return db.saveItem([]byte(zeroConfInvoicesBucket), hash, []byte{})
+func (db *DB) AddZeroConfHash(hash []byte, payreq []byte) error {
+	return db.saveItem([]byte(zeroConfInvoicesBucket), hash, payreq)
+}
+
+// FetchZeroConfInvoice fetches a zero conf invoice.
+func (db *DB) FetchZeroConfInvoice(hash []byte) ([]byte, error) {
+	return db.fetchItem([]byte(zeroConfInvoicesBucket), hash)
 }
 
 // RemoveZeroConfHash removes a zero conf hash from tracking.

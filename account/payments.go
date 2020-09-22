@@ -297,13 +297,6 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		return "", 0, err
 	}
 	payeeInvoice := response.PaymentRequest
-
-	if err := a.breezDB.AddZeroConfHash(response.RHash); err != nil {
-		return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
-	}
-	a.trackInvoice(response.RHash)
-	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
-
 	// create invoice with the larger amount and send to LSP the details.
 	if needOpenChannel {
 		var paymentAddress []byte
@@ -315,11 +308,18 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		lspInfo := invoiceRequest.LspInfo
 		pubKey := lspInfo.LspPubkey
 
+		if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(payeeInvoice)); err != nil {
+			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+		}
+		a.trackInvoice(response.RHash)
+		a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
+
 		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
 			return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
 		}
 		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
 	}
+
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
 	return payeeInvoice, (amountMsat - smallAmountMsat) / 1_000, nil
 }
@@ -818,6 +818,17 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		}
 	}
 
+	zeroConfPayreq, err := a.breezDB.FetchZeroConfInvoice(invoice.RHash)
+	if err != nil {
+		return err
+	}
+	var zeroConfMemo *data.InvoiceMemo
+	if len(zeroConfPayreq) > 0 {
+		if zeroConfMemo, err = a.DecodePaymentRequest(invoice.PaymentRequest); err != nil {
+			return err
+		}
+	}
+
 	paymentType := db.ReceivedPayment
 	if invoiceMemo.TransferRequest {
 		paymentType = db.DepositPayment
@@ -835,6 +846,12 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		TransferRequest:   invoiceMemo.TransferRequest,
 		PaymentHash:       hex.EncodeToString(invoice.RHash),
 		Preimage:          hex.EncodeToString(invoice.RPreimage),
+	}
+	if zeroConfMemo != nil {
+		paymentData.Fee = zeroConfMemo.Amount - invoiceMemo.Amount
+		if err = a.breezDB.RemoveZeroConfHash(invoice.RHash); err != nil {
+			return err
+		}
 	}
 
 	err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
