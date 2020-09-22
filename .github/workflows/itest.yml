@@ -49,5 +49,7 @@ jobs:
         run: |
           cd docker
           ./start-network.sh
+          echo "sleeping"
           sleep 20
+          echo "after sleeping"
           go test ../itest/tests
