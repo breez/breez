@@ -107,6 +107,24 @@ func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
 	})
 }
 
+func Test_zero_conf_LSP_fee(t *testing.T) {
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        100_000,
+			expectedChannels: 1,
+		},
+	})
+
+	poll(func() bool {
+		payments, err := test.aliceBreezClient.ListPayments(context.Background(), &data.ListPaymentsRequest{})
+		if err != nil {
+			t.Fatalf("failed to get list of payments %v", err)
+		}
+		return len(payments.PaymentsList) == 1 && payments.PaymentsList[0].Fee == 100
+	}, time.Second*10)
+}
+
 // func Test_zero_conf_send_all(t *testing.T) {
 // 	test := newTestFramework(t)
 // 	runZeroConfMultiple(test, []zeroConfTest{
