@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/lightningnetwork/lnd/signal"
 
@@ -20,6 +21,8 @@ type ServicesImpl struct {
 
 func (a *ServicesImpl) Notify(notificationEvent []byte) {
 	fmt.Println("Daemon sent notification")
+	workingDir := os.Getenv("LND_DIR")
+	os.Chmod(path.Join(workingDir, "data", "chain", "bitcoin", "simnet", "admin.macaroon"), 0777)
 }
 
 func (a *ServicesImpl) BackupProviderSignIn() (string, error) {
