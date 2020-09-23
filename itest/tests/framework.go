@@ -263,7 +263,7 @@ func (f *framework) initSwapperNode() {
 	//}
 	_, err = subswapNode.OpenChannelSync(context.Background(), &lnrpc.OpenChannelRequest{
 		NodePubkeyString:   lsp.Pubkey,
-		LocalFundingAmount: 1000000,
+		LocalFundingAmount: 5000000,
 		TargetConf:         1,
 	})
 	if err != nil {
@@ -365,6 +365,7 @@ func ensureNodeLive(con *grpc.ClientConn) {
 		if err == nil {
 			return
 		}
+		fmt.Printf("error in ensureNodeLive %v", err)
 		time.Sleep(time.Second)
 	}
 }

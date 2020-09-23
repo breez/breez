@@ -1,7 +1,7 @@
 FROM alpine:3.12 AS builder
 RUN apk update
 RUN apk add git go musl-dev make
-RUN git clone https://github.com/breez/lnd -b breez-node-v0.11.0-beta
+RUN git clone https://github.com/breez/lnd -b zero-channel-reserve
 
 RUN cd lnd \
     && go build -tags=experimental,invoicesrpc,signrpc,autopilotrpc,experimental,submarineswaprpc,chanreservedynamic,routerrpc,walletrpc,chainrpc ./cmd/lnd/ \

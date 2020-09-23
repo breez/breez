@@ -10,6 +10,7 @@ import (
 )
 
 func TestSubswap(t *testing.T) {
+	t.Logf("Testing TestSubswap")
 	test := newTestFramework(t)
 	// subswap := lnrpc.NewLightningClient(test.subswapNode)
 	aliceClient := lnrpc.NewLightningClient(test.aliceNode)

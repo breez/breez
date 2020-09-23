@@ -20,6 +20,7 @@ type zeroConfTest struct {
 }
 
 func Test_zero_conf_10(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_10")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -30,6 +31,7 @@ func Test_zero_conf_10(t *testing.T) {
 }
 
 func Test_zero_conf_10k(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_10k")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -40,6 +42,7 @@ func Test_zero_conf_10k(t *testing.T) {
 }
 
 func Test_zero_conf_100k_50k(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_100k_50k")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -54,6 +57,7 @@ func Test_zero_conf_100k_50k(t *testing.T) {
 }
 
 func Test_zero_conf_100k_100k(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_100k_100k")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -68,6 +72,7 @@ func Test_zero_conf_100k_100k(t *testing.T) {
 }
 
 func Test_zero_conf_100k_100k_pay_150k(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_100k_100k_pay_150k")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -86,6 +91,7 @@ func Test_zero_conf_100k_100k_pay_150k(t *testing.T) {
 }
 
 func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_100k_100k_pay_150k_300k")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -108,6 +114,7 @@ func Test_zero_conf_100k_100k_pay_150k_300k(t *testing.T) {
 }
 
 func Test_zero_conf_LSP_fee(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_LSP_fee")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -144,6 +151,7 @@ func Test_zero_conf_LSP_fee(t *testing.T) {
 // }
 
 func Test_routing_hints_existing(t *testing.T) {
+	t.Logf("Testing Test_routing_hints_existing")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
@@ -189,6 +197,7 @@ func Test_routing_hints_existing(t *testing.T) {
 }
 
 func Test_zero_conf_close(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_close")
 	test := newTestFramework(t)
 	runZeroConfMultiple(test, []zeroConfTest{
 		{
