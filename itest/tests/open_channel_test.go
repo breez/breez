@@ -132,23 +132,81 @@ func Test_zero_conf_LSP_fee(t *testing.T) {
 	}, time.Second*10)
 }
 
-// func Test_zero_conf_send_all(t *testing.T) {
-// 	test := newTestFramework(t)
-// 	runZeroConfMultiple(test, []zeroConfTest{
-// 		{
-// 			amountSat:        100_000,
-// 			expectedChannels: 1,
-// 		},
-// 		{
-// 			amountSat:        100_000,
-// 			expectedChannels: 2,
-// 		},
-// 		{
-// 			amountSat:        -199_000,
-// 			expectedChannels: 2,
-// 		},
-// 	})
-// }
+func Test_zero_conf_send_all_at_once(t *testing.T) {
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        100_000,
+			expectedChannels: 1,
+		},
+		{
+			amountSat:        100_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        150_000,
+			expectedChannels: 3,
+		},
+		{
+			amountSat:        -349650 + 4,
+			expectedChannels: 3,
+		},
+	})
+}
+
+func Test_zero_conf_send_all(t *testing.T) {
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        100_000,
+			expectedChannels: 1,
+		},
+		{
+			amountSat:        100_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -20_000,
+			expectedChannels: 2,
+		},
+		{
+			amountSat:        -19_988 + 200,
+			expectedChannels: 2,
+		},
+	})
+}
 
 func Test_routing_hints_existing(t *testing.T) {
 	t.Logf("Testing Test_routing_hints_existing")

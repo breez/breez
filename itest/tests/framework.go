@@ -210,7 +210,6 @@ func (f *framework) GenerateBlocks(num uint32) {
 		if err := waitSynced(nodeClient, bestBlock); err != nil {
 			f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 		}
-		f.test.Logf("node synced")
 	}
 }
 
@@ -365,7 +364,6 @@ func ensureNodeLive(con *grpc.ClientConn) {
 		if err == nil {
 			return
 		}
-		fmt.Printf("error in ensureNodeLive %v", err)
 		time.Sleep(time.Second)
 	}
 }
