@@ -4,6 +4,8 @@ export ALICE_LND_ADDRESS="127.0.0.1:10009"
 export BOB_DIR=$TEST_DIR/bob_node
 export BOB_LND_ADDRESS="127.0.0.1:10011"
 export BOB_BREEZ_ADDRESS="127.0.0.1:50054"
+export LND_NODE_DIR=$TEST_DIR/lnd
+export LND_NODE_ADDRESS="127.0.0.1:10013"
 export BREEZ_DIR=$TEST_DIR/breez_node
 export BREEZ_LND_ADDRESS="127.0.0.1:10010"
 export SUBSWAP_DIR=$TEST_DIR/subswap_node
@@ -21,6 +23,10 @@ cp ./alice/lnd.conf ./alice/breez.conf $ALICE_DIR
 # create bob folder
 mkdir $BOB_DIR
 cp ./alice/lnd.conf ./alice/breez.conf $BOB_DIR
+
+# create lnd node folder
+mkdir $LND_NODE_DIR
+cp ./lnd/lnd.conf $LND_NODE_DIR
 
 # create breez node folder
 mkdir $BREEZ_DIR

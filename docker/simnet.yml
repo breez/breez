@@ -61,6 +61,26 @@ services:
     networks:
       nodes:
         ipv4_address: 10.5.0.10
+  lnd:
+    container_name: "lnd"
+    domainname: lnd.client
+    hostname: "lnd_node"
+    build:
+      context: ../
+      dockerfile: docker/lnd/Dockerfile
+    volumes:
+      - shared:/rpc
+      - ${TEST_DIR}/lnd:/root/.lnd
+    ports:
+      - 9739:9735
+      - 10013:10009
+    links:
+      - "btcd:blockchain"
+    depends_on:
+      - "btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.12
   breez:
     container_name: "breez"
     domainname: breez_node.server

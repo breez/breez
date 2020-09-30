@@ -33,6 +33,9 @@ var (
 	bobDir          = os.Getenv("BOB_DIR")           //"/Users/roeierez/gopath4/src/github.com/breez/breez/docker/test/bob_node"
 	bobAddress      = os.Getenv("BOB_LND_ADDRESS")   // "127.0.0.1:10011"
 
+	lndDir     = os.Getenv("LND_NODE_DIR")
+	lndAddress = os.Getenv("LND_NODE_ADDRESS")
+
 	// breez
 	breezDir     = os.Getenv("BREEZ_DIR")         //"/Users/roeierez/gopath4/src/github.com/breez/breez/docker/test/bob_node"
 	breezAddress = os.Getenv("BREEZ_LND_ADDRESS") // "127.0.0.1:10011"
@@ -55,6 +58,7 @@ type framework struct {
 	bobNode          *grpc.ClientConn
 	breezNode        *grpc.ClientConn
 	subswapNode      *grpc.ClientConn
+	lndNode          *grpc.ClientConn
 }
 
 func setup() error {
@@ -64,15 +68,26 @@ func setup() error {
 		return err
 	}
 	_, _ = miner.Generate(1)
+	fmt.Printf("alice dir %v\n", aliceDir)
 	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
 		return err
 	}
+	fmt.Printf("bob dir %v\n", bobDir)
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
+
+	fmt.Printf("lnd dir %v\n", lndDir)
+	if _, err := os.Create(fmt.Sprintf("%v/shutdown", lndDir)); err != nil {
+		return err
+	}
+
 	time.Sleep(time.Second * 2)
 	if err := waitForNodeSynced(aliceDir, aliceAddress); err != nil {
 		return err
 	}
 	if err := waitForNodeSynced(bobDir, bobAddress); err != nil {
+		return err
+	}
+	if err := waitForNodeSynced(lndDir, lndAddress); err != nil {
 		return err
 	}
 	fmt.Println("setup completed")
@@ -171,6 +186,12 @@ func newTestFramework(test *testing.T) *framework {
 		test.Fatalf("failed to connect to bob node %v", err)
 	}
 
+	// bob lnd grpc
+	lndNode, err := newLightningConnection(lndDir, lndAddress)
+	if err != nil {
+		test.Fatalf("failed to connect to lnd node %v", err)
+	}
+
 	// breez lnd grpc
 	breezNode, err := newLightningConnection(breezDir, breezAddress)
 	if err != nil {
@@ -192,6 +213,7 @@ func newTestFramework(test *testing.T) *framework {
 		bobNode:          bobNode,
 		breezNode:        breezNode,
 		subswapNode:      subswapNode,
+		lndNode:          lndNode,
 	}
 }
 
