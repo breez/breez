@@ -30,6 +30,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
 	"github.com/lightningnetwork/lnd/routing"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -179,7 +180,54 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	return a.sendPayment(hashStr, req)
 }
 
+func (a *Service) getMaxAmount(sendRequest *routerrpc.SendPaymentRequest) (uint64, error) {
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		a.log.Errorf("lnclient.ListChannels error: %v", err)
+		return 0, fmt.Errorf("lnclient.ListChannels error: %w", err)
+	}
+	var totalMax uint64
+	for _, c := range channels.Channels {
+		a.log.Infof("cid: %v, active: %v, balance: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, c.LocalConstraints.ChanReserveSat)
+		_, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+			PubKey:         hex.EncodeToString(sendRequest.Dest),
+			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
+			OutgoingChanId: c.ChanId,
+		})
+		if err != nil {
+			errStatus, _ := status.FromError(err)
+			a.log.Infof("message: %v", errStatus.Message())
+			var max uint64
+			_, _ = fmt.Sscanf(errStatus.Message(), "insufficient local balance. Try to lower the amount to: %d mSAT", &max)
+			a.log.Infof("max: %v", max)
+			totalMax += max
+		}
+	}
+	return totalMax, nil
+}
+
+func (a *Service) checkAmount(sendRequest *routerrpc.SendPaymentRequest) error {
+	amt, _ := lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
+	max, err := a.getMaxAmount(sendRequest)
+	if err != nil {
+		a.log.Errorf("a.getMaxAmount error: %v", err)
+		return fmt.Errorf("a.getMaxAmount error: %w", err)
+	}
+	if uint64(amt) > max {
+		a.log.Errorf("insufficient balance: %v < %v", max, amt)
+		return errors.New("insufficient balance")
+	}
+	return nil
+}
+
 func (a *Service) sendPayment(paymentHash string, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+
+	if err := a.checkAmount(sendRequest); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
+
 	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
