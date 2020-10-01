@@ -449,6 +449,17 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		return "", err
 	}
 
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		a.log.Errorf("ListChannels error: %v", err)
+		return "", err
+	}
+	chanData, err := marshaller.MarshalToString(channels)
+	if err != nil {
+		a.log.Errorf("failed to marshal channels info: %v", err)
+		return "", err
+	}
+
 	if amount == 0 && decodedPayReq != nil {
 		amount = decodedPayReq.NumSatoshis
 	}
@@ -459,6 +470,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 			"amount":          amount,
 			"payment_request": decodedPayReq,
 			"network_info":    netInfoData,
+			"channels":        chanData,
 		},
 	}
 
