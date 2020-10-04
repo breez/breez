@@ -217,7 +217,7 @@ func (a *Service) checkAmount(sendAmt, sendAmtMsat int64, destination string) er
 	}
 	if uint64(amt) > max {
 		a.log.Errorf("insufficient balance: %v < %v", max, amt)
-		return errors.New("insufficient balance")
+		return fmt.Errorf("insufficient balance:%v", max/1000)
 	}
 	return nil
 }
