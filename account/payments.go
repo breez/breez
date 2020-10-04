@@ -135,7 +135,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	return a.sendPayment(decodedReq.PaymentHash, decodedReq.Destination, &routerrpc.SendPaymentRequest{
+	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
 		TimeoutSeconds: 60,
 		FeeLimitSat:    math.MaxInt64,
@@ -178,10 +178,10 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 		return "", err
 	}
 
-	return a.sendPayment(hashStr, destNode, req)
+	return a.sendPayment(hashStr, nil, req)
 }
 
-func (a *Service) getMaxAmount(destination string) (uint64, error) {
+func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
@@ -195,6 +195,7 @@ func (a *Service) getMaxAmount(destination string) (uint64, error) {
 			PubKey:         destination,
 			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
 			OutgoingChanId: c.ChanId,
+			RouteHints:     routeHints,
 		})
 		if err != nil {
 			errStatus, _ := status.FromError(err)
@@ -208,9 +209,26 @@ func (a *Service) getMaxAmount(destination string) (uint64, error) {
 	return totalMax, nil
 }
 
-func (a *Service) checkAmount(sendAmt, sendAmtMsat int64, destination string) error {
-	amt, _ := lnrpc.UnmarshallAmt(sendAmt, sendAmtMsat)
-	max, err := a.getMaxAmount(destination)
+func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) error {
+	var amt lnwire.MilliSatoshi
+	var destination string
+	var routeHints []*lnrpc.RouteHint
+	if payReq != nil {
+		destination = payReq.Destination
+		routeHints = payReq.RouteHints
+		sat := payReq.NumSatoshis
+		if payReq.NumMsat != 0 {
+			sat = 0
+		}
+		amt, _ = lnrpc.UnmarshallAmt(sat, payReq.NumMsat)
+		if amt == 0 {
+			amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
+		}
+	} else {
+		destination = hex.EncodeToString(sendRequest.Dest)
+		amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
+	}
+	max, err := a.getMaxAmount(destination, routeHints)
 	if err != nil {
 		a.log.Errorf("a.getMaxAmount error: %v", err)
 		return fmt.Errorf("a.getMaxAmount error: %w", err)
@@ -222,9 +240,9 @@ func (a *Service) checkAmount(sendAmt, sendAmtMsat int64, destination string) er
 	return nil
 }
 
-func (a *Service) sendPayment(paymentHash, destination string, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	if err := a.checkAmount(sendRequest.Amt, sendRequest.AmtMsat, destination); err != nil {
+	if err := a.checkAmount(payReq, sendRequest); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
