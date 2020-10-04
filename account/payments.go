@@ -62,6 +62,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
+		a.log.Infof("payment amount: %v fee %v", payment.Amount, payment.Fee)
 		paymentItem := &data.Payment{
 			Amount:                     payment.Amount,
 			Fee:                        payment.Fee,
@@ -134,7 +135,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	return a.sendPayment(decodedReq.PaymentHash, &routerrpc.SendPaymentRequest{
+	return a.sendPayment(decodedReq.PaymentHash, decodedReq.Destination, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
 		TimeoutSeconds: 60,
 		FeeLimitSat:    math.MaxInt64,
@@ -177,10 +178,10 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 		return "", err
 	}
 
-	return a.sendPayment(hashStr, req)
+	return a.sendPayment(hashStr, destNode, req)
 }
 
-func (a *Service) getMaxAmount(sendRequest *routerrpc.SendPaymentRequest) (uint64, error) {
+func (a *Service) getMaxAmount(destination string) (uint64, error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
@@ -191,7 +192,7 @@ func (a *Service) getMaxAmount(sendRequest *routerrpc.SendPaymentRequest) (uint6
 	for _, c := range channels.Channels {
 		a.log.Infof("cid: %v, active: %v, balance: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, c.LocalConstraints.ChanReserveSat)
 		_, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
-			PubKey:         hex.EncodeToString(sendRequest.Dest),
+			PubKey:         destination,
 			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
 			OutgoingChanId: c.ChanId,
 		})
@@ -207,9 +208,9 @@ func (a *Service) getMaxAmount(sendRequest *routerrpc.SendPaymentRequest) (uint6
 	return totalMax, nil
 }
 
-func (a *Service) checkAmount(sendRequest *routerrpc.SendPaymentRequest) error {
-	amt, _ := lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
-	max, err := a.getMaxAmount(sendRequest)
+func (a *Service) checkAmount(sendAmt, sendAmtMsat int64, destination string) error {
+	amt, _ := lnrpc.UnmarshallAmt(sendAmt, sendAmtMsat)
+	max, err := a.getMaxAmount(destination)
 	if err != nil {
 		a.log.Errorf("a.getMaxAmount error: %v", err)
 		return fmt.Errorf("a.getMaxAmount error: %w", err)
@@ -221,9 +222,9 @@ func (a *Service) checkAmount(sendRequest *routerrpc.SendPaymentRequest) error {
 	return nil
 }
 
-func (a *Service) sendPayment(paymentHash string, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+func (a *Service) sendPayment(paymentHash, destination string, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	if err := a.checkAmount(sendRequest); err != nil {
+	if err := a.checkAmount(sendRequest.Amt, sendRequest.AmtMsat, destination); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
@@ -886,11 +887,13 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 	if err != nil {
 		return err
 	}
+	a.log.Infof("got payment zero-conf payreq = %v", string(zeroConfPayreq))
 	var zeroConfMemo *data.InvoiceMemo
 	if len(zeroConfPayreq) > 0 {
-		if zeroConfMemo, err = a.DecodePaymentRequest(invoice.PaymentRequest); err != nil {
+		if zeroConfMemo, err = a.DecodePaymentRequest(string(zeroConfPayreq)); err != nil {
 			return err
 		}
+		a.log.Infof("got payment decoded zero-conf memo amount: %v", zeroConfMemo.Amount)
 	}
 
 	paymentType := db.ReceivedPayment
@@ -913,6 +916,7 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 	}
 	if zeroConfMemo != nil {
 		paymentData.Fee = zeroConfMemo.Amount - invoiceMemo.Amount
+		a.log.Infof("got payment calculated fee: %v", paymentData.Fee)
 		if err = a.breezDB.RemoveZeroConfHash(invoice.RHash); err != nil {
 			return err
 		}
