@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/breez/breez/db"
+
 	"github.com/breez/breez/data"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -62,27 +64,6 @@ func (a *Service) EnableAccount(enabled bool) error {
 	a.onAccountChanged()
 	return nil
 }
-
-/*func (a *Service) updateNodeChannelPolicy() {
-	accData, err := a.calculateAccount()
-	if err != nil {
-		a.log.Errorf("Failed to updateNodeChannelPolicy, couldn't fetch account %v", err)
-		return
-	}
-	for {
-		if a.IsConnectedToRoutingNode() {
-			c, ctx, cancel := a.breezAPI.NewFundManager()
-			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: accData.Id})
-			cancel()
-			if err == nil {
-				a.log.Infof("updateChannelPolicy updated successfully")
-				return
-			}
-			a.log.Errorf("updateChannelPolicy error: %v", err)
-		}
-		time.Sleep(time.Second * 5)
-	}
-}*/
 
 func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, string, error) {
 	_, channelPoints, err := a.getOpenChannels()
@@ -142,6 +123,21 @@ func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 		}
 	}
 	return maxAllowedReceive, nil
+}
+
+func (a *Service) getOutgoingPendingAmount() (amt int64, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		return 0, err
+	}
+	amt = 0
+	for _, c := range channels.Channels {
+		for _, h := range c.PendingHtlcs {
+			amt += h.Amount
+		}
+	}
+	return amt, nil
 }
 
 func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
@@ -272,6 +268,24 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	if err != nil {
 		return nil, err
 	}
+	normalizedBalance := channelBalance.Balance
+	outgoingPending, err := a.getOutgoingPendingAmount()
+	if err != nil {
+		return nil, err
+	}
+
+	// add all pending htlcs to the balance.
+	normalizedBalance += outgoingPending
+	pendingPayments, err := a.getPendingPayments()
+	if err != nil {
+		return nil, err
+	}
+	for _, pending := range pendingPayments {
+		if pending.Type == db.SentPayment {
+			a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
+			normalizedBalance -= (pending.Amount + pending.Fee)
+		}
+	}
 
 	walletBalance, err := lnclient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
 	if err != nil {
@@ -311,7 +325,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
-		Balance:             channelBalance.Balance,
+		Balance:             normalizedBalance,
 		MaxAllowedToReceive: maxAllowedToReceive,
 		MaxAllowedToPay:     maxAllowedToPay,
 		MaxPaymentAmount:    maxPaymentAllowedSat,
