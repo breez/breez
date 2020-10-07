@@ -241,5 +241,9 @@ func (db *DB) BackupDb(dir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	breezDBInfo, err := os.Stat(dbCopy)
+	if err != nil {
+		db.log.Infof("breez db size is: %v", breezDBInfo.Size())
+	}
 	return dbCopy, nil
 }
