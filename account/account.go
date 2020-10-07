@@ -134,7 +134,9 @@ func (a *Service) getOutgoingPendingAmount() (amt int64, err error) {
 	amt = 0
 	for _, c := range channels.Channels {
 		for _, h := range c.PendingHtlcs {
-			amt += h.Amount
+			if !h.Incoming {
+				amt += h.Amount
+			}
 		}
 	}
 	return amt, nil
@@ -285,6 +287,12 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 			a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
 			normalizedBalance -= (pending.Amount + pending.Fee)
 		}
+	}
+
+	// in case we have MPP in flight, this normalization may end up with negative
+	// value (the payment will fail eventually), here zero reflects better the state.
+	if normalizedBalance < 0 {
+		normalizedBalance = 0
 	}
 
 	walletBalance, err := lnclient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})

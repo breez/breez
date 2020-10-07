@@ -50,6 +50,7 @@ type PaymentInfo struct {
 	Destination                string
 	PendingExpirationHeight    uint32
 	PendingExpirationTimestamp int64
+	PendingFull                bool
 	Preimage                   string
 	IsKeySend                  bool
 

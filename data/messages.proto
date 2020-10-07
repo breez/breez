@@ -109,6 +109,7 @@ message Payment {
     bool isChannelCloseConfimed = 16;
 	string closedChannelTxID = 17;
     bool isKeySend = 18;
+    bool PendingFull = 19;
 }
 
 message PaymentsList {

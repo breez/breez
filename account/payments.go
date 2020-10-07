@@ -70,6 +70,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			Destination:                payment.Destination,
 			PendingExpirationHeight:    payment.PendingExpirationHeight,
 			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
+			PendingFull:                payment.PendingFull,
 			Preimage:                   payment.Preimage,
 			ClosedChannelPoint:         payment.ClosedChannelPoint,
 			IsChannelPending:           payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.ConfirmedClose,
@@ -260,8 +261,10 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 	for {
 		payment, err := response.Recv()
 		if err != nil {
+			a.log.Infof("Payment event error received %v", err)
 			return "", err
 		}
+		a.log.Infof("Payment event received %v", payment.Status)
 		if payment.Status == lnrpc.Payment_IN_FLIGHT {
 			continue
 		}
@@ -737,7 +740,7 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		pendingPaymentsByHash := make(map[string]*db.PaymentInfo)
+		pendingByHash := make(map[string]*db.PaymentInfo)
 		for _, ch := range channelsRes.Channels {
 			for _, htlc := range ch.PendingHtlcs {
 				pendingItem, err := a.createPendingPayment(htlc, chainInfo.BlockHeight, inflightPayments)
@@ -745,15 +748,35 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 					return nil, err
 				}
 
-				// skip htlcs that their payment has been already added.
-				if _, ok := pendingPaymentsByHash[pendingItem.PaymentHash]; ok {
-					continue
+				pendingSoFar, ok := pendingByHash[pendingItem.PaymentHash]
+				currentInflight, hasInflight := inflightPayments[pendingItem.PaymentHash]
+				if !ok {
+					pendingByHash[pendingItem.PaymentHash] = pendingItem
+					pendingSoFar = pendingItem
+
+					// we have an in flight payment, let's get all the htlc and sum them.
+					if hasInflight {
+						pendingSoFar.Fee = 0
+						pendingSoFar.Amount = 0
+						for _, ht := range currentInflight.Htlcs {
+							if ht.Status != lnrpc.HTLCAttempt_FAILED {
+								a.log.Infof("pendingPaymets: adding fee % and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
+								pendingSoFar.Fee += ht.Route.TotalFees
+								pendingSoFar.Amount += (ht.Route.TotalAmt - ht.Route.TotalFees)
+							}
+						}
+					}
 				}
-				if pendingItem.PaymentHash != "" {
-					pendingPaymentsByHash[pendingItem.PaymentHash] = pendingItem
+				a.log.Infof("pendingPaymets: hasInflight=%v, pendingSoFar.Amount=%v, currentInflight.ValueSat=%v",
+					hasInflight, pendingSoFar.Amount, currentInflight.ValueSat)
+				if hasInflight && pendingSoFar.Amount == currentInflight.ValueSat {
+					pendingSoFar.PendingFull = true
 				}
-				payments = append(payments, pendingItem)
+				pendingSoFar.Amount = currentInflight.ValueSat
 			}
+		}
+		for _, p := range pendingByHash {
+			payments = append(payments, p)
 		}
 	}
 
@@ -814,10 +837,7 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 			return nil, err
 		}
 		hashStr := hex.EncodeToString(htlc.HashLock)
-		var ok bool
-		if pendingPayment, ok = inflightPayments[hashStr]; ok {
-			amount = pendingPayment.Value
-		}
+		pendingPayment, _ = inflightPayments[hashStr]
 	}
 
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
@@ -853,7 +873,6 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	if pendingPayment != nil {
 		paymentData.IsKeySend = len(pendingPayment.PaymentRequest) == 0
 		paymentData.PaymentHash = pendingPayment.PaymentHash
-		paymentData.Amount = pendingPayment.Value
 		paymentData.CreationTimestamp = pendingPayment.CreationTimeNs / int64(time.Second)
 	}
 
