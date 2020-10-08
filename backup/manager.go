@@ -233,6 +233,13 @@ func (b *Manager) Start() error {
 					}
 				}
 
+				for _, p := range paths {
+					pathInfo, err := os.Stat(p)
+					if err == nil {
+						b.log.Infof("uploading %v with size: %v", p, pathInfo.Size())
+					}
+				}
+
 				accountName, err := provider.UploadBackupFiles(paths, nodeID, encryptionType)
 				if err != nil {
 					b.log.Errorf("error in backup %v", err)
