@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/account"
 	"github.com/breez/breez/backup"
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
@@ -106,6 +107,10 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	if err == nil {
 		app.log.Infof("wallet db size is: %v", walletDBInfo.Size())
 	}
+	if err = compactWalletDB(app.cfg.WorkingDir+"/data/chain/bitcoin/"+app.cfg.Network, app.log); err != nil {
+		return nil, err
+	}
+
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB, startBeforeSync)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create lnnode.Daemon: %v", err)
@@ -210,4 +215,36 @@ func (a *App) breezdbCopy(breezDB *db.DB) (string, error) {
 		return "", err
 	}
 	return a.breezDB.BackupDb(dir)
+}
+
+func compactWalletDB(walletDBDir string, logger btclog.Logger) error {
+	dbName := "wallet.db"
+	dbPath := path.Join(walletDBDir, dbName)
+	f, err := os.Stat(dbPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if f.Size() <= 10000000 {
+		return nil
+	}
+	newFile, err := ioutil.TempFile(walletDBDir, "cdb-compact")
+	if err != nil {
+		return err
+	}
+	if err = chainservice.BoltCopy(dbPath, newFile.Name(),
+		func(keyPath [][]byte, k []byte, v []byte) bool { return false }); err != nil {
+		return err
+	}
+	if err = os.Rename(dbPath, dbPath+".old"); err != nil {
+		return err
+	}
+	if err = os.Rename(newFile.Name(), dbPath); err != nil {
+		logger.Criticalf("Error when renaming the new walletdb file: %v", err)
+		return err
+	}
+	logger.Infof("wallet.db was compacted because it's too big")
+	return nil
 }

@@ -235,9 +235,15 @@ func (b *Manager) Start() error {
 
 				accountName, err := provider.UploadBackupFiles(paths, nodeID, encryptionType)
 				if err != nil {
+					for _, p := range paths {
+						_ = os.Remove(p)
+					}
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
+				}
+				for _, p := range paths {
+					_ = os.Remove(p)
 				}
 				b.db.markBackupRequestCompleted(pendingID)
 				b.log.Infof("backup finished succesfully")
