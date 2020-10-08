@@ -60,7 +60,6 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
-		a.log.Infof("payment amount: %v fee %v", payment.Amount, payment.Fee)
 		paymentItem := &data.Payment{
 			Amount:                     payment.Amount,
 			Fee:                        payment.Fee,
