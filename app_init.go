@@ -101,10 +101,10 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	}
 
 	app.log.Infof("New db")
-	dbPath := path.Join(workingDir, "breez.db")
-	breezDBInfo, err := os.Stat(dbPath)
+	walletdbPath := app.cfg.WorkingDir + "/data/chain/bitcoin/" + app.cfg.Network + "/wallet.db"
+	walletDBInfo, err := os.Stat(walletdbPath)
 	if err == nil {
-		app.log.Infof("breez db size is: %v", breezDBInfo.Size())
+		app.log.Infof("wallet db size is: %v", walletDBInfo.Size())
 	}
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB, startBeforeSync)
 	if err != nil {
