@@ -79,10 +79,6 @@ func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	breezDBInfo, err := os.Stat(dbPath)
-	if err != nil {
-		log.Infof("breez db size is: %v", breezDBInfo.Size())
-	}
 
 	return db, db.closeDB, err
 }
