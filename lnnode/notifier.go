@@ -14,6 +14,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -99,6 +100,7 @@ func (d *Daemon) startSubscriptions() error {
 	go d.subscribePeers(d.lightningClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
+	go d.subscribeChannelAcceptor(ctx, d.lightningClient)
 	go d.watchBackupEvents(backupEventClient, ctx)
 	go d.syncToChain(ctx)
 
@@ -113,6 +115,41 @@ func (d *Daemon) startSubscriptions() error {
 	}
 	d.log.Infof("Daemon ready! subscriptions started")
 	return nil
+}
+
+func (d *Daemon) subscribeChannelAcceptor(ctx context.Context, client lnrpc.LightningClient) error {
+	defer d.wg.Done()
+
+	channelAcceptorClient, err := client.ChannelAcceptor(ctx)
+	if err != nil {
+		d.log.Errorf("Failed to get a channel acceptor %v", err)
+		return err
+	}
+	for {
+		request, err := channelAcceptorClient.Recv()
+		if err == io.EOF || ctx.Err() == context.Canceled {
+			d.log.Errorf("channelAcceptorClient cancelled, shutting down")
+			return err
+		}
+
+		if err != nil {
+			d.log.Errorf("channelAcceptorClient failed to get notification %v", err)
+			// in case of unexpected error, we will wait a bit so we won't get
+			// into infinite loop.
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		private := request.ChannelFlags&uint32(lnwire.FFAnnounceChannel) == 0
+		d.log.Infof("channel creation requested from node: %v private: %v", request.NodePubkey, private)
+		err = channelAcceptorClient.Send(&lnrpc.ChannelAcceptResponse{
+			PendingChanId: request.PendingChanId,
+			Accept:        private,
+		})
+		if err != nil {
+			d.log.Errorf("Error in channelAcceptorClient.Send(%v, %v): %v", request.PendingChanId, private, err)
+			return err
+		}
+	}
 }
 
 func (d *Daemon) subscribePeers(client lnrpc.LightningClient, ctx context.Context) error {
