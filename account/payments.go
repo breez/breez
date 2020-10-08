@@ -240,10 +240,10 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	// if err := a.checkAmount(payReq, sendRequest); err != nil {
-	// 	a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-	// 	return "", err
-	// }
+	if err := a.checkAmount(payReq, sendRequest); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
 
 	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
