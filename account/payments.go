@@ -765,10 +765,10 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 								pendingSoFar.Amount += (ht.Route.TotalAmt - ht.Route.TotalFees)
 							}
 						}
+						a.log.Infof("pendingPaymets: hasInflight=%v, pendingSoFar.Amount=%v, currentInflight.ValueSat=%v",
+							hasInflight, pendingSoFar.Amount, currentInflight.ValueSat)
 					}
 				}
-				a.log.Infof("pendingPaymets: hasInflight=%v, pendingSoFar.Amount=%v, currentInflight.ValueSat=%v",
-					hasInflight, pendingSoFar.Amount, currentInflight.ValueSat)
 				if hasInflight && pendingSoFar.Amount == currentInflight.ValueSat {
 					pendingSoFar.PendingFull = true
 				}
