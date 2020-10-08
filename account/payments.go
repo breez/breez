@@ -767,12 +767,12 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 						}
 						a.log.Infof("pendingPaymets: hasInflight=%v, pendingSoFar.Amount=%v, currentInflight.ValueSat=%v",
 							hasInflight, pendingSoFar.Amount, currentInflight.ValueSat)
+						if pendingSoFar.Amount == currentInflight.ValueSat {
+							pendingSoFar.PendingFull = true
+						}
+						pendingSoFar.Amount = currentInflight.ValueSat
 					}
 				}
-				if hasInflight && pendingSoFar.Amount == currentInflight.ValueSat {
-					pendingSoFar.PendingFull = true
-				}
-				pendingSoFar.Amount = currentInflight.ValueSat
 			}
 		}
 		for _, p := range pendingByHash {
