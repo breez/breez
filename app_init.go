@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"sync"
 
@@ -100,7 +101,11 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	}
 
 	app.log.Infof("New db")
-
+	dbPath := path.Join(workingDir, "breez.db")
+	breezDBInfo, err := os.Stat(dbPath)
+	if err == nil {
+		app.log.Infof("breez db size is: %v", breezDBInfo.Size())
+	}
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB, startBeforeSync)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create lnnode.Daemon: %v", err)
