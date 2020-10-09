@@ -5,6 +5,7 @@ package breez
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -20,6 +21,7 @@ import (
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 )
 
 //Service is the interface to be implemeted by all breez services
@@ -321,4 +323,20 @@ func (a *App) GraphUrl() (string, error) {
 		return "", fmt.Errorf("breezDB still not initialized")
 	}
 	return bootstrap.GraphURL(a.GetWorkingDir(), a.breezDB)
+}
+
+func (a *App) BackupFiles() (string, error) {
+	res, err := a.lnDaemon.BreezBackupClient().GetBackup(context.Background(), &breezbackuprpc.GetBackupRequest{})
+	if err != nil {
+		return "", err
+	}
+
+	jsonRes, err := json.Marshal(res.Files)
+	return string(jsonRes), err
+}
+
+func (a *App) PopulateChannelPolicy() {
+	if err := a.lnDaemon.PopulateChannelsGraph(); err != nil {
+		a.log.Errorf("failed to populate graph %v", err)
+	}
 }

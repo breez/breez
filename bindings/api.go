@@ -263,6 +263,10 @@ func RequestBackup() {
 	getBreezApp().BackupManager.RequestBackup()
 }
 
+func BackupFiles() (string, error) {
+	return getBreezApp().BackupFiles()
+}
+
 /*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
@@ -373,6 +377,10 @@ func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	request := &data.RemoveFundRequest{}
 	proto.Unmarshal(removeFundRequest, request)
 	return marshalResponse(getBreezApp().SwapService.RemoveFund(request.Amount, request.Address))
+}
+
+func PopulateChannelPolicy() {
+	getBreezApp().PopulateChannelPolicy()
 }
 
 /*

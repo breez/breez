@@ -1,13 +1,19 @@
 package lnnode
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
@@ -16,6 +22,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -79,4 +86,107 @@ func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, er
 		log:             logger,
 		startBeforeSync: startBeforeSync,
 	}, nil
+}
+
+func (a *Daemon) PopulateChannelsGraph() error {
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return fmt.Errorf("failed to populate channels graph %w", err)
+	}
+	defer cleanup()
+	channels, err := chandb.FetchAllOpenChannels()
+	if err != nil {
+		return fmt.Errorf("failed to fetch channels graph %w", err)
+	}
+	pubkeyBytes, err := hex.DecodeString(a.NodePubkey())
+	if err != nil {
+		return fmt.Errorf("failed to decode pubkey %w", err)
+	}
+
+	localPubkey, err := btcec.ParsePubKey(pubkeyBytes, btcec.S256())
+	if err != nil {
+		return fmt.Errorf("failed to fetch and parse node pubkey %w", err)
+	}
+
+	for _, c := range channels {
+		remotePubkey := c.IdentityPub
+		var featureBuf bytes.Buffer
+		if err := lnwire.NewRawFeatureVector().Encode(&featureBuf); err != nil {
+			return fmt.Errorf("unable to encode features: %v", err)
+		}
+
+		edge := &channeldb.ChannelEdgeInfo{
+			ChannelID:    c.ShortChanID().ToUint64(),
+			ChainHash:    c.ChainHash,
+			Features:     featureBuf.Bytes(),
+			Capacity:     c.Capacity,
+			ChannelPoint: c.FundingOutpoint,
+		}
+
+		selfBytes := localPubkey.SerializeCompressed()
+		remoteBytes := remotePubkey.SerializeCompressed()
+		var chanFlags lnwire.ChanUpdateChanFlags
+		if bytes.Compare(selfBytes, remoteBytes) == -1 {
+			copy(edge.NodeKey1Bytes[:], localPubkey.SerializeCompressed())
+			copy(edge.NodeKey2Bytes[:], remotePubkey.SerializeCompressed())
+			copy(edge.BitcoinKey1Bytes[:], c.LocalChanCfg.MultiSigKey.PubKey.SerializeCompressed())
+			copy(edge.BitcoinKey2Bytes[:], c.RemoteChanCfg.MultiSigKey.PubKey.SerializeCompressed())
+
+			// If we're the first node then update the chanFlags to
+			// indicate the "direction" of the update.
+			chanFlags = 0
+		} else {
+			copy(edge.NodeKey1Bytes[:], remotePubkey.SerializeCompressed())
+			copy(edge.NodeKey2Bytes[:], localPubkey.SerializeCompressed())
+			copy(edge.BitcoinKey1Bytes[:], c.RemoteChanCfg.MultiSigKey.PubKey.SerializeCompressed())
+			copy(edge.BitcoinKey2Bytes[:], c.LocalChanCfg.MultiSigKey.PubKey.SerializeCompressed())
+
+			// If we're the second node then update the chanFlags to
+			// indicate the "direction" of the update.
+			chanFlags = 1
+		}
+
+		policy1 := &channeldb.ChannelEdgePolicy{
+			// SigBytes:                  msg.Signature.ToSignatureBytes(),
+			ChannelID:                 c.ShortChanID().ToUint64(),
+			LastUpdate:                time.Now(),
+			MessageFlags:              lnwire.ChanUpdateOptionMaxHtlc,
+			ChannelFlags:              chanFlags,
+			TimeLockDelta:             uint16(144),
+			MinHTLC:                   c.LocalChanCfg.MinHTLC,
+			MaxHTLC:                   c.LocalChanCfg.MaxPendingAmount,
+			FeeBaseMSat:               lnwire.MilliSatoshi(1000),
+			FeeProportionalMillionths: lnwire.MilliSatoshi(1),
+		}
+
+		if chanFlags == 1 {
+			chanFlags = 0
+		} else {
+			chanFlags = 1
+		}
+
+		policy2 := &channeldb.ChannelEdgePolicy{
+			// SigBytes:                  msg.Signature.ToSignatureBytes(),
+			ChannelID:                 c.ShortChanID().ToUint64(),
+			LastUpdate:                time.Now(),
+			MessageFlags:              lnwire.ChanUpdateOptionMaxHtlc,
+			ChannelFlags:              chanFlags,
+			TimeLockDelta:             uint16(144),
+			MinHTLC:                   c.LocalChanCfg.MinHTLC,
+			MaxHTLC:                   c.LocalChanCfg.MaxPendingAmount,
+			FeeBaseMSat:               lnwire.MilliSatoshi(1000),
+			FeeProportionalMillionths: lnwire.MilliSatoshi(1),
+		}
+
+		// if err := chandb.ChannelGraph().AddChannelEdge(edge); err != nil {
+		// 	return fmt.Errorf("failed to add channel edge %w", err)
+		// }
+		if err := chandb.ChannelGraph().UpdateEdgePolicy(policy1); err != nil {
+			a.log.Errorf("failed to add channel edge policy 1 %v", err)
+		}
+		if err := chandb.ChannelGraph().UpdateEdgePolicy(policy2); err != nil {
+			a.log.Errorf("failed to add channel edge policy 2 %v", err)
+		}
+	}
+	return nil
 }
