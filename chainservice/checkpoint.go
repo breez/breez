@@ -9,7 +9,7 @@ import (
 
 var utc = time.FixedZone("utc", 0)
 var checkpoints = []Checkpoint{
-	Checkpoint{
+	{
 		Height: 0,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -20,7 +20,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2083236893,
 		},
 		FilterHeader: &chainhash.Hash{159, 60, 48, 240, 195, 127, 185, 119, 207, 62, 26, 49, 115, 198, 49, 232, 255, 17, 154, 211, 8, 139, 111, 91, 43, 206, 208, 128, 33, 57, 194, 2},
-	}, Checkpoint{
+	},
+	{
 		Height: 1000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -31,7 +32,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2595206198,
 		},
 		FilterHeader: &chainhash.Hash{147, 241, 157, 145, 244, 167, 48, 125, 4, 161, 206, 119, 165, 155, 94, 93, 30, 103, 247, 141, 187, 113, 246, 137, 192, 167, 6, 164, 131, 34, 36, 74},
-	}, Checkpoint{
+	},
+	{
 		Height: 2000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -42,7 +44,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2999858432,
 		},
 		FilterHeader: &chainhash.Hash{249, 239, 32, 101, 198, 213, 140, 228, 206, 48, 207, 19, 223, 186, 98, 127, 207, 166, 27, 73, 26, 44, 192, 46, 117, 247, 224, 216, 98, 82, 189, 217},
-	}, Checkpoint{
+	},
+	{
 		Height: 3000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -53,7 +56,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3798991363,
 		},
 		FilterHeader: &chainhash.Hash{170, 2, 114, 176, 22, 63, 27, 117, 251, 131, 180, 237, 40, 147, 111, 130, 57, 27, 131, 185, 35, 228, 116, 204, 45, 86, 115, 61, 208, 175, 80, 96},
-	}, Checkpoint{
+	},
+	{
 		Height: 4000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -64,7 +68,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      481589526,
 		},
 		FilterHeader: &chainhash.Hash{130, 127, 5, 24, 69, 158, 62, 40, 57, 20, 176, 39, 135, 155, 80, 201, 171, 87, 119, 123, 197, 67, 107, 216, 95, 255, 216, 23, 117, 104, 106, 4},
-	}, Checkpoint{
+	},
+	{
 		Height: 5000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -75,7 +80,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3600108085,
 		},
 		FilterHeader: &chainhash.Hash{245, 140, 47, 189, 209, 207, 23, 10, 183, 162, 63, 126, 2, 68, 58, 109, 210, 153, 212, 254, 12, 176, 46, 65, 30, 114, 254, 205, 49, 97, 229, 186},
-	}, Checkpoint{
+	},
+	{
 		Height: 6000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -86,7 +92,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3598075177,
 		},
 		FilterHeader: &chainhash.Hash{61, 163, 150, 78, 138, 238, 8, 245, 143, 74, 132, 115, 96, 206, 55, 34, 175, 234, 181, 88, 237, 115, 251, 17, 255, 61, 94, 134, 54, 69, 107, 158},
-	}, Checkpoint{
+	},
+	{
 		Height: 7000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -97,7 +104,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      875775009,
 		},
 		FilterHeader: &chainhash.Hash{227, 22, 18, 245, 22, 1, 154, 103, 166, 24, 51, 54, 191, 183, 25, 245, 75, 198, 227, 190, 93, 124, 73, 190, 41, 216, 100, 219, 175, 10, 85, 114},
-	}, Checkpoint{
+	},
+	{
 		Height: 8000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -108,7 +116,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      67698968,
 		},
 		FilterHeader: &chainhash.Hash{13, 75, 190, 188, 95, 117, 107, 153, 135, 203, 201, 195, 61, 176, 255, 134, 193, 198, 22, 212, 64, 56, 128, 138, 169, 165, 254, 230, 190, 59, 191, 49},
-	}, Checkpoint{
+	},
+	{
 		Height: 9000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -119,7 +128,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2656372516,
 		},
 		FilterHeader: &chainhash.Hash{147, 109, 78, 131, 194, 20, 118, 186, 5, 115, 162, 245, 195, 209, 134, 153, 79, 9, 27, 115, 61, 71, 79, 156, 191, 72, 111, 27, 12, 14, 247, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 10000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -130,7 +140,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2145410362,
 		},
 		FilterHeader: &chainhash.Hash{101, 233, 21, 79, 186, 85, 136, 49, 250, 4, 115, 131, 38, 45, 238, 58, 112, 118, 223, 164, 170, 94, 233, 82, 133, 92, 223, 37, 207, 70, 3, 115},
-	}, Checkpoint{
+	},
+	{
 		Height: 11000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -141,7 +152,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      66993854,
 		},
 		FilterHeader: &chainhash.Hash{225, 250, 8, 189, 199, 38, 112, 2, 155, 78, 11, 237, 107, 218, 246, 132, 69, 251, 250, 95, 82, 203, 10, 7, 161, 212, 206, 194, 165, 159, 100, 67},
-	}, Checkpoint{
+	},
+	{
 		Height: 12000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -152,7 +164,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2340861746,
 		},
 		FilterHeader: &chainhash.Hash{82, 245, 220, 30, 93, 250, 175, 215, 92, 208, 239, 193, 73, 229, 5, 67, 213, 4, 214, 55, 79, 81, 179, 174, 217, 166, 254, 104, 235, 216, 80, 60},
-	}, Checkpoint{
+	},
+	{
 		Height: 13000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -163,7 +176,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4007557418,
 		},
 		FilterHeader: &chainhash.Hash{3, 252, 224, 106, 190, 135, 222, 179, 10, 253, 126, 11, 104, 10, 97, 136, 37, 243, 20, 205, 225, 113, 46, 54, 247, 196, 195, 85, 167, 207, 151, 32},
-	}, Checkpoint{
+	},
+	{
 		Height: 14000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -174,7 +188,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1741525806,
 		},
 		FilterHeader: &chainhash.Hash{238, 94, 120, 129, 251, 105, 186, 146, 86, 252, 82, 231, 116, 171, 115, 49, 39, 58, 229, 185, 233, 87, 67, 62, 65, 80, 146, 211, 211, 26, 243, 151},
-	}, Checkpoint{
+	},
+	{
 		Height: 15000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -185,7 +200,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2416807168,
 		},
 		FilterHeader: &chainhash.Hash{140, 229, 194, 67, 228, 11, 1, 249, 52, 95, 87, 46, 86, 36, 179, 198, 120, 215, 26, 147, 186, 246, 133, 95, 192, 107, 87, 68, 11, 70, 244, 23},
-	}, Checkpoint{
+	},
+	{
 		Height: 16000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -196,7 +212,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      163686697,
 		},
 		FilterHeader: &chainhash.Hash{167, 155, 8, 234, 126, 100, 5, 43, 150, 25, 89, 82, 46, 84, 115, 119, 70, 208, 178, 32, 185, 178, 48, 211, 71, 175, 177, 243, 68, 53, 67, 45},
-	}, Checkpoint{
+	},
+	{
 		Height: 17000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -207,7 +224,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      21322788,
 		},
 		FilterHeader: &chainhash.Hash{48, 85, 185, 236, 121, 225, 45, 159, 126, 13, 56, 4, 228, 136, 6, 154, 180, 202, 143, 190, 201, 88, 58, 109, 61, 109, 40, 134, 27, 76, 23, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 18000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -218,7 +236,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2401988649,
 		},
 		FilterHeader: &chainhash.Hash{231, 134, 240, 52, 245, 39, 164, 28, 67, 158, 123, 106, 249, 42, 53, 133, 157, 223, 76, 51, 122, 231, 193, 58, 66, 240, 154, 192, 129, 71, 82, 158},
-	}, Checkpoint{
+	},
+	{
 		Height: 19000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -229,7 +248,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      187762709,
 		},
 		FilterHeader: &chainhash.Hash{96, 202, 60, 17, 192, 201, 106, 131, 22, 148, 100, 122, 95, 178, 173, 206, 212, 101, 97, 142, 64, 150, 228, 227, 233, 248, 165, 13, 190, 86, 239, 178},
-	}, Checkpoint{
+	},
+	{
 		Height: 20000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -240,7 +260,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2406314246,
 		},
 		FilterHeader: &chainhash.Hash{220, 235, 192, 151, 250, 47, 252, 208, 197, 191, 123, 99, 34, 139, 131, 79, 5, 255, 18, 88, 170, 103, 2, 35, 224, 28, 196, 158, 76, 215, 55, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 21000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -251,7 +272,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4111140104,
 		},
 		FilterHeader: &chainhash.Hash{123, 145, 38, 117, 232, 232, 118, 211, 143, 92, 174, 200, 108, 123, 233, 68, 96, 92, 23, 242, 198, 126, 47, 151, 251, 160, 229, 226, 45, 72, 226, 188},
-	}, Checkpoint{
+	},
+	{
 		Height: 22000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -262,7 +284,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1404749333,
 		},
 		FilterHeader: &chainhash.Hash{34, 162, 9, 255, 7, 158, 251, 37, 4, 217, 244, 77, 131, 240, 22, 184, 117, 249, 114, 152, 29, 177, 104, 42, 123, 249, 59, 158, 104, 57, 123, 173},
-	}, Checkpoint{
+	},
+	{
 		Height: 23000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -273,7 +296,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3546281760,
 		},
 		FilterHeader: &chainhash.Hash{127, 208, 159, 211, 11, 14, 93, 198, 72, 89, 185, 200, 110, 178, 84, 55, 205, 61, 215, 207, 87, 54, 48, 120, 121, 97, 219, 29, 31, 226, 118, 249},
-	}, Checkpoint{
+	},
+	{
 		Height: 24000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -284,7 +308,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2962368537,
 		},
 		FilterHeader: &chainhash.Hash{44, 204, 92, 3, 146, 148, 99, 90, 172, 41, 18, 8, 82, 192, 180, 87, 179, 208, 82, 239, 147, 78, 140, 98, 109, 161, 3, 34, 137, 194, 252, 112},
-	}, Checkpoint{
+	},
+	{
 		Height: 25000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -295,7 +320,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      58357300,
 		},
 		FilterHeader: &chainhash.Hash{4, 68, 41, 0, 25, 200, 88, 217, 137, 81, 243, 116, 112, 27, 227, 153, 213, 80, 226, 117, 58, 2, 160, 97, 37, 51, 8, 151, 238, 173, 198, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 26000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -306,7 +332,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      70081579,
 		},
 		FilterHeader: &chainhash.Hash{167, 239, 205, 113, 114, 81, 103, 209, 7, 10, 67, 207, 241, 87, 163, 180, 145, 2, 43, 210, 27, 14, 103, 221, 7, 135, 154, 128, 143, 208, 178, 31},
-	}, Checkpoint{
+	},
+	{
 		Height: 27000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -317,7 +344,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      51592200,
 		},
 		FilterHeader: &chainhash.Hash{150, 42, 252, 171, 93, 100, 128, 164, 117, 138, 81, 147, 21, 4, 130, 125, 235, 158, 199, 160, 85, 20, 154, 158, 64, 77, 194, 228, 102, 183, 70, 22},
-	}, Checkpoint{
+	},
+	{
 		Height: 28000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -328,7 +356,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      494681880,
 		},
 		FilterHeader: &chainhash.Hash{202, 219, 151, 189, 128, 165, 166, 221, 199, 210, 181, 105, 210, 50, 50, 250, 71, 178, 227, 33, 201, 120, 222, 8, 110, 172, 182, 43, 187, 33, 167, 163},
-	}, Checkpoint{
+	},
+	{
 		Height: 29000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -339,7 +368,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1979928328,
 		},
 		FilterHeader: &chainhash.Hash{203, 58, 29, 155, 226, 9, 112, 41, 194, 164, 223, 212, 71, 118, 162, 172, 25, 200, 75, 97, 229, 178, 40, 224, 50, 43, 89, 219, 221, 231, 89, 229},
-	}, Checkpoint{
+	},
+	{
 		Height: 30000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -350,7 +380,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2747428616,
 		},
 		FilterHeader: &chainhash.Hash{104, 51, 137, 107, 50, 51, 242, 233, 151, 162, 161, 87, 217, 26, 2, 25, 117, 16, 236, 193, 141, 43, 144, 184, 118, 229, 78, 62, 31, 188, 116, 160},
-	}, Checkpoint{
+	},
+	{
 		Height: 31000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -361,7 +392,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      71306090,
 		},
 		FilterHeader: &chainhash.Hash{222, 58, 78, 124, 212, 127, 136, 226, 241, 64, 125, 168, 95, 99, 234, 246, 128, 244, 124, 176, 38, 27, 248, 37, 40, 221, 4, 162, 49, 40, 246, 218},
-	}, Checkpoint{
+	},
+	{
 		Height: 32000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -372,7 +404,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      139894960,
 		},
 		FilterHeader: &chainhash.Hash{121, 108, 40, 37, 1, 47, 116, 32, 60, 136, 4, 1, 219, 4, 82, 29, 91, 20, 238, 230, 193, 34, 94, 81, 217, 230, 19, 191, 39, 187, 55, 14},
-	}, Checkpoint{
+	},
+	{
 		Height: 33000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -383,7 +416,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1393954566,
 		},
 		FilterHeader: &chainhash.Hash{106, 118, 15, 199, 211, 125, 251, 151, 146, 174, 103, 166, 105, 170, 171, 1, 190, 202, 136, 133, 245, 13, 100, 17, 231, 174, 136, 120, 247, 57, 66, 176},
-	}, Checkpoint{
+	},
+	{
 		Height: 34000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -394,7 +428,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      184708140,
 		},
 		FilterHeader: &chainhash.Hash{41, 10, 202, 132, 34, 71, 236, 25, 15, 247, 65, 141, 158, 21, 71, 59, 34, 113, 26, 213, 63, 6, 76, 34, 121, 65, 3, 175, 169, 35, 211, 212},
-	}, Checkpoint{
+	},
+	{
 		Height: 35000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -405,7 +440,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      121950785,
 		},
 		FilterHeader: &chainhash.Hash{14, 192, 87, 72, 166, 7, 203, 32, 118, 97, 249, 56, 127, 153, 246, 105, 91, 105, 243, 224, 66, 100, 124, 136, 29, 136, 169, 41, 95, 205, 198, 203},
-	}, Checkpoint{
+	},
+	{
 		Height: 36000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -416,7 +452,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      323931770,
 		},
 		FilterHeader: &chainhash.Hash{13, 195, 74, 1, 224, 254, 93, 206, 104, 222, 30, 225, 77, 182, 234, 255, 93, 81, 132, 37, 95, 200, 211, 218, 65, 171, 152, 70, 106, 114, 105, 163},
-	}, Checkpoint{
+	},
+	{
 		Height: 37000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -427,7 +464,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      328370500,
 		},
 		FilterHeader: &chainhash.Hash{76, 197, 207, 129, 29, 116, 143, 151, 55, 65, 130, 4, 67, 164, 165, 85, 134, 205, 70, 234, 97, 220, 39, 194, 190, 14, 209, 190, 175, 58, 126, 8},
-	}, Checkpoint{
+	},
+	{
 		Height: 38000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -438,7 +476,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      189716846,
 		},
 		FilterHeader: &chainhash.Hash{247, 94, 25, 154, 152, 179, 101, 56, 182, 105, 176, 239, 148, 86, 131, 223, 250, 232, 74, 25, 129, 128, 39, 237, 59, 21, 220, 160, 146, 212, 9, 90},
-	}, Checkpoint{
+	},
+	{
 		Height: 39000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -449,7 +488,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      992498947,
 		},
 		FilterHeader: &chainhash.Hash{115, 122, 240, 248, 246, 243, 165, 93, 111, 48, 216, 36, 4, 207, 103, 90, 35, 193, 248, 162, 193, 255, 55, 181, 169, 197, 99, 182, 114, 89, 243, 53},
-	}, Checkpoint{
+	},
+	{
 		Height: 40000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -460,7 +500,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3474096156,
 		},
 		FilterHeader: &chainhash.Hash{248, 66, 81, 211, 173, 195, 206, 119, 155, 195, 93, 39, 52, 158, 136, 48, 239, 45, 66, 216, 128, 27, 9, 231, 135, 183, 91, 216, 229, 128, 207, 36},
-	}, Checkpoint{
+	},
+	{
 		Height: 41000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -471,7 +512,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      56868235,
 		},
 		FilterHeader: &chainhash.Hash{166, 32, 9, 144, 2, 108, 102, 115, 20, 132, 13, 121, 64, 27, 141, 236, 241, 140, 226, 231, 136, 184, 218, 55, 145, 235, 215, 32, 159, 181, 153, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 42000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -482,7 +524,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      84734110,
 		},
 		FilterHeader: &chainhash.Hash{8, 238, 184, 196, 131, 27, 160, 241, 86, 195, 185, 115, 14, 179, 19, 141, 87, 79, 159, 174, 211, 8, 237, 202, 157, 229, 206, 234, 194, 51, 82, 172},
-	}, Checkpoint{
+	},
+	{
 		Height: 43000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -493,7 +536,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      78584063,
 		},
 		FilterHeader: &chainhash.Hash{40, 148, 234, 195, 247, 126, 88, 70, 222, 81, 23, 248, 235, 146, 132, 210, 94, 161, 254, 69, 189, 89, 112, 58, 153, 78, 221, 68, 54, 23, 144, 41},
-	}, Checkpoint{
+	},
+	{
 		Height: 44000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -504,7 +548,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3590097417,
 		},
 		FilterHeader: &chainhash.Hash{20, 45, 141, 160, 227, 168, 207, 171, 237, 118, 2, 255, 17, 77, 192, 89, 198, 228, 214, 90, 111, 249, 143, 62, 160, 193, 184, 252, 43, 89, 227, 220},
-	}, Checkpoint{
+	},
+	{
 		Height: 45000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -515,7 +560,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1299615251,
 		},
 		FilterHeader: &chainhash.Hash{7, 128, 192, 42, 126, 230, 111, 164, 152, 46, 88, 108, 136, 83, 66, 181, 23, 197, 87, 91, 184, 52, 11, 1, 8, 110, 234, 162, 34, 20, 42, 26},
-	}, Checkpoint{
+	},
+	{
 		Height: 46000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -526,7 +572,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      40754730,
 		},
 		FilterHeader: &chainhash.Hash{20, 54, 255, 80, 130, 251, 228, 109, 135, 116, 36, 255, 57, 13, 86, 212, 41, 253, 41, 171, 72, 81, 187, 175, 113, 217, 111, 111, 210, 50, 42, 59},
-	}, Checkpoint{
+	},
+	{
 		Height: 47000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -537,7 +584,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      238934491,
 		},
 		FilterHeader: &chainhash.Hash{23, 27, 47, 176, 253, 153, 47, 80, 45, 221, 244, 158, 199, 133, 150, 61, 136, 123, 149, 137, 77, 9, 186, 37, 219, 37, 113, 43, 211, 239, 17, 148},
-	}, Checkpoint{
+	},
+	{
 		Height: 48000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -548,7 +596,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      261374738,
 		},
 		FilterHeader: &chainhash.Hash{99, 168, 5, 141, 205, 233, 120, 175, 113, 6, 222, 254, 142, 221, 205, 198, 13, 150, 31, 125, 75, 47, 181, 21, 48, 48, 16, 139, 63, 94, 184, 176},
-	}, Checkpoint{
+	},
+	{
 		Height: 49000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -559,7 +608,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      246777535,
 		},
 		FilterHeader: &chainhash.Hash{18, 138, 127, 14, 22, 243, 157, 111, 30, 97, 163, 206, 93, 91, 250, 226, 146, 191, 87, 126, 92, 249, 9, 108, 218, 34, 24, 20, 202, 164, 124, 166},
-	}, Checkpoint{
+	},
+	{
 		Height: 50000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -570,7 +620,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      58489010,
 		},
 		FilterHeader: &chainhash.Hash{207, 74, 250, 154, 217, 253, 185, 243, 203, 151, 182, 107, 33, 174, 152, 22, 17, 22, 9, 38, 40, 170, 94, 151, 197, 225, 148, 199, 130, 218, 118, 138},
-	}, Checkpoint{
+	},
+	{
 		Height: 51000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -581,7 +632,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      126726865,
 		},
 		FilterHeader: &chainhash.Hash{21, 190, 139, 151, 188, 25, 96, 188, 218, 194, 145, 164, 193, 105, 209, 233, 160, 243, 179, 74, 205, 69, 104, 71, 65, 177, 224, 253, 196, 44, 26, 234},
-	}, Checkpoint{
+	},
+	{
 		Height: 52000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -592,7 +644,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      17139492,
 		},
 		FilterHeader: &chainhash.Hash{229, 197, 106, 121, 8, 165, 18, 110, 225, 21, 58, 198, 193, 66, 106, 55, 179, 56, 73, 224, 20, 142, 135, 184, 52, 244, 222, 69, 26, 189, 199, 148},
-	}, Checkpoint{
+	},
+	{
 		Height: 53000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -603,7 +656,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      114187026,
 		},
 		FilterHeader: &chainhash.Hash{234, 104, 82, 197, 242, 92, 149, 26, 154, 33, 236, 237, 46, 10, 46, 97, 51, 64, 173, 13, 130, 70, 112, 153, 11, 207, 189, 208, 186, 219, 212, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 54000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -614,7 +668,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      14226050,
 		},
 		FilterHeader: &chainhash.Hash{46, 91, 174, 36, 100, 240, 10, 55, 162, 129, 63, 34, 164, 124, 183, 237, 23, 188, 66, 102, 170, 97, 153, 59, 128, 14, 70, 128, 221, 210, 213, 184},
-	}, Checkpoint{
+	},
+	{
 		Height: 55000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -625,7 +680,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      481680977,
 		},
 		FilterHeader: &chainhash.Hash{187, 232, 62, 132, 225, 69, 22, 11, 175, 107, 59, 30, 148, 191, 12, 66, 8, 108, 235, 78, 28, 65, 85, 25, 66, 61, 16, 174, 216, 248, 19, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 56000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -636,7 +692,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3558021267,
 		},
 		FilterHeader: &chainhash.Hash{160, 135, 197, 185, 89, 135, 35, 118, 88, 216, 37, 34, 108, 209, 242, 112, 98, 143, 34, 214, 156, 20, 57, 50, 181, 47, 211, 2, 91, 67, 113, 226},
-	}, Checkpoint{
+	},
+	{
 		Height: 57000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -647,7 +704,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      177161784,
 		},
 		FilterHeader: &chainhash.Hash{162, 120, 213, 220, 207, 86, 211, 40, 109, 209, 175, 186, 134, 172, 189, 254, 116, 84, 31, 245, 82, 115, 104, 225, 89, 229, 40, 242, 47, 228, 205, 18},
-	}, Checkpoint{
+	},
+	{
 		Height: 58000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -658,7 +716,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      60885458,
 		},
 		FilterHeader: &chainhash.Hash{199, 84, 114, 4, 149, 83, 60, 242, 246, 167, 252, 166, 85, 160, 118, 109, 138, 45, 249, 89, 0, 83, 23, 204, 253, 227, 11, 72, 194, 213, 140, 97},
-	}, Checkpoint{
+	},
+	{
 		Height: 59000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -669,7 +728,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      298068037,
 		},
 		FilterHeader: &chainhash.Hash{144, 164, 159, 40, 38, 206, 105, 178, 125, 30, 109, 133, 75, 1, 82, 160, 90, 75, 118, 141, 25, 5, 85, 110, 153, 242, 161, 92, 171, 232, 103, 186},
-	}, Checkpoint{
+	},
+	{
 		Height: 60000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -680,7 +740,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      198283573,
 		},
 		FilterHeader: &chainhash.Hash{117, 175, 237, 1, 159, 237, 211, 81, 195, 119, 131, 103, 0, 250, 230, 17, 193, 90, 20, 158, 146, 147, 115, 83, 202, 85, 220, 139, 50, 227, 111, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 61000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -691,7 +752,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      354800830,
 		},
 		FilterHeader: &chainhash.Hash{223, 235, 76, 58, 24, 200, 150, 209, 102, 218, 144, 43, 6, 44, 226, 11, 41, 59, 232, 146, 23, 177, 80, 216, 181, 90, 189, 72, 253, 64, 106, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 62000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -702,7 +764,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      8001550,
 		},
 		FilterHeader: &chainhash.Hash{54, 129, 167, 112, 204, 135, 127, 58, 5, 17, 182, 104, 163, 124, 7, 142, 5, 0, 11, 220, 204, 254, 3, 61, 100, 14, 244, 137, 97, 58, 198, 197},
-	}, Checkpoint{
+	},
+	{
 		Height: 63000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -713,7 +776,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      21929252,
 		},
 		FilterHeader: &chainhash.Hash{46, 226, 160, 86, 27, 7, 5, 15, 0, 146, 123, 150, 75, 25, 167, 7, 123, 67, 44, 132, 99, 161, 186, 137, 53, 229, 101, 116, 109, 197, 29, 116},
-	}, Checkpoint{
+	},
+	{
 		Height: 64000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -724,7 +788,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      282850602,
 		},
 		FilterHeader: &chainhash.Hash{142, 14, 221, 147, 39, 25, 126, 76, 167, 184, 163, 201, 197, 184, 177, 221, 46, 158, 30, 182, 180, 176, 3, 104, 126, 111, 41, 95, 74, 34, 64, 201},
-	}, Checkpoint{
+	},
+	{
 		Height: 65000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -735,7 +800,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      28493777,
 		},
 		FilterHeader: &chainhash.Hash{221, 22, 163, 16, 216, 246, 186, 212, 114, 150, 242, 177, 110, 109, 69, 229, 178, 193, 222, 26, 106, 201, 138, 238, 240, 161, 66, 76, 251, 35, 190, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 66000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -746,7 +812,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      24540870,
 		},
 		FilterHeader: &chainhash.Hash{81, 18, 16, 250, 142, 100, 135, 48, 95, 37, 117, 4, 55, 199, 89, 133, 30, 205, 82, 203, 142, 110, 216, 42, 129, 98, 93, 107, 219, 101, 142, 194},
-	}, Checkpoint{
+	},
+	{
 		Height: 67000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -757,7 +824,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      10459221,
 		},
 		FilterHeader: &chainhash.Hash{205, 114, 179, 238, 95, 129, 195, 127, 65, 226, 65, 45, 184, 207, 253, 177, 109, 127, 45, 65, 130, 126, 113, 217, 137, 164, 131, 101, 13, 230, 198, 130},
-	}, Checkpoint{
+	},
+	{
 		Height: 68000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -768,7 +836,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      15896743,
 		},
 		FilterHeader: &chainhash.Hash{162, 232, 53, 11, 207, 19, 50, 52, 109, 157, 250, 69, 169, 25, 79, 100, 124, 253, 17, 31, 107, 192, 120, 47, 110, 144, 198, 186, 236, 216, 135, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 69000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -779,7 +848,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      197220757,
 		},
 		FilterHeader: &chainhash.Hash{203, 143, 52, 87, 187, 206, 108, 200, 193, 97, 169, 71, 127, 77, 197, 180, 78, 51, 68, 163, 36, 216, 170, 118, 200, 138, 202, 147, 202, 130, 32, 34},
-	}, Checkpoint{
+	},
+	{
 		Height: 70000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -790,7 +860,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      211509862,
 		},
 		FilterHeader: &chainhash.Hash{31, 108, 31, 159, 151, 135, 27, 2, 140, 106, 144, 71, 67, 108, 101, 209, 86, 22, 121, 19, 109, 146, 56, 210, 164, 148, 109, 253, 101, 186, 161, 102},
-	}, Checkpoint{
+	},
+	{
 		Height: 71000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -801,7 +872,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      89800021,
 		},
 		FilterHeader: &chainhash.Hash{100, 74, 238, 243, 30, 218, 7, 90, 17, 4, 11, 36, 36, 44, 166, 204, 206, 227, 84, 189, 121, 206, 110, 91, 235, 55, 95, 74, 171, 156, 90, 33},
-	}, Checkpoint{
+	},
+	{
 		Height: 72000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -812,7 +884,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      132516746,
 		},
 		FilterHeader: &chainhash.Hash{83, 121, 22, 159, 188, 45, 68, 169, 79, 245, 128, 67, 105, 245, 94, 94, 20, 168, 203, 215, 84, 118, 39, 107, 0, 160, 28, 200, 221, 207, 90, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 73000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -823,7 +896,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2815364547,
 		},
 		FilterHeader: &chainhash.Hash{202, 12, 200, 74, 111, 165, 237, 254, 45, 164, 182, 172, 84, 173, 14, 190, 134, 95, 110, 174, 188, 219, 243, 37, 88, 163, 181, 6, 64, 124, 107, 249},
-	}, Checkpoint{
+	},
+	{
 		Height: 74000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -834,7 +908,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      97805329,
 		},
 		FilterHeader: &chainhash.Hash{74, 110, 8, 5, 196, 174, 5, 52, 196, 246, 169, 89, 179, 150, 222, 172, 26, 59, 253, 33, 34, 15, 247, 114, 49, 5, 97, 168, 198, 37, 41, 74},
-	}, Checkpoint{
+	},
+	{
 		Height: 75000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -845,7 +920,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      846309137,
 		},
 		FilterHeader: &chainhash.Hash{194, 160, 243, 208, 198, 217, 2, 126, 41, 103, 129, 147, 230, 87, 156, 214, 117, 15, 39, 219, 132, 135, 66, 166, 116, 170, 116, 94, 27, 5, 63, 124},
-	}, Checkpoint{
+	},
+	{
 		Height: 76000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -856,7 +932,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2856892352,
 		},
 		FilterHeader: &chainhash.Hash{213, 202, 41, 132, 226, 212, 151, 238, 121, 155, 200, 183, 33, 211, 163, 235, 145, 62, 172, 124, 188, 85, 12, 13, 28, 41, 149, 164, 94, 170, 170, 114},
-	}, Checkpoint{
+	},
+	{
 		Height: 77000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -867,7 +944,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      719059493,
 		},
 		FilterHeader: &chainhash.Hash{243, 243, 243, 39, 138, 159, 79, 36, 181, 102, 245, 34, 222, 116, 105, 36, 155, 55, 198, 171, 226, 191, 115, 11, 93, 204, 69, 124, 174, 170, 95, 89},
-	}, Checkpoint{
+	},
+	{
 		Height: 78000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -878,7 +956,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      64323467,
 		},
 		FilterHeader: &chainhash.Hash{238, 176, 85, 158, 168, 135, 245, 79, 2, 122, 14, 192, 166, 249, 187, 200, 190, 245, 142, 24, 140, 20, 41, 202, 183, 26, 221, 163, 35, 148, 106, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 79000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -889,7 +968,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1990782976,
 		},
 		FilterHeader: &chainhash.Hash{48, 206, 138, 56, 11, 115, 58, 26, 154, 240, 225, 159, 84, 98, 47, 253, 175, 12, 95, 55, 218, 175, 41, 76, 248, 29, 60, 103, 240, 78, 148, 104},
-	}, Checkpoint{
+	},
+	{
 		Height: 80000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -900,7 +980,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1462756097,
 		},
 		FilterHeader: &chainhash.Hash{101, 178, 213, 4, 107, 211, 189, 221, 1, 102, 184, 233, 234, 217, 55, 252, 58, 129, 128, 223, 131, 175, 231, 33, 105, 214, 89, 191, 53, 56, 33, 187},
-	}, Checkpoint{
+	},
+	{
 		Height: 81000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -911,7 +992,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4171144962,
 		},
 		FilterHeader: &chainhash.Hash{41, 193, 231, 145, 217, 0, 241, 212, 79, 9, 92, 27, 89, 152, 36, 198, 154, 116, 101, 9, 43, 202, 99, 31, 232, 41, 34, 240, 187, 122, 248, 226},
-	}, Checkpoint{
+	},
+	{
 		Height: 82000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -922,7 +1004,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      25065844,
 		},
 		FilterHeader: &chainhash.Hash{110, 78, 173, 203, 42, 191, 105, 232, 61, 178, 159, 171, 224, 178, 30, 111, 231, 71, 237, 120, 50, 185, 215, 173, 150, 74, 65, 16, 247, 80, 69, 240},
-	}, Checkpoint{
+	},
+	{
 		Height: 83000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -933,7 +1016,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2063724966,
 		},
 		FilterHeader: &chainhash.Hash{134, 136, 201, 134, 209, 82, 252, 2, 124, 248, 248, 0, 110, 80, 23, 0, 65, 227, 19, 247, 201, 46, 118, 120, 13, 204, 173, 126, 106, 38, 242, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 84000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -944,7 +1028,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      149033733,
 		},
 		FilterHeader: &chainhash.Hash{116, 181, 64, 181, 55, 72, 189, 238, 199, 111, 245, 92, 138, 3, 120, 78, 118, 36, 175, 211, 225, 140, 16, 135, 158, 239, 41, 189, 1, 166, 136, 113},
-	}, Checkpoint{
+	},
+	{
 		Height: 85000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -955,7 +1040,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2087774829,
 		},
 		FilterHeader: &chainhash.Hash{135, 123, 231, 66, 72, 220, 117, 253, 167, 41, 220, 33, 49, 145, 179, 101, 197, 191, 224, 202, 124, 193, 51, 142, 94, 19, 245, 53, 237, 138, 124, 116},
-	}, Checkpoint{
+	},
+	{
 		Height: 86000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -966,7 +1052,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      384731210,
 		},
 		FilterHeader: &chainhash.Hash{40, 110, 33, 173, 125, 206, 98, 140, 189, 33, 231, 71, 245, 215, 146, 192, 204, 9, 246, 213, 248, 84, 239, 28, 217, 103, 134, 92, 215, 109, 134, 46},
-	}, Checkpoint{
+	},
+	{
 		Height: 87000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -977,7 +1064,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4275987694,
 		},
 		FilterHeader: &chainhash.Hash{164, 3, 14, 194, 33, 156, 164, 174, 37, 131, 213, 184, 203, 165, 141, 135, 159, 98, 62, 110, 75, 246, 230, 47, 237, 69, 204, 140, 226, 137, 243, 92},
-	}, Checkpoint{
+	},
+	{
 		Height: 88000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -988,7 +1076,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      680691969,
 		},
 		FilterHeader: &chainhash.Hash{15, 53, 11, 239, 36, 160, 0, 24, 205, 180, 91, 110, 84, 63, 252, 133, 215, 108, 117, 120, 17, 233, 59, 225, 96, 174, 229, 40, 240, 130, 2, 135},
-	}, Checkpoint{
+	},
+	{
 		Height: 89000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -999,7 +1088,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      85953187,
 		},
 		FilterHeader: &chainhash.Hash{12, 24, 12, 47, 57, 137, 108, 15, 252, 202, 236, 30, 41, 188, 238, 25, 163, 133, 7, 15, 186, 229, 125, 67, 50, 250, 98, 52, 228, 122, 65, 59},
-	}, Checkpoint{
+	},
+	{
 		Height: 90000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1010,7 +1100,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2434658388,
 		},
 		FilterHeader: &chainhash.Hash{195, 152, 228, 58, 73, 175, 101, 48, 187, 110, 175, 179, 9, 86, 195, 82, 162, 163, 162, 27, 100, 129, 175, 224, 22, 75, 88, 80, 222, 237, 213, 79},
-	}, Checkpoint{
+	},
+	{
 		Height: 91000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1021,7 +1112,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3846752296,
 		},
 		FilterHeader: &chainhash.Hash{166, 74, 104, 251, 101, 214, 172, 170, 223, 219, 26, 108, 49, 151, 158, 203, 16, 114, 196, 117, 143, 165, 168, 79, 50, 165, 225, 175, 241, 147, 203, 10},
-	}, Checkpoint{
+	},
+	{
 		Height: 92000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1032,7 +1124,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4100299668,
 		},
 		FilterHeader: &chainhash.Hash{188, 69, 89, 85, 75, 28, 194, 146, 172, 27, 76, 99, 103, 153, 251, 51, 110, 132, 176, 184, 220, 217, 223, 119, 8, 123, 4, 240, 193, 130, 31, 109},
-	}, Checkpoint{
+	},
+	{
 		Height: 93000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1043,7 +1136,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2665165778,
 		},
 		FilterHeader: &chainhash.Hash{100, 121, 112, 244, 164, 101, 158, 85, 203, 209, 66, 241, 80, 214, 145, 93, 100, 233, 112, 55, 185, 36, 98, 136, 113, 130, 215, 44, 114, 40, 188, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 94000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1054,7 +1148,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      805734718,
 		},
 		FilterHeader: &chainhash.Hash{108, 90, 147, 127, 156, 156, 47, 133, 166, 14, 75, 118, 223, 121, 35, 141, 169, 88, 123, 20, 1, 181, 131, 63, 218, 142, 189, 216, 113, 235, 176, 127},
-	}, Checkpoint{
+	},
+	{
 		Height: 95000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1065,7 +1160,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3389653766,
 		},
 		FilterHeader: &chainhash.Hash{29, 150, 167, 233, 181, 186, 43, 119, 27, 160, 161, 129, 243, 255, 210, 111, 3, 79, 107, 16, 45, 16, 83, 223, 110, 148, 142, 100, 166, 105, 183, 51},
-	}, Checkpoint{
+	},
+	{
 		Height: 96000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1076,7 +1172,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3887779401,
 		},
 		FilterHeader: &chainhash.Hash{93, 117, 16, 49, 146, 22, 63, 10, 5, 113, 18, 236, 21, 6, 94, 56, 182, 195, 102, 55, 119, 195, 232, 171, 176, 146, 95, 33, 80, 59, 226, 152},
-	}, Checkpoint{
+	},
+	{
 		Height: 97000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1087,7 +1184,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4234615616,
 		},
 		FilterHeader: &chainhash.Hash{179, 231, 82, 221, 180, 249, 28, 22, 71, 241, 21, 8, 235, 220, 252, 216, 81, 226, 96, 57, 148, 128, 86, 173, 238, 35, 220, 12, 49, 189, 75, 160},
-	}, Checkpoint{
+	},
+	{
 		Height: 98000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1098,7 +1196,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2854790621,
 		},
 		FilterHeader: &chainhash.Hash{11, 221, 184, 29, 204, 81, 144, 83, 35, 135, 197, 43, 172, 223, 251, 60, 223, 253, 34, 88, 83, 156, 175, 212, 47, 205, 36, 53, 1, 77, 247, 128},
-	}, Checkpoint{
+	},
+	{
 		Height: 99000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1109,7 +1208,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3454160805,
 		},
 		FilterHeader: &chainhash.Hash{109, 88, 193, 20, 164, 75, 251, 176, 197, 252, 100, 68, 170, 193, 61, 47, 21, 204, 22, 54, 226, 101, 218, 168, 4, 201, 200, 13, 215, 74, 31, 185},
-	}, Checkpoint{
+	},
+	{
 		Height: 100000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1120,7 +1220,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      274148111,
 		},
 		FilterHeader: &chainhash.Hash{165, 127, 170, 83, 65, 190, 6, 106, 162, 4, 228, 31, 71, 49, 58, 183, 171, 99, 151, 245, 139, 254, 181, 183, 1, 235, 105, 179, 26, 188, 140, 242},
-	}, Checkpoint{
+	},
+	{
 		Height: 101000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1131,7 +1232,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2023469715,
 		},
 		FilterHeader: &chainhash.Hash{199, 132, 39, 232, 28, 184, 244, 209, 42, 163, 150, 68, 151, 162, 134, 166, 148, 209, 135, 237, 101, 209, 197, 165, 34, 231, 243, 51, 122, 173, 171, 77},
-	}, Checkpoint{
+	},
+	{
 		Height: 102000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1142,7 +1244,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3851572992,
 		},
 		FilterHeader: &chainhash.Hash{169, 224, 83, 240, 40, 72, 210, 117, 158, 153, 174, 126, 63, 219, 90, 154, 158, 48, 20, 251, 12, 223, 145, 124, 164, 191, 102, 24, 179, 52, 147, 227},
-	}, Checkpoint{
+	},
+	{
 		Height: 103000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1153,7 +1256,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4071019928,
 		},
 		FilterHeader: &chainhash.Hash{133, 49, 248, 212, 57, 172, 110, 79, 209, 203, 2, 184, 157, 180, 7, 45, 90, 181, 254, 102, 139, 9, 178, 242, 78, 141, 74, 242, 205, 255, 207, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 104000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1164,7 +1268,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      675280305,
 		},
 		FilterHeader: &chainhash.Hash{255, 226, 152, 165, 112, 121, 250, 100, 58, 255, 19, 214, 55, 6, 251, 190, 64, 156, 249, 222, 82, 32, 176, 184, 40, 37, 142, 15, 11, 64, 52, 70},
-	}, Checkpoint{
+	},
+	{
 		Height: 105000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1175,7 +1280,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1487286535,
 		},
 		FilterHeader: &chainhash.Hash{241, 76, 254, 149, 37, 10, 199, 231, 109, 82, 236, 18, 13, 48, 43, 217, 159, 86, 212, 243, 49, 31, 39, 199, 5, 199, 48, 126, 66, 73, 53, 25},
-	}, Checkpoint{
+	},
+	{
 		Height: 106000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1186,7 +1292,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2562759767,
 		},
 		FilterHeader: &chainhash.Hash{222, 161, 142, 134, 103, 54, 223, 242, 56, 254, 57, 100, 98, 93, 236, 124, 77, 41, 3, 131, 182, 71, 224, 35, 57, 255, 207, 24, 202, 200, 61, 32},
-	}, Checkpoint{
+	},
+	{
 		Height: 107000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1197,7 +1304,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      149398323,
 		},
 		FilterHeader: &chainhash.Hash{41, 155, 198, 210, 231, 236, 13, 236, 221, 219, 21, 247, 81, 162, 156, 37, 79, 108, 149, 76, 227, 154, 164, 200, 127, 29, 95, 70, 141, 130, 98, 233},
-	}, Checkpoint{
+	},
+	{
 		Height: 108000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1208,7 +1316,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1104683981,
 		},
 		FilterHeader: &chainhash.Hash{242, 173, 5, 247, 172, 90, 18, 73, 110, 88, 93, 134, 201, 202, 237, 222, 37, 211, 129, 128, 67, 146, 110, 71, 8, 85, 60, 235, 129, 7, 86, 249},
-	}, Checkpoint{
+	},
+	{
 		Height: 109000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1219,7 +1328,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2762982605,
 		},
 		FilterHeader: &chainhash.Hash{206, 234, 4, 77, 241, 198, 174, 22, 179, 17, 252, 213, 42, 80, 221, 95, 168, 170, 65, 236, 224, 23, 194, 242, 26, 220, 249, 187, 132, 218, 119, 14},
-	}, Checkpoint{
+	},
+	{
 		Height: 110000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1230,7 +1340,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3052574605,
 		},
 		FilterHeader: &chainhash.Hash{48, 109, 197, 76, 152, 238, 186, 209, 168, 120, 169, 224, 188, 147, 113, 46, 184, 27, 233, 40, 141, 200, 196, 0, 215, 139, 216, 147, 62, 148, 189, 235},
-	}, Checkpoint{
+	},
+	{
 		Height: 111000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1241,7 +1352,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2958461492,
 		},
 		FilterHeader: &chainhash.Hash{253, 181, 245, 151, 40, 79, 93, 255, 134, 248, 57, 153, 149, 186, 78, 249, 112, 59, 212, 206, 181, 182, 158, 54, 119, 240, 28, 209, 169, 155, 157, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 112000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1252,7 +1364,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2809263700,
 		},
 		FilterHeader: &chainhash.Hash{85, 87, 251, 229, 223, 7, 6, 202, 1, 111, 233, 64, 43, 177, 150, 164, 106, 234, 19, 170, 31, 56, 182, 240, 34, 20, 205, 201, 111, 219, 118, 235},
-	}, Checkpoint{
+	},
+	{
 		Height: 113000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1263,7 +1376,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1776906407,
 		},
 		FilterHeader: &chainhash.Hash{217, 57, 203, 145, 129, 228, 12, 26, 210, 12, 62, 107, 231, 247, 222, 9, 141, 218, 7, 233, 147, 186, 19, 38, 113, 6, 165, 119, 17, 2, 121, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 114000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1274,7 +1388,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2989746665,
 		},
 		FilterHeader: &chainhash.Hash{132, 172, 137, 246, 222, 54, 32, 60, 101, 71, 120, 243, 146, 253, 145, 86, 4, 40, 157, 174, 3, 172, 199, 240, 117, 194, 25, 37, 18, 135, 121, 151},
-	}, Checkpoint{
+	},
+	{
 		Height: 115000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1285,7 +1400,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3674390797,
 		},
 		FilterHeader: &chainhash.Hash{68, 158, 122, 67, 187, 190, 217, 43, 219, 131, 151, 12, 170, 7, 63, 180, 30, 95, 30, 9, 73, 175, 56, 21, 136, 246, 171, 159, 247, 95, 196, 140},
-	}, Checkpoint{
+	},
+	{
 		Height: 116000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1296,7 +1412,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2013877019,
 		},
 		FilterHeader: &chainhash.Hash{216, 248, 191, 250, 16, 160, 227, 208, 7, 67, 252, 166, 177, 30, 162, 142, 146, 224, 217, 49, 6, 184, 242, 187, 10, 151, 212, 159, 63, 179, 160, 29},
-	}, Checkpoint{
+	},
+	{
 		Height: 117000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1307,7 +1424,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2528825900,
 		},
 		FilterHeader: &chainhash.Hash{47, 12, 187, 224, 60, 218, 13, 156, 190, 59, 96, 89, 51, 182, 23, 163, 81, 207, 222, 20, 186, 116, 190, 108, 124, 107, 213, 23, 157, 95, 160, 215},
-	}, Checkpoint{
+	},
+	{
 		Height: 118000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1318,7 +1436,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1319918026,
 		},
 		FilterHeader: &chainhash.Hash{103, 251, 169, 129, 227, 242, 18, 224, 236, 85, 214, 188, 2, 175, 151, 217, 42, 217, 49, 42, 209, 72, 201, 171, 190, 176, 197, 125, 45, 3, 170, 113},
-	}, Checkpoint{
+	},
+	{
 		Height: 119000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1329,7 +1448,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      602742892,
 		},
 		FilterHeader: &chainhash.Hash{33, 215, 84, 73, 42, 161, 234, 116, 53, 74, 57, 207, 151, 232, 105, 35, 66, 23, 52, 88, 195, 112, 213, 14, 250, 168, 78, 28, 77, 181, 103, 165},
-	}, Checkpoint{
+	},
+	{
 		Height: 120000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1340,7 +1460,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4273989260,
 		},
 		FilterHeader: &chainhash.Hash{7, 90, 223, 215, 128, 95, 253, 245, 169, 30, 177, 252, 53, 19, 165, 9, 30, 86, 52, 214, 119, 96, 31, 6, 186, 85, 100, 216, 44, 137, 129, 116},
-	}, Checkpoint{
+	},
+	{
 		Height: 121000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1351,7 +1472,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4105181705,
 		},
 		FilterHeader: &chainhash.Hash{23, 89, 175, 147, 77, 150, 12, 23, 91, 157, 215, 221, 136, 218, 146, 79, 24, 187, 153, 247, 36, 200, 228, 210, 25, 119, 156, 129, 253, 75, 59, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 122000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1362,7 +1484,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      954431231,
 		},
 		FilterHeader: &chainhash.Hash{242, 19, 22, 183, 205, 175, 147, 156, 192, 137, 128, 106, 16, 88, 242, 228, 63, 228, 152, 237, 81, 69, 239, 12, 175, 136, 183, 28, 13, 79, 201, 163},
-	}, Checkpoint{
+	},
+	{
 		Height: 123000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1373,7 +1496,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      904617827,
 		},
 		FilterHeader: &chainhash.Hash{115, 113, 234, 79, 171, 237, 246, 252, 157, 154, 196, 235, 96, 176, 1, 225, 232, 4, 44, 145, 30, 31, 27, 139, 244, 20, 204, 251, 213, 33, 98, 106},
-	}, Checkpoint{
+	},
+	{
 		Height: 124000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1384,7 +1508,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      65142155,
 		},
 		FilterHeader: &chainhash.Hash{206, 233, 44, 111, 46, 60, 229, 91, 242, 255, 244, 97, 211, 193, 25, 146, 42, 209, 90, 71, 169, 209, 120, 131, 185, 183, 99, 141, 220, 43, 19, 186},
-	}, Checkpoint{
+	},
+	{
 		Height: 125000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1395,7 +1520,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1668506212,
 		},
 		FilterHeader: &chainhash.Hash{173, 158, 163, 201, 119, 131, 89, 228, 167, 73, 33, 43, 27, 198, 172, 238, 229, 89, 80, 117, 191, 195, 109, 95, 17, 230, 97, 160, 37, 232, 83, 112},
-	}, Checkpoint{
+	},
+	{
 		Height: 126000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1406,7 +1532,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3455955508,
 		},
 		FilterHeader: &chainhash.Hash{80, 107, 243, 88, 231, 134, 90, 69, 101, 239, 134, 174, 14, 42, 237, 99, 250, 171, 51, 229, 219, 42, 117, 10, 59, 162, 212, 104, 154, 228, 14, 94},
-	}, Checkpoint{
+	},
+	{
 		Height: 127000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1417,7 +1544,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2036300280,
 		},
 		FilterHeader: &chainhash.Hash{13, 163, 111, 31, 39, 21, 216, 161, 208, 115, 112, 106, 93, 220, 120, 167, 185, 193, 144, 114, 195, 231, 54, 125, 59, 198, 165, 10, 0, 238, 21, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 128000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1428,7 +1556,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3668098811,
 		},
 		FilterHeader: &chainhash.Hash{34, 119, 23, 151, 58, 110, 18, 157, 117, 128, 79, 23, 55, 56, 74, 228, 128, 218, 66, 170, 188, 244, 88, 39, 255, 127, 4, 16, 132, 22, 233, 35},
-	}, Checkpoint{
+	},
+	{
 		Height: 129000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1439,7 +1568,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1202580527,
 		},
 		FilterHeader: &chainhash.Hash{6, 163, 23, 208, 131, 52, 180, 189, 214, 37, 159, 66, 88, 82, 223, 81, 198, 14, 7, 50, 183, 144, 251, 46, 178, 5, 51, 50, 180, 116, 254, 56},
-	}, Checkpoint{
+	},
+	{
 		Height: 130000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1450,7 +1580,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1644965688,
 		},
 		FilterHeader: &chainhash.Hash{231, 61, 23, 106, 161, 43, 190, 240, 22, 141, 195, 38, 13, 211, 210, 49, 5, 10, 152, 69, 19, 157, 115, 156, 146, 253, 93, 114, 100, 101, 208, 193},
-	}, Checkpoint{
+	},
+	{
 		Height: 131000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1461,7 +1592,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3890450335,
 		},
 		FilterHeader: &chainhash.Hash{156, 208, 19, 88, 180, 220, 110, 190, 22, 124, 243, 245, 43, 84, 130, 124, 209, 107, 21, 229, 220, 51, 245, 216, 211, 114, 179, 169, 75, 107, 193, 251},
-	}, Checkpoint{
+	},
+	{
 		Height: 132000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1472,7 +1604,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      671666331,
 		},
 		FilterHeader: &chainhash.Hash{255, 106, 230, 133, 171, 3, 26, 172, 92, 29, 158, 113, 86, 133, 18, 225, 156, 90, 192, 184, 200, 104, 32, 237, 196, 25, 213, 147, 104, 228, 234, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 133000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1483,7 +1616,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1655666952,
 		},
 		FilterHeader: &chainhash.Hash{72, 241, 233, 196, 206, 236, 193, 247, 88, 179, 248, 8, 3, 186, 195, 229, 238, 108, 198, 24, 43, 81, 98, 180, 56, 129, 12, 241, 207, 174, 76, 80},
-	}, Checkpoint{
+	},
+	{
 		Height: 134000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1494,7 +1628,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4048913983,
 		},
 		FilterHeader: &chainhash.Hash{151, 217, 248, 71, 110, 2, 62, 73, 22, 231, 114, 99, 225, 213, 162, 64, 196, 5, 77, 202, 208, 193, 193, 166, 95, 188, 84, 241, 188, 223, 59, 36},
-	}, Checkpoint{
+	},
+	{
 		Height: 135000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1505,7 +1640,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3305313335,
 		},
 		FilterHeader: &chainhash.Hash{225, 107, 212, 184, 106, 30, 103, 114, 68, 102, 213, 62, 174, 53, 34, 32, 11, 213, 160, 123, 7, 15, 115, 235, 33, 222, 145, 148, 255, 164, 219, 148},
-	}, Checkpoint{
+	},
+	{
 		Height: 136000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1516,7 +1652,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2488785284,
 		},
 		FilterHeader: &chainhash.Hash{116, 239, 69, 6, 27, 133, 86, 118, 41, 254, 181, 246, 33, 208, 123, 161, 16, 171, 243, 228, 53, 131, 93, 91, 25, 253, 156, 225, 20, 8, 3, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 137000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1527,7 +1664,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      44096672,
 		},
 		FilterHeader: &chainhash.Hash{67, 38, 119, 136, 22, 100, 68, 113, 165, 197, 198, 82, 190, 157, 181, 242, 142, 152, 47, 22, 20, 162, 101, 209, 160, 98, 44, 117, 52, 35, 240, 216},
-	}, Checkpoint{
+	},
+	{
 		Height: 138000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1538,7 +1676,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1163195843,
 		},
 		FilterHeader: &chainhash.Hash{144, 102, 29, 207, 164, 162, 192, 196, 170, 202, 148, 230, 85, 147, 93, 255, 14, 122, 242, 162, 198, 141, 135, 124, 143, 186, 138, 106, 116, 228, 23, 153},
-	}, Checkpoint{
+	},
+	{
 		Height: 139000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1549,7 +1688,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2076425730,
 		},
 		FilterHeader: &chainhash.Hash{153, 99, 242, 54, 33, 203, 155, 60, 44, 137, 106, 130, 43, 115, 141, 28, 196, 144, 221, 96, 128, 252, 85, 209, 2, 226, 214, 245, 44, 248, 105, 215},
-	}, Checkpoint{
+	},
+	{
 		Height: 140000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1560,7 +1700,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1789739685,
 		},
 		FilterHeader: &chainhash.Hash{224, 154, 0, 49, 94, 186, 86, 205, 71, 167, 32, 67, 183, 61, 14, 122, 193, 126, 228, 252, 165, 102, 141, 255, 217, 201, 121, 252, 38, 3, 194, 229},
-	}, Checkpoint{
+	},
+	{
 		Height: 141000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1571,7 +1712,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2364780911,
 		},
 		FilterHeader: &chainhash.Hash{4, 147, 239, 241, 27, 13, 222, 203, 14, 41, 89, 31, 43, 127, 96, 76, 101, 129, 174, 199, 234, 90, 32, 196, 83, 182, 200, 76, 123, 62, 88, 23},
-	}, Checkpoint{
+	},
+	{
 		Height: 142000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1582,7 +1724,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1895762156,
 		},
 		FilterHeader: &chainhash.Hash{129, 195, 159, 110, 228, 85, 200, 69, 131, 235, 76, 214, 48, 0, 229, 16, 88, 96, 132, 144, 142, 4, 225, 3, 240, 94, 94, 89, 63, 213, 9, 144},
-	}, Checkpoint{
+	},
+	{
 		Height: 143000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1593,7 +1736,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1995503042,
 		},
 		FilterHeader: &chainhash.Hash{147, 134, 179, 96, 35, 54, 116, 88, 124, 105, 192, 72, 247, 247, 206, 112, 255, 3, 227, 100, 216, 21, 168, 234, 88, 145, 237, 119, 180, 156, 112, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 144000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1604,7 +1748,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      296625999,
 		},
 		FilterHeader: &chainhash.Hash{101, 27, 249, 59, 25, 250, 32, 181, 97, 214, 129, 3, 116, 167, 52, 47, 169, 242, 59, 100, 114, 216, 42, 53, 135, 178, 220, 82, 14, 175, 145, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 145000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1615,7 +1760,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      258977958,
 		},
 		FilterHeader: &chainhash.Hash{63, 198, 117, 176, 53, 123, 91, 58, 164, 158, 170, 215, 151, 177, 82, 245, 71, 68, 245, 36, 194, 189, 57, 187, 229, 244, 62, 42, 147, 67, 65, 239},
-	}, Checkpoint{
+	},
+	{
 		Height: 146000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1626,7 +1772,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4039786225,
 		},
 		FilterHeader: &chainhash.Hash{118, 170, 219, 210, 209, 44, 215, 246, 120, 129, 151, 249, 195, 200, 243, 76, 167, 81, 72, 87, 0, 185, 229, 169, 177, 160, 179, 39, 186, 237, 45, 126},
-	}, Checkpoint{
+	},
+	{
 		Height: 147000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1637,7 +1784,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      360357817,
 		},
 		FilterHeader: &chainhash.Hash{211, 93, 154, 80, 77, 138, 250, 229, 6, 193, 29, 177, 236, 193, 190, 200, 210, 201, 122, 204, 214, 43, 117, 139, 77, 205, 28, 78, 168, 75, 149, 186},
-	}, Checkpoint{
+	},
+	{
 		Height: 148000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1648,7 +1796,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1880798434,
 		},
 		FilterHeader: &chainhash.Hash{241, 182, 188, 153, 24, 161, 236, 9, 184, 242, 65, 66, 51, 241, 169, 149, 190, 38, 74, 126, 253, 21, 89, 167, 195, 50, 224, 82, 154, 88, 129, 65},
-	}, Checkpoint{
+	},
+	{
 		Height: 149000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1659,7 +1808,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2603424693,
 		},
 		FilterHeader: &chainhash.Hash{139, 23, 122, 179, 222, 143, 194, 92, 129, 79, 18, 67, 49, 16, 211, 87, 96, 169, 181, 184, 11, 139, 208, 101, 92, 221, 131, 43, 55, 109, 77, 224},
-	}, Checkpoint{
+	},
+	{
 		Height: 150000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1670,7 +1820,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1796110725,
 		},
 		FilterHeader: &chainhash.Hash{231, 195, 91, 31, 205, 206, 198, 191, 97, 138, 45, 76, 17, 94, 166, 80, 239, 188, 3, 211, 91, 238, 54, 14, 164, 110, 216, 65, 249, 230, 194, 95},
-	}, Checkpoint{
+	},
+	{
 		Height: 151000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1681,7 +1832,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3412349508,
 		},
 		FilterHeader: &chainhash.Hash{145, 254, 201, 11, 153, 240, 48, 2, 166, 99, 72, 148, 186, 65, 30, 211, 163, 34, 213, 251, 54, 99, 177, 189, 227, 170, 160, 247, 192, 34, 199, 41},
-	}, Checkpoint{
+	},
+	{
 		Height: 152000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1692,7 +1844,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      955276644,
 		},
 		FilterHeader: &chainhash.Hash{65, 170, 197, 185, 141, 113, 46, 45, 185, 223, 158, 153, 145, 148, 63, 70, 32, 57, 156, 26, 156, 67, 196, 212, 206, 41, 233, 215, 107, 0, 13, 241},
-	}, Checkpoint{
+	},
+	{
 		Height: 153000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1703,7 +1856,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4013714994,
 		},
 		FilterHeader: &chainhash.Hash{91, 225, 96, 120, 49, 124, 216, 29, 35, 6, 25, 2, 175, 228, 49, 250, 129, 226, 141, 28, 5, 38, 213, 209, 113, 27, 236, 124, 60, 86, 160, 216},
-	}, Checkpoint{
+	},
+	{
 		Height: 154000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1714,7 +1868,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1794794015,
 		},
 		FilterHeader: &chainhash.Hash{213, 121, 41, 41, 154, 4, 29, 249, 183, 148, 114, 15, 233, 74, 155, 131, 67, 234, 195, 215, 176, 101, 93, 142, 208, 132, 137, 152, 184, 148, 129, 240},
-	}, Checkpoint{
+	},
+	{
 		Height: 155000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1725,7 +1880,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2061944082,
 		},
 		FilterHeader: &chainhash.Hash{222, 134, 96, 41, 114, 216, 51, 11, 223, 52, 179, 241, 150, 47, 148, 24, 252, 233, 200, 219, 114, 179, 69, 55, 166, 146, 196, 114, 5, 255, 158, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 156000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1736,7 +1892,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3141527617,
 		},
 		FilterHeader: &chainhash.Hash{179, 194, 133, 105, 226, 20, 252, 192, 180, 96, 92, 41, 248, 167, 5, 103, 144, 136, 72, 236, 116, 178, 170, 255, 42, 110, 135, 183, 191, 72, 171, 64},
-	}, Checkpoint{
+	},
+	{
 		Height: 157000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1747,7 +1904,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1031154691,
 		},
 		FilterHeader: &chainhash.Hash{92, 192, 193, 231, 25, 65, 134, 232, 108, 21, 92, 2, 252, 157, 121, 103, 231, 77, 3, 13, 186, 85, 134, 105, 60, 47, 82, 56, 63, 186, 41, 177},
-	}, Checkpoint{
+	},
+	{
 		Height: 158000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1758,7 +1916,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3928355538,
 		},
 		FilterHeader: &chainhash.Hash{194, 78, 167, 129, 244, 241, 116, 39, 76, 227, 52, 168, 92, 206, 1, 16, 4, 147, 156, 127, 22, 54, 107, 214, 188, 125, 165, 127, 194, 93, 103, 24},
-	}, Checkpoint{
+	},
+	{
 		Height: 159000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1769,7 +1928,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      222256487,
 		},
 		FilterHeader: &chainhash.Hash{235, 199, 220, 138, 8, 93, 137, 143, 15, 58, 6, 203, 174, 74, 156, 178, 121, 27, 158, 62, 54, 255, 244, 218, 251, 194, 0, 128, 186, 13, 48, 109},
-	}, Checkpoint{
+	},
+	{
 		Height: 160000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1780,7 +1940,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3012578904,
 		},
 		FilterHeader: &chainhash.Hash{33, 250, 146, 11, 131, 163, 79, 19, 249, 253, 113, 218, 197, 30, 204, 142, 82, 196, 171, 165, 201, 146, 72, 58, 16, 157, 254, 125, 47, 166, 166, 27},
-	}, Checkpoint{
+	},
+	{
 		Height: 161000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1791,7 +1952,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      601565135,
 		},
 		FilterHeader: &chainhash.Hash{192, 148, 202, 130, 111, 143, 162, 122, 195, 130, 216, 154, 147, 72, 207, 165, 41, 132, 131, 64, 134, 81, 221, 41, 197, 214, 17, 224, 216, 229, 155, 119},
-	}, Checkpoint{
+	},
+	{
 		Height: 162000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1802,7 +1964,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2914183596,
 		},
 		FilterHeader: &chainhash.Hash{31, 55, 100, 68, 50, 130, 10, 118, 45, 121, 33, 60, 46, 97, 10, 107, 191, 229, 33, 150, 201, 219, 153, 181, 122, 185, 160, 213, 0, 26, 196, 37},
-	}, Checkpoint{
+	},
+	{
 		Height: 163000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1813,7 +1976,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1996220238,
 		},
 		FilterHeader: &chainhash.Hash{73, 190, 127, 188, 19, 31, 250, 55, 61, 14, 58, 255, 227, 181, 17, 126, 192, 139, 96, 61, 50, 21, 171, 115, 194, 29, 198, 117, 12, 169, 253, 44},
-	}, Checkpoint{
+	},
+	{
 		Height: 164000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1824,7 +1988,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1912585103,
 		},
 		FilterHeader: &chainhash.Hash{190, 179, 161, 197, 172, 169, 127, 2, 107, 89, 189, 101, 214, 87, 72, 91, 180, 237, 209, 48, 231, 84, 243, 139, 163, 206, 223, 233, 213, 118, 101, 3},
-	}, Checkpoint{
+	},
+	{
 		Height: 165000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1835,7 +2000,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2872187981,
 		},
 		FilterHeader: &chainhash.Hash{71, 172, 216, 118, 129, 31, 71, 189, 235, 179, 231, 119, 161, 181, 118, 144, 133, 242, 227, 121, 98, 77, 102, 160, 224, 197, 219, 131, 18, 138, 8, 63},
-	}, Checkpoint{
+	},
+	{
 		Height: 166000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1846,7 +2012,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2257723939,
 		},
 		FilterHeader: &chainhash.Hash{19, 43, 1, 170, 233, 184, 185, 219, 0, 191, 156, 5, 198, 42, 105, 236, 165, 227, 198, 142, 126, 155, 210, 21, 77, 81, 26, 173, 218, 91, 10, 228},
-	}, Checkpoint{
+	},
+	{
 		Height: 167000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1857,7 +2024,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1642285105,
 		},
 		FilterHeader: &chainhash.Hash{94, 243, 199, 223, 80, 255, 73, 88, 75, 182, 59, 109, 198, 71, 7, 212, 159, 109, 98, 205, 13, 27, 184, 14, 142, 116, 17, 77, 68, 66, 236, 53},
-	}, Checkpoint{
+	},
+	{
 		Height: 168000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1868,7 +2036,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3999486048,
 		},
 		FilterHeader: &chainhash.Hash{244, 230, 18, 83, 236, 241, 174, 152, 135, 119, 107, 121, 35, 53, 217, 62, 129, 143, 96, 211, 234, 36, 173, 133, 55, 157, 93, 40, 194, 83, 9, 253},
-	}, Checkpoint{
+	},
+	{
 		Height: 169000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1879,7 +2048,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1341000169,
 		},
 		FilterHeader: &chainhash.Hash{252, 139, 115, 5, 166, 215, 248, 96, 107, 217, 138, 66, 222, 240, 20, 8, 194, 254, 127, 142, 125, 142, 222, 235, 221, 186, 146, 157, 204, 93, 201, 43},
-	}, Checkpoint{
+	},
+	{
 		Height: 170000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1890,7 +2060,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      648251683,
 		},
 		FilterHeader: &chainhash.Hash{17, 254, 206, 191, 25, 32, 16, 74, 51, 160, 32, 173, 125, 34, 228, 191, 223, 173, 125, 14, 160, 216, 136, 79, 56, 99, 21, 133, 137, 249, 59, 97},
-	}, Checkpoint{
+	},
+	{
 		Height: 171000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1901,7 +2072,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2614289517,
 		},
 		FilterHeader: &chainhash.Hash{226, 69, 254, 171, 144, 40, 239, 139, 216, 95, 20, 33, 62, 162, 72, 243, 244, 40, 250, 98, 57, 177, 227, 158, 69, 100, 190, 95, 109, 7, 101, 162},
-	}, Checkpoint{
+	},
+	{
 		Height: 172000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1912,7 +2084,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2749070635,
 		},
 		FilterHeader: &chainhash.Hash{89, 169, 222, 38, 195, 150, 111, 3, 133, 179, 146, 189, 50, 59, 159, 23, 71, 79, 222, 168, 210, 147, 158, 221, 46, 55, 46, 252, 150, 86, 219, 253},
-	}, Checkpoint{
+	},
+	{
 		Height: 173000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1923,7 +2096,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2076830478,
 		},
 		FilterHeader: &chainhash.Hash{53, 125, 206, 48, 226, 104, 36, 139, 84, 197, 129, 217, 113, 194, 243, 229, 104, 37, 187, 67, 97, 198, 208, 156, 210, 245, 237, 3, 139, 199, 172, 108},
-	}, Checkpoint{
+	},
+	{
 		Height: 174000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1934,7 +2108,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4271683765,
 		},
 		FilterHeader: &chainhash.Hash{226, 54, 214, 200, 138, 216, 9, 226, 244, 154, 237, 133, 199, 93, 42, 65, 106, 155, 14, 49, 119, 6, 91, 143, 76, 207, 112, 6, 190, 229, 186, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 175000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1945,7 +2120,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1310706856,
 		},
 		FilterHeader: &chainhash.Hash{186, 181, 152, 213, 137, 37, 163, 93, 231, 238, 50, 40, 253, 130, 255, 0, 118, 50, 135, 51, 229, 178, 41, 122, 190, 95, 216, 227, 86, 7, 231, 44},
-	}, Checkpoint{
+	},
+	{
 		Height: 176000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1956,7 +2132,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      74571595,
 		},
 		FilterHeader: &chainhash.Hash{199, 141, 43, 78, 126, 103, 120, 214, 14, 52, 236, 6, 53, 41, 72, 133, 81, 42, 158, 28, 207, 95, 138, 128, 194, 198, 141, 154, 243, 102, 150, 151},
-	}, Checkpoint{
+	},
+	{
 		Height: 177000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1967,7 +2144,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3935977497,
 		},
 		FilterHeader: &chainhash.Hash{241, 57, 231, 156, 119, 185, 248, 213, 232, 168, 140, 149, 77, 71, 97, 136, 191, 172, 5, 70, 226, 193, 226, 27, 92, 72, 232, 109, 60, 195, 236, 23},
-	}, Checkpoint{
+	},
+	{
 		Height: 178000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1978,7 +2156,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2198711564,
 		},
 		FilterHeader: &chainhash.Hash{52, 158, 35, 38, 86, 77, 118, 149, 93, 250, 101, 44, 16, 97, 250, 232, 14, 157, 136, 191, 62, 124, 188, 104, 224, 200, 85, 99, 75, 146, 232, 230},
-	}, Checkpoint{
+	},
+	{
 		Height: 179000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -1989,7 +2168,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      346665741,
 		},
 		FilterHeader: &chainhash.Hash{74, 151, 202, 34, 93, 60, 231, 24, 178, 208, 33, 142, 205, 52, 99, 55, 195, 218, 117, 226, 226, 215, 252, 19, 247, 208, 113, 236, 12, 119, 12, 24},
-	}, Checkpoint{
+	},
+	{
 		Height: 180000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2000,7 +2180,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3998757414,
 		},
 		FilterHeader: &chainhash.Hash{40, 148, 74, 6, 103, 255, 113, 7, 93, 120, 204, 179, 151, 103, 241, 170, 1, 126, 176, 223, 140, 79, 46, 25, 111, 145, 144, 122, 16, 8, 30, 185},
-	}, Checkpoint{
+	},
+	{
 		Height: 181000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2011,7 +2192,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      296464763,
 		},
 		FilterHeader: &chainhash.Hash{81, 244, 157, 122, 196, 108, 180, 143, 119, 12, 81, 92, 88, 82, 91, 165, 63, 234, 196, 30, 76, 244, 89, 171, 80, 9, 97, 238, 59, 107, 172, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 182000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2022,7 +2204,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      391432308,
 		},
 		FilterHeader: &chainhash.Hash{250, 249, 253, 226, 113, 177, 125, 200, 69, 169, 164, 252, 166, 201, 143, 191, 162, 24, 20, 73, 74, 19, 208, 60, 49, 218, 40, 184, 218, 229, 249, 212},
-	}, Checkpoint{
+	},
+	{
 		Height: 183000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2033,7 +2216,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3937149754,
 		},
 		FilterHeader: &chainhash.Hash{156, 187, 207, 90, 8, 122, 93, 134, 132, 134, 35, 204, 220, 133, 69, 226, 156, 78, 181, 43, 41, 28, 25, 218, 235, 245, 56, 170, 66, 23, 191, 63},
-	}, Checkpoint{
+	},
+	{
 		Height: 184000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2044,7 +2228,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1562466262,
 		},
 		FilterHeader: &chainhash.Hash{114, 76, 46, 100, 20, 234, 149, 209, 121, 175, 110, 34, 177, 115, 106, 98, 41, 222, 253, 6, 252, 64, 108, 36, 46, 246, 206, 97, 108, 193, 25, 78},
-	}, Checkpoint{
+	},
+	{
 		Height: 185000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2055,7 +2240,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3094707360,
 		},
 		FilterHeader: &chainhash.Hash{233, 80, 251, 159, 138, 102, 240, 201, 94, 9, 214, 115, 119, 231, 7, 26, 64, 249, 112, 78, 52, 238, 244, 152, 108, 26, 218, 31, 221, 114, 247, 70},
-	}, Checkpoint{
+	},
+	{
 		Height: 186000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2066,7 +2252,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2438524980,
 		},
 		FilterHeader: &chainhash.Hash{58, 200, 66, 183, 215, 43, 179, 87, 94, 129, 137, 29, 189, 222, 221, 205, 11, 133, 140, 126, 158, 167, 164, 227, 195, 128, 98, 43, 205, 53, 86, 198},
-	}, Checkpoint{
+	},
+	{
 		Height: 187000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2077,7 +2264,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1446681606,
 		},
 		FilterHeader: &chainhash.Hash{130, 2, 252, 219, 230, 171, 46, 89, 14, 13, 53, 53, 33, 196, 172, 74, 41, 25, 89, 68, 216, 85, 200, 62, 171, 41, 197, 219, 83, 123, 98, 122},
-	}, Checkpoint{
+	},
+	{
 		Height: 188000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2088,7 +2276,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1230460449,
 		},
 		FilterHeader: &chainhash.Hash{86, 203, 62, 127, 196, 76, 189, 38, 59, 4, 31, 173, 32, 246, 209, 78, 190, 246, 177, 41, 237, 184, 29, 95, 138, 191, 123, 164, 157, 122, 96, 98},
-	}, Checkpoint{
+	},
+	{
 		Height: 189000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2099,7 +2288,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4289883495,
 		},
 		FilterHeader: &chainhash.Hash{64, 219, 93, 62, 167, 57, 86, 232, 142, 210, 166, 99, 36, 45, 121, 62, 54, 244, 171, 58, 38, 172, 249, 213, 178, 168, 101, 240, 126, 209, 11, 168},
-	}, Checkpoint{
+	},
+	{
 		Height: 190000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2110,7 +2300,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2168689063,
 		},
 		FilterHeader: &chainhash.Hash{133, 130, 40, 230, 219, 216, 222, 236, 168, 21, 216, 38, 167, 182, 186, 255, 110, 168, 91, 22, 128, 186, 253, 150, 127, 113, 122, 124, 189, 254, 19, 183},
-	}, Checkpoint{
+	},
+	{
 		Height: 191000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2121,7 +2312,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1068497931,
 		},
 		FilterHeader: &chainhash.Hash{27, 156, 28, 25, 111, 200, 160, 181, 5, 192, 66, 170, 3, 157, 231, 14, 22, 46, 10, 13, 34, 66, 203, 103, 111, 21, 82, 253, 5, 56, 251, 170},
-	}, Checkpoint{
+	},
+	{
 		Height: 192000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2132,7 +2324,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1570276871,
 		},
 		FilterHeader: &chainhash.Hash{243, 255, 47, 125, 23, 165, 209, 101, 131, 18, 222, 22, 135, 109, 91, 53, 33, 58, 164, 133, 185, 52, 246, 53, 145, 249, 16, 242, 122, 50, 25, 137},
-	}, Checkpoint{
+	},
+	{
 		Height: 193000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2143,7 +2336,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      967003487,
 		},
 		FilterHeader: &chainhash.Hash{71, 136, 202, 18, 26, 195, 113, 228, 240, 233, 170, 160, 32, 148, 153, 139, 232, 110, 160, 248, 26, 190, 86, 168, 251, 209, 37, 233, 76, 143, 175, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 194000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2154,7 +2348,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3670232770,
 		},
 		FilterHeader: &chainhash.Hash{220, 138, 131, 4, 1, 75, 171, 142, 84, 212, 86, 117, 130, 98, 203, 39, 227, 89, 151, 105, 193, 55, 219, 12, 171, 64, 95, 110, 187, 99, 220, 104},
-	}, Checkpoint{
+	},
+	{
 		Height: 195000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2165,7 +2360,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1861660843,
 		},
 		FilterHeader: &chainhash.Hash{137, 178, 171, 208, 239, 171, 106, 137, 111, 24, 6, 207, 7, 224, 37, 204, 237, 138, 138, 109, 228, 234, 141, 137, 255, 132, 147, 146, 89, 240, 188, 23},
-	}, Checkpoint{
+	},
+	{
 		Height: 196000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2176,7 +2372,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2298528876,
 		},
 		FilterHeader: &chainhash.Hash{88, 124, 246, 217, 18, 189, 243, 227, 131, 251, 203, 251, 117, 157, 36, 249, 174, 124, 113, 43, 150, 28, 71, 155, 54, 235, 233, 44, 109, 218, 78, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 197000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2187,7 +2384,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2242495076,
 		},
 		FilterHeader: &chainhash.Hash{1, 126, 196, 239, 180, 185, 214, 72, 142, 75, 208, 105, 75, 201, 87, 33, 152, 54, 95, 97, 7, 30, 87, 16, 101, 224, 203, 88, 213, 252, 62, 122},
-	}, Checkpoint{
+	},
+	{
 		Height: 198000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2198,7 +2396,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      299191059,
 		},
 		FilterHeader: &chainhash.Hash{199, 35, 203, 124, 39, 229, 133, 142, 91, 202, 229, 151, 228, 143, 126, 204, 40, 238, 54, 220, 192, 18, 89, 199, 151, 95, 145, 42, 205, 26, 138, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 199000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2209,7 +2408,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2431094157,
 		},
 		FilterHeader: &chainhash.Hash{99, 241, 124, 112, 113, 187, 102, 247, 229, 248, 206, 30, 146, 11, 1, 235, 91, 158, 89, 4, 164, 194, 178, 28, 13, 192, 170, 4, 143, 221, 37, 37},
-	}, Checkpoint{
+	},
+	{
 		Height: 200000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2220,7 +2420,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4158183488,
 		},
 		FilterHeader: &chainhash.Hash{179, 50, 15, 76, 142, 107, 4, 149, 107, 224, 232, 106, 197, 213, 0, 51, 65, 193, 172, 3, 106, 95, 162, 231, 191, 79, 47, 115, 113, 20, 3, 229},
-	}, Checkpoint{
+	},
+	{
 		Height: 201000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2231,7 +2432,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1076590406,
 		},
 		FilterHeader: &chainhash.Hash{58, 182, 242, 128, 179, 133, 254, 230, 198, 170, 175, 218, 211, 2, 203, 59, 168, 181, 45, 239, 203, 82, 190, 219, 53, 151, 37, 184, 8, 214, 1, 42},
-	}, Checkpoint{
+	},
+	{
 		Height: 202000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2242,7 +2444,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      838659825,
 		},
 		FilterHeader: &chainhash.Hash{176, 116, 245, 179, 229, 144, 35, 1, 175, 246, 112, 71, 119, 30, 3, 43, 71, 188, 127, 54, 241, 93, 204, 104, 4, 158, 254, 201, 30, 54, 83, 187},
-	}, Checkpoint{
+	},
+	{
 		Height: 203000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2253,7 +2456,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3282854345,
 		},
 		FilterHeader: &chainhash.Hash{102, 146, 224, 245, 196, 130, 168, 24, 226, 18, 64, 187, 207, 155, 212, 43, 61, 105, 118, 101, 105, 242, 24, 117, 5, 53, 227, 32, 141, 66, 108, 3},
-	}, Checkpoint{
+	},
+	{
 		Height: 204000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2264,7 +2468,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2431284931,
 		},
 		FilterHeader: &chainhash.Hash{242, 173, 155, 211, 152, 2, 92, 164, 143, 223, 203, 251, 200, 85, 44, 231, 51, 220, 99, 159, 47, 138, 200, 39, 14, 142, 24, 11, 140, 69, 109, 183},
-	}, Checkpoint{
+	},
+	{
 		Height: 205000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2275,7 +2480,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4214301957,
 		},
 		FilterHeader: &chainhash.Hash{198, 35, 80, 240, 75, 150, 157, 135, 242, 134, 208, 169, 198, 4, 123, 158, 72, 34, 77, 164, 254, 103, 235, 10, 166, 252, 127, 186, 100, 136, 54, 15},
-	}, Checkpoint{
+	},
+	{
 		Height: 206000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2286,7 +2492,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      734401072,
 		},
 		FilterHeader: &chainhash.Hash{52, 207, 140, 68, 165, 84, 117, 54, 133, 208, 211, 214, 14, 254, 180, 174, 178, 166, 23, 107, 157, 228, 221, 20, 88, 103, 241, 120, 119, 142, 129, 207},
-	}, Checkpoint{
+	},
+	{
 		Height: 207000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2297,7 +2504,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      212428969,
 		},
 		FilterHeader: &chainhash.Hash{142, 31, 82, 92, 165, 160, 87, 26, 250, 234, 34, 225, 12, 146, 77, 27, 96, 140, 125, 215, 84, 13, 206, 4, 75, 157, 112, 177, 54, 115, 206, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 208000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2308,7 +2516,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      524567488,
 		},
 		FilterHeader: &chainhash.Hash{124, 110, 96, 103, 83, 201, 234, 5, 69, 206, 223, 183, 227, 66, 244, 89, 81, 159, 174, 15, 206, 87, 126, 1, 202, 62, 174, 157, 163, 250, 165, 255},
-	}, Checkpoint{
+	},
+	{
 		Height: 209000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2319,7 +2528,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3691078553,
 		},
 		FilterHeader: &chainhash.Hash{241, 28, 8, 40, 207, 168, 78, 29, 176, 240, 21, 203, 61, 48, 154, 155, 82, 42, 249, 246, 94, 9, 207, 57, 42, 242, 207, 181, 142, 0, 225, 53},
-	}, Checkpoint{
+	},
+	{
 		Height: 210000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2330,7 +2540,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4069828196,
 		},
 		FilterHeader: &chainhash.Hash{229, 88, 51, 79, 4, 102, 2, 189, 140, 254, 113, 228, 86, 76, 171, 116, 20, 220, 114, 116, 137, 214, 91, 50, 55, 248, 160, 255, 47, 248, 51, 103},
-	}, Checkpoint{
+	},
+	{
 		Height: 211000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2341,7 +2552,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3797273379,
 		},
 		FilterHeader: &chainhash.Hash{153, 195, 149, 199, 111, 49, 240, 127, 125, 250, 67, 40, 4, 45, 132, 154, 230, 248, 122, 113, 21, 120, 111, 73, 154, 227, 123, 119, 23, 23, 106, 24},
-	}, Checkpoint{
+	},
+	{
 		Height: 212000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2352,7 +2564,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1397775462,
 		},
 		FilterHeader: &chainhash.Hash{27, 14, 121, 201, 159, 3, 234, 210, 46, 194, 103, 86, 41, 240, 136, 45, 117, 0, 192, 189, 3, 155, 116, 234, 193, 231, 158, 52, 69, 225, 207, 171},
-	}, Checkpoint{
+	},
+	{
 		Height: 213000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2363,7 +2576,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3835714678,
 		},
 		FilterHeader: &chainhash.Hash{188, 83, 30, 57, 184, 18, 216, 187, 248, 85, 194, 232, 31, 8, 75, 239, 11, 4, 230, 166, 181, 253, 63, 38, 191, 23, 231, 187, 173, 13, 39, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 214000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2374,7 +2588,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1554873912,
 		},
 		FilterHeader: &chainhash.Hash{32, 111, 213, 23, 125, 240, 65, 66, 160, 239, 172, 5, 17, 127, 113, 163, 108, 87, 46, 163, 71, 105, 100, 158, 190, 33, 90, 165, 50, 229, 202, 60},
-	}, Checkpoint{
+	},
+	{
 		Height: 215000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2385,7 +2600,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3698582900,
 		},
 		FilterHeader: &chainhash.Hash{141, 96, 73, 217, 239, 141, 187, 126, 184, 185, 45, 21, 140, 145, 69, 160, 171, 166, 67, 189, 167, 132, 176, 80, 161, 179, 116, 40, 224, 60, 108, 29},
-	}, Checkpoint{
+	},
+	{
 		Height: 216000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2396,7 +2612,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      198652824,
 		},
 		FilterHeader: &chainhash.Hash{121, 243, 254, 27, 98, 242, 140, 76, 7, 10, 225, 45, 223, 33, 225, 155, 162, 127, 28, 122, 227, 80, 31, 231, 145, 181, 10, 78, 39, 116, 174, 159},
-	}, Checkpoint{
+	},
+	{
 		Height: 217000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2407,7 +2624,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3716109621,
 		},
 		FilterHeader: &chainhash.Hash{71, 235, 147, 117, 177, 232, 169, 254, 185, 179, 63, 211, 45, 175, 137, 103, 76, 80, 232, 110, 108, 70, 9, 63, 103, 216, 110, 192, 104, 243, 255, 169},
-	}, Checkpoint{
+	},
+	{
 		Height: 218000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2418,7 +2636,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2840683220,
 		},
 		FilterHeader: &chainhash.Hash{44, 235, 214, 151, 191, 107, 245, 121, 12, 3, 204, 103, 218, 230, 39, 166, 58, 234, 151, 167, 39, 19, 191, 112, 231, 110, 48, 12, 246, 31, 61, 94},
-	}, Checkpoint{
+	},
+	{
 		Height: 219000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2429,7 +2648,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3432888161,
 		},
 		FilterHeader: &chainhash.Hash{109, 253, 231, 159, 62, 229, 238, 34, 247, 0, 55, 29, 85, 53, 119, 141, 94, 33, 131, 89, 162, 17, 195, 10, 82, 27, 185, 248, 116, 2, 135, 15},
-	}, Checkpoint{
+	},
+	{
 		Height: 220000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2440,7 +2660,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3994566795,
 		},
 		FilterHeader: &chainhash.Hash{215, 92, 240, 127, 181, 176, 138, 76, 250, 202, 218, 207, 2, 150, 134, 82, 177, 213, 175, 87, 134, 48, 81, 27, 44, 205, 35, 187, 217, 230, 64, 244},
-	}, Checkpoint{
+	},
+	{
 		Height: 221000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2451,7 +2672,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2672176697,
 		},
 		FilterHeader: &chainhash.Hash{86, 178, 217, 149, 252, 128, 67, 109, 13, 23, 188, 203, 154, 247, 39, 174, 52, 252, 211, 183, 216, 186, 191, 186, 122, 105, 70, 16, 70, 184, 12, 158},
-	}, Checkpoint{
+	},
+	{
 		Height: 222000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1,
@@ -2462,7 +2684,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      936228309,
 		},
 		FilterHeader: &chainhash.Hash{108, 144, 150, 66, 194, 201, 116, 70, 173, 98, 6, 95, 165, 212, 108, 43, 246, 70, 25, 238, 112, 171, 179, 35, 192, 97, 64, 221, 109, 134, 22, 96},
-	}, Checkpoint{
+	},
+	{
 		Height: 223000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2473,7 +2696,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2963694125,
 		},
 		FilterHeader: &chainhash.Hash{107, 17, 240, 140, 108, 140, 155, 29, 129, 24, 22, 193, 137, 84, 27, 98, 215, 229, 2, 140, 180, 207, 80, 98, 199, 45, 34, 155, 106, 1, 49, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 224000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2484,7 +2708,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      729504339,
 		},
 		FilterHeader: &chainhash.Hash{49, 192, 206, 145, 173, 231, 178, 99, 253, 212, 70, 3, 118, 199, 7, 83, 229, 64, 148, 233, 97, 16, 189, 55, 35, 132, 164, 180, 156, 229, 11, 170},
-	}, Checkpoint{
+	},
+	{
 		Height: 225000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2495,7 +2720,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      174156545,
 		},
 		FilterHeader: &chainhash.Hash{146, 225, 60, 67, 240, 97, 55, 228, 12, 68, 244, 74, 31, 212, 110, 62, 11, 66, 61, 40, 75, 45, 80, 118, 172, 225, 126, 133, 37, 170, 130, 189},
-	}, Checkpoint{
+	},
+	{
 		Height: 226000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2506,7 +2732,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      366493764,
 		},
 		FilterHeader: &chainhash.Hash{149, 63, 194, 78, 196, 19, 150, 129, 230, 208, 170, 187, 126, 120, 162, 119, 100, 161, 118, 161, 134, 67, 79, 24, 94, 78, 225, 180, 6, 223, 167, 134},
-	}, Checkpoint{
+	},
+	{
 		Height: 227000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2517,7 +2744,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3745679116,
 		},
 		FilterHeader: &chainhash.Hash{179, 140, 24, 25, 210, 42, 214, 64, 104, 233, 31, 31, 11, 226, 108, 98, 115, 163, 13, 250, 181, 159, 237, 231, 198, 240, 175, 169, 149, 247, 100, 189},
-	}, Checkpoint{
+	},
+	{
 		Height: 228000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2528,7 +2756,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3647365916,
 		},
 		FilterHeader: &chainhash.Hash{128, 28, 45, 13, 10, 219, 158, 84, 173, 34, 134, 167, 214, 177, 224, 74, 144, 14, 215, 228, 86, 133, 39, 85, 119, 135, 64, 134, 91, 202, 174, 156},
-	}, Checkpoint{
+	},
+	{
 		Height: 229000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2539,7 +2768,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3675695912,
 		},
 		FilterHeader: &chainhash.Hash{91, 167, 16, 117, 23, 21, 73, 72, 211, 233, 161, 36, 125, 66, 190, 23, 22, 180, 146, 212, 22, 170, 209, 154, 193, 30, 226, 57, 88, 14, 228, 23},
-	}, Checkpoint{
+	},
+	{
 		Height: 230000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2550,7 +2780,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1029938007,
 		},
 		FilterHeader: &chainhash.Hash{96, 231, 189, 233, 206, 100, 194, 248, 170, 117, 81, 141, 229, 69, 157, 2, 171, 193, 215, 119, 253, 135, 85, 122, 135, 47, 70, 198, 207, 213, 8, 19},
-	}, Checkpoint{
+	},
+	{
 		Height: 231000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2561,7 +2792,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1518605452,
 		},
 		FilterHeader: &chainhash.Hash{171, 216, 237, 55, 98, 83, 15, 86, 9, 231, 72, 117, 191, 245, 182, 194, 72, 147, 124, 218, 122, 93, 36, 27, 219, 212, 167, 110, 177, 27, 199, 191},
-	}, Checkpoint{
+	},
+	{
 		Height: 232000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2572,7 +2804,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3254196568,
 		},
 		FilterHeader: &chainhash.Hash{76, 252, 201, 103, 216, 225, 105, 110, 207, 41, 93, 186, 3, 31, 20, 190, 1, 239, 84, 144, 72, 135, 172, 90, 186, 246, 70, 28, 201, 143, 172, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 233000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2583,7 +2816,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2143482383,
 		},
 		FilterHeader: &chainhash.Hash{219, 113, 95, 145, 48, 135, 186, 156, 224, 110, 23, 76, 253, 46, 42, 0, 47, 240, 203, 53, 169, 148, 82, 142, 10, 53, 193, 43, 161, 160, 47, 249},
-	}, Checkpoint{
+	},
+	{
 		Height: 234000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2594,7 +2828,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1031551011,
 		},
 		FilterHeader: &chainhash.Hash{211, 10, 238, 213, 242, 112, 77, 36, 141, 150, 203, 109, 225, 204, 8, 175, 139, 73, 172, 102, 27, 77, 215, 46, 46, 76, 107, 181, 140, 215, 198, 233},
-	}, Checkpoint{
+	},
+	{
 		Height: 235000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2605,7 +2840,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2014179743,
 		},
 		FilterHeader: &chainhash.Hash{119, 6, 123, 156, 62, 255, 192, 190, 60, 175, 134, 246, 198, 157, 221, 227, 117, 154, 84, 237, 136, 190, 83, 207, 192, 236, 89, 215, 148, 53, 148, 75},
-	}, Checkpoint{
+	},
+	{
 		Height: 236000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2616,7 +2852,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2768339437,
 		},
 		FilterHeader: &chainhash.Hash{233, 146, 31, 181, 146, 59, 162, 144, 18, 227, 136, 211, 126, 127, 103, 73, 140, 23, 224, 83, 30, 98, 116, 165, 87, 91, 123, 91, 122, 178, 41, 182},
-	}, Checkpoint{
+	},
+	{
 		Height: 237000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2627,7 +2864,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1781245330,
 		},
 		FilterHeader: &chainhash.Hash{17, 76, 164, 100, 228, 54, 227, 83, 193, 176, 238, 7, 120, 152, 108, 251, 150, 59, 103, 42, 34, 17, 41, 67, 144, 165, 164, 125, 4, 95, 171, 104},
-	}, Checkpoint{
+	},
+	{
 		Height: 238000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2638,7 +2876,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3687941155,
 		},
 		FilterHeader: &chainhash.Hash{98, 43, 183, 242, 140, 20, 207, 16, 137, 255, 12, 155, 159, 94, 75, 20, 211, 225, 26, 199, 248, 200, 250, 116, 79, 11, 138, 213, 54, 178, 201, 91},
-	}, Checkpoint{
+	},
+	{
 		Height: 239000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2649,7 +2888,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1123409164,
 		},
 		FilterHeader: &chainhash.Hash{166, 88, 70, 173, 156, 39, 254, 43, 138, 58, 53, 88, 109, 133, 193, 78, 189, 143, 195, 229, 156, 46, 35, 208, 94, 115, 97, 120, 165, 247, 166, 101},
-	}, Checkpoint{
+	},
+	{
 		Height: 240000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2660,7 +2900,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      259078718,
 		},
 		FilterHeader: &chainhash.Hash{86, 74, 97, 150, 18, 243, 251, 5, 21, 50, 33, 44, 76, 150, 175, 235, 200, 153, 201, 126, 140, 2, 206, 225, 126, 22, 65, 56, 128, 146, 79, 53},
-	}, Checkpoint{
+	},
+	{
 		Height: 241000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2671,7 +2912,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3944103910,
 		},
 		FilterHeader: &chainhash.Hash{194, 141, 6, 59, 194, 67, 65, 11, 223, 231, 242, 184, 6, 43, 160, 190, 39, 209, 196, 244, 37, 7, 82, 173, 51, 21, 15, 57, 223, 81, 199, 93},
-	}, Checkpoint{
+	},
+	{
 		Height: 242000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2682,7 +2924,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2605402780,
 		},
 		FilterHeader: &chainhash.Hash{71, 54, 104, 136, 1, 209, 101, 191, 98, 142, 248, 59, 199, 99, 248, 39, 208, 191, 29, 238, 201, 151, 53, 208, 128, 150, 146, 55, 198, 235, 167, 131},
-	}, Checkpoint{
+	},
+	{
 		Height: 243000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2693,7 +2936,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1579681918,
 		},
 		FilterHeader: &chainhash.Hash{22, 101, 224, 149, 198, 115, 216, 140, 201, 211, 113, 164, 210, 78, 138, 187, 164, 175, 103, 183, 69, 50, 11, 44, 90, 18, 22, 140, 51, 145, 122, 159},
-	}, Checkpoint{
+	},
+	{
 		Height: 244000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2704,7 +2948,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3432340747,
 		},
 		FilterHeader: &chainhash.Hash{38, 183, 71, 48, 32, 132, 186, 226, 29, 39, 20, 11, 31, 75, 79, 175, 137, 162, 77, 221, 30, 125, 146, 61, 53, 34, 226, 190, 72, 51, 15, 246},
-	}, Checkpoint{
+	},
+	{
 		Height: 245000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2715,7 +2960,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      361874827,
 		},
 		FilterHeader: &chainhash.Hash{205, 244, 108, 60, 71, 61, 156, 26, 82, 159, 46, 187, 144, 194, 128, 236, 19, 114, 62, 124, 23, 117, 9, 151, 239, 3, 229, 82, 229, 88, 17, 1},
-	}, Checkpoint{
+	},
+	{
 		Height: 246000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2726,7 +2972,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1036272934,
 		},
 		FilterHeader: &chainhash.Hash{63, 84, 28, 141, 33, 153, 51, 4, 100, 75, 56, 38, 157, 76, 236, 101, 244, 5, 44, 41, 209, 118, 219, 74, 44, 91, 74, 123, 222, 169, 160, 126},
-	}, Checkpoint{
+	},
+	{
 		Height: 247000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2737,7 +2984,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1192390201,
 		},
 		FilterHeader: &chainhash.Hash{113, 77, 115, 127, 228, 40, 45, 56, 55, 23, 248, 236, 180, 253, 3, 229, 100, 37, 197, 191, 101, 143, 251, 195, 74, 254, 57, 143, 138, 209, 183, 167},
-	}, Checkpoint{
+	},
+	{
 		Height: 248000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2748,7 +2996,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      234484658,
 		},
 		FilterHeader: &chainhash.Hash{197, 42, 123, 152, 70, 244, 4, 41, 30, 10, 199, 82, 126, 18, 115, 134, 124, 2, 36, 130, 10, 201, 5, 76, 78, 123, 35, 143, 190, 38, 249, 48},
-	}, Checkpoint{
+	},
+	{
 		Height: 249000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2759,7 +3008,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2753426224,
 		},
 		FilterHeader: &chainhash.Hash{23, 0, 161, 74, 121, 83, 56, 142, 140, 162, 218, 46, 190, 55, 143, 249, 223, 160, 21, 72, 23, 67, 200, 55, 82, 248, 208, 47, 114, 252, 96, 85},
-	}, Checkpoint{
+	},
+	{
 		Height: 250000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2770,7 +3020,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      9533025,
 		},
 		FilterHeader: &chainhash.Hash{167, 227, 78, 150, 72, 26, 133, 79, 85, 83, 164, 5, 29, 69, 231, 224, 43, 151, 221, 159, 231, 182, 242, 162, 136, 42, 184, 179, 5, 19, 151, 65},
-	}, Checkpoint{
+	},
+	{
 		Height: 251000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2781,7 +3032,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      232991352,
 		},
 		FilterHeader: &chainhash.Hash{76, 144, 169, 76, 173, 130, 92, 176, 39, 29, 23, 212, 95, 59, 68, 41, 227, 87, 225, 65, 12, 7, 252, 33, 160, 12, 253, 176, 160, 190, 140, 57},
-	}, Checkpoint{
+	},
+	{
 		Height: 252000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2792,7 +3044,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3499733832,
 		},
 		FilterHeader: &chainhash.Hash{159, 224, 243, 251, 245, 219, 209, 208, 29, 114, 20, 83, 159, 210, 68, 35, 160, 27, 225, 158, 69, 243, 181, 20, 123, 181, 214, 119, 169, 107, 74, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 253000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2803,7 +3056,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1678034627,
 		},
 		FilterHeader: &chainhash.Hash{201, 238, 19, 199, 207, 219, 230, 233, 220, 249, 161, 42, 248, 171, 185, 184, 191, 30, 224, 27, 181, 206, 32, 181, 139, 74, 60, 212, 24, 100, 29, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 254000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2814,7 +3068,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      654618555,
 		},
 		FilterHeader: &chainhash.Hash{182, 78, 133, 32, 250, 146, 216, 252, 148, 190, 40, 32, 177, 40, 182, 239, 199, 184, 126, 50, 224, 81, 132, 199, 17, 244, 236, 236, 19, 169, 201, 168},
-	}, Checkpoint{
+	},
+	{
 		Height: 255000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2825,7 +3080,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1753055393,
 		},
 		FilterHeader: &chainhash.Hash{255, 75, 191, 206, 100, 9, 109, 186, 240, 209, 117, 196, 103, 100, 28, 231, 124, 3, 15, 102, 50, 7, 225, 66, 118, 186, 196, 31, 90, 208, 166, 183},
-	}, Checkpoint{
+	},
+	{
 		Height: 256000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2836,7 +3092,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1451083781,
 		},
 		FilterHeader: &chainhash.Hash{135, 209, 10, 193, 41, 26, 182, 206, 182, 255, 34, 186, 236, 55, 25, 253, 79, 6, 4, 225, 35, 103, 164, 21, 242, 40, 151, 86, 90, 48, 65, 110},
-	}, Checkpoint{
+	},
+	{
 		Height: 257000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2847,7 +3104,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4036892281,
 		},
 		FilterHeader: &chainhash.Hash{172, 27, 229, 167, 229, 235, 253, 69, 46, 58, 69, 122, 36, 194, 200, 249, 58, 159, 113, 94, 80, 148, 96, 53, 17, 35, 29, 175, 151, 6, 139, 115},
-	}, Checkpoint{
+	},
+	{
 		Height: 258000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2858,7 +3116,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2728123802,
 		},
 		FilterHeader: &chainhash.Hash{209, 245, 135, 14, 27, 228, 0, 124, 41, 235, 239, 172, 142, 43, 25, 22, 213, 69, 120, 20, 157, 116, 18, 122, 54, 80, 13, 121, 2, 122, 154, 163},
-	}, Checkpoint{
+	},
+	{
 		Height: 259000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2869,7 +3128,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4037708507,
 		},
 		FilterHeader: &chainhash.Hash{239, 13, 198, 129, 67, 22, 37, 156, 112, 177, 95, 183, 219, 57, 225, 79, 185, 53, 116, 98, 41, 76, 21, 245, 110, 72, 204, 107, 246, 27, 74, 141},
-	}, Checkpoint{
+	},
+	{
 		Height: 260000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2880,7 +3140,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1270371778,
 		},
 		FilterHeader: &chainhash.Hash{125, 79, 20, 246, 57, 15, 71, 184, 53, 125, 69, 104, 236, 12, 95, 41, 229, 155, 79, 52, 137, 147, 178, 185, 135, 134, 142, 27, 80, 203, 120, 199},
-	}, Checkpoint{
+	},
+	{
 		Height: 261000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2891,7 +3152,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      140362503,
 		},
 		FilterHeader: &chainhash.Hash{38, 81, 115, 175, 101, 23, 171, 126, 154, 23, 171, 41, 97, 0, 216, 151, 229, 201, 222, 172, 59, 165, 57, 142, 128, 129, 108, 65, 13, 42, 228, 31},
-	}, Checkpoint{
+	},
+	{
 		Height: 262000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2902,7 +3164,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      920621358,
 		},
 		FilterHeader: &chainhash.Hash{116, 227, 152, 62, 0, 91, 186, 204, 209, 95, 229, 183, 4, 124, 222, 93, 12, 218, 164, 41, 220, 219, 11, 66, 209, 191, 62, 50, 151, 222, 21, 152},
-	}, Checkpoint{
+	},
+	{
 		Height: 263000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2913,7 +3176,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      197541617,
 		},
 		FilterHeader: &chainhash.Hash{78, 125, 135, 30, 97, 67, 101, 90, 176, 248, 58, 25, 165, 7, 111, 29, 63, 183, 226, 143, 111, 80, 130, 138, 107, 1, 48, 142, 115, 73, 251, 18},
-	}, Checkpoint{
+	},
+	{
 		Height: 264000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2924,7 +3188,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4234369837,
 		},
 		FilterHeader: &chainhash.Hash{83, 250, 239, 85, 132, 152, 80, 18, 159, 215, 33, 25, 173, 153, 202, 30, 64, 157, 244, 136, 150, 253, 252, 82, 190, 35, 212, 78, 27, 160, 120, 241},
-	}, Checkpoint{
+	},
+	{
 		Height: 265000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2935,7 +3200,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1381586482,
 		},
 		FilterHeader: &chainhash.Hash{17, 187, 221, 125, 94, 96, 43, 224, 33, 162, 38, 114, 66, 180, 28, 59, 68, 234, 179, 163, 104, 248, 70, 206, 58, 233, 243, 241, 99, 22, 127, 217},
-	}, Checkpoint{
+	},
+	{
 		Height: 266000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2946,7 +3212,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2170277099,
 		},
 		FilterHeader: &chainhash.Hash{215, 137, 37, 17, 213, 65, 211, 35, 208, 114, 38, 228, 26, 210, 155, 99, 33, 108, 50, 59, 5, 211, 59, 73, 36, 218, 162, 41, 246, 116, 153, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 267000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2957,7 +3224,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3048773255,
 		},
 		FilterHeader: &chainhash.Hash{84, 92, 249, 238, 114, 200, 84, 95, 43, 155, 178, 131, 214, 186, 222, 250, 183, 95, 199, 31, 18, 120, 235, 15, 7, 75, 163, 214, 8, 33, 6, 100},
-	}, Checkpoint{
+	},
+	{
 		Height: 268000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2968,7 +3236,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      914813407,
 		},
 		FilterHeader: &chainhash.Hash{88, 227, 83, 22, 104, 152, 58, 94, 187, 64, 243, 231, 237, 243, 4, 9, 57, 70, 80, 133, 135, 236, 62, 158, 196, 172, 119, 4, 116, 193, 241, 161},
-	}, Checkpoint{
+	},
+	{
 		Height: 269000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2979,7 +3248,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2630140947,
 		},
 		FilterHeader: &chainhash.Hash{232, 145, 43, 136, 164, 109, 107, 236, 116, 59, 95, 237, 58, 134, 67, 108, 237, 52, 160, 133, 137, 77, 164, 147, 140, 65, 0, 86, 193, 235, 194, 204},
-	}, Checkpoint{
+	},
+	{
 		Height: 270000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -2990,7 +3260,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2410614114,
 		},
 		FilterHeader: &chainhash.Hash{94, 163, 4, 134, 236, 53, 248, 52, 177, 186, 222, 88, 217, 135, 250, 250, 151, 170, 213, 229, 56, 179, 171, 102, 1, 86, 158, 3, 69, 84, 129, 147},
-	}, Checkpoint{
+	},
+	{
 		Height: 271000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3001,7 +3272,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1170546949,
 		},
 		FilterHeader: &chainhash.Hash{118, 184, 160, 24, 17, 27, 144, 79, 137, 202, 181, 52, 160, 13, 177, 181, 61, 49, 137, 217, 181, 54, 101, 239, 254, 204, 186, 63, 223, 119, 245, 78},
-	}, Checkpoint{
+	},
+	{
 		Height: 272000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3012,7 +3284,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2619778936,
 		},
 		FilterHeader: &chainhash.Hash{9, 85, 104, 198, 84, 239, 90, 187, 163, 248, 163, 147, 82, 83, 171, 177, 164, 136, 23, 251, 30, 1, 4, 134, 53, 247, 141, 6, 56, 142, 72, 6},
-	}, Checkpoint{
+	},
+	{
 		Height: 273000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3023,7 +3296,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2878603080,
 		},
 		FilterHeader: &chainhash.Hash{37, 41, 202, 190, 132, 12, 120, 243, 48, 248, 65, 152, 107, 16, 224, 54, 202, 180, 12, 252, 82, 166, 201, 2, 124, 214, 168, 8, 144, 36, 93, 47},
-	}, Checkpoint{
+	},
+	{
 		Height: 274000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3034,7 +3308,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2057126358,
 		},
 		FilterHeader: &chainhash.Hash{76, 21, 77, 127, 202, 98, 53, 176, 1, 3, 131, 146, 150, 115, 210, 60, 164, 78, 125, 64, 70, 86, 125, 186, 191, 240, 18, 229, 142, 48, 21, 238},
-	}, Checkpoint{
+	},
+	{
 		Height: 275000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3045,7 +3320,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1563325747,
 		},
 		FilterHeader: &chainhash.Hash{15, 132, 35, 153, 250, 249, 69, 207, 6, 69, 73, 95, 247, 252, 166, 118, 203, 43, 113, 67, 46, 230, 250, 180, 63, 146, 216, 102, 62, 196, 31, 225},
-	}, Checkpoint{
+	},
+	{
 		Height: 276000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3056,7 +3332,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3918842017,
 		},
 		FilterHeader: &chainhash.Hash{5, 89, 248, 206, 221, 65, 62, 86, 97, 152, 80, 238, 252, 92, 231, 128, 28, 211, 110, 216, 216, 140, 100, 221, 124, 137, 61, 29, 143, 17, 148, 141},
-	}, Checkpoint{
+	},
+	{
 		Height: 277000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3067,7 +3344,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2146096972,
 		},
 		FilterHeader: &chainhash.Hash{142, 204, 176, 116, 169, 52, 61, 23, 246, 129, 119, 225, 196, 99, 30, 7, 99, 133, 204, 0, 81, 193, 184, 194, 79, 173, 43, 153, 80, 21, 255, 227},
-	}, Checkpoint{
+	},
+	{
 		Height: 278000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3078,7 +3356,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3276557835,
 		},
 		FilterHeader: &chainhash.Hash{181, 98, 73, 30, 12, 64, 22, 19, 179, 26, 159, 184, 140, 118, 131, 242, 196, 158, 14, 111, 113, 104, 230, 117, 137, 248, 74, 205, 125, 206, 14, 79},
-	}, Checkpoint{
+	},
+	{
 		Height: 279000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3089,7 +3368,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4012786635,
 		},
 		FilterHeader: &chainhash.Hash{176, 138, 118, 23, 97, 2, 65, 138, 151, 162, 0, 41, 210, 93, 134, 147, 241, 238, 137, 103, 14, 134, 205, 220, 167, 207, 44, 196, 2, 18, 219, 17},
-	}, Checkpoint{
+	},
+	{
 		Height: 280000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3100,7 +3380,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3657551318,
 		},
 		FilterHeader: &chainhash.Hash{74, 55, 219, 183, 22, 170, 182, 228, 94, 222, 41, 65, 122, 42, 36, 149, 21, 158, 231, 150, 121, 191, 106, 248, 196, 130, 51, 13, 133, 168, 221, 70},
-	}, Checkpoint{
+	},
+	{
 		Height: 281000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3111,7 +3392,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3181845306,
 		},
 		FilterHeader: &chainhash.Hash{71, 51, 209, 67, 248, 221, 144, 110, 168, 220, 217, 213, 164, 79, 118, 220, 86, 29, 188, 64, 212, 152, 211, 187, 2, 22, 43, 184, 56, 91, 60, 66},
-	}, Checkpoint{
+	},
+	{
 		Height: 282000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3122,7 +3404,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      880304146,
 		},
 		FilterHeader: &chainhash.Hash{224, 99, 124, 152, 80, 188, 229, 106, 103, 139, 245, 188, 231, 71, 71, 13, 57, 110, 246, 112, 141, 194, 47, 28, 185, 246, 38, 115, 30, 193, 147, 127},
-	}, Checkpoint{
+	},
+	{
 		Height: 283000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3133,7 +3416,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2665607251,
 		},
 		FilterHeader: &chainhash.Hash{58, 24, 239, 252, 140, 34, 228, 208, 57, 195, 195, 77, 74, 49, 180, 20, 137, 138, 107, 84, 35, 187, 249, 111, 202, 77, 98, 109, 120, 190, 6, 33},
-	}, Checkpoint{
+	},
+	{
 		Height: 284000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3144,7 +3428,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      407379797,
 		},
 		FilterHeader: &chainhash.Hash{11, 23, 245, 187, 210, 246, 217, 69, 202, 137, 61, 12, 239, 136, 164, 176, 10, 73, 69, 59, 38, 173, 254, 27, 136, 32, 249, 168, 59, 101, 219, 213},
-	}, Checkpoint{
+	},
+	{
 		Height: 285000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3155,7 +3440,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2803414163,
 		},
 		FilterHeader: &chainhash.Hash{29, 180, 134, 122, 185, 185, 142, 84, 237, 173, 199, 26, 205, 214, 10, 246, 57, 225, 254, 53, 137, 210, 101, 131, 194, 154, 63, 98, 66, 189, 3, 13},
-	}, Checkpoint{
+	},
+	{
 		Height: 286000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3166,7 +3452,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3081113672,
 		},
 		FilterHeader: &chainhash.Hash{35, 127, 243, 22, 119, 186, 187, 6, 186, 217, 62, 176, 8, 239, 45, 216, 216, 5, 215, 237, 172, 117, 159, 77, 179, 248, 240, 30, 94, 77, 103, 247},
-	}, Checkpoint{
+	},
+	{
 		Height: 287000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3177,7 +3464,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3450102090,
 		},
 		FilterHeader: &chainhash.Hash{10, 100, 207, 226, 64, 114, 216, 179, 67, 226, 28, 205, 98, 125, 144, 142, 221, 13, 78, 32, 158, 61, 50, 171, 205, 53, 102, 227, 125, 35, 147, 159},
-	}, Checkpoint{
+	},
+	{
 		Height: 288000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3188,7 +3476,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3377563586,
 		},
 		FilterHeader: &chainhash.Hash{135, 242, 49, 221, 232, 227, 80, 144, 64, 122, 108, 20, 212, 33, 113, 254, 35, 115, 77, 73, 193, 72, 233, 108, 213, 244, 213, 162, 195, 234, 44, 184},
-	}, Checkpoint{
+	},
+	{
 		Height: 289000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3199,7 +3488,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3344135539,
 		},
 		FilterHeader: &chainhash.Hash{66, 132, 210, 119, 182, 184, 246, 141, 108, 69, 193, 167, 91, 237, 187, 45, 215, 244, 30, 146, 215, 96, 30, 213, 189, 207, 16, 5, 159, 151, 122, 58},
-	}, Checkpoint{
+	},
+	{
 		Height: 290000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3210,7 +3500,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3315307017,
 		},
 		FilterHeader: &chainhash.Hash{124, 196, 145, 137, 12, 182, 42, 58, 72, 105, 124, 29, 243, 69, 172, 104, 87, 232, 90, 133, 216, 240, 147, 117, 244, 160, 238, 254, 163, 5, 156, 184},
-	}, Checkpoint{
+	},
+	{
 		Height: 291000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3221,7 +3512,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2242811512,
 		},
 		FilterHeader: &chainhash.Hash{97, 155, 192, 109, 67, 215, 112, 37, 59, 99, 97, 18, 104, 197, 177, 27, 232, 146, 127, 160, 134, 109, 84, 161, 13, 122, 78, 247, 119, 137, 240, 83},
-	}, Checkpoint{
+	},
+	{
 		Height: 292000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3232,7 +3524,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      286485453,
 		},
 		FilterHeader: &chainhash.Hash{108, 125, 50, 37, 249, 250, 185, 127, 70, 140, 245, 136, 108, 3, 28, 163, 3, 148, 184, 212, 47, 32, 208, 219, 188, 191, 160, 144, 161, 5, 250, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 293000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3243,7 +3536,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      704197304,
 		},
 		FilterHeader: &chainhash.Hash{43, 250, 56, 113, 245, 108, 12, 222, 249, 218, 123, 147, 37, 128, 140, 87, 135, 225, 93, 200, 172, 106, 67, 222, 12, 76, 136, 142, 195, 123, 165, 107},
-	}, Checkpoint{
+	},
+	{
 		Height: 294000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3254,7 +3548,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1635912262,
 		},
 		FilterHeader: &chainhash.Hash{183, 59, 125, 247, 72, 74, 220, 238, 45, 214, 109, 167, 89, 121, 181, 227, 70, 146, 72, 131, 73, 21, 48, 150, 23, 68, 0, 97, 218, 214, 83, 65},
-	}, Checkpoint{
+	},
+	{
 		Height: 295000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3265,7 +3560,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1868369749,
 		},
 		FilterHeader: &chainhash.Hash{71, 158, 33, 70, 113, 227, 52, 200, 124, 49, 245, 55, 72, 173, 73, 185, 200, 221, 5, 10, 14, 103, 12, 152, 182, 120, 163, 24, 9, 247, 35, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 296000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3276,7 +3572,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2088649440,
 		},
 		FilterHeader: &chainhash.Hash{137, 49, 82, 80, 54, 93, 150, 90, 124, 193, 12, 238, 209, 99, 82, 56, 126, 212, 221, 206, 25, 47, 94, 215, 208, 14, 116, 35, 57, 153, 95, 187},
-	}, Checkpoint{
+	},
+	{
 		Height: 297000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3287,7 +3584,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3726632314,
 		},
 		FilterHeader: &chainhash.Hash{217, 115, 83, 178, 95, 127, 120, 72, 88, 247, 127, 168, 118, 53, 97, 33, 237, 24, 172, 6, 59, 94, 251, 208, 138, 71, 137, 69, 128, 51, 191, 36},
-	}, Checkpoint{
+	},
+	{
 		Height: 298000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3298,7 +3596,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2475224409,
 		},
 		FilterHeader: &chainhash.Hash{62, 126, 157, 43, 106, 81, 103, 196, 20, 56, 91, 171, 249, 143, 112, 41, 18, 207, 31, 117, 182, 9, 175, 0, 185, 209, 45, 191, 120, 131, 54, 93},
-	}, Checkpoint{
+	},
+	{
 		Height: 299000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3309,7 +3608,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1366661486,
 		},
 		FilterHeader: &chainhash.Hash{181, 106, 7, 80, 93, 98, 79, 96, 66, 222, 177, 220, 180, 94, 175, 116, 179, 223, 238, 128, 143, 174, 146, 140, 110, 206, 108, 161, 210, 43, 14, 101},
-	}, Checkpoint{
+	},
+	{
 		Height: 300000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3320,7 +3620,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      222771801,
 		},
 		FilterHeader: &chainhash.Hash{91, 170, 248, 191, 25, 231, 81, 187, 141, 169, 43, 69, 140, 179, 237, 191, 169, 217, 45, 29, 201, 67, 49, 202, 41, 233, 221, 252, 32, 2, 213, 27},
-	}, Checkpoint{
+	},
+	{
 		Height: 301000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3331,7 +3632,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      686871903,
 		},
 		FilterHeader: &chainhash.Hash{61, 64, 113, 149, 207, 28, 208, 220, 63, 87, 242, 173, 16, 147, 217, 231, 228, 236, 148, 172, 66, 104, 98, 106, 17, 2, 25, 238, 45, 233, 198, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 302000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3342,7 +3644,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2312789712,
 		},
 		FilterHeader: &chainhash.Hash{41, 10, 110, 245, 245, 54, 158, 242, 109, 220, 152, 115, 151, 14, 46, 228, 225, 146, 173, 228, 193, 169, 76, 235, 120, 145, 145, 93, 98, 136, 221, 29},
-	}, Checkpoint{
+	},
+	{
 		Height: 303000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3353,7 +3656,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1387343853,
 		},
 		FilterHeader: &chainhash.Hash{202, 114, 40, 96, 218, 152, 29, 251, 158, 134, 226, 23, 53, 198, 133, 123, 178, 252, 214, 244, 225, 187, 112, 65, 138, 108, 205, 97, 65, 168, 174, 36},
-	}, Checkpoint{
+	},
+	{
 		Height: 304000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3364,7 +3668,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2320901824,
 		},
 		FilterHeader: &chainhash.Hash{139, 223, 138, 73, 61, 44, 9, 50, 163, 8, 234, 182, 3, 147, 151, 175, 9, 174, 231, 174, 206, 149, 104, 17, 131, 117, 203, 127, 100, 240, 83, 190},
-	}, Checkpoint{
+	},
+	{
 		Height: 305000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3375,7 +3680,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4101445090,
 		},
 		FilterHeader: &chainhash.Hash{113, 133, 70, 191, 167, 75, 231, 190, 144, 148, 62, 101, 71, 3, 191, 229, 50, 177, 55, 227, 16, 161, 134, 71, 124, 137, 231, 152, 32, 238, 235, 233},
-	}, Checkpoint{
+	},
+	{
 		Height: 306000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3386,7 +3692,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2987540360,
 		},
 		FilterHeader: &chainhash.Hash{118, 193, 156, 45, 142, 185, 246, 254, 161, 164, 129, 57, 51, 156, 183, 114, 80, 172, 246, 247, 40, 55, 34, 221, 61, 113, 145, 124, 164, 210, 191, 95},
-	}, Checkpoint{
+	},
+	{
 		Height: 307000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3397,7 +3704,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2397248019,
 		},
 		FilterHeader: &chainhash.Hash{70, 81, 151, 254, 89, 160, 0, 146, 171, 147, 82, 158, 69, 223, 73, 209, 9, 80, 100, 17, 26, 227, 74, 0, 167, 212, 7, 53, 83, 34, 125, 127},
-	}, Checkpoint{
+	},
+	{
 		Height: 308000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3408,7 +3716,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1160421818,
 		},
 		FilterHeader: &chainhash.Hash{55, 51, 239, 64, 68, 200, 120, 26, 7, 155, 111, 165, 22, 85, 204, 149, 180, 2, 138, 128, 212, 119, 56, 160, 237, 155, 35, 122, 126, 132, 189, 74},
-	}, Checkpoint{
+	},
+	{
 		Height: 309000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3419,7 +3728,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2555598914,
 		},
 		FilterHeader: &chainhash.Hash{162, 208, 122, 154, 179, 177, 166, 252, 175, 232, 218, 59, 228, 48, 138, 177, 250, 191, 129, 22, 240, 87, 54, 34, 97, 176, 14, 174, 253, 41, 123, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 310000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3430,7 +3740,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1618224511,
 		},
 		FilterHeader: &chainhash.Hash{237, 252, 219, 205, 29, 151, 9, 217, 248, 113, 194, 42, 33, 102, 88, 194, 127, 209, 251, 43, 14, 56, 134, 110, 98, 41, 111, 42, 16, 46, 29, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 311000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3441,7 +3752,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4215614964,
 		},
 		FilterHeader: &chainhash.Hash{87, 212, 63, 216, 30, 19, 158, 169, 86, 117, 1, 127, 230, 21, 132, 76, 69, 114, 154, 199, 191, 61, 7, 229, 13, 230, 7, 191, 238, 142, 123, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 312000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3452,7 +3764,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3702882761,
 		},
 		FilterHeader: &chainhash.Hash{139, 146, 113, 192, 182, 234, 21, 224, 19, 143, 249, 187, 42, 216, 225, 253, 35, 249, 208, 173, 49, 125, 163, 218, 249, 144, 46, 39, 209, 250, 64, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 313000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3463,7 +3776,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1888073192,
 		},
 		FilterHeader: &chainhash.Hash{213, 97, 51, 239, 219, 248, 182, 213, 58, 211, 220, 51, 74, 234, 0, 89, 150, 116, 16, 41, 183, 177, 209, 181, 4, 54, 251, 47, 168, 62, 238, 30},
-	}, Checkpoint{
+	},
+	{
 		Height: 314000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3474,7 +3788,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3556383141,
 		},
 		FilterHeader: &chainhash.Hash{201, 251, 89, 79, 22, 253, 206, 129, 162, 104, 64, 49, 147, 236, 143, 163, 63, 218, 82, 177, 186, 173, 75, 139, 188, 242, 111, 15, 159, 237, 238, 19},
-	}, Checkpoint{
+	},
+	{
 		Height: 315000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3485,7 +3800,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1259998931,
 		},
 		FilterHeader: &chainhash.Hash{77, 215, 234, 15, 146, 81, 58, 135, 168, 44, 221, 200, 11, 53, 198, 232, 144, 117, 66, 153, 151, 228, 173, 236, 243, 198, 93, 178, 94, 97, 183, 79},
-	}, Checkpoint{
+	},
+	{
 		Height: 316000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3496,7 +3812,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1078868947,
 		},
 		FilterHeader: &chainhash.Hash{34, 110, 254, 84, 34, 198, 41, 105, 246, 61, 30, 46, 42, 55, 239, 51, 118, 127, 101, 1, 177, 207, 9, 91, 72, 208, 116, 86, 106, 193, 18, 80},
-	}, Checkpoint{
+	},
+	{
 		Height: 317000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3507,7 +3824,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3540669082,
 		},
 		FilterHeader: &chainhash.Hash{253, 57, 186, 76, 51, 174, 247, 202, 157, 76, 159, 193, 8, 245, 133, 111, 64, 209, 200, 96, 117, 133, 67, 200, 226, 14, 174, 212, 142, 248, 161, 133},
-	}, Checkpoint{
+	},
+	{
 		Height: 318000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3518,7 +3836,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1366531801,
 		},
 		FilterHeader: &chainhash.Hash{116, 144, 239, 110, 168, 221, 139, 217, 53, 203, 2, 243, 104, 175, 212, 47, 65, 188, 176, 138, 32, 241, 236, 31, 119, 75, 30, 138, 89, 134, 157, 180},
-	}, Checkpoint{
+	},
+	{
 		Height: 319000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3529,7 +3848,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3323789931,
 		},
 		FilterHeader: &chainhash.Hash{255, 13, 102, 164, 70, 221, 133, 20, 38, 104, 178, 241, 77, 66, 155, 130, 111, 248, 41, 167, 190, 11, 60, 34, 66, 59, 128, 135, 149, 229, 155, 52},
-	}, Checkpoint{
+	},
+	{
 		Height: 320000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3540,7 +3860,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2145106612,
 		},
 		FilterHeader: &chainhash.Hash{73, 169, 61, 226, 235, 138, 41, 85, 242, 210, 240, 178, 255, 9, 83, 47, 21, 31, 235, 250, 27, 104, 138, 56, 182, 97, 183, 94, 84, 187, 49, 62},
-	}, Checkpoint{
+	},
+	{
 		Height: 321000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3551,7 +3872,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1036421263,
 		},
 		FilterHeader: &chainhash.Hash{58, 252, 123, 41, 16, 250, 36, 218, 237, 206, 33, 190, 204, 125, 217, 105, 212, 5, 1, 244, 81, 113, 77, 48, 224, 130, 53, 238, 147, 137, 13, 186},
-	}, Checkpoint{
+	},
+	{
 		Height: 322000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3562,7 +3884,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3001296985,
 		},
 		FilterHeader: &chainhash.Hash{224, 178, 162, 78, 75, 162, 125, 19, 55, 176, 149, 112, 165, 112, 142, 65, 251, 26, 183, 192, 71, 67, 24, 10, 38, 200, 187, 114, 45, 167, 44, 251},
-	}, Checkpoint{
+	},
+	{
 		Height: 323000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3573,7 +3896,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      574405948,
 		},
 		FilterHeader: &chainhash.Hash{147, 148, 16, 211, 40, 19, 57, 200, 158, 205, 48, 111, 74, 31, 53, 188, 58, 230, 77, 52, 119, 76, 252, 69, 153, 231, 185, 145, 52, 183, 108, 175},
-	}, Checkpoint{
+	},
+	{
 		Height: 324000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3584,7 +3908,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2532021019,
 		},
 		FilterHeader: &chainhash.Hash{169, 241, 55, 249, 99, 63, 134, 127, 29, 35, 115, 159, 226, 208, 97, 181, 234, 88, 33, 21, 86, 142, 225, 197, 116, 157, 40, 210, 40, 110, 183, 221},
-	}, Checkpoint{
+	},
+	{
 		Height: 325000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3595,7 +3920,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3378761735,
 		},
 		FilterHeader: &chainhash.Hash{191, 43, 119, 53, 93, 214, 207, 16, 150, 6, 216, 73, 126, 93, 154, 139, 167, 194, 220, 28, 89, 121, 92, 245, 188, 76, 120, 91, 89, 156, 75, 106},
-	}, Checkpoint{
+	},
+	{
 		Height: 326000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3606,7 +3932,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      803846603,
 		},
 		FilterHeader: &chainhash.Hash{214, 17, 75, 156, 118, 86, 111, 226, 10, 67, 236, 82, 118, 166, 124, 102, 119, 129, 236, 249, 63, 125, 108, 34, 119, 116, 203, 186, 99, 197, 242, 117},
-	}, Checkpoint{
+	},
+	{
 		Height: 327000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3617,7 +3944,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2486991730,
 		},
 		FilterHeader: &chainhash.Hash{97, 33, 125, 90, 201, 146, 94, 58, 35, 203, 100, 184, 0, 134, 81, 247, 66, 229, 86, 245, 106, 236, 14, 86, 42, 116, 43, 94, 83, 5, 227, 37},
-	}, Checkpoint{
+	},
+	{
 		Height: 328000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3628,7 +3956,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      269213733,
 		},
 		FilterHeader: &chainhash.Hash{89, 56, 22, 83, 70, 9, 10, 230, 245, 242, 115, 154, 164, 153, 138, 58, 168, 181, 18, 192, 254, 188, 127, 95, 105, 104, 157, 115, 50, 154, 54, 120},
-	}, Checkpoint{
+	},
+	{
 		Height: 329000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3639,7 +3968,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      459106347,
 		},
 		FilterHeader: &chainhash.Hash{92, 102, 174, 52, 85, 193, 74, 253, 84, 58, 19, 180, 193, 24, 7, 53, 143, 222, 164, 83, 135, 81, 142, 184, 22, 180, 47, 66, 171, 15, 219, 176},
-	}, Checkpoint{
+	},
+	{
 		Height: 330000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3650,7 +3980,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3756201140,
 		},
 		FilterHeader: &chainhash.Hash{66, 221, 100, 227, 89, 219, 200, 95, 109, 27, 234, 130, 39, 53, 38, 125, 114, 120, 14, 132, 180, 239, 176, 98, 239, 121, 69, 204, 227, 186, 224, 21},
-	}, Checkpoint{
+	},
+	{
 		Height: 331000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3661,7 +3992,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4118256071,
 		},
 		FilterHeader: &chainhash.Hash{170, 78, 53, 192, 151, 194, 40, 103, 31, 142, 175, 26, 6, 220, 66, 42, 103, 76, 126, 89, 107, 8, 153, 117, 40, 242, 26, 92, 229, 5, 11, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 332000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3672,7 +4004,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      816751520,
 		},
 		FilterHeader: &chainhash.Hash{112, 169, 125, 244, 217, 208, 66, 189, 63, 214, 103, 187, 130, 77, 158, 21, 116, 236, 206, 253, 130, 171, 47, 166, 148, 231, 0, 49, 29, 150, 9, 202},
-	}, Checkpoint{
+	},
+	{
 		Height: 333000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3683,7 +4016,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      16285063,
 		},
 		FilterHeader: &chainhash.Hash{64, 110, 104, 181, 72, 248, 117, 242, 174, 168, 204, 112, 106, 118, 142, 21, 1, 175, 33, 109, 108, 91, 219, 6, 178, 144, 180, 184, 14, 250, 61, 226},
-	}, Checkpoint{
+	},
+	{
 		Height: 334000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3694,7 +4028,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1593130548,
 		},
 		FilterHeader: &chainhash.Hash{203, 24, 216, 60, 244, 38, 118, 161, 182, 9, 234, 130, 241, 243, 82, 29, 114, 76, 99, 105, 102, 74, 45, 11, 87, 29, 240, 23, 105, 87, 15, 95},
-	}, Checkpoint{
+	},
+	{
 		Height: 335000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3705,7 +4040,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      590807251,
 		},
 		FilterHeader: &chainhash.Hash{41, 108, 20, 153, 162, 143, 99, 57, 233, 143, 238, 191, 77, 173, 231, 73, 252, 219, 102, 241, 8, 188, 158, 216, 19, 151, 217, 143, 241, 119, 187, 156},
-	}, Checkpoint{
+	},
+	{
 		Height: 336000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3716,7 +4052,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3208108936,
 		},
 		FilterHeader: &chainhash.Hash{150, 156, 203, 160, 241, 188, 236, 148, 60, 203, 73, 132, 53, 240, 196, 110, 155, 65, 36, 128, 112, 57, 239, 114, 20, 251, 31, 238, 123, 68, 133, 166},
-	}, Checkpoint{
+	},
+	{
 		Height: 337000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3727,7 +4064,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3845783792,
 		},
 		FilterHeader: &chainhash.Hash{15, 39, 28, 199, 227, 67, 166, 160, 138, 98, 156, 27, 97, 183, 143, 230, 89, 38, 255, 43, 98, 165, 28, 145, 237, 192, 8, 103, 225, 69, 159, 248},
-	}, Checkpoint{
+	},
+	{
 		Height: 338000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3738,7 +4076,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2914358091,
 		},
 		FilterHeader: &chainhash.Hash{95, 23, 4, 224, 220, 105, 12, 193, 130, 169, 35, 228, 148, 181, 143, 60, 66, 23, 83, 184, 72, 139, 142, 159, 11, 163, 163, 84, 181, 60, 121, 114},
-	}, Checkpoint{
+	},
+	{
 		Height: 339000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3749,7 +4088,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      649398056,
 		},
 		FilterHeader: &chainhash.Hash{207, 153, 236, 71, 65, 87, 199, 227, 111, 161, 216, 163, 228, 121, 229, 32, 173, 156, 34, 53, 154, 53, 226, 225, 9, 149, 243, 6, 129, 229, 214, 213},
-	}, Checkpoint{
+	},
+	{
 		Height: 340000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3760,7 +4100,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      740659028,
 		},
 		FilterHeader: &chainhash.Hash{26, 233, 239, 11, 239, 190, 162, 108, 36, 10, 172, 238, 197, 62, 180, 40, 12, 147, 112, 171, 126, 38, 188, 40, 55, 207, 213, 125, 135, 132, 254, 204},
-	}, Checkpoint{
+	},
+	{
 		Height: 341000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3771,7 +4112,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3856916895,
 		},
 		FilterHeader: &chainhash.Hash{96, 52, 238, 163, 166, 218, 80, 158, 31, 180, 197, 177, 179, 117, 80, 7, 187, 224, 152, 193, 246, 165, 116, 226, 213, 59, 216, 125, 68, 244, 63, 25},
-	}, Checkpoint{
+	},
+	{
 		Height: 342000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3782,7 +4124,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3374451142,
 		},
 		FilterHeader: &chainhash.Hash{60, 116, 161, 112, 96, 192, 245, 32, 16, 183, 194, 172, 139, 32, 237, 151, 115, 147, 40, 123, 221, 92, 21, 223, 126, 44, 185, 68, 180, 157, 20, 40},
-	}, Checkpoint{
+	},
+	{
 		Height: 343000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3793,7 +4136,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4199869733,
 		},
 		FilterHeader: &chainhash.Hash{197, 58, 245, 250, 231, 161, 182, 221, 111, 133, 162, 69, 205, 190, 100, 186, 238, 95, 108, 2, 44, 164, 246, 149, 17, 214, 118, 50, 218, 46, 190, 212},
-	}, Checkpoint{
+	},
+	{
 		Height: 344000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3804,7 +4148,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3421789871,
 		},
 		FilterHeader: &chainhash.Hash{102, 111, 15, 114, 223, 232, 197, 102, 152, 171, 71, 152, 173, 107, 24, 61, 54, 23, 101, 104, 9, 164, 232, 178, 74, 244, 245, 181, 50, 176, 215, 9},
-	}, Checkpoint{
+	},
+	{
 		Height: 345000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3815,7 +4160,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3510071618,
 		},
 		FilterHeader: &chainhash.Hash{28, 85, 176, 8, 215, 254, 149, 196, 75, 245, 138, 129, 45, 133, 248, 69, 254, 29, 181, 226, 2, 119, 32, 16, 1, 50, 4, 0, 17, 213, 153, 99},
-	}, Checkpoint{
+	},
+	{
 		Height: 346000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3826,7 +4172,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2103540619,
 		},
 		FilterHeader: &chainhash.Hash{82, 42, 13, 232, 5, 138, 80, 173, 5, 225, 8, 80, 11, 154, 171, 152, 218, 146, 161, 149, 136, 218, 90, 88, 117, 135, 6, 159, 201, 189, 35, 156},
-	}, Checkpoint{
+	},
+	{
 		Height: 347000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3837,7 +4184,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1418746034,
 		},
 		FilterHeader: &chainhash.Hash{165, 41, 111, 80, 63, 86, 249, 229, 209, 238, 203, 246, 61, 100, 34, 204, 221, 98, 41, 133, 175, 107, 217, 210, 45, 57, 82, 238, 13, 76, 178, 248},
-	}, Checkpoint{
+	},
+	{
 		Height: 348000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3848,7 +4196,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      432878182,
 		},
 		FilterHeader: &chainhash.Hash{198, 137, 57, 154, 107, 67, 131, 163, 116, 162, 251, 114, 219, 27, 159, 121, 172, 173, 22, 228, 85, 180, 101, 207, 240, 20, 234, 245, 150, 169, 170, 246},
-	}, Checkpoint{
+	},
+	{
 		Height: 349000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3859,7 +4208,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3050669556,
 		},
 		FilterHeader: &chainhash.Hash{207, 236, 116, 180, 255, 0, 247, 150, 236, 143, 93, 217, 241, 145, 232, 244, 84, 104, 69, 227, 90, 48, 253, 92, 170, 131, 194, 89, 93, 30, 93, 193},
-	}, Checkpoint{
+	},
+	{
 		Height: 350000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3870,7 +4220,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3578762368,
 		},
 		FilterHeader: &chainhash.Hash{178, 53, 190, 166, 234, 189, 236, 74, 185, 165, 248, 163, 225, 33, 173, 79, 182, 102, 216, 15, 192, 21, 216, 171, 84, 167, 180, 47, 219, 206, 112, 128},
-	}, Checkpoint{
+	},
+	{
 		Height: 351000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3881,7 +4232,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2803835628,
 		},
 		FilterHeader: &chainhash.Hash{111, 89, 132, 159, 100, 238, 62, 223, 152, 119, 146, 189, 29, 91, 25, 157, 34, 236, 251, 4, 57, 239, 42, 106, 188, 232, 155, 47, 236, 44, 173, 89},
-	}, Checkpoint{
+	},
+	{
 		Height: 352000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3892,7 +4244,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2977383358,
 		},
 		FilterHeader: &chainhash.Hash{149, 145, 56, 163, 213, 212, 114, 31, 227, 2, 157, 247, 201, 58, 168, 162, 46, 126, 140, 223, 201, 201, 247, 252, 164, 173, 233, 249, 157, 202, 214, 102},
-	}, Checkpoint{
+	},
+	{
 		Height: 353000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3903,7 +4256,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      835160276,
 		},
 		FilterHeader: &chainhash.Hash{12, 215, 55, 189, 210, 50, 0, 55, 134, 231, 23, 112, 182, 215, 210, 116, 231, 214, 51, 7, 220, 146, 242, 246, 5, 68, 42, 181, 81, 59, 95, 97},
-	}, Checkpoint{
+	},
+	{
 		Height: 354000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3914,7 +4268,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3426490487,
 		},
 		FilterHeader: &chainhash.Hash{188, 223, 141, 204, 11, 226, 57, 124, 82, 169, 24, 215, 7, 74, 123, 110, 117, 204, 86, 169, 227, 174, 116, 222, 39, 242, 70, 33, 83, 2, 130, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 355000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3925,7 +4280,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3493613175,
 		},
 		FilterHeader: &chainhash.Hash{28, 230, 122, 54, 237, 95, 173, 18, 80, 86, 65, 61, 248, 3, 193, 59, 155, 147, 158, 188, 181, 114, 215, 11, 199, 229, 241, 19, 89, 51, 174, 73},
-	}, Checkpoint{
+	},
+	{
 		Height: 356000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3936,7 +4292,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3022021753,
 		},
 		FilterHeader: &chainhash.Hash{211, 192, 96, 230, 96, 246, 111, 15, 195, 217, 85, 177, 4, 180, 231, 168, 33, 173, 68, 53, 133, 77, 157, 117, 24, 161, 240, 228, 234, 152, 149, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 357000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3947,7 +4304,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      893657567,
 		},
 		FilterHeader: &chainhash.Hash{11, 150, 169, 68, 92, 124, 252, 192, 117, 193, 3, 171, 233, 127, 2, 37, 115, 17, 133, 70, 218, 201, 38, 75, 245, 48, 73, 220, 166, 106, 92, 147},
-	}, Checkpoint{
+	},
+	{
 		Height: 358000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    2,
@@ -3958,7 +4316,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4030802437,
 		},
 		FilterHeader: &chainhash.Hash{24, 147, 133, 212, 78, 11, 179, 147, 58, 18, 28, 31, 173, 147, 109, 215, 177, 126, 29, 89, 174, 205, 238, 23, 218, 39, 61, 188, 66, 175, 169, 128},
-	}, Checkpoint{
+	},
+	{
 		Height: 359000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3969,7 +4328,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3020402664,
 		},
 		FilterHeader: &chainhash.Hash{59, 200, 200, 32, 236, 40, 178, 62, 56, 120, 128, 37, 48, 204, 20, 151, 193, 54, 112, 20, 139, 52, 114, 96, 150, 179, 10, 175, 140, 204, 156, 57},
-	}, Checkpoint{
+	},
+	{
 		Height: 360000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3980,7 +4340,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2568655490,
 		},
 		FilterHeader: &chainhash.Hash{115, 206, 6, 60, 251, 125, 222, 5, 251, 127, 145, 9, 52, 83, 76, 22, 191, 16, 95, 86, 8, 53, 154, 174, 142, 8, 163, 243, 173, 34, 20, 149},
-	}, Checkpoint{
+	},
+	{
 		Height: 361000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -3991,7 +4352,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1767868261,
 		},
 		FilterHeader: &chainhash.Hash{104, 255, 195, 1, 41, 37, 113, 209, 203, 50, 100, 185, 76, 35, 107, 135, 186, 245, 38, 5, 172, 135, 205, 86, 130, 88, 181, 142, 49, 71, 165, 236},
-	}, Checkpoint{
+	},
+	{
 		Height: 362000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4002,7 +4364,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1085114522,
 		},
 		FilterHeader: &chainhash.Hash{145, 45, 71, 202, 133, 109, 251, 40, 15, 113, 36, 205, 125, 87, 102, 245, 228, 185, 96, 28, 209, 250, 107, 111, 72, 14, 12, 31, 209, 18, 16, 53},
-	}, Checkpoint{
+	},
+	{
 		Height: 363000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4013,7 +4376,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      361154403,
 		},
 		FilterHeader: &chainhash.Hash{212, 162, 130, 206, 182, 152, 42, 11, 166, 79, 132, 179, 30, 35, 137, 97, 247, 32, 89, 117, 235, 96, 175, 216, 249, 37, 200, 130, 203, 169, 20, 114},
-	}, Checkpoint{
+	},
+	{
 		Height: 364000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4024,7 +4388,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3635550809,
 		},
 		FilterHeader: &chainhash.Hash{154, 18, 200, 106, 50, 219, 42, 243, 128, 118, 35, 34, 216, 2, 156, 213, 107, 221, 14, 230, 48, 39, 58, 254, 29, 10, 26, 149, 21, 149, 116, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 365000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4035,7 +4400,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      895047243,
 		},
 		FilterHeader: &chainhash.Hash{36, 17, 11, 193, 246, 246, 70, 204, 111, 32, 65, 46, 178, 65, 230, 201, 57, 218, 43, 252, 232, 102, 15, 40, 214, 188, 176, 50, 211, 84, 211, 12},
-	}, Checkpoint{
+	},
+	{
 		Height: 366000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4046,7 +4412,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2654172411,
 		},
 		FilterHeader: &chainhash.Hash{87, 29, 68, 110, 233, 85, 14, 160, 139, 25, 45, 220, 20, 95, 150, 232, 193, 198, 26, 97, 50, 126, 93, 56, 237, 185, 136, 107, 151, 3, 9, 145},
-	}, Checkpoint{
+	},
+	{
 		Height: 367000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4057,7 +4424,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      66043272,
 		},
 		FilterHeader: &chainhash.Hash{106, 140, 212, 140, 228, 255, 171, 63, 9, 17, 192, 67, 145, 101, 246, 3, 153, 37, 50, 206, 225, 57, 193, 15, 55, 194, 86, 136, 171, 113, 138, 73},
-	}, Checkpoint{
+	},
+	{
 		Height: 368000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4068,7 +4436,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3916926660,
 		},
 		FilterHeader: &chainhash.Hash{21, 165, 77, 156, 146, 112, 138, 140, 62, 177, 220, 245, 123, 37, 58, 56, 89, 191, 15, 222, 60, 65, 103, 110, 129, 90, 197, 176, 111, 140, 194, 185},
-	}, Checkpoint{
+	},
+	{
 		Height: 369000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4079,7 +4448,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2708838477,
 		},
 		FilterHeader: &chainhash.Hash{109, 62, 235, 25, 112, 165, 231, 41, 102, 89, 245, 215, 219, 47, 161, 233, 120, 88, 59, 223, 11, 199, 38, 77, 34, 0, 220, 4, 200, 1, 175, 132},
-	}, Checkpoint{
+	},
+	{
 		Height: 370000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4090,7 +4460,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3487073227,
 		},
 		FilterHeader: &chainhash.Hash{78, 192, 105, 102, 181, 199, 30, 244, 83, 59, 254, 254, 75, 94, 101, 238, 8, 249, 232, 116, 26, 104, 70, 103, 135, 120, 179, 19, 34, 3, 181, 25},
-	}, Checkpoint{
+	},
+	{
 		Height: 371000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4101,7 +4472,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1055853261,
 		},
 		FilterHeader: &chainhash.Hash{173, 0, 210, 30, 14, 175, 217, 89, 15, 144, 5, 32, 122, 193, 16, 21, 195, 231, 243, 196, 174, 135, 152, 73, 25, 87, 21, 199, 227, 38, 234, 9},
-	}, Checkpoint{
+	},
+	{
 		Height: 372000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4112,7 +4484,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1413185736,
 		},
 		FilterHeader: &chainhash.Hash{0, 13, 203, 65, 47, 93, 181, 112, 100, 155, 109, 58, 209, 55, 216, 68, 125, 103, 194, 46, 252, 105, 154, 118, 177, 173, 255, 5, 99, 239, 170, 228},
-	}, Checkpoint{
+	},
+	{
 		Height: 373000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4123,7 +4496,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      462802790,
 		},
 		FilterHeader: &chainhash.Hash{98, 236, 185, 43, 79, 229, 113, 63, 158, 33, 150, 54, 86, 169, 17, 48, 52, 95, 73, 48, 232, 82, 143, 54, 151, 36, 159, 242, 68, 53, 217, 138},
-	}, Checkpoint{
+	},
+	{
 		Height: 374000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4134,7 +4508,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3000450909,
 		},
 		FilterHeader: &chainhash.Hash{174, 54, 255, 38, 230, 24, 93, 30, 192, 102, 214, 32, 37, 220, 77, 124, 166, 86, 81, 148, 26, 245, 95, 15, 134, 103, 241, 201, 15, 28, 177, 110},
-	}, Checkpoint{
+	},
+	{
 		Height: 375000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4145,7 +4520,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1044796943,
 		},
 		FilterHeader: &chainhash.Hash{74, 50, 89, 136, 11, 208, 52, 229, 153, 35, 237, 211, 93, 54, 194, 40, 217, 61, 148, 147, 78, 55, 85, 31, 198, 221, 55, 143, 219, 65, 52, 107},
-	}, Checkpoint{
+	},
+	{
 		Height: 376000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4156,7 +4532,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1861558191,
 		},
 		FilterHeader: &chainhash.Hash{146, 94, 125, 227, 142, 21, 45, 47, 164, 224, 249, 149, 113, 241, 14, 31, 153, 4, 34, 79, 28, 200, 226, 138, 13, 73, 189, 62, 9, 88, 38, 201},
-	}, Checkpoint{
+	},
+	{
 		Height: 377000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4167,7 +4544,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1339335312,
 		},
 		FilterHeader: &chainhash.Hash{130, 141, 60, 36, 77, 222, 122, 123, 114, 25, 191, 142, 117, 140, 109, 93, 218, 19, 3, 100, 148, 77, 171, 231, 55, 134, 206, 125, 16, 98, 228, 65},
-	}, Checkpoint{
+	},
+	{
 		Height: 378000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4178,7 +4556,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2007580513,
 		},
 		FilterHeader: &chainhash.Hash{122, 9, 252, 162, 171, 6, 245, 177, 96, 85, 94, 163, 155, 48, 159, 11, 249, 126, 141, 139, 192, 109, 50, 132, 144, 88, 4, 24, 33, 244, 228, 47},
-	}, Checkpoint{
+	},
+	{
 		Height: 379000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4189,7 +4568,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      722486661,
 		},
 		FilterHeader: &chainhash.Hash{77, 159, 45, 96, 18, 227, 221, 191, 223, 65, 47, 90, 254, 244, 73, 121, 127, 184, 198, 155, 40, 132, 224, 177, 94, 5, 241, 103, 234, 136, 196, 16},
-	}, Checkpoint{
+	},
+	{
 		Height: 380000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4200,7 +4580,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      144465107,
 		},
 		FilterHeader: &chainhash.Hash{95, 232, 5, 142, 79, 108, 175, 70, 155, 27, 176, 78, 82, 60, 79, 231, 248, 77, 78, 41, 170, 150, 79, 12, 53, 16, 87, 161, 106, 230, 26, 162},
-	}, Checkpoint{
+	},
+	{
 		Height: 381000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4211,7 +4592,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2473883931,
 		},
 		FilterHeader: &chainhash.Hash{174, 147, 234, 141, 163, 117, 184, 5, 33, 172, 92, 235, 13, 11, 192, 164, 147, 15, 27, 15, 175, 148, 161, 107, 69, 251, 75, 122, 243, 10, 184, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 382000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4222,7 +4604,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      771081057,
 		},
 		FilterHeader: &chainhash.Hash{13, 198, 118, 204, 221, 162, 57, 95, 77, 211, 91, 94, 157, 67, 249, 86, 125, 24, 229, 84, 233, 0, 206, 135, 146, 36, 208, 244, 166, 182, 118, 84},
-	}, Checkpoint{
+	},
+	{
 		Height: 383000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4233,7 +4616,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2031933334,
 		},
 		FilterHeader: &chainhash.Hash{108, 110, 225, 103, 67, 101, 93, 36, 49, 32, 123, 159, 153, 121, 83, 245, 131, 197, 78, 51, 26, 96, 254, 151, 250, 98, 141, 64, 53, 175, 113, 249},
-	}, Checkpoint{
+	},
+	{
 		Height: 384000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    3,
@@ -4244,7 +4628,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1077038617,
 		},
 		FilterHeader: &chainhash.Hash{33, 108, 244, 98, 90, 52, 180, 184, 174, 77, 35, 94, 207, 89, 33, 209, 30, 106, 135, 73, 147, 52, 13, 102, 73, 30, 71, 37, 152, 222, 101, 83},
-	}, Checkpoint{
+	},
+	{
 		Height: 385000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4255,7 +4640,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1911954620,
 		},
 		FilterHeader: &chainhash.Hash{64, 65, 71, 84, 2, 146, 6, 28, 209, 16, 139, 108, 19, 153, 42, 5, 188, 123, 12, 241, 23, 95, 221, 97, 3, 167, 177, 217, 229, 166, 57, 78},
-	}, Checkpoint{
+	},
+	{
 		Height: 386000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4266,7 +4652,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      614065336,
 		},
 		FilterHeader: &chainhash.Hash{218, 38, 190, 70, 71, 200, 201, 87, 168, 64, 37, 0, 104, 128, 156, 132, 50, 33, 165, 185, 59, 152, 84, 226, 161, 52, 35, 207, 99, 196, 218, 159},
-	}, Checkpoint{
+	},
+	{
 		Height: 387000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4277,7 +4664,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      436610408,
 		},
 		FilterHeader: &chainhash.Hash{119, 155, 176, 41, 37, 185, 53, 20, 108, 13, 125, 251, 197, 238, 89, 170, 86, 244, 145, 101, 180, 161, 132, 109, 155, 101, 125, 48, 242, 215, 190, 99},
-	}, Checkpoint{
+	},
+	{
 		Height: 388000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4288,7 +4676,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1282584410,
 		},
 		FilterHeader: &chainhash.Hash{105, 87, 201, 71, 60, 52, 146, 120, 253, 59, 64, 226, 231, 16, 145, 185, 62, 72, 115, 187, 250, 166, 51, 11, 1, 21, 141, 228, 147, 179, 97, 105},
-	}, Checkpoint{
+	},
+	{
 		Height: 389000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4299,7 +4688,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3526969956,
 		},
 		FilterHeader: &chainhash.Hash{14, 15, 89, 115, 239, 35, 153, 80, 119, 118, 130, 207, 90, 78, 219, 237, 31, 185, 219, 146, 43, 159, 137, 227, 85, 240, 10, 80, 38, 11, 133, 90},
-	}, Checkpoint{
+	},
+	{
 		Height: 390000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4310,7 +4700,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      575033904,
 		},
 		FilterHeader: &chainhash.Hash{231, 16, 170, 61, 198, 51, 139, 166, 241, 176, 58, 202, 189, 202, 176, 206, 122, 88, 69, 58, 176, 164, 211, 139, 69, 117, 70, 91, 73, 210, 75, 10},
-	}, Checkpoint{
+	},
+	{
 		Height: 391000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4321,7 +4712,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1941375045,
 		},
 		FilterHeader: &chainhash.Hash{142, 250, 23, 236, 75, 84, 151, 12, 130, 133, 67, 191, 210, 153, 156, 157, 72, 71, 118, 253, 95, 189, 209, 231, 221, 129, 0, 84, 60, 147, 26, 151},
-	}, Checkpoint{
+	},
+	{
 		Height: 392000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4332,7 +4724,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      40793535,
 		},
 		FilterHeader: &chainhash.Hash{135, 65, 207, 112, 24, 40, 99, 242, 153, 212, 255, 49, 250, 193, 17, 250, 247, 33, 125, 73, 11, 76, 159, 25, 4, 33, 72, 8, 45, 113, 136, 239},
-	}, Checkpoint{
+	},
+	{
 		Height: 393000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4343,7 +4736,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1210139528,
 		},
 		FilterHeader: &chainhash.Hash{218, 211, 68, 64, 80, 246, 191, 83, 132, 21, 117, 6, 17, 206, 219, 196, 149, 187, 131, 54, 117, 242, 162, 119, 167, 93, 43, 239, 233, 127, 14, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 394000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4354,7 +4748,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2862496700,
 		},
 		FilterHeader: &chainhash.Hash{54, 79, 131, 83, 91, 44, 96, 126, 224, 82, 223, 59, 206, 189, 171, 140, 70, 245, 84, 124, 133, 166, 14, 1, 167, 95, 74, 155, 164, 205, 191, 236},
-	}, Checkpoint{
+	},
+	{
 		Height: 395000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4365,7 +4760,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3676046323,
 		},
 		FilterHeader: &chainhash.Hash{26, 16, 176, 77, 9, 167, 174, 216, 232, 254, 0, 250, 134, 86, 88, 132, 252, 250, 93, 219, 181, 226, 108, 148, 236, 61, 123, 214, 130, 107, 45, 113},
-	}, Checkpoint{
+	},
+	{
 		Height: 396000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4376,7 +4772,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3291070,
 		},
 		FilterHeader: &chainhash.Hash{44, 226, 5, 101, 252, 238, 213, 11, 32, 76, 68, 234, 57, 231, 153, 49, 62, 184, 13, 214, 140, 4, 43, 23, 192, 246, 247, 119, 220, 117, 154, 206},
-	}, Checkpoint{
+	},
+	{
 		Height: 397000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4387,7 +4784,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2167867038,
 		},
 		FilterHeader: &chainhash.Hash{23, 42, 240, 33, 43, 248, 186, 227, 22, 43, 89, 48, 206, 130, 140, 220, 113, 252, 101, 55, 10, 238, 210, 67, 117, 152, 38, 40, 29, 57, 96, 29},
-	}, Checkpoint{
+	},
+	{
 		Height: 398000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4398,7 +4796,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      679573589,
 		},
 		FilterHeader: &chainhash.Hash{60, 25, 8, 164, 125, 47, 211, 202, 69, 77, 228, 57, 159, 45, 170, 132, 144, 217, 0, 144, 68, 75, 221, 117, 144, 220, 252, 51, 10, 244, 121, 61},
-	}, Checkpoint{
+	},
+	{
 		Height: 399000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4409,7 +4808,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      980660576,
 		},
 		FilterHeader: &chainhash.Hash{18, 10, 218, 172, 71, 227, 172, 234, 69, 105, 74, 49, 67, 73, 202, 100, 53, 128, 228, 154, 93, 74, 186, 113, 184, 254, 21, 161, 46, 240, 235, 64},
-	}, Checkpoint{
+	},
+	{
 		Height: 400000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4420,7 +4820,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      657220870,
 		},
 		FilterHeader: &chainhash.Hash{58, 46, 25, 239, 120, 95, 198, 98, 178, 179, 237, 86, 22, 15, 38, 122, 49, 46, 251, 168, 193, 193, 238, 13, 199, 105, 197, 241, 177, 58, 151, 93},
-	}, Checkpoint{
+	},
+	{
 		Height: 401000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4431,7 +4832,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4076360614,
 		},
 		FilterHeader: &chainhash.Hash{16, 164, 62, 36, 5, 69, 178, 9, 215, 216, 49, 149, 157, 237, 194, 222, 89, 255, 71, 4, 142, 238, 45, 219, 244, 191, 30, 183, 130, 151, 124, 78},
-	}, Checkpoint{
+	},
+	{
 		Height: 402000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4442,7 +4844,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1339573596,
 		},
 		FilterHeader: &chainhash.Hash{22, 209, 89, 230, 166, 237, 175, 146, 15, 219, 126, 79, 15, 27, 223, 138, 119, 242, 246, 230, 161, 107, 245, 92, 222, 181, 81, 2, 138, 108, 56, 225},
-	}, Checkpoint{
+	},
+	{
 		Height: 403000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4453,7 +4856,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      317549265,
 		},
 		FilterHeader: &chainhash.Hash{71, 127, 238, 64, 69, 173, 49, 235, 125, 242, 69, 112, 252, 79, 166, 240, 149, 10, 43, 189, 40, 95, 21, 7, 41, 254, 232, 185, 34, 168, 16, 103},
-	}, Checkpoint{
+	},
+	{
 		Height: 404000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4464,7 +4868,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      257357910,
 		},
 		FilterHeader: &chainhash.Hash{150, 4, 47, 80, 226, 37, 78, 12, 140, 134, 94, 138, 215, 178, 171, 18, 245, 210, 184, 66, 129, 203, 155, 145, 96, 137, 6, 150, 139, 9, 216, 223},
-	}, Checkpoint{
+	},
+	{
 		Height: 405000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4475,7 +4880,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2262193241,
 		},
 		FilterHeader: &chainhash.Hash{13, 149, 107, 195, 4, 155, 14, 111, 129, 235, 222, 39, 35, 3, 216, 4, 202, 255, 214, 41, 170, 185, 2, 221, 9, 168, 245, 62, 73, 118, 35, 211},
-	}, Checkpoint{
+	},
+	{
 		Height: 406000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4486,7 +4892,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3305697071,
 		},
 		FilterHeader: &chainhash.Hash{201, 115, 210, 63, 249, 248, 117, 149, 52, 191, 244, 36, 22, 131, 99, 56, 156, 175, 113, 177, 126, 208, 71, 61, 76, 92, 134, 130, 1, 157, 140, 124},
-	}, Checkpoint{
+	},
+	{
 		Height: 407000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4497,7 +4904,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      104098959,
 		},
 		FilterHeader: &chainhash.Hash{80, 97, 216, 109, 70, 185, 187, 193, 180, 113, 118, 135, 17, 231, 94, 86, 137, 160, 184, 112, 45, 10, 116, 38, 174, 18, 148, 186, 233, 250, 87, 97},
-	}, Checkpoint{
+	},
+	{
 		Height: 408000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4508,7 +4916,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1473740892,
 		},
 		FilterHeader: &chainhash.Hash{172, 77, 170, 212, 177, 69, 66, 165, 90, 177, 121, 2, 47, 78, 183, 101, 145, 2, 100, 85, 237, 56, 95, 49, 178, 246, 93, 91, 56, 11, 131, 251},
-	}, Checkpoint{
+	},
+	{
 		Height: 409000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4519,7 +4928,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1598959291,
 		},
 		FilterHeader: &chainhash.Hash{35, 63, 64, 255, 153, 185, 161, 1, 55, 123, 236, 45, 82, 0, 148, 159, 243, 118, 48, 235, 185, 87, 197, 70, 69, 64, 38, 96, 161, 42, 233, 11},
-	}, Checkpoint{
+	},
+	{
 		Height: 410000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    805306368,
@@ -4530,7 +4940,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1367419714,
 		},
 		FilterHeader: &chainhash.Hash{45, 153, 162, 203, 116, 79, 1, 35, 133, 98, 27, 140, 248, 153, 117, 204, 196, 222, 23, 232, 248, 48, 203, 202, 85, 28, 93, 197, 60, 106, 236, 146},
-	}, Checkpoint{
+	},
+	{
 		Height: 411000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4541,7 +4952,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1294101966,
 		},
 		FilterHeader: &chainhash.Hash{91, 126, 50, 191, 154, 19, 28, 81, 3, 95, 110, 62, 203, 155, 132, 56, 208, 226, 89, 159, 181, 21, 158, 26, 33, 73, 108, 124, 62, 87, 70, 78},
-	}, Checkpoint{
+	},
+	{
 		Height: 412000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -4552,7 +4964,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1252167466,
 		},
 		FilterHeader: &chainhash.Hash{169, 253, 32, 157, 81, 118, 230, 86, 96, 80, 232, 172, 94, 98, 119, 226, 69, 199, 100, 228, 133, 38, 168, 75, 102, 122, 205, 67, 159, 119, 186, 70},
-	}, Checkpoint{
+	},
+	{
 		Height: 413000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4563,7 +4976,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3443736396,
 		},
 		FilterHeader: &chainhash.Hash{63, 223, 174, 170, 67, 183, 151, 13, 155, 107, 123, 145, 19, 145, 76, 49, 197, 191, 185, 210, 79, 142, 174, 220, 83, 96, 151, 122, 205, 173, 82, 208},
-	}, Checkpoint{
+	},
+	{
 		Height: 414000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4574,7 +4988,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      643625408,
 		},
 		FilterHeader: &chainhash.Hash{127, 169, 183, 176, 100, 2, 128, 49, 94, 64, 148, 233, 240, 211, 241, 113, 166, 246, 92, 58, 234, 165, 156, 15, 151, 196, 171, 185, 208, 125, 211, 176},
-	}, Checkpoint{
+	},
+	{
 		Height: 415000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4585,7 +5000,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      493801415,
 		},
 		FilterHeader: &chainhash.Hash{199, 132, 212, 205, 93, 195, 137, 192, 87, 69, 255, 68, 70, 227, 183, 244, 190, 50, 128, 225, 114, 201, 227, 171, 51, 84, 139, 225, 181, 61, 164, 114},
-	}, Checkpoint{
+	},
+	{
 		Height: 416000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4596,7 +5012,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      983330473,
 		},
 		FilterHeader: &chainhash.Hash{210, 22, 253, 63, 189, 100, 5, 201, 152, 111, 121, 206, 95, 78, 93, 132, 87, 34, 83, 111, 226, 170, 42, 240, 82, 110, 38, 51, 1, 132, 231, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 417000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4607,7 +5024,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3239684038,
 		},
 		FilterHeader: &chainhash.Hash{61, 61, 206, 85, 227, 121, 20, 186, 124, 20, 28, 17, 81, 249, 76, 104, 148, 146, 133, 179, 26, 146, 64, 250, 105, 109, 221, 121, 47, 150, 62, 140},
-	}, Checkpoint{
+	},
+	{
 		Height: 418000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870913,
@@ -4618,7 +5036,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2605081064,
 		},
 		FilterHeader: &chainhash.Hash{216, 170, 237, 194, 175, 66, 244, 119, 171, 65, 121, 14, 119, 52, 241, 143, 27, 176, 123, 42, 133, 104, 92, 245, 63, 79, 80, 22, 47, 106, 3, 125},
-	}, Checkpoint{
+	},
+	{
 		Height: 419000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4629,7 +5048,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3860946388,
 		},
 		FilterHeader: &chainhash.Hash{158, 221, 245, 244, 204, 209, 224, 199, 250, 45, 21, 87, 207, 214, 10, 181, 33, 143, 78, 189, 154, 213, 132, 187, 216, 174, 63, 27, 253, 76, 130, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 420000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4640,7 +5060,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2193437364,
 		},
 		FilterHeader: &chainhash.Hash{108, 60, 165, 11, 79, 135, 17, 213, 109, 214, 205, 65, 60, 130, 67, 49, 185, 237, 59, 131, 241, 164, 117, 138, 110, 77, 32, 253, 95, 240, 116, 15},
-	}, Checkpoint{
+	},
+	{
 		Height: 421000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4651,7 +5072,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4040746633,
 		},
 		FilterHeader: &chainhash.Hash{181, 90, 245, 203, 7, 57, 122, 176, 183, 197, 56, 5, 62, 191, 142, 103, 77, 97, 30, 239, 39, 216, 176, 170, 20, 116, 0, 190, 3, 208, 223, 62},
-	}, Checkpoint{
+	},
+	{
 		Height: 422000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4662,7 +5084,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3759510574,
 		},
 		FilterHeader: &chainhash.Hash{153, 114, 55, 62, 110, 255, 6, 133, 237, 147, 53, 201, 29, 227, 231, 54, 207, 105, 102, 143, 155, 37, 1, 110, 32, 251, 175, 143, 91, 160, 184, 93},
-	}, Checkpoint{
+	},
+	{
 		Height: 423000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4673,7 +5096,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3922864253,
 		},
 		FilterHeader: &chainhash.Hash{162, 158, 26, 113, 20, 56, 251, 70, 154, 112, 220, 206, 229, 189, 69, 212, 43, 152, 43, 14, 111, 194, 63, 146, 235, 215, 163, 84, 5, 67, 71, 196},
-	}, Checkpoint{
+	},
+	{
 		Height: 424000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4684,7 +5108,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      130916484,
 		},
 		FilterHeader: &chainhash.Hash{38, 135, 57, 34, 45, 150, 57, 40, 24, 1, 70, 107, 107, 50, 42, 149, 188, 221, 61, 47, 235, 148, 163, 186, 216, 8, 36, 31, 4, 106, 121, 197},
-	}, Checkpoint{
+	},
+	{
 		Height: 425000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4695,7 +5120,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2413400094,
 		},
 		FilterHeader: &chainhash.Hash{75, 16, 144, 203, 111, 153, 211, 105, 137, 231, 19, 23, 64, 216, 235, 243, 86, 235, 252, 37, 223, 198, 42, 98, 183, 240, 88, 70, 66, 81, 68, 63},
-	}, Checkpoint{
+	},
+	{
 		Height: 426000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4706,7 +5132,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2924458158,
 		},
 		FilterHeader: &chainhash.Hash{90, 85, 176, 207, 88, 101, 156, 19, 38, 239, 14, 251, 143, 55, 233, 174, 120, 65, 166, 18, 87, 147, 62, 158, 69, 63, 13, 48, 127, 104, 243, 171},
-	}, Checkpoint{
+	},
+	{
 		Height: 427000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4717,7 +5144,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3603340439,
 		},
 		FilterHeader: &chainhash.Hash{96, 124, 143, 153, 172, 174, 145, 93, 61, 159, 211, 235, 247, 94, 18, 122, 57, 194, 221, 19, 136, 19, 52, 169, 200, 227, 255, 152, 47, 137, 14, 125},
-	}, Checkpoint{
+	},
+	{
 		Height: 428000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4728,7 +5156,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      291001963,
 		},
 		FilterHeader: &chainhash.Hash{121, 221, 114, 20, 123, 152, 224, 246, 199, 1, 62, 247, 155, 161, 104, 72, 184, 121, 107, 44, 230, 104, 73, 159, 200, 35, 36, 217, 112, 208, 169, 244},
-	}, Checkpoint{
+	},
+	{
 		Height: 429000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4739,7 +5168,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3415821779,
 		},
 		FilterHeader: &chainhash.Hash{147, 25, 172, 49, 31, 90, 212, 102, 107, 243, 44, 188, 13, 202, 41, 30, 220, 61, 158, 208, 21, 92, 122, 122, 41, 0, 91, 17, 42, 162, 178, 25},
-	}, Checkpoint{
+	},
+	{
 		Height: 430000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4750,7 +5180,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2675288587,
 		},
 		FilterHeader: &chainhash.Hash{26, 188, 204, 1, 129, 153, 79, 233, 184, 184, 225, 0, 223, 182, 16, 182, 209, 233, 60, 72, 193, 127, 158, 176, 107, 23, 34, 84, 25, 35, 149, 177},
-	}, Checkpoint{
+	},
+	{
 		Height: 431000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4761,7 +5192,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3418547005,
 		},
 		FilterHeader: &chainhash.Hash{245, 68, 88, 122, 106, 96, 220, 177, 216, 208, 179, 6, 134, 99, 104, 221, 165, 101, 97, 91, 123, 142, 129, 108, 65, 117, 30, 117, 48, 216, 53, 244},
-	}, Checkpoint{
+	},
+	{
 		Height: 432000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4772,7 +5204,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      563070720,
 		},
 		FilterHeader: &chainhash.Hash{196, 129, 60, 32, 232, 171, 36, 28, 221, 234, 12, 128, 107, 181, 19, 152, 140, 140, 78, 192, 220, 202, 10, 16, 105, 27, 199, 233, 172, 3, 142, 166},
-	}, Checkpoint{
+	},
+	{
 		Height: 433000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4783,7 +5216,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1469847136,
 		},
 		FilterHeader: &chainhash.Hash{206, 138, 66, 41, 21, 155, 66, 223, 113, 58, 229, 58, 242, 68, 52, 105, 84, 177, 66, 40, 245, 5, 49, 52, 84, 225, 221, 69, 212, 33, 121, 193},
-	}, Checkpoint{
+	},
+	{
 		Height: 434000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4794,7 +5228,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3581890969,
 		},
 		FilterHeader: &chainhash.Hash{92, 141, 98, 120, 152, 116, 215, 59, 224, 47, 206, 219, 150, 63, 240, 59, 159, 147, 6, 71, 243, 100, 74, 252, 94, 172, 0, 81, 133, 83, 2, 123},
-	}, Checkpoint{
+	},
+	{
 		Height: 435000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4805,7 +5240,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2743455925,
 		},
 		FilterHeader: &chainhash.Hash{55, 120, 97, 46, 37, 172, 236, 218, 55, 53, 221, 61, 204, 78, 142, 142, 84, 226, 128, 209, 178, 224, 124, 125, 98, 44, 87, 162, 7, 180, 252, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 436000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4816,7 +5252,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      170232334,
 		},
 		FilterHeader: &chainhash.Hash{97, 30, 142, 125, 255, 117, 221, 213, 199, 178, 53, 186, 248, 62, 141, 159, 225, 183, 112, 229, 1, 97, 36, 97, 118, 114, 101, 187, 74, 75, 167, 246},
-	}, Checkpoint{
+	},
+	{
 		Height: 437000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4827,7 +5264,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      202348060,
 		},
 		FilterHeader: &chainhash.Hash{252, 110, 174, 67, 95, 105, 121, 233, 247, 162, 86, 197, 49, 255, 55, 218, 250, 12, 206, 76, 103, 1, 24, 98, 176, 105, 115, 200, 169, 22, 68, 231},
-	}, Checkpoint{
+	},
+	{
 		Height: 438000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4838,7 +5276,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1327762892,
 		},
 		FilterHeader: &chainhash.Hash{33, 100, 109, 43, 131, 166, 7, 185, 209, 197, 226, 170, 253, 167, 185, 9, 110, 112, 8, 15, 249, 84, 175, 157, 28, 245, 111, 15, 34, 245, 100, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 439000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4849,7 +5288,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3882970225,
 		},
 		FilterHeader: &chainhash.Hash{88, 73, 168, 3, 80, 232, 196, 108, 174, 199, 175, 48, 244, 4, 179, 29, 220, 225, 126, 23, 150, 238, 179, 171, 64, 119, 99, 181, 174, 207, 55, 236},
-	}, Checkpoint{
+	},
+	{
 		Height: 440000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4860,7 +5300,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      767848283,
 		},
 		FilterHeader: &chainhash.Hash{32, 239, 254, 70, 7, 37, 150, 142, 153, 37, 28, 216, 40, 180, 90, 251, 74, 242, 129, 55, 119, 41, 90, 10, 42, 118, 167, 224, 249, 163, 139, 64},
-	}, Checkpoint{
+	},
+	{
 		Height: 441000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4871,7 +5312,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2688266524,
 		},
 		FilterHeader: &chainhash.Hash{240, 213, 197, 49, 144, 186, 120, 177, 124, 249, 200, 193, 232, 118, 231, 123, 39, 163, 85, 218, 250, 47, 78, 205, 247, 207, 242, 196, 36, 254, 216, 47},
-	}, Checkpoint{
+	},
+	{
 		Height: 442000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4882,7 +5324,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3479976391,
 		},
 		FilterHeader: &chainhash.Hash{136, 31, 182, 183, 19, 131, 161, 226, 199, 36, 93, 52, 108, 187, 143, 119, 48, 63, 162, 193, 160, 222, 61, 215, 197, 234, 239, 128, 117, 248, 254, 103},
-	}, Checkpoint{
+	},
+	{
 		Height: 443000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4893,7 +5336,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1328995735,
 		},
 		FilterHeader: &chainhash.Hash{30, 175, 149, 176, 97, 241, 112, 12, 104, 50, 131, 134, 5, 226, 30, 250, 80, 101, 102, 163, 69, 76, 207, 182, 14, 3, 67, 24, 5, 230, 141, 180},
-	}, Checkpoint{
+	},
+	{
 		Height: 444000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4904,7 +5348,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1211377033,
 		},
 		FilterHeader: &chainhash.Hash{1, 218, 241, 66, 191, 237, 253, 154, 64, 221, 27, 39, 72, 4, 29, 121, 239, 245, 86, 124, 218, 88, 219, 244, 16, 191, 101, 84, 132, 173, 210, 9},
-	}, Checkpoint{
+	},
+	{
 		Height: 445000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4915,7 +5360,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2612601738,
 		},
 		FilterHeader: &chainhash.Hash{153, 122, 192, 122, 216, 25, 71, 89, 125, 68, 114, 70, 24, 138, 247, 208, 40, 232, 168, 7, 189, 21, 90, 245, 0, 83, 128, 38, 70, 98, 36, 20},
-	}, Checkpoint{
+	},
+	{
 		Height: 446000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4926,7 +5372,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      419962036,
 		},
 		FilterHeader: &chainhash.Hash{203, 83, 222, 121, 55, 228, 161, 15, 72, 104, 109, 254, 129, 179, 42, 136, 235, 160, 231, 251, 75, 125, 176, 141, 154, 102, 169, 163, 37, 38, 145, 207},
-	}, Checkpoint{
+	},
+	{
 		Height: 447000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -4937,7 +5384,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2525722632,
 		},
 		FilterHeader: &chainhash.Hash{232, 18, 154, 27, 204, 77, 178, 206, 14, 78, 74, 232, 176, 130, 15, 172, 81, 99, 34, 10, 142, 48, 117, 54, 236, 45, 34, 220, 14, 159, 57, 255},
-	}, Checkpoint{
+	},
+	{
 		Height: 448000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4948,7 +5396,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      328350126,
 		},
 		FilterHeader: &chainhash.Hash{123, 138, 183, 78, 194, 73, 147, 13, 105, 35, 230, 22, 207, 242, 255, 20, 68, 49, 4, 241, 36, 134, 125, 107, 167, 251, 146, 105, 117, 6, 248, 237},
-	}, Checkpoint{
+	},
+	{
 		Height: 449000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4959,7 +5408,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      310140268,
 		},
 		FilterHeader: &chainhash.Hash{167, 53, 103, 133, 38, 88, 112, 47, 92, 113, 23, 68, 233, 174, 217, 71, 62, 229, 182, 88, 191, 109, 225, 148, 238, 78, 135, 20, 158, 47, 247, 85},
-	}, Checkpoint{
+	},
+	{
 		Height: 450000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4970,7 +5420,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2972550269,
 		},
 		FilterHeader: &chainhash.Hash{98, 7, 185, 93, 136, 111, 223, 11, 122, 244, 14, 79, 222, 206, 166, 166, 174, 232, 217, 138, 21, 215, 144, 239, 85, 195, 172, 138, 252, 41, 216, 212},
-	}, Checkpoint{
+	},
+	{
 		Height: 451000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4981,7 +5432,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1762619854,
 		},
 		FilterHeader: &chainhash.Hash{250, 155, 247, 131, 4, 86, 154, 34, 211, 75, 159, 183, 9, 211, 28, 246, 93, 107, 177, 19, 237, 211, 172, 111, 60, 78, 158, 130, 24, 25, 129, 135},
-	}, Checkpoint{
+	},
+	{
 		Height: 452000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -4992,7 +5444,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2398511059,
 		},
 		FilterHeader: &chainhash.Hash{250, 148, 187, 176, 10, 87, 33, 174, 3, 52, 166, 202, 164, 131, 164, 252, 126, 140, 248, 96, 152, 71, 92, 225, 161, 227, 136, 44, 245, 134, 168, 30},
-	}, Checkpoint{
+	},
+	{
 		Height: 453000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5003,7 +5456,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      655563556,
 		},
 		FilterHeader: &chainhash.Hash{212, 211, 56, 129, 187, 64, 29, 227, 214, 209, 165, 6, 76, 63, 148, 98, 120, 253, 79, 132, 24, 244, 221, 169, 26, 180, 157, 228, 118, 71, 101, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 454000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    805306368,
@@ -5014,7 +5468,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1234760436,
 		},
 		FilterHeader: &chainhash.Hash{71, 195, 25, 78, 119, 158, 21, 183, 124, 72, 25, 209, 51, 193, 174, 248, 63, 253, 109, 79, 203, 72, 218, 93, 179, 139, 21, 95, 152, 130, 204, 24},
-	}, Checkpoint{
+	},
+	{
 		Height: 455000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5025,7 +5480,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      465047515,
 		},
 		FilterHeader: &chainhash.Hash{118, 105, 102, 82, 165, 48, 166, 219, 67, 39, 172, 134, 128, 155, 195, 205, 199, 20, 128, 246, 166, 140, 66, 51, 181, 254, 193, 157, 214, 51, 155, 80},
-	}, Checkpoint{
+	},
+	{
 		Height: 456000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5036,7 +5492,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3551592712,
 		},
 		FilterHeader: &chainhash.Hash{87, 152, 191, 225, 60, 242, 246, 208, 65, 96, 134, 156, 1, 216, 204, 123, 92, 254, 243, 16, 185, 188, 138, 38, 134, 1, 170, 148, 43, 9, 46, 69},
-	}, Checkpoint{
+	},
+	{
 		Height: 457000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5047,7 +5504,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2723073392,
 		},
 		FilterHeader: &chainhash.Hash{50, 148, 171, 193, 112, 81, 136, 154, 145, 53, 255, 182, 230, 136, 251, 130, 74, 189, 194, 14, 186, 109, 43, 21, 106, 79, 120, 50, 64, 169, 196, 58},
-	}, Checkpoint{
+	},
+	{
 		Height: 458000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5058,7 +5516,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3475980177,
 		},
 		FilterHeader: &chainhash.Hash{79, 25, 11, 23, 193, 62, 198, 187, 107, 105, 128, 210, 253, 54, 21, 98, 139, 14, 72, 30, 33, 64, 134, 190, 100, 43, 226, 27, 100, 168, 43, 165},
-	}, Checkpoint{
+	},
+	{
 		Height: 459000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5069,7 +5528,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3286272061,
 		},
 		FilterHeader: &chainhash.Hash{117, 46, 18, 180, 205, 77, 80, 42, 181, 109, 46, 182, 251, 180, 11, 206, 245, 145, 197, 14, 221, 127, 52, 36, 6, 214, 121, 34, 110, 0, 253, 179},
-	}, Checkpoint{
+	},
+	{
 		Height: 460000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870916,
@@ -5080,7 +5540,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3333053820,
 		},
 		FilterHeader: &chainhash.Hash{49, 6, 39, 161, 54, 177, 150, 61, 88, 121, 187, 108, 220, 55, 246, 186, 153, 21, 27, 99, 91, 93, 132, 150, 234, 48, 74, 41, 224, 64, 157, 60},
-	}, Checkpoint{
+	},
+	{
 		Height: 461000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5091,7 +5552,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2266420902,
 		},
 		FilterHeader: &chainhash.Hash{16, 248, 233, 36, 27, 156, 7, 92, 30, 111, 197, 185, 187, 87, 201, 178, 194, 224, 6, 233, 76, 65, 79, 132, 92, 231, 238, 59, 147, 60, 174, 26},
-	}, Checkpoint{
+	},
+	{
 		Height: 462000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5102,7 +5564,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3048519470,
 		},
 		FilterHeader: &chainhash.Hash{50, 112, 193, 26, 176, 113, 193, 28, 212, 146, 163, 171, 221, 153, 77, 41, 88, 37, 88, 8, 100, 100, 192, 185, 245, 202, 32, 113, 85, 48, 70, 187},
-	}, Checkpoint{
+	},
+	{
 		Height: 463000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5113,7 +5576,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2945445242,
 		},
 		FilterHeader: &chainhash.Hash{79, 203, 153, 164, 196, 197, 203, 32, 170, 243, 240, 32, 30, 127, 19, 102, 106, 90, 214, 78, 198, 92, 236, 206, 66, 71, 168, 97, 126, 54, 151, 228},
-	}, Checkpoint{
+	},
+	{
 		Height: 464000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5124,7 +5588,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3255738739,
 		},
 		FilterHeader: &chainhash.Hash{83, 253, 178, 66, 105, 61, 87, 220, 111, 223, 17, 201, 44, 216, 179, 138, 156, 139, 86, 90, 206, 69, 249, 8, 79, 173, 11, 15, 162, 255, 143, 120},
-	}, Checkpoint{
+	},
+	{
 		Height: 465000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5135,7 +5600,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      165080278,
 		},
 		FilterHeader: &chainhash.Hash{90, 58, 146, 136, 195, 226, 78, 35, 175, 51, 113, 168, 22, 134, 229, 139, 1, 231, 184, 120, 99, 0, 99, 69, 204, 184, 127, 160, 7, 149, 134, 10},
-	}, Checkpoint{
+	},
+	{
 		Height: 466000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5146,7 +5612,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      757579653,
 		},
 		FilterHeader: &chainhash.Hash{142, 96, 206, 124, 135, 231, 22, 95, 20, 194, 198, 40, 58, 210, 27, 4, 81, 17, 65, 37, 87, 63, 97, 3, 191, 171, 37, 131, 8, 127, 230, 214},
-	}, Checkpoint{
+	},
+	{
 		Height: 467000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    4,
@@ -5157,7 +5624,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1221361663,
 		},
 		FilterHeader: &chainhash.Hash{43, 247, 235, 141, 141, 203, 126, 244, 45, 253, 165, 221, 244, 179, 254, 99, 89, 25, 230, 103, 23, 71, 168, 72, 172, 229, 169, 249, 36, 195, 157, 84},
-	}, Checkpoint{
+	},
+	{
 		Height: 468000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5168,7 +5636,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3316337354,
 		},
 		FilterHeader: &chainhash.Hash{63, 42, 76, 182, 69, 93, 83, 231, 13, 109, 232, 147, 97, 229, 74, 115, 55, 118, 123, 36, 205, 221, 227, 90, 99, 144, 71, 188, 138, 162, 33, 161},
-	}, Checkpoint{
+	},
+	{
 		Height: 469000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5179,7 +5648,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2768964660,
 		},
 		FilterHeader: &chainhash.Hash{120, 63, 185, 51, 48, 12, 71, 96, 183, 153, 4, 248, 25, 237, 68, 13, 30, 114, 48, 33, 172, 2, 103, 82, 170, 69, 221, 253, 223, 160, 41, 170},
-	}, Checkpoint{
+	},
+	{
 		Height: 470000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5190,7 +5660,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      107665445,
 		},
 		FilterHeader: &chainhash.Hash{115, 251, 166, 112, 249, 202, 172, 17, 82, 93, 184, 169, 39, 82, 247, 202, 153, 20, 95, 214, 144, 186, 160, 131, 127, 88, 11, 237, 156, 176, 151, 210},
-	}, Checkpoint{
+	},
+	{
 		Height: 471000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5201,7 +5672,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1732097410,
 		},
 		FilterHeader: &chainhash.Hash{11, 42, 94, 211, 8, 13, 194, 154, 158, 49, 65, 30, 59, 35, 232, 146, 70, 93, 2, 29, 216, 138, 121, 224, 217, 118, 223, 138, 48, 159, 56, 136},
-	}, Checkpoint{
+	},
+	{
 		Height: 472000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5212,7 +5684,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2198962711,
 		},
 		FilterHeader: &chainhash.Hash{134, 10, 9, 220, 207, 115, 156, 195, 161, 0, 251, 213, 53, 184, 129, 24, 226, 32, 16, 58, 168, 4, 245, 229, 94, 181, 30, 184, 171, 122, 250, 238},
-	}, Checkpoint{
+	},
+	{
 		Height: 473000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5223,7 +5696,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2501232553,
 		},
 		FilterHeader: &chainhash.Hash{59, 107, 16, 53, 44, 223, 28, 187, 125, 169, 173, 167, 41, 32, 39, 252, 245, 83, 233, 130, 143, 253, 244, 78, 54, 80, 35, 109, 142, 181, 126, 160},
-	}, Checkpoint{
+	},
+	{
 		Height: 474000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5234,7 +5708,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      162143379,
 		},
 		FilterHeader: &chainhash.Hash{0, 100, 164, 116, 199, 76, 153, 218, 6, 91, 254, 32, 185, 143, 143, 91, 77, 154, 198, 238, 210, 187, 110, 50, 106, 95, 184, 183, 178, 169, 91, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 475000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5245,7 +5720,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2627083806,
 		},
 		FilterHeader: &chainhash.Hash{173, 59, 71, 25, 141, 227, 21, 246, 130, 127, 62, 62, 61, 222, 55, 141, 40, 195, 152, 181, 26, 63, 117, 57, 243, 6, 19, 61, 128, 7, 210, 198},
-	}, Checkpoint{
+	},
+	{
 		Height: 476000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5256,7 +5732,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      873823155,
 		},
 		FilterHeader: &chainhash.Hash{173, 51, 191, 247, 84, 96, 139, 6, 181, 102, 83, 99, 169, 131, 200, 162, 193, 69, 181, 67, 248, 121, 73, 231, 100, 11, 177, 157, 137, 111, 227, 45},
-	}, Checkpoint{
+	},
+	{
 		Height: 477000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870930,
@@ -5267,7 +5744,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      302144652,
 		},
 		FilterHeader: &chainhash.Hash{59, 28, 250, 139, 197, 13, 102, 148, 60, 61, 150, 56, 250, 219, 220, 100, 252, 223, 169, 10, 181, 133, 214, 254, 90, 21, 186, 225, 140, 252, 73, 128},
-	}, Checkpoint{
+	},
+	{
 		Height: 478000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870930,
@@ -5278,7 +5756,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3518975252,
 		},
 		FilterHeader: &chainhash.Hash{176, 229, 170, 162, 81, 123, 121, 32, 223, 108, 153, 109, 122, 23, 64, 120, 202, 61, 99, 182, 227, 196, 43, 20, 94, 8, 83, 70, 43, 152, 167, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 479000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5289,7 +5768,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      475336998,
 		},
 		FilterHeader: &chainhash.Hash{180, 38, 32, 97, 133, 150, 177, 166, 143, 229, 41, 20, 229, 214, 56, 38, 98, 184, 121, 60, 202, 227, 44, 240, 116, 179, 69, 117, 12, 233, 252, 134},
-	}, Checkpoint{
+	},
+	{
 		Height: 480000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5300,7 +5780,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2733825927,
 		},
 		FilterHeader: &chainhash.Hash{216, 203, 59, 19, 140, 11, 85, 38, 157, 186, 120, 177, 118, 41, 71, 212, 146, 227, 237, 169, 154, 239, 57, 92, 214, 163, 239, 208, 96, 148, 60, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 481000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5311,7 +5792,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      875248174,
 		},
 		FilterHeader: &chainhash.Hash{74, 157, 20, 165, 107, 230, 237, 0, 70, 154, 116, 86, 50, 149, 60, 39, 87, 227, 54, 225, 196, 153, 206, 189, 120, 80, 95, 26, 134, 147, 118, 173},
-	}, Checkpoint{
+	},
+	{
 		Height: 482000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5322,7 +5804,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3726113882,
 		},
 		FilterHeader: &chainhash.Hash{77, 7, 78, 128, 247, 119, 226, 15, 37, 35, 0, 117, 79, 55, 223, 108, 209, 111, 40, 56, 162, 246, 56, 154, 67, 220, 7, 26, 126, 149, 16, 220},
-	}, Checkpoint{
+	},
+	{
 		Height: 483000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5333,7 +5816,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      534346277,
 		},
 		FilterHeader: &chainhash.Hash{117, 19, 202, 38, 101, 39, 226, 26, 220, 35, 149, 176, 18, 107, 162, 149, 100, 185, 171, 103, 108, 121, 202, 101, 176, 133, 188, 119, 229, 175, 35, 164},
-	}, Checkpoint{
+	},
+	{
 		Height: 484000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870914,
@@ -5344,7 +5828,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2616428381,
 		},
 		FilterHeader: &chainhash.Hash{126, 199, 108, 178, 37, 141, 96, 173, 177, 196, 79, 219, 159, 66, 84, 196, 234, 37, 23, 169, 75, 172, 113, 160, 244, 56, 101, 185, 229, 255, 116, 193},
-	}, Checkpoint{
+	},
+	{
 		Height: 485000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5355,7 +5840,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      545544380,
 		},
 		FilterHeader: &chainhash.Hash{88, 193, 160, 68, 67, 34, 163, 132, 163, 199, 236, 124, 195, 63, 202, 0, 30, 42, 5, 5, 71, 80, 205, 186, 56, 109, 198, 106, 193, 68, 138, 236},
-	}, Checkpoint{
+	},
+	{
 		Height: 486000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5366,7 +5852,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      67180450,
 		},
 		FilterHeader: &chainhash.Hash{29, 45, 84, 41, 11, 205, 227, 47, 227, 14, 169, 197, 245, 104, 57, 199, 204, 172, 206, 138, 141, 223, 152, 62, 191, 143, 130, 101, 227, 68, 178, 213},
-	}, Checkpoint{
+	},
+	{
 		Height: 487000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5377,7 +5864,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1606784900,
 		},
 		FilterHeader: &chainhash.Hash{53, 228, 166, 167, 78, 0, 65, 133, 148, 88, 189, 108, 31, 27, 103, 97, 36, 123, 104, 201, 8, 158, 180, 27, 111, 90, 219, 154, 5, 216, 230, 12},
-	}, Checkpoint{
+	},
+	{
 		Height: 488000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5388,7 +5876,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      482090594,
 		},
 		FilterHeader: &chainhash.Hash{77, 35, 112, 108, 58, 179, 189, 37, 42, 128, 26, 225, 210, 238, 14, 18, 64, 116, 104, 155, 70, 118, 14, 84, 115, 22, 168, 134, 24, 204, 124, 88},
-	}, Checkpoint{
+	},
+	{
 		Height: 489000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5399,7 +5888,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1186502176,
 		},
 		FilterHeader: &chainhash.Hash{83, 37, 108, 48, 112, 116, 220, 233, 145, 251, 183, 189, 49, 27, 28, 158, 125, 155, 191, 100, 128, 70, 2, 166, 12, 196, 55, 136, 102, 172, 69, 71},
-	}, Checkpoint{
+	},
+	{
 		Height: 490000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5410,7 +5900,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1474941796,
 		},
 		FilterHeader: &chainhash.Hash{182, 246, 121, 150, 58, 97, 157, 220, 47, 107, 243, 194, 42, 74, 200, 26, 199, 23, 30, 237, 131, 61, 93, 253, 32, 42, 156, 139, 94, 21, 71, 25},
-	}, Checkpoint{
+	},
+	{
 		Height: 491000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5421,7 +5912,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2388379913,
 		},
 		FilterHeader: &chainhash.Hash{128, 51, 152, 134, 52, 135, 180, 77, 63, 146, 113, 206, 84, 248, 21, 189, 166, 34, 243, 110, 130, 130, 113, 109, 103, 57, 104, 36, 120, 111, 161, 150},
-	}, Checkpoint{
+	},
+	{
 		Height: 492000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5432,7 +5924,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1162463905,
 		},
 		FilterHeader: &chainhash.Hash{125, 221, 61, 234, 127, 214, 191, 100, 124, 146, 32, 148, 3, 207, 88, 107, 151, 32, 77, 15, 236, 107, 243, 44, 60, 242, 70, 172, 12, 64, 252, 86},
-	}, Checkpoint{
+	},
+	{
 		Height: 493000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5443,7 +5936,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2232551786,
 		},
 		FilterHeader: &chainhash.Hash{186, 36, 9, 65, 144, 197, 232, 209, 127, 5, 250, 21, 99, 241, 236, 111, 81, 70, 65, 191, 68, 75, 78, 159, 42, 10, 90, 11, 123, 248, 94, 18},
-	}, Checkpoint{
+	},
+	{
 		Height: 494000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5454,7 +5948,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3087337820,
 		},
 		FilterHeader: &chainhash.Hash{199, 60, 105, 75, 100, 0, 200, 95, 173, 137, 4, 100, 3, 34, 47, 250, 30, 162, 220, 125, 119, 139, 107, 11, 158, 154, 140, 43, 231, 190, 210, 161},
-	}, Checkpoint{
+	},
+	{
 		Height: 495000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5465,7 +5960,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1794252772,
 		},
 		FilterHeader: &chainhash.Hash{2, 157, 217, 94, 5, 249, 140, 4, 229, 40, 251, 70, 169, 120, 231, 15, 56, 76, 73, 68, 43, 165, 88, 218, 79, 110, 224, 74, 165, 20, 19, 138},
-	}, Checkpoint{
+	},
+	{
 		Height: 496000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5476,7 +5972,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      758428935,
 		},
 		FilterHeader: &chainhash.Hash{49, 214, 69, 36, 195, 223, 12, 225, 130, 43, 250, 40, 127, 232, 61, 72, 71, 32, 234, 2, 169, 201, 81, 161, 251, 108, 171, 175, 35, 161, 211, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 497000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5487,7 +5984,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1122309438,
 		},
 		FilterHeader: &chainhash.Hash{83, 141, 221, 24, 4, 13, 121, 124, 219, 250, 4, 178, 140, 244, 108, 93, 155, 239, 123, 145, 25, 230, 89, 142, 217, 234, 108, 18, 72, 12, 193, 86},
-	}, Checkpoint{
+	},
+	{
 		Height: 498000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5498,7 +5996,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1933117698,
 		},
 		FilterHeader: &chainhash.Hash{76, 190, 14, 166, 97, 148, 41, 205, 211, 173, 69, 206, 145, 12, 7, 65, 57, 206, 43, 103, 222, 105, 42, 132, 99, 200, 226, 202, 216, 71, 77, 226},
-	}, Checkpoint{
+	},
+	{
 		Height: 499000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5509,7 +6008,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      648248175,
 		},
 		FilterHeader: &chainhash.Hash{58, 223, 12, 170, 199, 183, 193, 51, 132, 87, 71, 110, 209, 18, 100, 247, 203, 91, 153, 38, 173, 99, 77, 249, 176, 252, 161, 249, 24, 27, 73, 215},
-	}, Checkpoint{
+	},
+	{
 		Height: 500000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5520,7 +6020,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1560058197,
 		},
 		FilterHeader: &chainhash.Hash{60, 26, 99, 170, 202, 7, 168, 0, 66, 164, 89, 90, 9, 139, 227, 27, 102, 251, 153, 63, 182, 121, 194, 155, 10, 220, 155, 60, 41, 202, 22, 93},
-	}, Checkpoint{
+	},
+	{
 		Height: 501000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5531,7 +6032,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4145325108,
 		},
 		FilterHeader: &chainhash.Hash{37, 83, 194, 172, 142, 130, 215, 89, 14, 172, 89, 184, 45, 171, 140, 83, 71, 75, 45, 14, 43, 2, 50, 39, 20, 80, 5, 137, 73, 122, 39, 174},
-	}, Checkpoint{
+	},
+	{
 		Height: 502000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5542,7 +6044,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      421248275,
 		},
 		FilterHeader: &chainhash.Hash{246, 79, 181, 205, 129, 72, 234, 162, 85, 22, 250, 241, 151, 144, 130, 158, 154, 102, 117, 65, 246, 53, 165, 53, 123, 69, 173, 25, 148, 103, 183, 142},
-	}, Checkpoint{
+	},
+	{
 		Height: 503000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5553,7 +6056,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      777005362,
 		},
 		FilterHeader: &chainhash.Hash{13, 21, 78, 92, 64, 238, 112, 112, 149, 217, 234, 27, 170, 15, 250, 143, 174, 60, 39, 162, 107, 238, 147, 87, 176, 121, 189, 127, 103, 193, 218, 10},
-	}, Checkpoint{
+	},
+	{
 		Height: 504000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5564,7 +6068,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3750147913,
 		},
 		FilterHeader: &chainhash.Hash{83, 113, 197, 219, 66, 14, 66, 129, 4, 199, 161, 34, 232, 224, 165, 32, 54, 224, 212, 233, 55, 246, 151, 125, 219, 73, 238, 156, 155, 12, 97, 59},
-	}, Checkpoint{
+	},
+	{
 		Height: 505000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5575,7 +6080,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3537926333,
 		},
 		FilterHeader: &chainhash.Hash{10, 53, 8, 198, 26, 239, 51, 149, 63, 19, 188, 214, 86, 23, 192, 61, 180, 53, 244, 129, 210, 92, 110, 2, 27, 46, 218, 124, 214, 107, 29, 244},
-	}, Checkpoint{
+	},
+	{
 		Height: 506000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5586,7 +6092,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2361837837,
 		},
 		FilterHeader: &chainhash.Hash{87, 143, 149, 192, 161, 135, 38, 185, 72, 13, 30, 187, 18, 60, 80, 117, 123, 190, 61, 38, 196, 6, 109, 25, 208, 136, 99, 95, 14, 198, 49, 157},
-	}, Checkpoint{
+	},
+	{
 		Height: 507000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5597,7 +6104,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3157245143,
 		},
 		FilterHeader: &chainhash.Hash{65, 109, 76, 224, 223, 179, 3, 13, 109, 33, 147, 229, 188, 29, 239, 10, 228, 236, 128, 106, 172, 171, 176, 52, 204, 122, 170, 129, 16, 140, 251, 40},
-	}, Checkpoint{
+	},
+	{
 		Height: 508000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5608,7 +6116,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1334603337,
 		},
 		FilterHeader: &chainhash.Hash{225, 253, 21, 196, 129, 241, 249, 237, 44, 218, 114, 252, 118, 64, 118, 232, 125, 188, 75, 154, 113, 129, 69, 27, 241, 153, 217, 53, 7, 85, 197, 238},
-	}, Checkpoint{
+	},
+	{
 		Height: 509000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5619,7 +6128,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      934778084,
 		},
 		FilterHeader: &chainhash.Hash{100, 22, 88, 161, 250, 190, 55, 134, 99, 196, 172, 170, 93, 230, 88, 86, 88, 241, 250, 117, 29, 66, 225, 16, 154, 206, 97, 238, 148, 103, 154, 73},
-	}, Checkpoint{
+	},
+	{
 		Height: 510000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5630,7 +6140,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3347656422,
 		},
 		FilterHeader: &chainhash.Hash{187, 99, 140, 6, 66, 248, 94, 80, 14, 151, 79, 118, 15, 219, 105, 25, 61, 81, 170, 233, 28, 208, 157, 250, 154, 203, 255, 20, 56, 64, 220, 28},
-	}, Checkpoint{
+	},
+	{
 		Height: 511000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5641,7 +6152,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2534214316,
 		},
 		FilterHeader: &chainhash.Hash{5, 4, 34, 233, 78, 106, 154, 196, 22, 195, 213, 106, 128, 97, 34, 246, 19, 155, 196, 94, 58, 84, 41, 226, 168, 111, 133, 99, 68, 219, 172, 254},
-	}, Checkpoint{
+	},
+	{
 		Height: 512000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5652,7 +6164,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      918754157,
 		},
 		FilterHeader: &chainhash.Hash{190, 77, 137, 115, 128, 41, 26, 193, 220, 169, 230, 26, 228, 42, 229, 121, 55, 211, 188, 198, 252, 251, 186, 33, 77, 92, 167, 170, 94, 14, 222, 70},
-	}, Checkpoint{
+	},
+	{
 		Height: 513000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5663,7 +6176,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      465646139,
 		},
 		FilterHeader: &chainhash.Hash{155, 93, 162, 147, 72, 81, 108, 17, 177, 141, 29, 211, 81, 210, 14, 180, 144, 87, 33, 153, 241, 215, 127, 67, 113, 167, 115, 119, 189, 195, 82, 34},
-	}, Checkpoint{
+	},
+	{
 		Height: 514000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5674,7 +6188,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1802799326,
 		},
 		FilterHeader: &chainhash.Hash{3, 86, 245, 46, 84, 217, 248, 213, 207, 169, 28, 215, 147, 12, 250, 230, 64, 109, 228, 11, 111, 4, 68, 30, 125, 62, 239, 139, 70, 42, 185, 196},
-	}, Checkpoint{
+	},
+	{
 		Height: 515000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5685,7 +6200,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3883559396,
 		},
 		FilterHeader: &chainhash.Hash{30, 22, 123, 208, 49, 18, 142, 5, 50, 164, 112, 37, 199, 152, 135, 28, 17, 151, 203, 132, 168, 227, 191, 59, 101, 120, 66, 106, 107, 85, 59, 134},
-	}, Checkpoint{
+	},
+	{
 		Height: 516000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5696,7 +6212,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2997984632,
 		},
 		FilterHeader: &chainhash.Hash{52, 128, 118, 15, 46, 77, 203, 183, 142, 222, 14, 5, 73, 140, 65, 41, 234, 146, 100, 76, 227, 186, 173, 244, 43, 252, 143, 147, 171, 2, 75, 86},
-	}, Checkpoint{
+	},
+	{
 		Height: 517000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5707,7 +6224,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      678919501,
 		},
 		FilterHeader: &chainhash.Hash{86, 82, 221, 122, 94, 15, 138, 168, 43, 234, 147, 18, 195, 246, 145, 251, 41, 228, 149, 113, 219, 182, 114, 170, 156, 26, 103, 221, 253, 107, 14, 130},
-	}, Checkpoint{
+	},
+	{
 		Height: 518000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5718,7 +6236,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1625357177,
 		},
 		FilterHeader: &chainhash.Hash{220, 24, 215, 172, 128, 206, 128, 152, 73, 77, 86, 81, 181, 232, 164, 213, 223, 161, 236, 153, 89, 29, 167, 135, 158, 103, 198, 236, 217, 189, 80, 107},
-	}, Checkpoint{
+	},
+	{
 		Height: 519000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5729,7 +6248,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3576712733,
 		},
 		FilterHeader: &chainhash.Hash{194, 47, 220, 88, 160, 14, 110, 203, 199, 255, 208, 123, 25, 18, 52, 138, 160, 247, 200, 114, 255, 78, 185, 152, 213, 126, 159, 77, 175, 176, 248, 112},
-	}, Checkpoint{
+	},
+	{
 		Height: 520000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5740,7 +6260,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3778663653,
 		},
 		FilterHeader: &chainhash.Hash{31, 16, 253, 135, 53, 152, 251, 106, 162, 120, 180, 142, 99, 114, 201, 158, 110, 173, 24, 50, 193, 60, 131, 57, 149, 146, 163, 116, 109, 180, 17, 215},
-	}, Checkpoint{
+	},
+	{
 		Height: 521000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5751,7 +6272,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3640949776,
 		},
 		FilterHeader: &chainhash.Hash{183, 92, 133, 155, 241, 241, 108, 2, 162, 208, 81, 55, 111, 88, 16, 222, 206, 56, 173, 126, 197, 181, 3, 202, 173, 116, 218, 114, 107, 234, 76, 75},
-	}, Checkpoint{
+	},
+	{
 		Height: 522000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5762,7 +6284,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1604656139,
 		},
 		FilterHeader: &chainhash.Hash{193, 199, 178, 116, 246, 55, 240, 30, 175, 138, 243, 94, 200, 48, 0, 20, 218, 149, 10, 65, 33, 135, 147, 110, 234, 48, 134, 61, 238, 35, 64, 153},
-	}, Checkpoint{
+	},
+	{
 		Height: 523000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5773,7 +6296,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3921016110,
 		},
 		FilterHeader: &chainhash.Hash{144, 88, 147, 178, 212, 233, 232, 189, 70, 57, 28, 219, 164, 91, 122, 137, 12, 251, 70, 62, 182, 163, 76, 9, 203, 194, 172, 49, 121, 148, 83, 107},
-	}, Checkpoint{
+	},
+	{
 		Height: 524000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5784,7 +6308,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2230626660,
 		},
 		FilterHeader: &chainhash.Hash{76, 162, 46, 242, 91, 11, 191, 66, 18, 228, 171, 59, 242, 192, 44, 85, 100, 32, 148, 28, 29, 33, 106, 57, 153, 52, 240, 1, 100, 146, 63, 119},
-	}, Checkpoint{
+	},
+	{
 		Height: 525000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5795,7 +6320,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      774262958,
 		},
 		FilterHeader: &chainhash.Hash{239, 73, 21, 233, 244, 147, 145, 180, 213, 170, 172, 7, 127, 239, 73, 11, 131, 148, 183, 177, 86, 205, 165, 229, 65, 7, 17, 252, 32, 50, 240, 201},
-	}, Checkpoint{
+	},
+	{
 		Height: 526000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5806,7 +6332,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3738916418,
 		},
 		FilterHeader: &chainhash.Hash{99, 114, 164, 250, 87, 176, 121, 87, 21, 68, 23, 56, 40, 230, 224, 170, 108, 189, 139, 113, 186, 83, 252, 33, 142, 69, 34, 132, 117, 113, 54, 13},
-	}, Checkpoint{
+	},
+	{
 		Height: 527000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5817,7 +6344,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3412919995,
 		},
 		FilterHeader: &chainhash.Hash{113, 112, 255, 194, 161, 21, 89, 124, 77, 222, 6, 16, 251, 150, 111, 143, 30, 180, 221, 46, 191, 69, 93, 202, 242, 38, 164, 129, 37, 140, 194, 54},
-	}, Checkpoint{
+	},
+	{
 		Height: 528000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5828,7 +6356,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2201966352,
 		},
 		FilterHeader: &chainhash.Hash{2, 20, 109, 4, 57, 22, 141, 128, 4, 20, 68, 22, 127, 23, 139, 71, 240, 167, 67, 233, 178, 95, 113, 15, 255, 174, 230, 197, 72, 133, 122, 133},
-	}, Checkpoint{
+	},
+	{
 		Height: 529000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5839,7 +6368,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      262900014,
 		},
 		FilterHeader: &chainhash.Hash{72, 0, 20, 62, 241, 24, 157, 147, 199, 62, 43, 125, 36, 99, 63, 235, 200, 134, 244, 150, 229, 22, 249, 203, 37, 80, 140, 147, 29, 105, 246, 254},
-	}, Checkpoint{
+	},
+	{
 		Height: 530000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5850,7 +6380,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      133549636,
 		},
 		FilterHeader: &chainhash.Hash{54, 158, 108, 33, 222, 192, 62, 179, 204, 189, 43, 130, 150, 62, 52, 70, 2, 121, 26, 45, 36, 230, 20, 235, 205, 220, 234, 173, 118, 250, 52, 95},
-	}, Checkpoint{
+	},
+	{
 		Height: 531000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5861,7 +6392,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      494847262,
 		},
 		FilterHeader: &chainhash.Hash{15, 181, 184, 85, 226, 174, 119, 31, 184, 77, 63, 80, 61, 55, 16, 245, 201, 87, 26, 45, 75, 68, 101, 35, 39, 203, 10, 34, 53, 171, 209, 220},
-	}, Checkpoint{
+	},
+	{
 		Height: 532000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5872,7 +6404,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      303338113,
 		},
 		FilterHeader: &chainhash.Hash{198, 94, 176, 179, 100, 222, 173, 220, 152, 74, 230, 86, 187, 169, 61, 70, 187, 42, 86, 61, 40, 216, 88, 178, 240, 176, 96, 14, 205, 55, 207, 81},
-	}, Checkpoint{
+	},
+	{
 		Height: 533000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5883,7 +6416,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2734543006,
 		},
 		FilterHeader: &chainhash.Hash{101, 133, 246, 229, 90, 93, 219, 11, 6, 98, 80, 111, 21, 223, 207, 103, 24, 135, 216, 91, 134, 123, 109, 31, 249, 254, 55, 35, 24, 184, 205, 102},
-	}, Checkpoint{
+	},
+	{
 		Height: 534000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5894,7 +6428,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1401510233,
 		},
 		FilterHeader: &chainhash.Hash{61, 7, 217, 15, 153, 57, 85, 146, 98, 68, 103, 94, 84, 207, 176, 132, 30, 150, 76, 210, 144, 177, 58, 217, 107, 143, 47, 31, 9, 16, 146, 161},
-	}, Checkpoint{
+	},
+	{
 		Height: 535000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5905,7 +6440,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2654961925,
 		},
 		FilterHeader: &chainhash.Hash{85, 54, 106, 188, 246, 141, 189, 97, 87, 145, 8, 62, 105, 135, 218, 26, 58, 9, 6, 141, 30, 49, 69, 187, 254, 253, 128, 180, 158, 111, 51, 58},
-	}, Checkpoint{
+	},
+	{
 		Height: 536000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5916,7 +6452,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      849624248,
 		},
 		FilterHeader: &chainhash.Hash{162, 126, 52, 58, 12, 116, 201, 238, 130, 125, 156, 108, 167, 52, 5, 229, 255, 36, 30, 234, 218, 187, 21, 29, 121, 199, 202, 109, 84, 48, 244, 210},
-	}, Checkpoint{
+	},
+	{
 		Height: 537000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5927,7 +6464,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1324448849,
 		},
 		FilterHeader: &chainhash.Hash{33, 101, 74, 173, 104, 143, 216, 2, 143, 237, 56, 23, 159, 44, 110, 94, 142, 194, 11, 153, 163, 25, 198, 167, 225, 77, 220, 91, 76, 47, 159, 12},
-	}, Checkpoint{
+	},
+	{
 		Height: 538000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5938,7 +6476,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1333437218,
 		},
 		FilterHeader: &chainhash.Hash{49, 139, 167, 202, 147, 36, 21, 80, 15, 188, 58, 211, 199, 159, 29, 145, 84, 114, 25, 139, 145, 23, 58, 113, 126, 150, 74, 148, 119, 19, 145, 120},
-	}, Checkpoint{
+	},
+	{
 		Height: 539000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5949,7 +6488,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2593824241,
 		},
 		FilterHeader: &chainhash.Hash{127, 229, 171, 18, 51, 2, 25, 39, 77, 17, 221, 203, 40, 253, 160, 187, 127, 70, 99, 96, 245, 170, 77, 224, 255, 14, 13, 31, 162, 79, 45, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 540000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5960,7 +6500,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      287883534,
 		},
 		FilterHeader: &chainhash.Hash{161, 221, 20, 186, 23, 188, 150, 40, 230, 139, 2, 201, 89, 129, 42, 127, 220, 79, 138, 229, 25, 87, 28, 151, 118, 7, 255, 87, 183, 179, 171, 187},
-	}, Checkpoint{
+	},
+	{
 		Height: 541000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5971,7 +6512,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      165517097,
 		},
 		FilterHeader: &chainhash.Hash{225, 138, 253, 250, 73, 161, 9, 85, 52, 26, 125, 56, 242, 22, 9, 225, 27, 116, 3, 145, 29, 70, 158, 44, 214, 59, 146, 13, 17, 68, 179, 168},
-	}, Checkpoint{
+	},
+	{
 		Height: 542000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5982,7 +6524,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3968704324,
 		},
 		FilterHeader: &chainhash.Hash{100, 63, 40, 33, 5, 244, 170, 224, 5, 210, 149, 177, 119, 74, 70, 50, 191, 99, 213, 153, 189, 80, 62, 15, 9, 164, 15, 54, 127, 9, 252, 125},
-	}, Checkpoint{
+	},
+	{
 		Height: 543000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -5993,7 +6536,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3291591898,
 		},
 		FilterHeader: &chainhash.Hash{199, 109, 139, 138, 92, 2, 225, 54, 251, 40, 248, 228, 39, 92, 66, 137, 42, 126, 116, 50, 177, 51, 223, 62, 53, 28, 220, 30, 239, 54, 68, 151},
-	}, Checkpoint{
+	},
+	{
 		Height: 544000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6004,7 +6548,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2198217232,
 		},
 		FilterHeader: &chainhash.Hash{204, 102, 57, 188, 152, 201, 153, 23, 20, 75, 135, 114, 64, 121, 201, 99, 127, 190, 177, 99, 51, 147, 57, 112, 232, 10, 186, 61, 245, 47, 243, 159},
-	}, Checkpoint{
+	},
+	{
 		Height: 545000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6015,7 +6560,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2785476309,
 		},
 		FilterHeader: &chainhash.Hash{77, 182, 49, 155, 107, 17, 36, 116, 144, 134, 18, 133, 2, 108, 62, 0, 103, 89, 62, 88, 61, 233, 126, 27, 245, 3, 123, 36, 163, 62, 0, 96},
-	}, Checkpoint{
+	},
+	{
 		Height: 546000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6026,7 +6572,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      99304524,
 		},
 		FilterHeader: &chainhash.Hash{63, 171, 102, 133, 233, 83, 143, 69, 221, 38, 157, 244, 79, 192, 202, 30, 99, 35, 7, 63, 144, 232, 214, 183, 24, 227, 247, 137, 151, 159, 49, 158},
-	}, Checkpoint{
+	},
+	{
 		Height: 547000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6037,7 +6584,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3443875260,
 		},
 		FilterHeader: &chainhash.Hash{187, 182, 247, 153, 167, 91, 53, 225, 130, 246, 210, 191, 243, 67, 136, 155, 102, 165, 209, 202, 218, 22, 89, 107, 244, 90, 127, 79, 209, 14, 207, 162},
-	}, Checkpoint{
+	},
+	{
 		Height: 548000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1073676288,
@@ -6048,7 +6596,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      912996934,
 		},
 		FilterHeader: &chainhash.Hash{205, 139, 115, 193, 105, 190, 174, 202, 84, 20, 239, 184, 251, 191, 33, 4, 232, 20, 206, 23, 108, 82, 43, 21, 216, 7, 74, 51, 31, 107, 112, 106},
-	}, Checkpoint{
+	},
+	{
 		Height: 549000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    545259520,
@@ -6059,7 +6608,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2998020294,
 		},
 		FilterHeader: &chainhash.Hash{86, 42, 17, 96, 206, 55, 63, 0, 190, 144, 212, 95, 109, 30, 252, 156, 174, 142, 247, 190, 159, 72, 195, 253, 119, 24, 144, 164, 136, 178, 85, 2},
-	}, Checkpoint{
+	},
+	{
 		Height: 550000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6070,7 +6620,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1678451869,
 		},
 		FilterHeader: &chainhash.Hash{139, 192, 35, 218, 140, 3, 146, 95, 241, 40, 69, 234, 195, 179, 165, 238, 92, 128, 63, 1, 141, 59, 76, 157, 116, 189, 198, 31, 195, 16, 70, 89},
-	}, Checkpoint{
+	},
+	{
 		Height: 551000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6081,7 +6632,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1017596792,
 		},
 		FilterHeader: &chainhash.Hash{156, 22, 194, 51, 29, 174, 90, 57, 76, 240, 152, 174, 17, 164, 53, 249, 103, 192, 1, 63, 23, 95, 92, 52, 179, 118, 107, 2, 81, 166, 245, 8},
-	}, Checkpoint{
+	},
+	{
 		Height: 552000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6092,7 +6644,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1165582618,
 		},
 		FilterHeader: &chainhash.Hash{146, 4, 204, 46, 200, 151, 201, 87, 7, 222, 101, 227, 124, 64, 238, 72, 40, 93, 111, 118, 7, 117, 116, 103, 57, 241, 107, 186, 134, 230, 143, 39},
-	}, Checkpoint{
+	},
+	{
 		Height: 553000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6103,7 +6656,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1556789160,
 		},
 		FilterHeader: &chainhash.Hash{227, 69, 177, 218, 201, 38, 59, 4, 240, 27, 153, 251, 43, 142, 140, 178, 234, 211, 140, 216, 15, 30, 104, 191, 28, 205, 176, 80, 54, 3, 49, 61},
-	}, Checkpoint{
+	},
+	{
 		Height: 554000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    545259520,
@@ -6114,7 +6668,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      696967600,
 		},
 		FilterHeader: &chainhash.Hash{67, 82, 86, 254, 50, 189, 161, 240, 170, 95, 121, 214, 227, 41, 240, 174, 43, 248, 255, 6, 178, 187, 147, 104, 173, 24, 204, 192, 47, 106, 43, 147},
-	}, Checkpoint{
+	},
+	{
 		Height: 555000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6125,7 +6680,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1195514560,
 		},
 		FilterHeader: &chainhash.Hash{42, 195, 239, 135, 10, 13, 224, 221, 21, 3, 191, 46, 133, 152, 144, 75, 54, 38, 229, 51, 106, 19, 111, 40, 191, 135, 100, 192, 162, 31, 176, 90},
-	}, Checkpoint{
+	},
+	{
 		Height: 556000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6136,7 +6692,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4162999768,
 		},
 		FilterHeader: &chainhash.Hash{193, 63, 144, 116, 89, 103, 241, 193, 200, 58, 92, 81, 65, 41, 2, 22, 101, 38, 178, 37, 146, 242, 39, 190, 198, 202, 116, 31, 82, 226, 192, 194},
-	}, Checkpoint{
+	},
+	{
 		Height: 557000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6147,7 +6704,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3936093054,
 		},
 		FilterHeader: &chainhash.Hash{66, 97, 152, 45, 74, 1, 252, 11, 246, 43, 101, 156, 182, 47, 133, 11, 85, 76, 243, 78, 75, 8, 66, 37, 252, 37, 156, 177, 19, 56, 37, 246},
-	}, Checkpoint{
+	},
+	{
 		Height: 558000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6158,7 +6716,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      820289809,
 		},
 		FilterHeader: &chainhash.Hash{192, 239, 106, 120, 181, 195, 196, 232, 197, 232, 229, 141, 105, 92, 66, 68, 10, 149, 217, 9, 231, 240, 228, 244, 216, 160, 120, 143, 143, 176, 188, 245},
-	}, Checkpoint{
+	},
+	{
 		Height: 559000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6169,7 +6728,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      588294290,
 		},
 		FilterHeader: &chainhash.Hash{239, 35, 80, 156, 221, 46, 207, 113, 142, 104, 35, 225, 83, 136, 151, 165, 134, 233, 250, 205, 157, 75, 241, 225, 123, 227, 84, 235, 55, 59, 162, 243},
-	}, Checkpoint{
+	},
+	{
 		Height: 560000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6180,7 +6740,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1623994776,
 		},
 		FilterHeader: &chainhash.Hash{104, 191, 240, 246, 57, 148, 83, 114, 19, 111, 71, 105, 22, 98, 193, 196, 126, 203, 97, 22, 201, 134, 162, 146, 196, 163, 105, 133, 132, 90, 38, 17},
-	}, Checkpoint{
+	},
+	{
 		Height: 561000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6191,7 +6752,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1200519020,
 		},
 		FilterHeader: &chainhash.Hash{127, 245, 50, 218, 33, 135, 50, 13, 197, 33, 92, 71, 45, 218, 191, 12, 20, 157, 40, 8, 74, 204, 190, 228, 203, 111, 142, 122, 203, 235, 210, 15},
-	}, Checkpoint{
+	},
+	{
 		Height: 562000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6202,7 +6764,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2303232447,
 		},
 		FilterHeader: &chainhash.Hash{159, 81, 67, 25, 100, 7, 36, 2, 48, 145, 194, 50, 107, 239, 113, 9, 82, 30, 4, 226, 5, 242, 13, 162, 174, 185, 70, 152, 30, 218, 16, 123},
-	}, Checkpoint{
+	},
+	{
 		Height: 563000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6213,7 +6776,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4224569750,
 		},
 		FilterHeader: &chainhash.Hash{137, 42, 152, 217, 177, 53, 95, 123, 12, 105, 32, 88, 17, 33, 37, 119, 85, 36, 207, 158, 111, 166, 255, 193, 179, 100, 86, 214, 212, 81, 172, 242},
-	}, Checkpoint{
+	},
+	{
 		Height: 564000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6224,7 +6788,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2609600755,
 		},
 		FilterHeader: &chainhash.Hash{29, 254, 124, 1, 117, 209, 114, 215, 240, 196, 149, 174, 125, 92, 95, 252, 242, 173, 35, 100, 96, 33, 50, 58, 179, 118, 83, 195, 133, 98, 7, 30},
-	}, Checkpoint{
+	},
+	{
 		Height: 565000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6235,7 +6800,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4013126688,
 		},
 		FilterHeader: &chainhash.Hash{84, 70, 83, 14, 18, 68, 153, 31, 139, 225, 93, 118, 148, 82, 102, 82, 135, 116, 46, 101, 34, 236, 116, 248, 161, 255, 126, 191, 44, 221, 144, 7},
-	}, Checkpoint{
+	},
+	{
 		Height: 566000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6246,7 +6812,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1620718885,
 		},
 		FilterHeader: &chainhash.Hash{73, 162, 44, 112, 236, 56, 25, 175, 183, 44, 221, 127, 109, 186, 228, 103, 50, 133, 226, 123, 8, 226, 39, 55, 149, 132, 88, 90, 240, 67, 145, 242},
-	}, Checkpoint{
+	},
+	{
 		Height: 567000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6257,7 +6824,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3550339028,
 		},
 		FilterHeader: &chainhash.Hash{154, 50, 240, 75, 119, 211, 89, 90, 26, 212, 35, 22, 230, 221, 26, 82, 67, 255, 157, 196, 86, 68, 228, 7, 142, 115, 75, 108, 38, 169, 168, 82},
-	}, Checkpoint{
+	},
+	{
 		Height: 568000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6268,7 +6836,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2546273649,
 		},
 		FilterHeader: &chainhash.Hash{9, 62, 193, 209, 143, 194, 59, 42, 211, 128, 82, 4, 33, 60, 65, 179, 201, 127, 83, 146, 250, 179, 28, 129, 9, 37, 40, 83, 59, 63, 79, 129},
-	}, Checkpoint{
+	},
+	{
 		Height: 569000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6279,7 +6848,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4056634148,
 		},
 		FilterHeader: &chainhash.Hash{210, 86, 98, 62, 62, 117, 141, 7, 176, 30, 99, 94, 138, 107, 234, 29, 140, 246, 91, 69, 0, 105, 178, 222, 215, 42, 251, 4, 50, 13, 245, 50},
-	}, Checkpoint{
+	},
+	{
 		Height: 570000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6290,7 +6860,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4170747843,
 		},
 		FilterHeader: &chainhash.Hash{92, 189, 255, 23, 120, 39, 2, 242, 64, 112, 138, 2, 74, 88, 43, 139, 173, 174, 187, 116, 61, 211, 238, 232, 243, 101, 57, 139, 116, 28, 15, 98},
-	}, Checkpoint{
+	},
+	{
 		Height: 571000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6301,7 +6872,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1235407342,
 		},
 		FilterHeader: &chainhash.Hash{12, 237, 220, 41, 79, 21, 148, 209, 131, 48, 27, 125, 141, 30, 195, 196, 125, 192, 213, 89, 14, 73, 205, 242, 69, 76, 104, 74, 120, 178, 63, 167},
-	}, Checkpoint{
+	},
+	{
 		Height: 572000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    738508800,
@@ -6312,7 +6884,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1433663252,
 		},
 		FilterHeader: &chainhash.Hash{196, 157, 203, 206, 116, 98, 71, 128, 215, 127, 69, 36, 160, 58, 141, 28, 142, 98, 230, 224, 162, 176, 184, 204, 100, 157, 135, 7, 101, 9, 198, 2},
-	}, Checkpoint{
+	},
+	{
 		Height: 573000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6323,7 +6896,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1918755998,
 		},
 		FilterHeader: &chainhash.Hash{45, 72, 206, 234, 39, 79, 189, 36, 20, 72, 128, 226, 138, 157, 201, 54, 5, 162, 20, 171, 29, 213, 93, 177, 82, 169, 123, 196, 41, 191, 162, 24},
-	}, Checkpoint{
+	},
+	{
 		Height: 574000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6334,7 +6908,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1837226550,
 		},
 		FilterHeader: &chainhash.Hash{98, 134, 37, 5, 41, 3, 64, 73, 40, 13, 127, 226, 108, 190, 248, 228, 89, 8, 109, 74, 122, 52, 96, 149, 221, 229, 7, 25, 185, 10, 70, 182},
-	}, Checkpoint{
+	},
+	{
 		Height: 575000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6345,7 +6920,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2765569802,
 		},
 		FilterHeader: &chainhash.Hash{217, 222, 134, 126, 202, 155, 68, 0, 63, 119, 46, 249, 118, 127, 184, 134, 93, 125, 187, 4, 105, 138, 133, 103, 88, 153, 86, 48, 112, 200, 16, 64},
-	}, Checkpoint{
+	},
+	{
 		Height: 576000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    805257216,
@@ -6356,7 +6932,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      414354841,
 		},
 		FilterHeader: &chainhash.Hash{248, 4, 70, 71, 200, 57, 135, 124, 74, 229, 170, 166, 229, 247, 127, 70, 29, 45, 153, 157, 208, 121, 193, 1, 23, 245, 240, 90, 170, 124, 75, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 577000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6367,7 +6944,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1924594184,
 		},
 		FilterHeader: &chainhash.Hash{137, 74, 187, 29, 14, 31, 170, 220, 243, 166, 46, 128, 7, 240, 113, 145, 87, 239, 112, 158, 57, 240, 78, 205, 219, 117, 64, 230, 176, 111, 37, 156},
-	}, Checkpoint{
+	},
+	{
 		Height: 578000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6378,7 +6956,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3648501172,
 		},
 		FilterHeader: &chainhash.Hash{52, 34, 163, 226, 246, 234, 5, 88, 121, 134, 16, 165, 206, 67, 133, 11, 159, 124, 15, 32, 246, 78, 209, 48, 138, 70, 140, 131, 12, 219, 163, 140},
-	}, Checkpoint{
+	},
+	{
 		Height: 579000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6389,7 +6968,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3064163024,
 		},
 		FilterHeader: &chainhash.Hash{229, 102, 140, 17, 51, 234, 113, 101, 36, 126, 55, 235, 70, 185, 218, 50, 207, 114, 247, 37, 94, 80, 248, 13, 113, 100, 62, 233, 74, 49, 29, 94},
-	}, Checkpoint{
+	},
+	{
 		Height: 580000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6400,7 +6980,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2986749677,
 		},
 		FilterHeader: &chainhash.Hash{248, 48, 100, 9, 249, 185, 80, 37, 171, 238, 178, 197, 2, 216, 117, 154, 28, 208, 30, 213, 76, 223, 69, 232, 204, 212, 197, 99, 165, 65, 162, 127},
-	}, Checkpoint{
+	},
+	{
 		Height: 581000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    541065216,
@@ -6411,7 +6992,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3853816496,
 		},
 		FilterHeader: &chainhash.Hash{60, 207, 122, 129, 174, 135, 103, 30, 145, 108, 205, 28, 207, 32, 144, 232, 197, 175, 99, 45, 73, 6, 182, 5, 240, 10, 164, 146, 189, 154, 109, 146},
-	}, Checkpoint{
+	},
+	{
 		Height: 582000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    541065216,
@@ -6422,7 +7004,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2241552504,
 		},
 		FilterHeader: &chainhash.Hash{198, 175, 121, 171, 45, 115, 251, 168, 117, 14, 193, 98, 50, 194, 74, 194, 168, 249, 128, 92, 48, 131, 194, 208, 84, 96, 32, 46, 209, 10, 19, 221},
-	}, Checkpoint{
+	},
+	{
 		Height: 583000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6433,7 +7016,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3772295712,
 		},
 		FilterHeader: &chainhash.Hash{117, 105, 160, 184, 112, 206, 158, 25, 168, 59, 150, 33, 232, 218, 240, 11, 174, 245, 40, 226, 40, 246, 165, 75, 137, 140, 193, 10, 117, 111, 66, 148},
-	}, Checkpoint{
+	},
+	{
 		Height: 584000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6444,7 +7028,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3661773007,
 		},
 		FilterHeader: &chainhash.Hash{44, 226, 134, 171, 39, 41, 21, 59, 249, 40, 27, 215, 221, 181, 52, 165, 5, 166, 169, 22, 156, 153, 49, 18, 198, 16, 17, 8, 175, 168, 29, 139},
-	}, Checkpoint{
+	},
+	{
 		Height: 585000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6455,7 +7040,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1260924983,
 		},
 		FilterHeader: &chainhash.Hash{193, 94, 73, 34, 248, 10, 91, 162, 149, 105, 230, 125, 242, 197, 17, 47, 234, 74, 249, 89, 2, 49, 225, 171, 212, 188, 165, 25, 198, 52, 191, 161},
-	}, Checkpoint{
+	},
+	{
 		Height: 586000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6466,7 +7052,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      152182097,
 		},
 		FilterHeader: &chainhash.Hash{197, 76, 209, 11, 120, 72, 170, 196, 244, 221, 180, 40, 178, 231, 227, 52, 45, 104, 120, 56, 226, 44, 209, 19, 18, 58, 31, 240, 13, 55, 204, 85},
-	}, Checkpoint{
+	},
+	{
 		Height: 587000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6477,7 +7064,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1781711666,
 		},
 		FilterHeader: &chainhash.Hash{246, 166, 11, 115, 140, 42, 210, 122, 12, 189, 175, 127, 154, 255, 137, 89, 56, 174, 12, 195, 177, 144, 230, 220, 213, 11, 199, 47, 78, 35, 190, 224},
-	}, Checkpoint{
+	},
+	{
 		Height: 588000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6488,7 +7076,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3751838468,
 		},
 		FilterHeader: &chainhash.Hash{214, 138, 211, 207, 107, 186, 254, 166, 29, 102, 200, 1, 170, 219, 148, 27, 51, 225, 37, 148, 2, 169, 150, 188, 15, 199, 149, 198, 190, 205, 225, 120},
-	}, Checkpoint{
+	},
+	{
 		Height: 589000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6499,7 +7088,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1919572261,
 		},
 		FilterHeader: &chainhash.Hash{30, 129, 165, 92, 153, 218, 174, 44, 27, 100, 159, 206, 103, 243, 26, 227, 145, 37, 200, 254, 196, 204, 233, 22, 136, 87, 230, 0, 3, 14, 108, 195},
-	}, Checkpoint{
+	},
+	{
 		Height: 590000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    549453824,
@@ -6510,7 +7100,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      838976514,
 		},
 		FilterHeader: &chainhash.Hash{179, 110, 37, 243, 31, 163, 195, 210, 223, 234, 152, 178, 79, 132, 128, 43, 190, 127, 127, 201, 167, 32, 212, 180, 15, 102, 227, 141, 245, 119, 247, 125},
-	}, Checkpoint{
+	},
+	{
 		Height: 591000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1073676288,
@@ -6521,7 +7112,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3257994672,
 		},
 		FilterHeader: &chainhash.Hash{248, 66, 147, 48, 220, 2, 164, 155, 216, 91, 10, 192, 64, 143, 197, 226, 88, 9, 189, 177, 192, 227, 204, 54, 89, 209, 160, 4, 42, 54, 158, 240},
-	}, Checkpoint{
+	},
+	{
 		Height: 592000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6532,7 +7124,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      4156782565,
 		},
 		FilterHeader: &chainhash.Hash{27, 204, 140, 76, 149, 41, 86, 115, 25, 126, 55, 244, 228, 108, 129, 26, 195, 51, 4, 232, 154, 0, 14, 83, 99, 34, 56, 25, 217, 163, 25, 47},
-	}, Checkpoint{
+	},
+	{
 		Height: 593000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6543,7 +7136,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      447849894,
 		},
 		FilterHeader: &chainhash.Hash{159, 205, 160, 239, 98, 186, 25, 13, 237, 162, 93, 30, 146, 9, 137, 208, 70, 159, 62, 52, 176, 54, 233, 141, 252, 219, 85, 225, 98, 46, 86, 221},
-	}, Checkpoint{
+	},
+	{
 		Height: 594000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6554,7 +7148,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3368063151,
 		},
 		FilterHeader: &chainhash.Hash{10, 226, 61, 40, 72, 19, 150, 60, 72, 215, 193, 97, 231, 33, 109, 215, 9, 117, 34, 28, 49, 241, 90, 44, 29, 61, 45, 139, 245, 148, 64, 124},
-	}, Checkpoint{
+	},
+	{
 		Height: 595000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    541065216,
@@ -6565,7 +7160,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      1811794021,
 		},
 		FilterHeader: &chainhash.Hash{216, 149, 21, 208, 23, 62, 125, 219, 145, 216, 98, 6, 62, 63, 247, 122, 59, 62, 176, 15, 28, 26, 225, 252, 61, 110, 224, 204, 58, 8, 167, 102},
-	}, Checkpoint{
+	},
+	{
 		Height: 596000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6576,7 +7172,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      3217984675,
 		},
 		FilterHeader: &chainhash.Hash{224, 106, 233, 109, 50, 44, 179, 147, 52, 234, 230, 109, 27, 8, 116, 180, 126, 170, 172, 115, 177, 19, 145, 53, 177, 46, 160, 70, 27, 22, 128, 206},
-	}, Checkpoint{
+	},
+	{
 		Height: 597000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    536870912,
@@ -6587,7 +7184,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      2988448301,
 		},
 		FilterHeader: &chainhash.Hash{67, 15, 147, 17, 1, 220, 147, 106, 172, 148, 90, 31, 213, 225, 138, 24, 178, 241, 84, 21, 92, 228, 243, 94, 19, 15, 229, 142, 193, 135, 249, 22},
-	}, Checkpoint{
+	},
+	{
 		Height: 598000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    1073676288,
@@ -6598,7 +7196,8 @@ var checkpoints = []Checkpoint{
 			Nonce:      592075064,
 		},
 		FilterHeader: &chainhash.Hash{74, 179, 211, 32, 113, 70, 192, 108, 135, 152, 226, 113, 193, 179, 196, 186, 81, 212, 73, 204, 6, 114, 116, 218, 19, 130, 168, 188, 104, 193, 187, 246},
-	}, Checkpoint{
+	},
+	{
 		Height: 599000,
 		BlockHeader: &wire.BlockHeader{
 			Version:    541065216,
@@ -6609,6 +7208,642 @@ var checkpoints = []Checkpoint{
 			Nonce:      3099275944,
 		},
 		FilterHeader: &chainhash.Hash{250, 9, 93, 232, 165, 28, 213, 49, 158, 174, 78, 245, 90, 162, 44, 119, 160, 22, 87, 53, 45, 226, 114, 30, 249, 181, 134, 159, 8, 72, 213, 36},
+	},
+	{
+		Height: 600000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{69, 86, 151, 103, 216, 141, 57, 98, 163, 251, 185, 160, 119, 111, 31, 151, 198, 54, 243, 39, 216, 236, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{38, 237, 132, 3, 165, 149, 182, 229, 253, 23, 32, 80, 219, 66, 234, 191, 231, 103, 0, 174, 221, 23, 230, 178, 206, 65, 107, 146, 161, 196, 183, 102},
+			Timestamp:  time.Unix(1571443461, 0),
+			Bits:       387294044,
+			Nonce:      1066642855,
+		},
+		FilterHeader: &chainhash.Hash{248, 152, 117, 55, 78, 32, 14, 247, 94, 81, 171, 178, 180, 245, 23, 104, 12, 14, 20, 71, 37, 70, 96, 168, 134, 67, 47, 11, 77, 133, 224, 189},
+	},
+	{
+		Height: 601000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{201, 12, 241, 253, 106, 2, 254, 66, 30, 37, 46, 105, 99, 93, 172, 247, 119, 116, 9, 221, 194, 176, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{198, 10, 79, 169, 204, 29, 112, 105, 135, 8, 176, 35, 142, 248, 44, 161, 232, 1, 78, 152, 54, 17, 10, 147, 133, 24, 170, 201, 15, 161, 152, 187},
+			Timestamp:  time.Unix(1572015253, 0),
+			Bits:       387223263,
+			Nonce:      1226386924,
+		},
+		FilterHeader: &chainhash.Hash{76, 183, 48, 136, 221, 161, 5, 239, 103, 244, 145, 104, 206, 255, 109, 4, 12, 38, 84, 217, 153, 14, 101, 213, 196, 145, 231, 109, 32, 223, 39, 112},
+	},
+	{
+		Height: 602000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    549453824,
+			PrevBlock:  chainhash.Hash{90, 27, 110, 25, 26, 86, 127, 104, 175, 193, 214, 16, 235, 32, 250, 98, 147, 156, 160, 222, 54, 187, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{36, 81, 247, 249, 132, 130, 17, 219, 32, 139, 203, 201, 50, 239, 11, 198, 135, 239, 232, 238, 103, 246, 71, 68, 168, 153, 148, 245, 196, 88, 73, 43},
+			Timestamp:  time.Unix(1572672095, 0),
+			Bits:       387223263,
+			Nonce:      1121140837,
+		},
+		FilterHeader: &chainhash.Hash{140, 124, 109, 116, 43, 166, 251, 216, 239, 5, 16, 130, 42, 19, 28, 63, 220, 19, 156, 215, 234, 237, 68, 74, 16, 215, 50, 206, 147, 101, 120, 217},
+	},
+	{
+		Height: 603000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073725440,
+			PrevBlock:  chainhash.Hash{187, 243, 221, 100, 82, 216, 56, 241, 120, 24, 172, 197, 114, 31, 154, 25, 81, 5, 1, 208, 4, 196, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{17, 155, 143, 206, 81, 167, 138, 138, 10, 108, 215, 105, 30, 36, 181, 121, 160, 150, 225, 210, 132, 181, 219, 218, 210, 243, 29, 193, 134, 58, 228, 147},
+			Timestamp:  time.Unix(1573311536, 0),
+			Bits:       387326161,
+			Nonce:      2012558845,
+		},
+		FilterHeader: &chainhash.Hash{192, 164, 208, 39, 141, 79, 237, 182, 47, 98, 21, 54, 226, 33, 246, 38, 90, 8, 100, 97, 85, 195, 124, 169, 221, 246, 56, 75, 228, 58, 45, 94},
+	},
+	{
+		Height: 604000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{36, 54, 69, 53, 214, 114, 180, 53, 96, 125, 201, 13, 251, 147, 198, 129, 235, 80, 163, 193, 60, 42, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{142, 162, 234, 25, 132, 98, 254, 171, 127, 115, 170, 215, 175, 38, 177, 162, 135, 177, 163, 202, 45, 243, 252, 200, 98, 155, 87, 169, 229, 204, 95, 105},
+			Timestamp:  time.Unix(1573877624, 0),
+			Bits:       387326161,
+			Nonce:      2774271557,
+		},
+		FilterHeader: &chainhash.Hash{168, 100, 207, 124, 47, 221, 112, 201, 136, 67, 143, 54, 129, 187, 8, 208, 38, 242, 56, 60, 18, 124, 231, 95, 158, 191, 228, 80, 115, 167, 188, 206},
+	},
+	{
+		Height: 605000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536928256,
+			PrevBlock:  chainhash.Hash{230, 236, 106, 168, 53, 239, 81, 47, 33, 168, 92, 151, 248, 111, 34, 166, 133, 253, 128, 134, 36, 91, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{185, 212, 202, 22, 177, 195, 170, 62, 25, 193, 54, 85, 224, 216, 143, 37, 21, 248, 187, 163, 86, 151, 194, 162, 223, 80, 146, 37, 31, 34, 1, 216},
+			Timestamp:  time.Unix(1574476291, 0),
+			Bits:       387297854,
+			Nonce:      529904222,
+		},
+		FilterHeader: &chainhash.Hash{30, 185, 174, 60, 21, 49, 59, 217, 254, 41, 222, 100, 133, 83, 55, 236, 234, 100, 195, 151, 23, 207, 231, 144, 185, 9, 153, 108, 213, 44, 250, 75},
+	},
+	{
+		Height: 606000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073676288,
+			PrevBlock:  chainhash.Hash{43, 214, 7, 128, 21, 26, 54, 18, 184, 52, 29, 163, 77, 129, 196, 184, 132, 207, 11, 213, 39, 34, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{181, 135, 254, 204, 213, 83, 157, 188, 186, 230, 185, 56, 221, 140, 60, 114, 219, 39, 223, 68, 1, 84, 74, 195, 161, 191, 237, 2, 141, 171, 172, 120},
+			Timestamp:  time.Unix(1575097866, 0),
+			Bits:       387297854,
+			Nonce:      4111808435,
+		},
+		FilterHeader: &chainhash.Hash{211, 236, 138, 79, 144, 236, 222, 149, 63, 199, 116, 77, 79, 16, 109, 86, 89, 6, 40, 3, 28, 133, 41, 42, 89, 114, 46, 129, 52, 132, 9, 29},
+	},
+	{
+		Height: 607000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536879104,
+			PrevBlock:  chainhash.Hash{87, 20, 210, 187, 3, 235, 208, 66, 17, 141, 253, 124, 98, 240, 13, 166, 62, 109, 121, 111, 87, 27, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{86, 161, 61, 45, 114, 213, 14, 140, 153, 146, 191, 27, 218, 39, 242, 218, 74, 198, 157, 111, 157, 201, 165, 74, 237, 130, 63, 180, 184, 20, 127, 94},
+			Timestamp:  time.Unix(1575686991, 0),
+			Bits:       387308498,
+			Nonce:      2246325400,
+		},
+		FilterHeader: &chainhash.Hash{159, 89, 94, 239, 174, 223, 118, 46, 170, 31, 111, 117, 117, 255, 199, 117, 41, 188, 39, 125, 236, 196, 209, 62, 85, 110, 240, 219, 155, 34, 12, 221},
+	},
+	{
+		Height: 608000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073733632,
+			PrevBlock:  chainhash.Hash{164, 61, 24, 109, 248, 54, 115, 175, 80, 108, 189, 195, 90, 206, 0, 244, 35, 98, 30, 171, 140, 168, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{6, 14, 40, 78, 240, 176, 120, 113, 174, 185, 33, 123, 16, 255, 17, 82, 160, 16, 141, 66, 147, 98, 74, 11, 94, 32, 237, 181, 80, 222, 170, 94},
+			Timestamp:  time.Unix(1576280403, 0),
+			Bits:       387308498,
+			Nonce:      2667382152,
+		},
+		FilterHeader: &chainhash.Hash{133, 157, 208, 146, 218, 101, 40, 91, 229, 105, 41, 22, 77, 35, 248, 66, 184, 125, 204, 196, 90, 123, 187, 250, 38, 238, 211, 134, 90, 205, 31, 47},
+	},
+	{
+		Height: 609000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536928256,
+			PrevBlock:  chainhash.Hash{88, 100, 59, 220, 223, 46, 180, 72, 13, 120, 214, 37, 192, 187, 11, 113, 17, 39, 122, 219, 52, 239, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{39, 56, 206, 134, 28, 76, 149, 210, 81, 58, 66, 62, 233, 159, 76, 43, 45, 31, 227, 180, 70, 119, 164, 79, 215, 207, 94, 26, 33, 130, 240, 150},
+			Timestamp:  time.Unix(1576872717, 0),
+			Bits:       387300560,
+			Nonce:      1225063957,
+		},
+		FilterHeader: &chainhash.Hash{88, 194, 114, 146, 52, 169, 121, 119, 243, 80, 112, 120, 156, 16, 254, 187, 0, 58, 76, 216, 165, 45, 248, 226, 114, 118, 65, 49, 142, 215, 100, 74},
+	},
+	{
+		Height: 610000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536928256,
+			PrevBlock:  chainhash.Hash{143, 2, 255, 252, 239, 14, 37, 230, 13, 66, 243, 137, 82, 68, 56, 79, 215, 53, 146, 238, 216, 213, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{33, 162, 43, 195, 50, 130, 215, 43, 247, 131, 125, 1, 77, 16, 36, 224, 2, 249, 75, 21, 125, 252, 66, 48, 130, 127, 215, 113, 188, 190, 155, 47},
+			Timestamp:  time.Unix(1577447627, 0),
+			Bits:       387300560,
+			Nonce:      4129488977,
+		},
+		FilterHeader: &chainhash.Hash{26, 170, 40, 228, 201, 126, 148, 129, 131, 232, 56, 81, 143, 48, 164, 245, 242, 219, 212, 66, 144, 51, 176, 82, 43, 202, 96, 130, 206, 97, 71, 0},
+	},
+	{
+		Height: 611000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073725440,
+			PrevBlock:  chainhash.Hash{234, 22, 40, 96, 159, 56, 177, 124, 140, 174, 108, 137, 237, 158, 245, 21, 105, 78, 113, 125, 191, 104, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{221, 94, 212, 143, 88, 236, 44, 220, 194, 76, 185, 109, 59, 209, 220, 205, 69, 24, 73, 238, 232, 233, 215, 214, 80, 249, 217, 120, 233, 14, 80, 126},
+			Timestamp:  time.Unix(1578005796, 0),
+			Bits:       387212786,
+			Nonce:      4139541807,
+		},
+		FilterHeader: &chainhash.Hash{89, 133, 85, 66, 233, 249, 48, 244, 59, 95, 124, 221, 122, 76, 151, 26, 110, 43, 45, 48, 96, 163, 127, 250, 229, 162, 63, 58, 67, 64, 241, 188},
+	},
+	{
+		Height: 612000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073725440,
+			PrevBlock:  chainhash.Hash{144, 34, 79, 202, 189, 44, 209, 219, 27, 153, 166, 222, 200, 117, 10, 125, 42, 83, 135, 221, 136, 9, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{224, 183, 242, 44, 113, 239, 40, 250, 212, 249, 177, 164, 83, 55, 247, 227, 252, 37, 248, 245, 221, 175, 78, 204, 149, 126, 253, 76, 107, 133, 62, 199},
+			Timestamp:  time.Unix(1578549787, 0),
+			Bits:       387212786,
+			Nonce:      3788433512,
+		},
+		FilterHeader: &chainhash.Hash{23, 145, 194, 103, 123, 1, 209, 0, 79, 2, 64, 11, 127, 100, 127, 244, 243, 191, 194, 156, 123, 177, 148, 36, 219, 203, 57, 149, 129, 10, 138, 129},
+	},
+	{
+		Height: 613000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{88, 137, 232, 246, 73, 44, 66, 40, 162, 250, 10, 23, 21, 66, 220, 137, 39, 93, 147, 197, 207, 63, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{127, 163, 69, 95, 55, 155, 197, 119, 181, 254, 232, 152, 91, 142, 153, 212, 131, 154, 181, 0, 54, 100, 237, 4, 164, 137, 28, 4, 118, 107, 205, 176},
+			Timestamp:  time.Unix(1579124390, 0),
+			Bits:       387124344,
+			Nonce:      307009778,
+		},
+		FilterHeader: &chainhash.Hash{184, 236, 216, 186, 88, 207, 207, 115, 153, 253, 226, 90, 162, 1, 65, 97, 65, 112, 167, 149, 200, 95, 13, 250, 115, 54, 48, 76, 210, 215, 84, 37},
+	},
+	{
+		Height: 614000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{52, 22, 181, 102, 130, 233, 102, 75, 92, 105, 216, 41, 213, 71, 226, 52, 91, 251, 1, 170, 62, 237, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{252, 247, 103, 120, 179, 40, 29, 86, 48, 89, 137, 16, 62, 81, 212, 225, 117, 233, 58, 222, 98, 252, 145, 146, 158, 126, 249, 243, 245, 20, 213, 255},
+			Timestamp:  time.Unix(1579697316, 0),
+			Bits:       387124344,
+			Nonce:      2336068126,
+		},
+		FilterHeader: &chainhash.Hash{221, 168, 98, 204, 69, 209, 226, 1, 20, 129, 177, 5, 59, 213, 107, 235, 22, 151, 72, 226, 35, 71, 4, 97, 161, 35, 43, 241, 161, 30, 55, 228},
+	},
+	{
+		Height: 615000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    541065216,
+			PrevBlock:  chainhash.Hash{215, 232, 7, 66, 17, 51, 181, 241, 105, 14, 245, 53, 140, 62, 36, 53, 118, 68, 121, 85, 241, 183, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{103, 77, 69, 136, 66, 43, 17, 59, 21, 110, 252, 2, 218, 118, 80, 26, 75, 155, 129, 6, 238, 30, 168, 140, 206, 202, 70, 14, 184, 37, 15, 55},
+			Timestamp:  time.Unix(1580275434, 0),
+			Bits:       387068671,
+			Nonce:      1670932890,
+		},
+		FilterHeader: &chainhash.Hash{49, 64, 85, 162, 73, 232, 211, 134, 229, 67, 151, 64, 212, 236, 108, 145, 142, 107, 233, 189, 160, 164, 50, 6, 246, 97, 61, 160, 53, 9, 141, 222},
+	},
+	{
+		Height: 616000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{102, 153, 46, 22, 185, 251, 126, 100, 231, 234, 28, 95, 17, 191, 57, 160, 156, 239, 76, 219, 1, 65, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{247, 40, 239, 110, 159, 71, 6, 210, 36, 3, 149, 74, 86, 162, 224, 59, 81, 14, 3, 113, 49, 215, 219, 77, 74, 224, 5, 183, 159, 205, 199, 148},
+			Timestamp:  time.Unix(1580859611, 0),
+			Bits:       387068671,
+			Nonce:      1591629689,
+		},
+		FilterHeader: &chainhash.Hash{37, 166, 93, 12, 138, 134, 206, 78, 253, 166, 140, 122, 112, 183, 231, 245, 32, 102, 152, 42, 118, 179, 128, 123, 156, 170, 53, 252, 198, 183, 202, 158},
+	},
+	{
+		Height: 617000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{7, 92, 194, 34, 11, 165, 169, 131, 234, 190, 60, 22, 157, 48, 142, 187, 8, 69, 232, 6, 149, 126, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{37, 92, 161, 61, 19, 70, 111, 116, 4, 168, 154, 5, 245, 172, 32, 79, 71, 55, 153, 134, 177, 74, 236, 155, 9, 232, 63, 207, 58, 161, 193, 115},
+			Timestamp:  time.Unix(1581466204, 0),
+			Bits:       387062484,
+			Nonce:      372093179,
+		},
+		FilterHeader: &chainhash.Hash{53, 55, 28, 148, 155, 19, 69, 27, 87, 241, 152, 46, 81, 225, 234, 170, 215, 43, 170, 225, 44, 96, 123, 178, 16, 206, 46, 193, 128, 177, 244, 172},
+	},
+	{
+		Height: 618000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{214, 77, 232, 225, 254, 65, 186, 201, 161, 95, 138, 234, 46, 133, 233, 225, 89, 170, 137, 72, 173, 16, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{53, 134, 45, 88, 96, 202, 231, 108, 162, 161, 144, 225, 50, 114, 227, 166, 213, 150, 76, 200, 163, 187, 50, 248, 185, 32, 253, 187, 245, 35, 180, 69},
+			Timestamp:  time.Unix(1582067985, 0),
+			Bits:       387062484,
+			Nonce:      2661079955,
+		},
+		FilterHeader: &chainhash.Hash{104, 109, 103, 194, 210, 74, 84, 244, 3, 211, 117, 123, 137, 68, 137, 239, 92, 176, 213, 173, 14, 235, 161, 195, 169, 202, 85, 51, 1, 148, 146, 136},
+	},
+	{
+		Height: 619000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{35, 210, 81, 88, 33, 127, 24, 109, 146, 125, 93, 153, 64, 103, 25, 112, 16, 169, 56, 11, 32, 142, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{178, 1, 48, 133, 59, 130, 14, 96, 137, 169, 94, 146, 254, 246, 77, 125, 52, 214, 67, 239, 211, 232, 151, 36, 190, 177, 43, 61, 202, 95, 62, 56},
+			Timestamp:  time.Unix(1582673397, 0),
+			Bits:       387067068,
+			Nonce:      1713501324,
+		},
+		FilterHeader: &chainhash.Hash{176, 215, 201, 66, 37, 89, 54, 62, 41, 89, 139, 170, 95, 74, 45, 53, 180, 97, 25, 31, 126, 25, 94, 140, 76, 238, 18, 47, 154, 63, 116, 2},
+	},
+	{
+		Height: 620000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    545259520,
+			PrevBlock:  chainhash.Hash{36, 185, 172, 137, 134, 100, 42, 240, 242, 188, 113, 72, 239, 255, 1, 127, 61, 184, 165, 128, 51, 162, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{102, 165, 35, 247, 43, 143, 228, 55, 104, 22, 53, 218, 85, 213, 91, 154, 185, 134, 221, 50, 131, 63, 225, 233, 191, 250, 70, 140, 146, 63, 215, 69},
+			Timestamp:  time.Unix(1583246560, 0),
+			Bits:       387067068,
+			Nonce:      2634609532,
+		},
+		FilterHeader: &chainhash.Hash{241, 224, 167, 78, 108, 102, 150, 177, 71, 137, 87, 222, 16, 134, 93, 222, 173, 65, 156, 206, 83, 50, 34, 16, 2, 160, 235, 66, 132, 162, 110, 22},
+	},
+	{
+		Height: 621000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{3, 84, 40, 78, 67, 143, 253, 185, 76, 112, 120, 211, 135, 80, 83, 159, 138, 53, 40, 151, 68, 152, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{79, 3, 124, 164, 22, 185, 146, 92, 100, 49, 100, 71, 249, 3, 244, 210, 112, 4, 175, 95, 243, 183, 172, 241, 182, 208, 97, 27, 226, 108, 91, 239},
+			Timestamp:  time.Unix(1583793766, 0),
+			Bits:       386990361,
+			Nonce:      1673689803,
+		},
+		FilterHeader: &chainhash.Hash{19, 190, 237, 53, 97, 16, 55, 173, 189, 166, 30, 31, 236, 135, 183, 219, 230, 33, 237, 18, 111, 62, 239, 29, 34, 166, 82, 158, 64, 155, 225, 119},
+	},
+	{
+		Height: 622000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{17, 15, 159, 164, 143, 145, 168, 142, 15, 177, 215, 189, 195, 253, 26, 252, 160, 243, 200, 168, 220, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{187, 203, 134, 79, 255, 203, 181, 134, 116, 6, 213, 227, 248, 57, 161, 189, 86, 244, 116, 79, 100, 65, 208, 70, 142, 236, 141, 128, 143, 206, 254, 78},
+			Timestamp:  time.Unix(1584476185, 0),
+			Bits:       386990361,
+			Nonce:      2695493702,
+		},
+		FilterHeader: &chainhash.Hash{228, 44, 133, 237, 223, 58, 86, 203, 181, 240, 70, 96, 223, 166, 29, 42, 93, 77, 183, 34, 162, 200, 14, 152, 146, 234, 223, 0, 87, 150, 139, 224},
+	},
+	{
+		Height: 623000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536928256,
+			PrevBlock:  chainhash.Hash{175, 32, 198, 59, 225, 215, 92, 183, 39, 176, 239, 239, 48, 27, 219, 204, 45, 74, 188, 238, 141, 7, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{28, 116, 238, 236, 101, 58, 89, 230, 133, 9, 146, 28, 120, 213, 124, 201, 8, 176, 117, 123, 154, 253, 51, 171, 202, 5, 23, 235, 166, 244, 45, 81},
+			Timestamp:  time.Unix(1585219303, 0),
+			Bits:       387201857,
+			Nonce:      3240438409,
+		},
+		FilterHeader: &chainhash.Hash{128, 29, 32, 40, 199, 151, 226, 165, 196, 150, 6, 88, 101, 100, 145, 126, 10, 19, 195, 93, 252, 201, 134, 127, 232, 127, 103, 222, 231, 101, 232, 135},
+	},
+	{
+		Height: 624000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    547356672,
+			PrevBlock:  chainhash.Hash{103, 135, 241, 249, 107, 107, 25, 235, 202, 115, 191, 205, 60, 126, 8, 62, 197, 127, 40, 192, 62, 119, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{180, 231, 127, 209, 7, 74, 178, 200, 223, 224, 234, 159, 61, 215, 245, 146, 17, 8, 41, 195, 30, 79, 77, 85, 119, 99, 70, 139, 189, 66, 138, 6},
+			Timestamp:  time.Unix(1585797357, 0),
+			Bits:       387201857,
+			Nonce:      3210347378,
+		},
+		FilterHeader: &chainhash.Hash{209, 72, 233, 51, 211, 132, 126, 40, 15, 111, 163, 197, 149, 22, 117, 148, 30, 143, 117, 109, 21, 66, 78, 18, 45, 72, 227, 208, 113, 100, 181, 72},
+	},
+	{
+		Height: 625000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073733632,
+			PrevBlock:  chainhash.Hash{8, 14, 212, 101, 197, 207, 146, 105, 35, 247, 68, 52, 178, 191, 196, 59, 168, 60, 196, 221, 177, 143, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{248, 95, 22, 56, 41, 69, 95, 197, 33, 183, 92, 154, 187, 168, 226, 56, 195, 13, 181, 222, 159, 159, 15, 7, 70, 214, 241, 151, 20, 89, 81, 77},
+			Timestamp:  time.Unix(1586364107, 0),
+			Bits:       387129532,
+			Nonce:      3963275925,
+		},
+		FilterHeader: &chainhash.Hash{116, 238, 63, 238, 42, 35, 70, 54, 31, 237, 218, 114, 14, 134, 91, 34, 210, 48, 138, 84, 143, 63, 250, 97, 61, 35, 207, 174, 137, 9, 143, 29},
+	},
+	{
+		Height: 626000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    545259520,
+			PrevBlock:  chainhash.Hash{53, 166, 128, 94, 147, 130, 178, 161, 144, 81, 63, 191, 75, 115, 59, 39, 103, 120, 115, 79, 13, 54, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{166, 243, 27, 106, 181, 198, 11, 135, 95, 145, 162, 2, 123, 72, 144, 224, 78, 251, 165, 203, 151, 67, 170, 104, 184, 172, 99, 210, 108, 103, 140, 86},
+			Timestamp:  time.Unix(1586902684, 0),
+			Bits:       387129532,
+			Nonce:      4024617096,
+		},
+		FilterHeader: &chainhash.Hash{218, 236, 89, 221, 196, 247, 196, 221, 42, 107, 41, 118, 179, 196, 147, 195, 18, 210, 47, 190, 42, 178, 219, 106, 211, 60, 67, 221, 246, 28, 48, 25},
+	},
+	{
+		Height: 627000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    939515904,
+			PrevBlock:  chainhash.Hash{197, 199, 9, 154, 79, 218, 29, 8, 224, 88, 10, 193, 25, 241, 248, 172, 237, 124, 169, 250, 105, 184, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{199, 185, 244, 13, 161, 112, 237, 98, 167, 95, 180, 129, 204, 143, 146, 2, 37, 120, 4, 216, 240, 148, 77, 118, 188, 194, 153, 178, 253, 247, 206, 241},
+			Timestamp:  time.Unix(1587470063, 0),
+			Bits:       387031859,
+			Nonce:      961299612,
+		},
+		FilterHeader: &chainhash.Hash{112, 176, 107, 13, 116, 112, 58, 89, 89, 34, 183, 0, 202, 149, 247, 246, 9, 44, 79, 169, 74, 161, 130, 104, 3, 97, 19, 152, 187, 247, 25, 181},
+	},
+	{
+		Height: 628000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{7, 37, 234, 187, 183, 3, 51, 80, 236, 58, 232, 14, 142, 62, 127, 92, 250, 1, 248, 28, 63, 67, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{251, 20, 166, 100, 16, 84, 24, 60, 122, 41, 150, 79, 132, 118, 212, 98, 226, 180, 117, 62, 126, 94, 104, 228, 17, 170, 134, 59, 188, 253, 175, 33},
+			Timestamp:  time.Unix(1588079174, 0),
+			Bits:       387031859,
+			Nonce:      1278041443,
+		},
+		FilterHeader: &chainhash.Hash{134, 188, 210, 44, 149, 169, 227, 68, 172, 241, 175, 18, 147, 224, 209, 227, 143, 114, 144, 202, 228, 0, 50, 190, 238, 196, 16, 49, 242, 71, 80, 180},
+	},
+	{
+		Height: 629000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    545259520,
+			PrevBlock:  chainhash.Hash{3, 163, 126, 206, 191, 72, 19, 52, 186, 92, 184, 9, 241, 107, 54, 249, 237, 41, 98, 68, 161, 122, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{242, 160, 201, 77, 169, 98, 227, 8, 36, 19, 179, 64, 109, 173, 171, 196, 182, 136, 23, 164, 253, 79, 83, 143, 248, 250, 193, 254, 79, 238, 246, 240},
+			Timestamp:  time.Unix(1588654625, 0),
+			Bits:       387021369,
+			Nonce:      3103420111,
+		},
+		FilterHeader: &chainhash.Hash{227, 191, 198, 67, 97, 54, 118, 44, 34, 50, 194, 172, 191, 182, 45, 143, 124, 38, 214, 44, 36, 154, 221, 190, 233, 73, 28, 225, 69, 13, 212, 138},
+	},
+	{
+		Height: 630000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{30, 43, 150, 177, 32, 167, 59, 172, 176, 102, 114, 121, 189, 35, 27, 219, 149, 176, 139, 225, 107, 101, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{13, 48, 29, 133, 0, 72, 26, 221, 227, 24, 71, 101, 168, 11, 1, 146, 60, 228, 199, 153, 95, 247, 196, 129, 14, 4, 185, 115, 249, 245, 145, 177},
+			Timestamp:  time.Unix(1589225023, 0),
+			Bits:       387021369,
+			Nonce:      2302182970,
+		},
+		FilterHeader: &chainhash.Hash{99, 5, 158, 32, 86, 51, 235, 255, 183, 211, 94, 115, 118, 17, 166, 190, 93, 29, 63, 144, 79, 169, 200, 106, 117, 106, 250, 126, 10, 238, 2, 242},
+	},
+	{
+		Height: 631000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073676288,
+			PrevBlock:  chainhash.Hash{74, 64, 54, 178, 170, 195, 69, 17, 20, 241, 101, 149, 123, 207, 34, 216, 23, 12, 206, 46, 194, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{6, 243, 23, 182, 244, 252, 214, 153, 87, 206, 97, 141, 78, 3, 18, 2, 218, 59, 243, 88, 91, 139, 122, 210, 43, 143, 238, 193, 202, 124, 15, 184},
+			Timestamp:  time.Unix(1589933673, 0),
+			Bits:       387021369,
+			Nonce:      61888874,
+		},
+		FilterHeader: &chainhash.Hash{32, 28, 76, 4, 187, 115, 114, 222, 248, 94, 66, 96, 77, 229, 189, 198, 127, 232, 69, 44, 3, 140, 141, 205, 99, 148, 60, 199, 148, 19, 170, 77},
+	},
+	{
+		Height: 632000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    671080448,
+			PrevBlock:  chainhash.Hash{30, 190, 131, 42, 147, 2, 85, 238, 177, 84, 208, 55, 4, 133, 228, 221, 247, 11, 206, 54, 118, 55, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{136, 183, 15, 89, 163, 232, 134, 244, 41, 57, 38, 19, 212, 177, 66, 178, 43, 78, 56, 61, 190, 94, 108, 17, 118, 251, 4, 101, 7, 130, 106, 202},
+			Timestamp:  time.Unix(1590639023, 0),
+			Bits:       387094518,
+			Nonce:      3596095629,
+		},
+		FilterHeader: &chainhash.Hash{170, 56, 44, 158, 66, 236, 252, 240, 111, 212, 62, 50, 127, 82, 22, 93, 39, 83, 51, 98, 30, 107, 92, 42, 140, 151, 88, 227, 246, 109, 151, 95},
+	},
+	{
+		Height: 633000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    549453824,
+			PrevBlock:  chainhash.Hash{255, 20, 20, 252, 226, 130, 128, 67, 53, 37, 98, 208, 220, 172, 25, 38, 8, 237, 26, 163, 46, 240, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{239, 93, 20, 99, 30, 186, 84, 37, 131, 210, 92, 159, 123, 4, 248, 27, 92, 38, 159, 66, 85, 151, 170, 30, 240, 239, 111, 252, 211, 72, 172, 183},
+			Timestamp:  time.Unix(1591258454, 0),
+			Bits:       387094518,
+			Nonce:      1519967832,
+		},
+		FilterHeader: &chainhash.Hash{58, 63, 97, 176, 173, 92, 212, 209, 92, 254, 200, 169, 144, 244, 168, 180, 27, 148, 238, 187, 254, 140, 178, 226, 44, 22, 79, 222, 104, 250, 188, 213},
+	},
+	{
+		Height: 634000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    549453824,
+			PrevBlock:  chainhash.Hash{114, 29, 183, 59, 113, 216, 123, 147, 105, 108, 117, 187, 239, 37, 147, 16, 1, 207, 17, 159, 117, 208, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{84, 11, 24, 141, 69, 175, 119, 1, 239, 184, 208, 156, 61, 17, 181, 13, 46, 147, 240, 169, 234, 144, 211, 178, 6, 241, 32, 245, 151, 70, 158, 189},
+			Timestamp:  time.Unix(1591768132, 0),
+			Bits:       387219253,
+			Nonce:      866666538,
+		},
+		FilterHeader: &chainhash.Hash{77, 246, 48, 66, 107, 37, 4, 52, 202, 130, 166, 88, 109, 94, 215, 78, 103, 114, 49, 253, 248, 235, 181, 245, 136, 105, 166, 171, 128, 163, 152, 58},
+	},
+	{
+		Height: 635000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073676288,
+			PrevBlock:  chainhash.Hash{171, 33, 161, 19, 43, 93, 152, 43, 32, 0, 16, 232, 156, 116, 243, 226, 5, 163, 67, 147, 127, 122, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{119, 122, 141, 206, 181, 107, 92, 156, 21, 192, 51, 193, 234, 196, 177, 30, 18, 225, 152, 88, 168, 159, 153, 43, 100, 8, 5, 32, 86, 213, 50, 37},
+			Timestamp:  time.Unix(1592303808, 0),
+			Bits:       387219253,
+			Nonce:      313335689,
+		},
+		FilterHeader: &chainhash.Hash{232, 144, 149, 112, 225, 254, 72, 226, 132, 4, 130, 129, 98, 214, 86, 164, 95, 27, 13, 53, 157, 185, 205, 64, 66, 91, 74, 21, 166, 37, 171, 138},
+	},
+	{
+		Height: 636000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073676288,
+			PrevBlock:  chainhash.Hash{6, 158, 70, 105, 147, 201, 40, 195, 182, 159, 231, 241, 61, 30, 99, 64, 116, 103, 191, 240, 54, 133, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{239, 216, 221, 244, 111, 146, 73, 0, 182, 71, 124, 102, 180, 103, 71, 163, 125, 1, 80, 163, 172, 128, 60, 242, 121, 160, 59, 253, 38, 17, 252, 150},
+			Timestamp:  time.Unix(1592920371, 0),
+			Bits:       387044594,
+			Nonce:      3058960573,
+		},
+		FilterHeader: &chainhash.Hash{32, 22, 102, 138, 75, 157, 42, 108, 33, 244, 135, 241, 73, 188, 146, 164, 162, 227, 174, 242, 156, 78, 63, 102, 211, 87, 139, 121, 83, 151, 149, 209},
+	},
+	{
+		Height: 637000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    541065216,
+			PrevBlock:  chainhash.Hash{181, 90, 43, 217, 28, 205, 90, 8, 247, 7, 123, 121, 255, 226, 231, 123, 99, 57, 118, 5, 40, 125, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{182, 145, 75, 185, 196, 79, 105, 132, 109, 173, 14, 200, 52, 146, 76, 192, 110, 142, 29, 91, 234, 6, 93, 103, 59, 123, 165, 180, 131, 157, 19, 77},
+			Timestamp:  time.Unix(1593501590, 0),
+			Bits:       387044594,
+			Nonce:      1370375810,
+		},
+		FilterHeader: &chainhash.Hash{193, 20, 44, 215, 79, 103, 229, 67, 151, 134, 226, 126, 233, 154, 195, 228, 140, 207, 60, 95, 207, 10, 232, 28, 183, 26, 97, 188, 17, 208, 83, 66},
+	},
+	{
+		Height: 638000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    541065216,
+			PrevBlock:  chainhash.Hash{137, 62, 214, 69, 145, 79, 144, 123, 252, 253, 92, 155, 177, 200, 122, 26, 3, 48, 31, 28, 244, 51, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{212, 100, 187, 29, 32, 67, 103, 204, 169, 162, 152, 229, 124, 92, 118, 202, 0, 179, 60, 95, 128, 9, 96, 244, 128, 242, 8, 125, 212, 28, 161, 150},
+			Timestamp:  time.Unix(1594052699, 0),
+			Bits:       387044633,
+			Nonce:      1765441722,
+		},
+		FilterHeader: &chainhash.Hash{1, 243, 43, 214, 91, 228, 186, 105, 165, 10, 188, 185, 106, 173, 174, 61, 32, 90, 121, 94, 115, 148, 103, 103, 229, 29, 3, 244, 123, 1, 21, 197},
+	},
+	{
+		Height: 639000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    549453824,
+			PrevBlock:  chainhash.Hash{21, 229, 215, 120, 251, 214, 100, 73, 187, 212, 49, 71, 117, 25, 119, 213, 65, 102, 76, 14, 70, 35, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{138, 46, 164, 63, 196, 136, 223, 38, 237, 141, 53, 68, 249, 202, 191, 230, 226, 17, 78, 91, 52, 87, 47, 127, 137, 22, 67, 43, 227, 187, 72, 197},
+			Timestamp:  time.Unix(1594598800, 0),
+			Bits:       387044633,
+			Nonce:      3897483920,
+		},
+		FilterHeader: &chainhash.Hash{219, 204, 156, 225, 207, 253, 240, 9, 19, 146, 148, 2, 152, 47, 14, 237, 160, 194, 180, 202, 26, 201, 152, 71, 206, 21, 186, 243, 155, 12, 23, 240},
+	},
+	{
+		Height: 640000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    545259520,
+			PrevBlock:  chainhash.Hash{20, 61, 190, 243, 18, 3, 173, 195, 188, 200, 149, 53, 236, 135, 11, 166, 253, 20, 36, 0, 100, 54, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{10, 101, 106, 143, 134, 33, 145, 142, 78, 33, 91, 161, 88, 162, 195, 54, 194, 236, 155, 108, 238, 199, 156, 227, 216, 158, 156, 55, 114, 80, 77, 125},
+			Timestamp:  time.Unix(1595230869, 0),
+			Bits:       386939413,
+			Nonce:      1094299013,
+		},
+		FilterHeader: &chainhash.Hash{167, 176, 20, 141, 232, 14, 218, 198, 17, 248, 77, 54, 196, 106, 139, 252, 145, 79, 7, 38, 145, 136, 223, 122, 238, 13, 132, 1, 16, 19, 168, 29},
+	},
+	{
+		Height: 641000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{181, 226, 94, 49, 132, 26, 16, 158, 127, 116, 146, 146, 49, 151, 41, 118, 79, 125, 212, 188, 58, 163, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{128, 157, 82, 98, 242, 102, 22, 220, 215, 22, 90, 145, 237, 78, 239, 184, 71, 144, 220, 91, 191, 208, 65, 18, 45, 59, 63, 16, 41, 77, 59, 80},
+			Timestamp:  time.Unix(1595838043, 0),
+			Bits:       386939413,
+			Nonce:      4057158667,
+		},
+		FilterHeader: &chainhash.Hash{1, 24, 99, 231, 239, 176, 78, 175, 96, 6, 143, 248, 189, 75, 220, 165, 152, 164, 238, 230, 7, 228, 86, 162, 139, 4, 140, 201, 103, 119, 161, 78},
+	},
+	{
+		Height: 642000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{50, 74, 184, 52, 47, 248, 133, 93, 124, 68, 164, 75, 28, 109, 185, 244, 226, 26, 16, 102, 81, 151, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{204, 145, 148, 86, 50, 86, 22, 234, 101, 15, 160, 9, 33, 62, 216, 153, 224, 177, 72, 218, 150, 185, 6, 205, 134, 213, 209, 55, 71, 189, 71, 161},
+			Timestamp:  time.Unix(1596442455, 0),
+			Bits:       386970872,
+			Nonce:      41920286,
+		},
+		FilterHeader: &chainhash.Hash{160, 199, 204, 161, 49, 61, 17, 74, 11, 129, 89, 210, 94, 91, 180, 47, 133, 35, 223, 226, 165, 120, 206, 27, 238, 160, 151, 79, 29, 163, 191, 67},
+	},
+	{
+		Height: 643000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    677830656,
+			PrevBlock:  chainhash.Hash{212, 251, 109, 53, 64, 94, 143, 54, 192, 21, 0, 72, 233, 133, 34, 175, 220, 158, 214, 251, 247, 245, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{125, 110, 93, 141, 51, 9, 156, 228, 104, 178, 42, 234, 173, 189, 39, 41, 76, 224, 178, 179, 177, 103, 153, 142, 179, 161, 71, 136, 34, 202, 128, 151},
+			Timestamp:  time.Unix(1597017746, 0),
+			Bits:       386970872,
+			Nonce:      2423014963,
+		},
+		FilterHeader: &chainhash.Hash{115, 181, 221, 103, 212, 125, 134, 220, 26, 243, 144, 155, 190, 26, 216, 160, 250, 94, 62, 115, 161, 200, 44, 61, 99, 206, 95, 78, 105, 184, 33, 226},
+	},
+	{
+		Height: 644000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    939515904,
+			PrevBlock:  chainhash.Hash{213, 167, 70, 161, 114, 54, 57, 255, 123, 164, 102, 2, 132, 204, 13, 185, 177, 8, 3, 40, 223, 35, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{28, 83, 66, 74, 229, 84, 18, 108, 144, 193, 208, 14, 115, 47, 226, 252, 115, 151, 240, 25, 255, 119, 230, 75, 7, 137, 200, 210, 224, 146, 24, 85},
+			Timestamp:  time.Unix(1597582814, 0),
+			Bits:       386964396,
+			Nonce:      3604010635,
+		},
+		FilterHeader: &chainhash.Hash{243, 150, 129, 16, 164, 194, 23, 73, 182, 169, 162, 68, 37, 100, 202, 7, 73, 128, 32, 83, 84, 23, 51, 135, 0, 12, 207, 198, 172, 19, 236, 125},
+	},
+	{
+		Height: 645000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073733632,
+			PrevBlock:  chainhash.Hash{96, 15, 176, 106, 155, 37, 138, 207, 103, 249, 32, 132, 63, 192, 35, 222, 130, 26, 229, 41, 98, 13, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{38, 123, 77, 4, 180, 80, 226, 166, 185, 176, 208, 105, 158, 43, 179, 186, 251, 113, 50, 64, 122, 69, 57, 254, 43, 151, 149, 251, 250, 120, 157, 76},
+			Timestamp:  time.Unix(1598190627, 0),
+			Bits:       386964396,
+			Nonce:      3558717000,
+		},
+		FilterHeader: &chainhash.Hash{42, 166, 249, 152, 159, 111, 195, 180, 23, 194, 66, 39, 39, 235, 165, 64, 46, 129, 135, 122, 255, 165, 76, 14, 37, 255, 68, 36, 194, 133, 130, 231},
+	},
+	{
+		Height: 646000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    1073733632,
+			PrevBlock:  chainhash.Hash{233, 236, 81, 193, 39, 103, 176, 163, 27, 136, 229, 184, 101, 217, 104, 225, 113, 116, 186, 106, 57, 211, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{171, 55, 195, 132, 146, 123, 72, 202, 165, 49, 109, 44, 146, 127, 82, 255, 181, 228, 22, 147, 99, 191, 68, 118, 78, 2, 3, 128, 244, 215, 108, 209},
+			Timestamp:  time.Unix(1598801515, 0),
+			Bits:       386926570,
+			Nonce:      543229317,
+		},
+		FilterHeader: &chainhash.Hash{228, 124, 98, 206, 255, 137, 127, 213, 169, 95, 125, 242, 144, 208, 56, 93, 234, 74, 214, 222, 81, 116, 229, 122, 38, 228, 17, 152, 225, 191, 68, 13},
+	},
+	{
+		Height: 647000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{38, 179, 210, 89, 243, 164, 79, 120, 203, 84, 34, 17, 167, 110, 87, 94, 133, 196, 121, 10, 218, 149, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{83, 88, 4, 200, 196, 228, 158, 164, 203, 84, 250, 82, 180, 94, 235, 164, 199, 97, 215, 174, 233, 18, 206, 158, 112, 187, 137, 173, 201, 75, 33, 227},
+			Timestamp:  time.Unix(1599400389, 0),
+			Bits:       386926570,
+			Nonce:      2064622903,
+		},
+		FilterHeader: &chainhash.Hash{114, 61, 161, 146, 217, 65, 79, 169, 218, 239, 145, 74, 192, 150, 134, 246, 95, 103, 161, 49, 55, 158, 221, 69, 205, 127, 201, 181, 25, 60, 143, 196},
+	},
+	{
+		Height: 648000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{52, 142, 145, 229, 84, 41, 124, 123, 120, 207, 60, 121, 242, 3, 194, 253, 218, 55, 24, 79, 177, 233, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{227, 44, 156, 8, 27, 147, 65, 109, 15, 204, 171, 109, 30, 58, 239, 228, 237, 135, 227, 131, 33, 209, 130, 107, 211, 204, 6, 217, 144, 81, 199, 237},
+			Timestamp:  time.Unix(1599956923, 0),
+			Bits:       386939410,
+			Nonce:      2906754035,
+		},
+		FilterHeader: &chainhash.Hash{180, 146, 194, 182, 105, 209, 104, 162, 125, 123, 115, 169, 81, 151, 175, 177, 35, 207, 9, 111, 41, 106, 248, 51, 228, 193, 14, 101, 193, 202, 22, 108},
+	},
+	{
+		Height: 649000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{153, 69, 113, 80, 51, 48, 188, 217, 186, 181, 56, 244, 77, 155, 100, 209, 135, 21, 24, 90, 33, 153, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{112, 178, 106, 207, 33, 253, 218, 38, 180, 127, 172, 94, 46, 170, 151, 78, 20, 148, 172, 62, 231, 124, 176, 106, 5, 136, 78, 115, 99, 47, 16, 236},
+			Timestamp:  time.Unix(1600479764, 0),
+			Bits:       386939410,
+			Nonce:      278770229,
+		},
+		FilterHeader: &chainhash.Hash{140, 215, 40, 94, 85, 107, 96, 234, 46, 15, 143, 132, 255, 190, 177, 22, 245, 15, 18, 4, 220, 158, 95, 215, 197, 238, 93, 125, 76, 97, 6, 228},
+	},
+	{
+		Height: 650000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{81, 172, 118, 186, 176, 51, 223, 5, 51, 108, 81, 238, 208, 145, 82, 90, 236, 156, 18, 234, 30, 108, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{51, 232, 131, 6, 84, 186, 38, 50, 37, 160, 19, 188, 122, 246, 58, 41, 232, 185, 218, 127, 9, 59, 234, 202, 190, 14, 228, 137, 116, 246, 40, 81},
+			Timestamp:  time.Unix(1601077165, 0),
+			Bits:       386831018,
+			Nonce:      3308067872,
+		},
+		FilterHeader: &chainhash.Hash{77, 116, 141, 178, 47, 151, 88, 200, 194, 112, 191, 204, 139, 200, 186, 147, 125, 29, 185, 3, 51, 119, 229, 173, 152, 133, 174, 176, 136, 46, 48, 127},
+	},
+	{
+		Height: 651000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    536870912,
+			PrevBlock:  chainhash.Hash{1, 5, 253, 115, 142, 150, 44, 64, 1, 225, 160, 174, 74, 70, 191, 167, 193, 188, 199, 210, 164, 71, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{84, 176, 74, 242, 253, 24, 60, 241, 242, 128, 29, 120, 21, 28, 128, 197, 79, 18, 121, 92, 11, 132, 28, 87, 154, 59, 18, 38, 224, 158, 150, 182},
+			Timestamp:  time.Unix(1601688217, 0),
+			Bits:       386831018,
+			Nonce:      612355668,
+		},
+		FilterHeader: &chainhash.Hash{193, 47, 172, 124, 85, 143, 61, 60, 2, 11, 208, 177, 222, 191, 152, 21, 202, 3, 27, 184, 72, 92, 226, 145, 65, 124, 115, 249, 195, 122, 116, 30},
+	},
+	{
+		Height: 652000,
+		BlockHeader: &wire.BlockHeader{
+			Version:    545259520,
+			PrevBlock:  chainhash.Hash{127, 157, 169, 116, 19, 123, 200, 34, 180, 87, 11, 247, 130, 77, 239, 21, 176, 97, 174, 127, 28, 17, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			MerkleRoot: chainhash.Hash{249, 74, 110, 209, 55, 95, 229, 30, 221, 227, 237, 66, 184, 147, 180, 198, 99, 188, 102, 97, 189, 24, 225, 183, 34, 44, 218, 21, 115, 246, 229, 230},
+			Timestamp:  time.Unix(1602277846, 0),
+			Bits:       386831838,
+			Nonce:      3243960868,
+		},
+		FilterHeader: &chainhash.Hash{61, 203, 126, 209, 45, 26, 132, 64, 29, 244, 156, 106, 236, 121, 187, 254, 34, 141, 235, 198, 202, 237, 159, 15, 126, 178, 239, 42, 179, 179, 247, 89},
 	},
 }
 
