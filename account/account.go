@@ -285,7 +285,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	for _, pending := range pendingPayments {
 		if pending.Type == db.SentPayment {
 			a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
-			normalizedBalance -= (pending.Amount + pending.Fee)
+			normalizedBalance -= pending.Amount
 		}
 	}
 
