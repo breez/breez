@@ -89,6 +89,7 @@ func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, er
 }
 
 func (a *Daemon) PopulateChannelsGraph() error {
+	a.log.Infof("PopulateChannelsGraph started")
 	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
 	if err != nil {
 		return fmt.Errorf("failed to populate channels graph %w", err)
@@ -114,6 +115,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		if err := lnwire.NewRawFeatureVector().Encode(&featureBuf); err != nil {
 			return fmt.Errorf("unable to encode features: %v", err)
 		}
+		a.log.Infof("PopulateChannelsGraph: populating edge %v", c.ShortChanID().ToUint64())
 
 		edge := &channeldb.ChannelEdgeInfo{
 			ChannelID:    c.ShortChanID().ToUint64(),
@@ -188,5 +190,6 @@ func (a *Daemon) PopulateChannelsGraph() error {
 			a.log.Errorf("failed to add channel edge policy 2 %v", err)
 		}
 	}
+	a.log.Infof("PopulateChannelsGraph completed")
 	return nil
 }

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"crypto/rand"
 	"strconv"
 	"strings"
 	"testing"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
+	"github.com/lightningnetwork/lnd/lntypes"
 	"google.golang.org/grpc"
 )
 
@@ -17,6 +20,155 @@ type offchainAction int
 type zeroConfTest struct {
 	amountSat        int64
 	expectedChannels int
+}
+
+func getLSPRoutingHints(t *testing.T, lnclient lnrpc.LightningClient, lspInfo *data.LSPInformation) ([]*lnrpc.RouteHint, error) {
+	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
+		PrivateOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var hints []*lnrpc.RouteHint
+	usedPeers := make(map[string]struct{})
+	for _, h := range channelsRes.Channels {
+		if _, ok := usedPeers[h.RemotePubkey]; ok {
+			continue
+		}
+		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+			ChanId: h.ChanId,
+		})
+		if err != nil {
+			t.Fatalf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
+			continue
+		}
+		remotePolicy := ci.Node1Policy
+		if h.RemotePubkey == lspInfo.Pubkey && ci.Node2Pub == h.RemotePubkey {
+			remotePolicy = ci.Node2Policy
+		}
+
+		// skip non lsp channels without remote policy
+		if remotePolicy == nil && h.RemotePubkey != lspInfo.Pubkey {
+			continue
+		}
+
+		feeBaseMsat := uint32(lspInfo.BaseFeeMsat)
+		proportionalFee := uint32(lspInfo.FeeRate * 1000000)
+		cltvExpiryDelta := lspInfo.TimeLockDelta
+		if remotePolicy != nil {
+			feeBaseMsat = uint32(remotePolicy.FeeBaseMsat)
+			proportionalFee = uint32(remotePolicy.FeeRateMilliMsat)
+			cltvExpiryDelta = remotePolicy.TimeLockDelta
+		}
+
+		hints = append(hints, &lnrpc.RouteHint{
+			HopHints: []*lnrpc.HopHint{
+				{
+					NodeId:                    h.RemotePubkey,
+					ChanId:                    h.ChanId,
+					FeeBaseMsat:               feeBaseMsat,
+					FeeProportionalMillionths: proportionalFee,
+					CltvExpiryDelta:           cltvExpiryDelta,
+				},
+			},
+		})
+		usedPeers[h.RemotePubkey] = struct{}{}
+	}
+	return hints, nil
+}
+
+func Test_zero_conf_mining_during_pending(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_mining_during_pending")
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        10,
+			expectedChannels: 1,
+		},
+	})
+	invoiceClient := invoicesrpc.NewInvoicesClient(test.aliceNode)
+	aliceLightningClient := lnrpc.NewLightningClient(test.aliceNode)
+	paymentPreimage := &lntypes.Preimage{}
+	if _, err := rand.Read(paymentPreimage[:]); err != nil {
+		t.Fatalf("failed to generate preimage %v", err)
+	}
+	list, err := test.aliceBreezClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+	if err != nil {
+		t.Fatalf("failed to get lsp list %v", err)
+	}
+
+	hints, err := getLSPRoutingHints(t, aliceLightningClient, list.Lsps["lspd-secret"])
+	if err != nil {
+		t.Fatalf("failed to get routing hints %v", err)
+	}
+
+	paymentHash := paymentPreimage.Hash()
+	t.Logf("preImage: %v", paymentPreimage.String())
+	t.Logf("preImage: %v", paymentHash.String())
+	_, err = invoiceClient.AddHoldInvoice(context.Background(), &invoicesrpc.AddHoldInvoiceRequest{
+		RouteHints: hints,
+		Hash:       paymentHash[:],
+		Value:      1000,
+		Private:    true,
+	})
+	if err != nil {
+		t.Fatalf("failed to add hold invoice %v", err)
+	}
+	t.Fatalf("error")
+	// //bobClient := test.bobBreezClient
+	// boblRouterClient := routerrpc.NewRouterClient(test.bobNode)
+	// _, err = boblRouterClient.SendPaymentV2(context.Background(), &routerrpc.SendPaymentRequest{
+	// 	PaymentRequest: holdInvoice.PaymentRequest,
+	// 	TimeoutSeconds: 20,
+	// })
+	// if err != nil {
+	// 	t.Fatalf("failed to send payment from bob")
+	// }
+
+	// stream, err := invoiceClient.SubscribeSingleInvoice(context.Background(),
+	// 	&invoicesrpc.SubscribeSingleInvoiceRequest{
+	// 		RHash: paymentHash[:],
+	// 	})
+	// if err != nil {
+	// 	t.Fatalf("failed to subscribe alice invoice %v", err)
+	// }
+	// for {
+	// 	payment, err := stream.Recv()
+	// 	if err != nil {
+	// 		t.Fatalf("error in payment %v", err)
+	// 	}
+	// 	t.Logf("invoice event state = %v", payment.State)
+	// 	if payment.State == lnrpc.Invoice_ACCEPTED {
+	// 		break
+	// 	}
+	// }
+	// // go func() {
+	// // 	res, err := bobClient.PayInvoice(context.Background(), &data.PayInvoiceRequest{
+	// // 		PaymentRequest: holdInvoice.PaymentRequest,
+	// // 	})
+	// // 	if err != nil || res.PaymentError != "" {
+	// // 		t.Fatalf("failed to send payment from Bob to alice holded invoice")
+	// // 	}
+	// // }()
+	// test.GenerateBlocks(6)
+	// _, err = invoiceClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
+	// 	Preimage: paymentPreimage[:],
+	// })
+	// if err != nil {
+	// 	t.Fatalf("failed to settle invoice %v", err)
+	// }
+
+	// err = poll(func() bool {
+	// 	balanceRes, err := aliceLightningClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	// 	if err != nil {
+	// 		t.Fatalf("failed to list local channels: %v", err)
+	// 	}
+	// 	return balanceRes.Balance > 1000
+	// }, time.Second*10)
+	// if err != nil {
+	// 	t.Fatalf("more than 1000 sat balance")
+	// }
 }
 
 func Test_zero_conf_10(t *testing.T) {

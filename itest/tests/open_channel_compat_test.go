@@ -54,6 +54,7 @@ func Test_open_channel_competability(t *testing.T) {
 
 	keyBytes, _ := hex.DecodeString(bobInfo.IdentityPubkey)
 	_, err = lndClient.OpenChannel(context.Background(), &lnrpc.OpenChannelRequest{
+		Private:            true,
 		NodePubkey:         keyBytes,
 		LocalFundingAmount: 300000,
 		TargetConf:         3,
