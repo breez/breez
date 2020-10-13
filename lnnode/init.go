@@ -177,9 +177,9 @@ func (a *Daemon) PopulateChannelsGraph() error {
 			FeeProportionalMillionths: lnwire.MilliSatoshi(1),
 		}
 
-		// if err := chandb.ChannelGraph().AddChannelEdge(edge); err != nil {
-		// 	return fmt.Errorf("failed to add channel edge %w", err)
-		// }
+		if err := chandb.ChannelGraph().AddChannelEdge(edge); err != nil {
+			a.log.Errorf("failed to add channel edge %w", err)
+		}
 		if err := chandb.ChannelGraph().UpdateEdgePolicy(policy1); err != nil {
 			a.log.Errorf("failed to add channel edge policy 1 %v", err)
 		}
