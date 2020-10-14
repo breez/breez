@@ -78,8 +78,6 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 	}
 
 	d.log.Infof("WaitReadyForPayment - not yet ready for payment, waiting...")
-	timeToFinishGrace := activeGraceDuration - (time.Now().Sub(d.startTime))
-	graceTimer := time.After(timeToFinishGrace)
 	timeoutTimer := time.After(timeout)
 	for {
 		select {
@@ -91,12 +89,10 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 					return nil
 				}
 			}
-		case <-graceTimer:
-			d.log.Infof("WaitReadyForPayment got grace timer event %v", d.IsReadyForPayment())
+		case <-timeoutTimer:
 			if d.IsReadyForPayment() {
 				return nil
 			}
-		case <-timeoutTimer:
 			d.log.Info("WaitReadyForPayment got timeout event")
 			return fmt.Errorf("timeout has exceeded while trying to process your request")
 		}

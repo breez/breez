@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	waitConnectTimeout = time.Second * 60
+	waitConnectTimeout = time.Second * 30
 )
 
 // ConnectChannelsPeers connects to all peers associated with a non active channel.
