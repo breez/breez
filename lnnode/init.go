@@ -95,6 +95,20 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		return fmt.Errorf("failed to populate channels graph %w", err)
 	}
 	defer cleanup()
+	closedChannels, err := chandb.FetchClosedChannels(false)
+	if err != nil {
+		return fmt.Errorf("failed to fetch closed graph %w", err)
+	}
+
+	graph := chandb.ChannelGraph()
+	for _, c := range closedChannels {
+		if !c.IsPending {
+			if err := graph.DeleteChannelEdges(c.ShortChanID.ToUint64()); err != nil {
+				a.log.Infof("failed to delete channel edge %v", err)
+			}
+		}
+	}
+
 	channels, err := chandb.FetchAllOpenChannels()
 	if err != nil {
 		return fmt.Errorf("failed to fetch channels graph %w", err)
