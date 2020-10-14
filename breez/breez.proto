@@ -43,6 +43,12 @@ service FundManager {
   rpc RegisterTransactionConfirmation(RegisterTransactionConfirmationRequest) returns (RegisterTransactionConfirmationResponse) {}
 }
 
+service Swapper {
+  rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
+  rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
+}
+
 service CTP {
   rpc JoinCTPSession (JoinCTPSessionRequest) returns (JoinCTPSessionResponse) {}
   rpc TerminateCTPSession (TerminateCTPSessionRequest) returns (TerminateCTPSessionResponse) {}

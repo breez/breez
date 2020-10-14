@@ -46,6 +46,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 type API interface {
 	NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc)
 	NewFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc)
+	NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc)
 	NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc)
 	NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc)
 }

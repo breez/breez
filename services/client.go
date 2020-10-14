@@ -44,6 +44,14 @@ func (c *Client) NewFundManager() (breezservice.FundManagerClient, context.Conte
 	return breezservice.NewFundManagerClient(con), ctx, cancel
 }
 
+//NewSwapper creates a new Swapper
+func (c *Client) NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc) {
+	con := c.getBreezClientConnection()
+	c.log.Infof("NewSwapper - connection state = %v", con.GetState())
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	return breezservice.NewSwapperClient(con), ctx, cancel
+}
+
 //NewSyncNotifierClient creates a new SyncNotifierClient
 func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
@@ -52,7 +60,7 @@ func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, conte
 	return breezservice.NewSyncNotifierClient(con), ctx, cancel
 }
 
-//NewSyncNotifierClient creates a new SyncNotifierClient
+//NewChannelOpenerClient creates a new SyncNotifierClient
 func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
