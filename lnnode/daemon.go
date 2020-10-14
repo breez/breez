@@ -98,25 +98,23 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 			}
 		case <-timeoutTimer:
 			d.log.Info("WaitReadyForPayment got timeout event")
-			return fmt.Errorf("Timeout has exceeded while trying to process your request.")
+			return fmt.Errorf("timeout has exceeded while trying to process your request")
 		}
 	}
 }
 
 // IsReadyForPayment returns true if we can pay
 func (d *Daemon) IsReadyForPayment() bool {
-	endGrace := d.startTime.Add(activeGraceDuration)
-	inGrace := time.Now().Before(endGrace)
 	lnclient := d.APIClient()
 	if lnclient == nil {
 		return false
 	}
-	hasInactive, err := d.hasInactiveChannel(lnclient)
+	allChannelsActive, err := d.allChannelsActive(lnclient)
 	if err != nil {
-		d.log.Errorf("Error in hasInactiveChannel(): %v", err)
+		d.log.Errorf("Error in allChannelsActive(): %v", err)
 		return false
 	}
-	return d.HasActiveChannel() && (!inGrace || !hasInactive)
+	return allChannelsActive
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -356,13 +354,16 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	}
 }
 
-func (d *Daemon) hasInactiveChannel(client lnrpc.LightningClient) (bool, error) {
-	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		InactiveOnly: true,
-	})
+func (d *Daemon) allChannelsActive(client lnrpc.LightningClient) (bool, error) {
+	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
-		d.log.Errorf("Error in hasInactiveChannel() > ListChannels(): %v", err)
+		d.log.Errorf("Error in allChannelsActive() > ListChannels(): %v", err)
 		return false, err
 	}
-	return len(channels.Channels) > 0, nil
+	for _, c := range channels.Channels {
+		if !c.Active {
+			return false, nil
+		}
+	}
+	return true, nil
 }

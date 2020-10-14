@@ -144,9 +144,6 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
-	if err := a.waitReadyForPayment(); err != nil {
-		return "", err
-	}
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
@@ -240,16 +237,17 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	if err := a.checkAmount(payReq, sendRequest); err != nil {
-		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-		return "", err
-	}
-
 	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
+
+	if err := a.checkAmount(payReq, sendRequest); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
+
 	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
