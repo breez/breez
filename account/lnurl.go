@@ -3,6 +3,7 @@ package account
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 
@@ -10,7 +11,12 @@ import (
 	"github.com/fiatjaf/go-lnurl"
 )
 
-func (a *Service) HandleLNURL(encodedLnurl string) (*data.LNUrlResponse, error) {
+func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
+	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
+	if !ok {
+		return nil, fmt.Errorf("'%s' does not contain an LNURL.", rawString)
+	}
+
 	a.log.Infof("HandleLNURL %v", encodedLnurl)
 	iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
