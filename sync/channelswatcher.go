@@ -78,7 +78,9 @@ func NewChannelsWatcher(
 		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
 
 		// query spend hint for channel
-		hintCache, err := chainntnfs.NewHeightHintCache(chandb)
+		hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+			QueryDisable: false,
+		}, chandb)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create height hint cache for channel %v", err)
 		}

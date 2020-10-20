@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/breez/breez/db"
+
 	"github.com/breez/breez/data"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -12,8 +14,9 @@ import (
 )
 
 const (
-	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	endpointTimeout      = 5
+	maxPaymentAllowedSat  = math.MaxUint32 / 1000
+	endpointTimeout       = 5
+	maxGlobalReceiveLimit = 4_000_000
 )
 
 var (
@@ -43,6 +46,14 @@ func (a *Service) GetAccountLimits() (maxReceive, maxPay, maxReserve int64, err 
 	return a.getReceivePayLimit()
 }
 
+/*
+GetGlobalMaxReceiveLimit returns the account global max receive limit.
+*/
+func (a *Service) GetGlobalMaxReceiveLimit() (maxReceive int64, err error) {
+	receive, _, _, err := a.getReceivePayLimit()
+	return receive, err
+}
+
 // EnableAccount controls whether the account will be enabled or disabled.
 // When disbled, no attempt will be made to open a channel with breez node.
 func (a *Service) EnableAccount(enabled bool) error {
@@ -53,27 +64,6 @@ func (a *Service) EnableAccount(enabled bool) error {
 	a.onAccountChanged()
 	return nil
 }
-
-/*func (a *Service) updateNodeChannelPolicy() {
-	accData, err := a.calculateAccount()
-	if err != nil {
-		a.log.Errorf("Failed to updateNodeChannelPolicy, couldn't fetch account %v", err)
-		return
-	}
-	for {
-		if a.IsConnectedToRoutingNode() {
-			c, ctx, cancel := a.breezAPI.NewFundManager()
-			_, err := c.UpdateChannelPolicy(ctx, &breezservice.UpdateChannelPolicyRequest{PubKey: accData.Id})
-			cancel()
-			if err == nil {
-				a.log.Infof("updateChannelPolicy updated successfully")
-				return
-			}
-			a.log.Errorf("updateChannelPolicy error: %v", err)
-		}
-		time.Sleep(time.Second * 5)
-	}
-}*/
 
 func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (data.Account_AccountStatus, string, error) {
 	_, channelPoints, err := a.getOpenChannels()
@@ -100,6 +90,58 @@ func (a *Service) getAccountStatus(walletBalance *lnrpc.WalletBalanceResponse) (
 	return data.Account_DISCONNECTED, "", nil
 }
 
+func (a *Service) getConnectedPeers() (peers []string, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	response, err := lnclient.ListPeers(context.Background(), &lnrpc.ListPeersRequest{})
+	if err != nil {
+		return nil, err
+	}
+	connectedPeers := make([]string, len(response.Peers))
+	for _, p := range response.Peers {
+		connectedPeers = append(connectedPeers, p.PubKey)
+	}
+	return connectedPeers, nil
+}
+
+func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		return 0, err
+	}
+
+	var maxAllowedReceive int64
+	for _, b := range channels.Channels {
+		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserveSat
+		if !b.Initiator {
+			// In case this is a remote initated channel we will take a buffer of half commit fee size
+			// to ensure the remote balance won't get too close to the channel reserve.
+			thisChannelCanReceive -= b.CommitFee / 2
+		}
+		if maxAllowedReceive < thisChannelCanReceive {
+			maxAllowedReceive = thisChannelCanReceive
+		}
+	}
+	return maxAllowedReceive, nil
+}
+
+func (a *Service) getOutgoingPendingAmount() (amt int64, err error) {
+	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		return 0, err
+	}
+	amt = 0
+	for _, c := range channels.Channels {
+		for _, h := range c.PendingHtlcs {
+			if !h.Incoming {
+				amt += h.Amount
+			}
+		}
+	}
+	return amt, nil
+}
+
 func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -112,27 +154,21 @@ func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, er
 		return 0, 0, 0, err
 	}
 
+	channelBalance, err := lnclient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
 	var maxAllowedToReceive int64
 	var maxAllowedToPay int64
 	var maxChanReserve int64
 
-	processChannel := func(canReceive, canPay, chanReserve int64) {
-		if canReceive < 0 {
-			canReceive = 0
-		}
-		if maxAllowedToReceive < canReceive {
-			maxAllowedToReceive = canReceive
-		}
-
+	processChannel := func(canPay, chanReserve int64) {
 		if canPay < 0 {
 			canPay = 0
 		}
-		if maxAllowedToPay < canPay {
-			maxAllowedToPay = canPay
-		}
-		if maxChanReserve < chanReserve {
-			maxChanReserve = chanReserve
-		}
+		maxAllowedToPay += canPay
+		maxChanReserve += chanReserve
 	}
 
 	for _, b := range channels.Channels {
@@ -146,11 +182,15 @@ func (a *Service) getReceivePayLimit() (maxReceive, maxPay, maxReserve int64, er
 			// Otherwise we need to restrict how much we can pay at the same manner
 			thisChannelCanPay -= b.CommitFee / 2
 		}
-		processChannel(thisChannelCanReceive, thisChannelCanPay, b.LocalChanReserveSat)
+		processChannel(thisChannelCanPay, b.LocalChanReserveSat)
 	}
 
 	for _, b := range pendingChannels.PendingOpenChannels {
-		processChannel(0, 0, b.Channel.LocalChanReserveSat)
+		processChannel(0, b.Channel.LocalChanReserveSat)
+	}
+	maxAllowedToReceive = maxGlobalReceiveLimit - channelBalance.Balance
+	if maxAllowedToReceive < 0 {
+		maxAllowedToReceive = 0
 	}
 
 	return maxAllowedToReceive, maxAllowedToPay, maxChanReserve, nil
@@ -230,6 +270,30 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	if err != nil {
 		return nil, err
 	}
+	normalizedBalance := channelBalance.Balance
+	outgoingPending, err := a.getOutgoingPendingAmount()
+	if err != nil {
+		return nil, err
+	}
+
+	// add all pending htlcs to the balance.
+	normalizedBalance += outgoingPending
+	pendingPayments, err := a.getPendingPayments()
+	if err != nil {
+		return nil, err
+	}
+	for _, pending := range pendingPayments {
+		if pending.Type == db.SentPayment {
+			a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
+			normalizedBalance -= pending.Amount
+		}
+	}
+
+	// in case we have MPP in flight, this normalization may end up with negative
+	// value (the payment will fail eventually), here zero reflects better the state.
+	if normalizedBalance < 0 {
+		normalizedBalance = 0
+	}
 
 	walletBalance, err := lnclient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
 	if err != nil {
@@ -241,7 +305,17 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 
+	connectedPeers, err := a.getConnectedPeers()
+	if err != nil {
+		return nil, err
+	}
+
 	maxAllowedToReceive, maxAllowedToPay, maxChanReserve, err := a.getReceivePayLimit()
+	if err != nil {
+		return nil, err
+	}
+
+	maxInboundLiquidity, err := a.getMaxReceiveSingleChannel()
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +333,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
 		Id:                  lnInfo.IdentityPubkey,
-		Balance:             channelBalance.Balance,
+		Balance:             normalizedBalance,
 		MaxAllowedToReceive: maxAllowedToReceive,
 		MaxAllowedToPay:     maxAllowedToPay,
 		MaxPaymentAmount:    maxPaymentAllowedSat,
@@ -271,6 +345,8 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		Enabled:             enabled,
 		ChannelPoint:        chanPoint,
 		TipHeight:           int64(lnInfo.BlockHeight),
+		ConnectedPeers:      connectedPeers,
+		MaxInboundLiquidity: maxInboundLiquidity,
 	}, nil
 }
 

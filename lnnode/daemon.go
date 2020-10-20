@@ -5,16 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"sync/atomic"
 	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
+	breezlog "github.com/breez/breez/log"
 	"github.com/dustin/go-humanize"
+	"github.com/jessevdk/go-flags"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
@@ -74,8 +78,6 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 	}
 
 	d.log.Infof("WaitReadyForPayment - not yet ready for payment, waiting...")
-	timeToFinishGrace := activeGraceDuration - (time.Now().Sub(d.startTime))
-	graceTimer := time.After(timeToFinishGrace)
 	timeoutTimer := time.After(timeout)
 	for {
 		select {
@@ -87,32 +89,28 @@ func (d *Daemon) WaitReadyForPayment(timeout time.Duration) error {
 					return nil
 				}
 			}
-		case <-graceTimer:
-			d.log.Infof("WaitReadyForPayment got grace timer event %v", d.IsReadyForPayment())
+		case <-timeoutTimer:
 			if d.IsReadyForPayment() {
 				return nil
 			}
-		case <-timeoutTimer:
 			d.log.Info("WaitReadyForPayment got timeout event")
-			return fmt.Errorf("Timeout has exceeded while trying to process your request.")
+			return fmt.Errorf("timeout has exceeded while trying to process your request")
 		}
 	}
 }
 
 // IsReadyForPayment returns true if we can pay
 func (d *Daemon) IsReadyForPayment() bool {
-	endGrace := d.startTime.Add(activeGraceDuration)
-	inGrace := time.Now().Before(endGrace)
 	lnclient := d.APIClient()
 	if lnclient == nil {
 		return false
 	}
-	hasInactive, err := d.hasInactiveChannel(lnclient)
+	allChannelsActive, err := d.allChannelsActive(lnclient)
 	if err != nil {
-		d.log.Errorf("Error in hasInactiveChannel(): %v", err)
+		d.log.Errorf("Error in allChannelsActive(): %v", err)
 		return false
 	}
-	return d.HasActiveChannel() && (!inGrace || !hasInactive)
+	return allChannelsActive
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -174,6 +172,12 @@ func (d *Daemon) SignerClient() signrpc.SignerClient {
 	d.Lock()
 	defer d.Unlock()
 	return d.signerClient
+}
+
+func (d *Daemon) InvoicesClient() invoicesrpc.InvoicesClient {
+	d.Lock()
+	defer d.Unlock()
+	return d.invoicesClient
 }
 
 // RestartDaemon is used to restart a daemon that from some reason failed to start
@@ -260,23 +264,59 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		params := []string{"lightning-libs",
-			"--lnddir", deps.workingDir,
-			"--bitcoin." + d.cfg.Network,
+		lndConfig, err := d.createConfig(deps.workingDir)
+		if err != nil {
+			d.log.Errorf("failed to create config %v", err)
 		}
-		if d.startBeforeSync {
-			params = append(params, "--initial-headers-sync-delta=2h")
-		}
-		err = lnd.Main(lnd.ListenerCfg{}, params, deps)
-
+		d.log.Infof("Stating LND Daemon")
+		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
 		}
+		d.log.Infof("LND Daemon Finished")
 
 		chanDBCleanUp()
 		cleanupFn()
 	}()
 	return nil
+}
+
+func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
+	lndConfig := lnd.DefaultConfig()
+	lndConfig.Bitcoin.Active = true
+	if d.cfg.Network == "mainnet" {
+		lndConfig.Bitcoin.MainNet = true
+	} else if d.cfg.Network == "testnet" {
+		lndConfig.Bitcoin.TestNet3 = true
+	} else {
+		lndConfig.Bitcoin.SimNet = true
+	}
+	lndConfig.LndDir = workingDir
+	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
+
+	cfg := lndConfig
+	if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
+		d.log.Errorf("Failed to parse config %v", err)
+		return nil, err
+	}
+	if d.startBeforeSync {
+		lndConfig.InitialHeadersSyncDelta = time.Hour * 2
+	}
+
+	writer, err := breezlog.GetLogWriter(workingDir)
+	if err != nil {
+		d.log.Errorf("GetLogWriter function returned with error: %v", err)
+		return nil, err
+	}
+	cfg.LogWriter = writer
+	cfg.MinBackoff = time.Second * 20
+	cfg.Bitcoin.SkipChannelConfirmation = true
+	conf, err := lnd.ValidateConfig(cfg, "")
+	if err != nil {
+		d.log.Errorf("ValidateConfig returned with error: %v", err)
+		return nil, err
+	}
+	return conf, nil
 }
 
 func (d *Daemon) stopDaemon() {
@@ -310,13 +350,16 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	}
 }
 
-func (d *Daemon) hasInactiveChannel(client lnrpc.LightningClient) (bool, error) {
-	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
-		InactiveOnly: true,
-	})
+func (d *Daemon) allChannelsActive(client lnrpc.LightningClient) (bool, error) {
+	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
-		d.log.Errorf("Error in hasInactiveChannel() > ListChannels(): %v", err)
+		d.log.Errorf("Error in allChannelsActive() > ListChannels(): %v", err)
 		return false, err
 	}
-	return len(channels.Channels) > 0, nil
+	for _, c := range channels.Channels {
+		if !c.Active {
+			return false, nil
+		}
+	}
+	return true, nil
 }

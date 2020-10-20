@@ -17,7 +17,7 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
-	"github.com/coreos/bbolt"
+	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -263,8 +263,8 @@ func (a *App) DeleteGraph() error {
 	}
 	ourCids := make(map[uint64]struct{})
 	ourNodeKeyBytes := ourNode.PubKeyBytes
-	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
-		return ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+	err = chanDB.View(func(tx walletdb.ReadTx) error {
+		return ourNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
 			channelEdgeInfo *channeldb.ChannelEdgeInfo,
 			_ *channeldb.ChannelEdgePolicy,
 			_ *channeldb.ChannelEdgePolicy) error {
@@ -276,13 +276,13 @@ func (a *App) DeleteGraph() error {
 		a.log.Errorf("ourNode.ForEachChannel error = %v", err)
 		return fmt.Errorf("ourNode.ForEachChannel: %w", err)
 	}
-	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
-		return graph.ForEachNode(tx, func(tx *bbolt.Tx, lightningNode *channeldb.LightningNode) error {
+	err = chanDB.View(func(tx walletdb.ReadTx) error {
+		return graph.ForEachNode(func(tx walletdb.ReadTx, lightningNode *channeldb.LightningNode) error {
 			if bytes.Equal(lightningNode.PubKeyBytes[:], ourNodeKeyBytes[:]) {
 				return nil
 			}
 			nodes++
-			return lightningNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+			return lightningNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
 				channelEdgeInfo *channeldb.ChannelEdgeInfo,
 				_ *channeldb.ChannelEdgePolicy,
 				_ *channeldb.ChannelEdgePolicy) error {

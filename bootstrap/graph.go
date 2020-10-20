@@ -12,6 +12,8 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
+	"github.com/btcsuite/btcwallet/walletdb"
+	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnwire"
@@ -27,7 +29,7 @@ var (
 	edgeIndexBucket = []byte("edge-index")
 )
 
-func getURL(workingDir string, db *channeldb.DB, tx *bbolt.Tx) (string, error) {
+func getURL(workingDir string, db *channeldb.DB, tx walletdb.ReadTx) (string, error) {
 	meta, err := db.FetchMeta(tx)
 	if err != nil {
 		logger.Errorf("chanDB.FetchMeta(): %v", err)
@@ -46,12 +48,12 @@ func getURL(workingDir string, db *channeldb.DB, tx *bbolt.Tx) (string, error) {
 
 func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 
+	var err error
 	if logger == nil {
-		logBackend, err := log.GetLogBackend(workingDir)
+		logger, err = log.GetLogger(workingDir, "BOOTSTRAP")
 		if err != nil {
 			return "", err
 		}
-		logger = logBackend.Logger("BOOTSTRAP")
 		logger.SetLevel(btclog.LevelDebug)
 	}
 
@@ -64,13 +66,21 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 	defer chanDBCleanUp()
 
 	var url string
-	var done bool
-	err = chanDB.DB.View(func(tx *bbolt.Tx) error {
+	err = chanDB.View(func(tx walletdb.ReadTx) error {
 		url, err = getURL(workingDir, chanDB, tx)
-		if err != nil {
-			logger.Errorf("getURL(): %v", err)
-			return fmt.Errorf("getURL(): %w", err)
-		}
+		return err
+	})
+	if err != nil {
+		logger.Errorf("getURL(): %v", err)
+		return "", fmt.Errorf("getURL(): %w", err)
+	}
+
+	var done bool
+	boltdb, err := bdb.UnderlineDB(chanDB.Backend)
+	if err != nil {
+		return "", err
+	}
+	err = boltdb.View(func(tx *bbolt.Tx) error {
 		edges := tx.Bucket(edgeBucket)
 		if edges == nil {
 			done = true
@@ -157,14 +167,14 @@ func ourNode(chanDB *channeldb.DB) (*channeldb.LightningNode, error) {
 	return node, err
 }
 
-func ourData(tx *bbolt.Tx, ourNode *channeldb.LightningNode) (
+func ourData(tx walletdb.ReadWriteTx, ourNode *channeldb.LightningNode) (
 	[]*channeldb.LightningNode, []*channeldb.ChannelEdgeInfo, []*channeldb.ChannelEdgePolicy, error) {
 
 	nodeMap := make(map[string]*channeldb.LightningNode)
 	var edges []*channeldb.ChannelEdgeInfo
 	var policies []*channeldb.ChannelEdgePolicy
 
-	err := ourNode.ForEachChannel(tx, func(tx *bbolt.Tx,
+	err := ourNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
 		channelEdgeInfo *channeldb.ChannelEdgeInfo,
 		toPolicy *channeldb.ChannelEdgePolicy,
 		fromPolicy *channeldb.ChannelEdgePolicy) error {

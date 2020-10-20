@@ -44,6 +44,14 @@ func (c *Client) NewFundManager() (breezservice.FundManagerClient, context.Conte
 	return breezservice.NewFundManagerClient(con), ctx, cancel
 }
 
+//NewSwapper creates a new Swapper
+func (c *Client) NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc) {
+	con := c.getBreezClientConnection()
+	c.log.Infof("NewSwapper - connection state = %v", con.GetState())
+	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	return breezservice.NewSwapperClient(con), ctx, cancel
+}
+
 //NewSyncNotifierClient creates a new SyncNotifierClient
 func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
@@ -52,7 +60,7 @@ func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, conte
 	return breezservice.NewSyncNotifierClient(con), ctx, cancel
 }
 
-//NewSyncNotifierClient creates a new SyncNotifierClient
+//NewChannelOpenerClient creates a new SyncNotifierClient
 func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
@@ -94,7 +102,7 @@ func (c *Client) ensureConnection(closeOldConnection bool) *grpc.ClientConn {
 		c.connection = nil
 	}
 	if c.connection == nil {
-		con, err := dial(c.cfg.BreezServer)
+		con, err := dial(c.cfg.BreezServer, c.cfg.BreezServerNoTLS)
 		if err != nil {
 			c.log.Errorf("failed to dial to grpc connection: %v", err)
 		}
@@ -149,22 +157,28 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 	r := make(map[string]*data.LSPInformation)
 	for id, l := range lsps.Lsps {
 		r[id] = &data.LSPInformation{
-			Name:            l.Name,
-			WidgetUrl:       l.WidgetUrl,
-			Pubkey:          l.Pubkey,
-			Host:            l.Host,
-			ChannelCapacity: l.ChannelCapacity,
-			TargetConf:      l.TargetConf,
-			BaseFeeMsat:     l.BaseFeeMsat,
-			FeeRate:         l.FeeRate,
-			TimeLockDelta:   l.TimeLockDelta,
-			MinHtlcMsat:     l.MinHtlcMsat,
+			Id:                  id,
+			Name:                l.Name,
+			WidgetUrl:           l.WidgetUrl,
+			Pubkey:              l.Pubkey,
+			Host:                l.Host,
+			ChannelCapacity:     l.ChannelCapacity,
+			TargetConf:          l.TargetConf,
+			BaseFeeMsat:         l.BaseFeeMsat,
+			FeeRate:             l.FeeRate,
+			TimeLockDelta:       l.TimeLockDelta,
+			MinHtlcMsat:         l.MinHtlcMsat,
+			ChannelFeePermyriad: l.ChannelFeePermyriad,
+			LspPubkey:           l.LspPubkey,
 		}
 	}
 	return &data.LSPList{Lsps: r}, nil
 }
 
-func dial(serverURL string) (*grpc.ClientConn, error) {
+func dial(serverURL string, noTLS bool) (*grpc.ClientConn, error) {
+	if noTLS {
+		return grpc.Dial(serverURL, grpc.WithInsecure())
+	}
 	cp := x509.NewCertPool()
 	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
 		return nil, fmt.Errorf("credentials: failed to append certificates")

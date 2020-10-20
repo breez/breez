@@ -10,6 +10,8 @@ import (
 //SwapAddressInfo contains all the infromation regarding
 //a submarine swap address.
 type SwapAddressInfo struct {
+	LspID            string
+	PaymentRequest   string
 	Address          string
 	CreatedTimestamp int64
 

@@ -17,6 +17,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
@@ -41,6 +42,7 @@ type API interface {
 	RouterClient() routerrpc.RouterClient
 	WalletKitClient() walletrpc.WalletKitClient
 	ChainNotifierClient() chainrpc.ChainNotifierClient
+	InvoicesClient() invoicesrpc.InvoicesClient
 	SignerClient() signrpc.SignerClient
 }
 
@@ -62,6 +64,7 @@ type Daemon struct {
 	routerClient        routerrpc.RouterClient
 	walletKitClient     walletrpc.WalletKitClient
 	chainNotifierClient chainrpc.ChainNotifierClient
+	invoicesClient      invoicesrpc.InvoicesClient
 	signerClient        signrpc.SignerClient
 	ntfnServer          *subscribe.Server
 	quitChan            chan struct{}
@@ -71,7 +74,7 @@ type Daemon struct {
 // NewDaemon is used to create a new daemon that wraps a lightning
 // network daemon.
 func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, error) {
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "DAEM")
 	if err != nil {
 		return nil, err
 	}
@@ -80,18 +83,32 @@ func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, er
 		cfg:             cfg,
 		breezDB:         db,
 		ntfnServer:      subscribe.NewServer(),
-		log:             logBackend.Logger("DAEM"),
+		log:             logger,
 		startBeforeSync: startBeforeSync,
 	}, nil
 }
 
 func (a *Daemon) PopulateChannelsGraph() error {
-	a.log.Infof("populate channel graph policy started")
+	a.log.Infof("PopulateChannelsGraph started")
 	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
 	if err != nil {
 		return fmt.Errorf("failed to populate channels graph %w", err)
 	}
 	defer cleanup()
+	closedChannels, err := chandb.FetchClosedChannels(false)
+	if err != nil {
+		return fmt.Errorf("failed to fetch closed graph %w", err)
+	}
+
+	graph := chandb.ChannelGraph()
+	for _, c := range closedChannels {
+		if !c.IsPending {
+			if err := graph.DeleteChannelEdges(c.ShortChanID.ToUint64()); err != nil {
+				a.log.Infof("failed to delete channel edge %v", err)
+			}
+		}
+	}
+
 	channels, err := chandb.FetchAllOpenChannels()
 	if err != nil {
 		return fmt.Errorf("failed to fetch channels graph %w", err)
@@ -112,7 +129,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		if err := lnwire.NewRawFeatureVector().Encode(&featureBuf); err != nil {
 			return fmt.Errorf("unable to encode features: %v", err)
 		}
-		a.log.Infof("populate channel graph for channel %v", c.ShortChanID().ToUint64())
+		a.log.Infof("PopulateChannelsGraph: populating edge %v", c.ShortChanID().ToUint64())
 
 		edge := &channeldb.ChannelEdgeInfo{
 			ChannelID:    c.ShortChanID().ToUint64(),
@@ -187,7 +204,6 @@ func (a *Daemon) PopulateChannelsGraph() error {
 			a.log.Errorf("failed to add channel edge policy 2 %v", err)
 		}
 	}
-
-	a.log.Infof("populate channel graph policy completed")
+	a.log.Infof("PopulateChannelsGraph completed")
 	return nil
 }

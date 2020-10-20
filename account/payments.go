@@ -8,20 +8,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strings"
 
 	"time"
 
-	"github.com/breez/breez/channeldbservice"
+	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/breez/breez/lspd"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
+	"github.com/lightningnetwork/lnd/routing"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -62,6 +69,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			Destination:                payment.Destination,
 			PendingExpirationHeight:    payment.PendingExpirationHeight,
 			PendingExpirationTimestamp: payment.PendingExpirationTimestamp,
+			PendingFull:                payment.PendingFull,
 			Preimage:                   payment.Preimage,
 			ClosedChannelPoint:         payment.ClosedChannelPoint,
 			IsChannelPending:           payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.ConfirmedClose,
@@ -110,10 +118,14 @@ If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
+	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
 	decodedReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		return "", err
+	}
+	if decodedReq.NumSatoshis == amountSatoshi {
+		amountSatoshi = 0
 	}
 	if err := a.breezDB.SavePaymentRequest(decodedReq.PaymentHash, []byte(paymentRequest)); err != nil {
 		return "", err
@@ -121,21 +133,27 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
 	// At this stage we are ready to send asynchronously the payment through the daemon.
-	return a.sendPayment(decodedReq.PaymentHash, &lnrpc.SendRequest{PaymentRequest: paymentRequest, Amt: amountSatoshi})
+	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
+		PaymentRequest: paymentRequest,
+		TimeoutSeconds: 60,
+		FeeLimitSat:    math.MaxInt64,
+		MaxParts:       20,
+		Amt:            amountSatoshi,
+	})
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
-	if err := a.waitReadyForPayment(); err != nil {
-		return "", err
-	}
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
 	}
-	req := &lnrpc.SendRequest{
+	req := &routerrpc.SendPaymentRequest{
 		Dest:              destBytes,
 		Amt:               amount,
+		TimeoutSeconds:    60,
+		FeeLimitSat:       math.MaxInt64,
+		MaxParts:          20,
 		DestCustomRecords: make(map[uint64][]byte),
 	}
 
@@ -155,29 +173,112 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 		return "", err
 	}
 
-	return a.sendPayment(hashStr, req)
+	return a.sendPayment(hashStr, nil, req)
 }
 
-func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest) (string, error) {
+func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
 	lnclient := a.daemonAPI.APIClient()
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		a.log.Errorf("lnclient.ListChannels error: %v", err)
+		return 0, fmt.Errorf("lnclient.ListChannels error: %w", err)
+	}
+	var totalMax uint64
+	for _, c := range channels.Channels {
+		a.log.Infof("cid: %v, active: %v, balance: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, c.LocalConstraints.ChanReserveSat)
+		_, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+			PubKey:         destination,
+			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
+			OutgoingChanId: c.ChanId,
+			RouteHints:     routeHints,
+		})
+		if err != nil {
+			errStatus, _ := status.FromError(err)
+			a.log.Infof("message: %v", errStatus.Message())
+			var max uint64
+			_, _ = fmt.Sscanf(errStatus.Message(), "insufficient local balance. Try to lower the amount to: %d mSAT", &max)
+			a.log.Infof("max: %v", max)
+			totalMax += max
+		}
+	}
+	return totalMax, nil
+}
+
+func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) error {
+	var amt lnwire.MilliSatoshi
+	var destination string
+	var routeHints []*lnrpc.RouteHint
+	if payReq != nil {
+		destination = payReq.Destination
+		routeHints = payReq.RouteHints
+		sat := payReq.NumSatoshis
+		if payReq.NumMsat != 0 {
+			sat = 0
+		}
+		amt, _ = lnrpc.UnmarshallAmt(sat, payReq.NumMsat)
+		if amt == 0 {
+			amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
+		}
+	} else {
+		destination = hex.EncodeToString(sendRequest.Dest)
+		amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
+	}
+	max, err := a.getMaxAmount(destination, routeHints)
+	if err != nil {
+		a.log.Errorf("a.getMaxAmount error: %v", err)
+		return fmt.Errorf("a.getMaxAmount error: %w", err)
+	}
+	if uint64(amt) > max {
+		a.log.Errorf("insufficient balance: %v < %v", max, amt)
+		return fmt.Errorf("insufficient balance:%v", max/1000)
+	}
+	return nil
+}
+
+func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+
+	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
-	response, err := lnclient.SendPaymentSync(context.Background(), sendRequest)
+
+	if err := a.checkAmount(payReq, sendRequest); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
+
+	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return "", err
 	}
 
-	if len(response.PaymentError) > 0 {
-		a.log.Infof("sendPaymentForRequest finished with error, %v", response.PaymentError)
-		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, response)
+	failureReason := lnrpc.PaymentFailureReason_FAILURE_REASON_NONE
+	for {
+		payment, err := response.Recv()
+		if err != nil {
+			a.log.Infof("Payment event error received %v", err)
+			return "", err
+		}
+		a.log.Infof("Payment event received %v", payment.Status)
+		if payment.Status == lnrpc.Payment_IN_FLIGHT {
+			continue
+		}
+		if payment.Status != lnrpc.Payment_SUCCEEDED {
+			failureReason = payment.FailureReason
+		}
+		break
+	}
+
+	if failureReason != lnrpc.PaymentFailureReason_FAILURE_REASON_NONE {
+		a.log.Infof("sendPaymentForRequest finished with error, %v", failureReason.String())
+		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, failureReason.String())
 		if err != nil {
 			a.log.Errorf("failed to create trace report for failed payment %v", err)
 		}
-		errorMsg := response.PaymentError
-		if strings.Contains(errorMsg, "unable to find a path to destination") {
+		errorMsg := failureReason.String()
+		if failureReason == lnrpc.PaymentFailureReason_FAILURE_REASON_NO_ROUTE {
 			_, maxPay, _, err := a.getReceivePayLimit()
 			if err == nil && maxPay-sendRequest.Amt < 50 {
 				errorMsg += ". Try sending a smaller amount to keep the required minimum balance."
@@ -193,26 +294,136 @@ func (a *Service) sendPayment(paymentHash string, sendRequest *lnrpc.SendRequest
 /*
 AddInvoice encapsulate a given amount and description in a payment request
 */
-func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, err error) {
+func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, lspFee int64, err error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	// Format the standard invoice memo
+	invoice := invoiceRequest.InvoiceDetails
 	memo := formatTextMemo(invoice)
 
 	if invoice.Expiry <= 0 {
 		invoice.Expiry = defaultInvoiceExpiry
 	}
-	if err := a.waitReadyForPayment(); err != nil {
-		return "", err
+
+	maxReceive, err := a.getMaxReceiveSingleChannel()
+	if err != nil {
+		a.log.Infof("failed to get account limits %v", err)
+		return "", 0, err
 	}
+
+	// in case we don't need a new channel, we make sure the
+	// existing channels are active.
+	if maxReceive >= invoice.Amount {
+		if err := a.waitReadyForPayment(); err != nil {
+			return "", 0, err
+		}
+	}
+
+	lspInfo := invoiceRequest.LspInfo
+	if lspInfo == nil {
+		return "", 0, errors.New("missing LSP information")
+	}
+
+	maxReceiveMsat := maxReceive * 1000
+	amountMsat := invoice.Amount * 1000
+	smallAmountMsat := amountMsat
+	needOpenChannel := maxReceiveMsat < amountMsat
+	var routingHints []*lnrpc.RouteHint
+
+	// We need the LSP to open a channel.
+	if needOpenChannel {
+
+		fakeHints, err := a.getFakeChannelRoutingHint(lspInfo)
+		if err != nil {
+			return "", 0, err
+		}
+		routingHints = []*lnrpc.RouteHint{fakeHints}
+		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
+
+		// Calculate the channel fee such that it's an integral number of sat.
+		channelFeesMsat := amountMsat * lspInfo.ChannelFeePermyriad / 10_000 / 1_000 * 1_000
+		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v, total fees for channel: %v",
+			lspInfo.ChannelFeePermyriad, channelFeesMsat)
+
+		smallAmountMsat = amountMsat - channelFeesMsat
+	} else {
+		if routingHints, err = a.getLSPRoutingHints(lspInfo); err != nil {
+			return "", 0, fmt.Errorf("failed to get LSP routing hints %w", err)
+		}
+	}
+
+	// create invoice with the lower amount.
+	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
+		RPreimage: invoice.Preimage,
+		Memo:      memo, ValueMsat: smallAmountMsat,
+		Expiry: invoice.Expiry, RouteHints: routingHints,
+	})
+	if err != nil {
+		return "", 0, err
+	}
+	if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(response.PaymentRequest)); err != nil {
+		return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+	}
+	a.trackInvoice(response.RHash)
+	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
+
+	payeeInvoice := response.PaymentRequest
+	// create invoice with the larger amount and send to LSP the details.
+	if needOpenChannel {
+		var paymentAddress []byte
+		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to generate LSP invoice %w", err)
+		}
+		a.log.Infof("Generated payee invoice: %v", payeeInvoice)
+		lspInfo := invoiceRequest.LspInfo
+		pubKey := lspInfo.LspPubkey
+
+		if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(payeeInvoice)); err != nil {
+			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+		}
+
+		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
+			return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
+		}
+		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
+	}
+
+	a.log.Infof("Generated Invoice: %v", payeeInvoice)
+	return payeeInvoice, (amountMsat - smallAmountMsat) / 1_000, nil
+}
+
+func (a *Service) getFakeChannelRoutingHint(lspInfo *data.LSPInformation) (*lnrpc.RouteHint, error) {
+	fakeChanID := &lnwire.ShortChannelID{BlockHeight: 1, TxIndex: 0, TxPosition: 0}
+	return &lnrpc.RouteHint{
+		HopHints: []*lnrpc.HopHint{
+			{
+				NodeId:                    lspInfo.Pubkey,
+				ChanId:                    fakeChanID.ToUint64(),
+				FeeBaseMsat:               uint32(lspInfo.BaseFeeMsat),
+				FeeProportionalMillionths: uint32(lspInfo.FeeRate * 1000000),
+				CltvExpiryDelta:           lspInfo.TimeLockDelta,
+			},
+		},
+	}, nil
+}
+
+func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.RouteHint, error) {
+
+	lnclient := a.daemonAPI.APIClient()
 	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var routeHints []*lnrpc.RouteHint
+
+	var hints []*lnrpc.RouteHint
+	usedPeers := make(map[string]struct{})
 	for _, h := range channelsRes.Channels {
+		if _, ok := usedPeers[h.RemotePubkey]; ok {
+			continue
+		}
 		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
 			ChanId: h.ChanId,
 		})
@@ -221,31 +432,38 @@ func (a *Service) AddInvoice(invoice *data.InvoiceMemo) (paymentRequest string, 
 			continue
 		}
 		remotePolicy := ci.Node1Policy
-		if ci.Node2Pub == h.RemotePubkey {
+		if h.RemotePubkey == lspInfo.Pubkey && ci.Node2Pub == h.RemotePubkey {
 			remotePolicy = ci.Node2Policy
 		}
+
+		// skip non lsp channels without remote policy
+		if remotePolicy == nil && h.RemotePubkey != lspInfo.Pubkey {
+			continue
+		}
+
+		feeBaseMsat := uint32(lspInfo.BaseFeeMsat)
+		proportionalFee := uint32(lspInfo.FeeRate * 1000000)
+		cltvExpiryDelta := lspInfo.TimeLockDelta
+		if remotePolicy != nil {
+			feeBaseMsat = uint32(remotePolicy.FeeBaseMsat)
+			proportionalFee = uint32(remotePolicy.FeeRateMilliMsat)
+			cltvExpiryDelta = remotePolicy.TimeLockDelta
+		}
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
-		routeHints = append(routeHints, &lnrpc.RouteHint{
+		hints = append(hints, &lnrpc.RouteHint{
 			HopHints: []*lnrpc.HopHint{
 				{
 					NodeId:                    h.RemotePubkey,
 					ChanId:                    h.ChanId,
-					FeeBaseMsat:               uint32(remotePolicy.FeeBaseMsat),
-					FeeProportionalMillionths: uint32(remotePolicy.FeeRateMilliMsat),
-					CltvExpiryDelta:           remotePolicy.TimeLockDelta,
+					FeeBaseMsat:               feeBaseMsat,
+					FeeProportionalMillionths: proportionalFee,
+					CltvExpiryDelta:           cltvExpiryDelta,
 				},
 			},
 		})
+		usedPeers[h.RemotePubkey] = struct{}{}
 	}
-	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
-		Memo: memo, Private: true, Value: invoice.Amount,
-		Expiry: invoice.Expiry, RouteHints: routeHints,
-	})
-	if err != nil {
-		return "", err
-	}
-	a.log.Infof("Generated Invoice: %v", response.PaymentRequest)
-	return response.PaymentRequest, nil
+	return hints, nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.
@@ -265,7 +483,7 @@ func (a *Service) SendPaymentFailureBugReport(jsonReport string) error {
 	return nil
 }
 
-func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, paymentResponse *lnrpc.SendResponse) (string, error) {
+func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, errorMsg string) (string, error) {
 	lnclient := a.daemonAPI.APIClient()
 
 	var decodedPayReq *lnrpc.PayReq
@@ -296,6 +514,17 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		return "", err
 	}
 
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		a.log.Errorf("ListChannels error: %v", err)
+		return "", err
+	}
+	chanData, err := marshaller.MarshalToString(channels)
+	if err != nil {
+		a.log.Errorf("failed to marshal channels info: %v", err)
+		return "", err
+	}
+
 	if amount == 0 && decodedPayReq != nil {
 		amount = decodedPayReq.NumSatoshis
 	}
@@ -306,10 +535,11 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 			"amount":          amount,
 			"payment_request": decodedPayReq,
 			"network_info":    netInfoData,
+			"channels":        chanData,
 		},
 	}
 
-	responseMap["payment_error"] = paymentResponse.PaymentError
+	responseMap["payment_error"] = errorMsg
 
 	response, err := json.MarshalIndent(responseMap, "", "  ")
 	if err != nil {
@@ -491,13 +721,6 @@ func (a *Service) syncSentPayments() error {
 
 func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 	var payments []*db.PaymentInfo
-	chanDB, chanDBCleanUp, err := channeldbservice.Get(a.cfg.WorkingDir)
-	if err != nil {
-		a.log.Errorf("channeldbservice.Get(%v): %v", a.cfg.WorkingDir, err)
-		return nil, fmt.Errorf("channeldbservice.Get(%v): %w", a.cfg.WorkingDir, err)
-	}
-	defer chanDBCleanUp()
-	paymentControl := channeldb.NewPaymentControl(chanDB)
 	lnclient := a.daemonAPI.APIClient()
 	if a.daemonRPCReady() {
 		channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -510,31 +733,87 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 			return nil, chainErr
 		}
 
+		inflightPayments, err := a.getInflightPaymentsMap()
+		if err != nil {
+			return nil, err
+		}
+		pendingByHash := make(map[string]*db.PaymentInfo)
 		for _, ch := range channelsRes.Channels {
 			for _, htlc := range ch.PendingHtlcs {
-				pendingItem, err := a.createPendingPayment(htlc, chainInfo.BlockHeight, paymentControl)
+				pendingItem, err := a.createPendingPayment(htlc, chainInfo.BlockHeight, inflightPayments)
 				if err != nil {
 					return nil, err
 				}
-				payments = append(payments, pendingItem)
+
+				pendingSoFar, ok := pendingByHash[pendingItem.PaymentHash]
+				currentInflight, hasInflight := inflightPayments[pendingItem.PaymentHash]
+				if !ok {
+					pendingByHash[pendingItem.PaymentHash] = pendingItem
+					pendingSoFar = pendingItem
+
+					// we have an in flight payment, let's get all the htlc and sum them.
+					if hasInflight {
+						pendingSoFar.Fee = 0
+						pendingSoFar.Amount = 0
+						for _, ht := range currentInflight.Htlcs {
+							if ht.Status != lnrpc.HTLCAttempt_FAILED {
+								a.log.Infof("pendingPaymets: adding fee % and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
+								pendingSoFar.Fee += ht.Route.TotalFees
+								pendingSoFar.Amount += (ht.Route.TotalAmt - ht.Route.TotalFees)
+							}
+						}
+						a.log.Infof("pendingPaymets: hasInflight=%v, pendingSoFar.Amount=%v, currentInflight.ValueSat=%v",
+							hasInflight, pendingSoFar.Amount, currentInflight.ValueSat)
+						if pendingSoFar.Amount == currentInflight.ValueSat {
+							pendingSoFar.PendingFull = true
+						}
+						pendingSoFar.Amount = currentInflight.ValueSat
+					}
+				}
 			}
+		}
+		for _, p := range pendingByHash {
+			payments = append(payments, p)
 		}
 	}
 
 	return payments, nil
 }
 
-func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32, pc *channeldb.PaymentControl) (*db.PaymentInfo, error) {
+func (a *Service) getInflightPaymentsMap() (map[string]*lnrpc.Payment, error) {
+	lnclient := a.daemonAPI.APIClient()
+	lightningPayments, err := lnclient.ListPayments(context.Background(),
+		&lnrpc.ListPaymentsRequest{IncludeIncomplete: true})
+	if err != nil {
+		return nil, err
+	}
+
+	payments := make(map[string]*lnrpc.Payment)
+	for _, pending := range lightningPayments.Payments {
+		if pending.Status == lnrpc.Payment_IN_FLIGHT {
+			a.log.Infof("found inflight payment %v", pending.PaymentHash)
+			mar, _ := json.Marshal(pending)
+			a.log.Infof(string(mar))
+			payments[pending.PaymentHash] = pending
+		}
+	}
+	return payments, nil
+}
+
+func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint32,
+	inflightPayments map[string]*lnrpc.Payment) (*db.PaymentInfo, error) {
+
 	paymentType := db.SentPayment
 	if htlc.Incoming {
 		paymentType = db.ReceivedPayment
 	}
 
 	var paymentRequest string
-	var pendingPayment *channeldb.MPPayment
+	var pendingPayment *lnrpc.Payment
 	lnclient := a.daemonAPI.APIClient()
 
 	a.log.Infof("createPendingPayment")
+	amount := htlc.Amount
 	if htlc.Incoming {
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
 		if err != nil {
@@ -551,17 +830,17 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 			return nil, err
 		}
 		paymentRequest = string(payReqBytes)
-		pHash, err := lntypes.MakeHash(htlc.HashLock)
 		if err != nil {
 			return nil, err
 		}
-		pendingPayment, err = pc.FetchPayment(pHash)
+		hashStr := hex.EncodeToString(htlc.HashLock)
+		pendingPayment, _ = inflightPayments[hashStr]
 	}
 
 	minutesToExpire := time.Duration((htlc.ExpirationHeight - currentBlockHeight) * 10)
 	paymentData := &db.PaymentInfo{
 		Type:                       paymentType,
-		Amount:                     htlc.Amount,
+		Amount:                     amount,
 		CreationTimestamp:          time.Now().Unix(),
 		PendingExpirationHeight:    htlc.ExpirationHeight,
 		PendingExpirationTimestamp: time.Now().Add(minutesToExpire * time.Minute).Unix(),
@@ -589,10 +868,9 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 	}
 
 	if pendingPayment != nil {
-		paymentData.IsKeySend = len(pendingPayment.Info.PaymentRequest) == 0
-		paymentData.PaymentHash = hex.EncodeToString(pendingPayment.Info.PaymentHash[:])
-		paymentData.Amount = int64(pendingPayment.Info.Value.ToSatoshis())
-		paymentData.CreationTimestamp = pendingPayment.Info.CreationTime.Unix()
+		paymentData.IsKeySend = len(pendingPayment.PaymentRequest) == 0
+		paymentData.PaymentHash = pendingPayment.PaymentHash
+		paymentData.CreationTimestamp = pendingPayment.CreationTimeNs / int64(time.Second)
 	}
 
 	return paymentData, nil
@@ -637,10 +915,10 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		if err != nil {
 			return err
 		}
-		pathLength := len(paymentItem.Path)
-		if pathLength > 0 {
-			paymentData.Destination = paymentItem.Path[pathLength-1]
-		}
+		// pathLength := len(paymentItem.Path)
+		// if pathLength > 0 {
+		// 	paymentData.Destination = paymentItem.Path[pathLength-1]
+		// }
 		paymentData.Description = string(message)
 	}
 
@@ -669,6 +947,19 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		}
 	}
 
+	zeroConfPayreq, err := a.breezDB.FetchZeroConfInvoice(invoice.RHash)
+	if err != nil {
+		return err
+	}
+	a.log.Infof("got payment zero-conf payreq = %v", string(zeroConfPayreq))
+	var zeroConfMemo *data.InvoiceMemo
+	if len(zeroConfPayreq) > 0 {
+		if zeroConfMemo, err = a.DecodePaymentRequest(string(zeroConfPayreq)); err != nil {
+			return err
+		}
+		a.log.Infof("got payment decoded zero-conf memo amount: %v", zeroConfMemo.Amount)
+	}
+
 	paymentType := db.ReceivedPayment
 	if invoiceMemo.TransferRequest {
 		paymentType = db.DepositPayment
@@ -687,6 +978,13 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		PaymentHash:       hex.EncodeToString(invoice.RHash),
 		Preimage:          hex.EncodeToString(invoice.RPreimage),
 	}
+	if zeroConfMemo != nil {
+		paymentData.Fee = zeroConfMemo.Amount - invoiceMemo.Amount
+		a.log.Infof("got payment calculated fee: %v", paymentData.Fee)
+		if err = a.breezDB.RemoveZeroConfHash(invoice.RHash); err != nil {
+			return err
+		}
+	}
 
 	err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
 	if err != nil {
@@ -697,5 +995,45 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		Type: data.NotificationEvent_INVOICE_PAID,
 		Data: []string{invoice.PaymentRequest}})
 	a.onAccountChanged()
+	return nil
+}
+
+func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmountMsat,
+	outgoingAmountMsat int64, lspPubkey []byte, lspID string) error {
+
+	destination, err := hex.DecodeString(a.daemonAPI.NodePubkey())
+	if err != nil {
+		a.log.Infof("hex.DecodeString(%v) error: %v", a.daemonAPI.NodePubkey(), err)
+		return fmt.Errorf("hex.DecodeString(%v) error: %w", a.daemonAPI.NodePubkey(), err)
+	}
+	pi := &lspd.PaymentInformation{
+		PaymentHash:        paymentHash,
+		PaymentSecret:      paymentSecret,
+		Destination:        destination,
+		IncomingAmountMsat: incomingAmountMsat,
+		OutgoingAmountMsat: outgoingAmountMsat,
+	}
+	data, err := proto.Marshal(pi)
+
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+
+	a.log.Infof("Register Payment pubkey = %v", lspPubkey)
+	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
+	if err != nil {
+		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
+		return fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)
+	}
+	blob, err := btcec.Encrypt(pubkey, data)
+	if err != nil {
+		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
+		return fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
+	}
+
+	_, err = c.RegisterPayment(ctx, &breezservice.RegisterPaymentRequest{LspId: lspID, Blob: blob})
+	if err != nil {
+		a.log.Infof("RegisterPayment() error: %v", err)
+		return fmt.Errorf("RegisterPayment() error: %w", err)
+	}
 	return nil
 }

@@ -29,6 +29,7 @@ service Information {
 service ChannelOpener {
   rpc LSPList (LSPListRequest) returns (LSPListReply) {}
   rpc OpenLSPChannel (OpenLSPChannelRequest) returns (OpenLSPChannelReply) {}
+  rpc RegisterPayment (RegisterPaymentRequest) returns (RegisterPaymentReply) {}
 }
 
 service FundManager {
@@ -40,6 +41,12 @@ service FundManager {
   rpc RedeemRemovedFunds (RedeemRemovedFundsRequest) returns (RedeemRemovedFundsReply) {}
   rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
   rpc RegisterTransactionConfirmation(RegisterTransactionConfirmationRequest) returns (RegisterTransactionConfirmationResponse) {}
+}
+
+service Swapper {
+  rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
+  rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
 }
 
 service CTP {
@@ -93,10 +100,20 @@ message LSPInformation {
   uint32 time_lock_delta = 9 [json_name = "time_lock_delta"];
   /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
   int64 min_htlc_msat = 10 [json_name = "min_htlc_msat"];
+
+  int64 channel_fee_permyriad = 11;
+
+  bytes lsp_pubkey = 12;
 }
 message LSPListReply {
   map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }
+
+message RegisterPaymentRequest {
+  string lsp_id = 1;
+  bytes blob = 3;
+}
+message RegisterPaymentReply {}
 
 message OpenLSPChannelRequest {
   string lsp_id = 1;

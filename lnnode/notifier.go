@@ -7,6 +7,14 @@ import (
 
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -21,6 +29,11 @@ type DaemonDownEvent struct{}
 // ChannelEvent is sent whenever a channel is created/closed or active/inactive.
 type ChannelEvent struct {
 	*lnrpc.ChannelEventUpdate
+}
+
+// PeerEvent is sent whenever a peer is connected/disconnected.
+type PeerEvent struct {
+	*lnrpc.PeerEvent
 }
 
 // TransactionEvent is sent when a new transaction is received.
@@ -53,27 +66,20 @@ func (d *Daemon) SubscribeEvents() (*subscribe.Client, error) {
 
 func (d *Daemon) startSubscriptions() error {
 	var err error
-	lnclient,
-		backupEventClient,
-		subswapClient,
-		breezBackupClient,
-		routerClient,
-		walletKitClient,
-		chainNotifierClient,
-		signerClient,
-		err := newLightningClient(d.cfg)
+	grpcCon, err := newLightningClient(d.cfg)
 	if err != nil {
 		return err
 	}
 
 	d.Lock()
-	d.lightningClient = lnclient
-	d.subswapClient = subswapClient
-	d.breezBackupClient = breezBackupClient
-	d.routerClient = routerClient
-	d.walletKitClient = walletKitClient
-	d.chainNotifierClient = chainNotifierClient
-	d.signerClient = signerClient
+	d.lightningClient = lnrpc.NewLightningClient(grpcCon)
+	d.subswapClient = submarineswaprpc.NewSubmarineSwapperClient(grpcCon)
+	d.breezBackupClient = breezbackuprpc.NewBreezBackuperClient(grpcCon)
+	d.routerClient = routerrpc.NewRouterClient(grpcCon)
+	d.walletKitClient = walletrpc.NewWalletKitClient(grpcCon)
+	d.chainNotifierClient = chainrpc.NewChainNotifierClient(grpcCon)
+	d.signerClient = signrpc.NewSignerClient(grpcCon)
+	d.invoicesClient = invoicesrpc.NewInvoicesClient(grpcCon)
 	d.Unlock()
 
 	info, chainErr := d.lightningClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
@@ -86,12 +92,15 @@ func (d *Daemon) startSubscriptions() error {
 	d.nodePubkey = info.IdentityPubkey
 	d.Unlock()
 
+	backupEventClient := backuprpc.NewBackupClient(grpcCon)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	d.wg.Add(6)
-	go d.subscribeChannels(lnclient, ctx)
+	d.wg.Add(7)
+	go d.subscribeChannels(d.lightningClient, ctx)
+	go d.subscribePeers(d.lightningClient, ctx)
 	go d.subscribeTransactions(ctx)
 	go d.subscribeInvoices(ctx)
+	go d.subscribeChannelAcceptor(ctx, d.lightningClient)
 	go d.watchBackupEvents(backupEventClient, ctx)
 	go d.syncToChain(ctx)
 
@@ -106,6 +115,71 @@ func (d *Daemon) startSubscriptions() error {
 	}
 	d.log.Infof("Daemon ready! subscriptions started")
 	return nil
+}
+
+func (d *Daemon) subscribeChannelAcceptor(ctx context.Context, client lnrpc.LightningClient) error {
+	defer d.wg.Done()
+
+	channelAcceptorClient, err := client.ChannelAcceptor(ctx)
+	if err != nil {
+		d.log.Errorf("Failed to get a channel acceptor %v", err)
+		return err
+	}
+	for {
+		request, err := channelAcceptorClient.Recv()
+		if err == io.EOF || ctx.Err() == context.Canceled {
+			d.log.Errorf("channelAcceptorClient cancelled, shutting down")
+			return err
+		}
+
+		if err != nil {
+			d.log.Errorf("channelAcceptorClient failed to get notification %v", err)
+			// in case of unexpected error, we will wait a bit so we won't get
+			// into infinite loop.
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		private := request.ChannelFlags&uint32(lnwire.FFAnnounceChannel) == 0
+		d.log.Infof("channel creation requested from node: %v private: %v", request.NodePubkey, private)
+		err = channelAcceptorClient.Send(&lnrpc.ChannelAcceptResponse{
+			PendingChanId: request.PendingChanId,
+			Accept:        private,
+		})
+		if err != nil {
+			d.log.Errorf("Error in channelAcceptorClient.Send(%v, %v): %v", request.PendingChanId, private, err)
+			return err
+		}
+	}
+}
+
+func (d *Daemon) subscribePeers(client lnrpc.LightningClient, ctx context.Context) error {
+	defer d.wg.Done()
+
+	subscription, err := client.SubscribePeerEvents(ctx, &lnrpc.PeerEventSubscription{})
+	if err != nil {
+		d.log.Errorf("Failed to subscribe peers %v", err)
+		return err
+	}
+
+	d.log.Infof("Peers subscription created")
+	for {
+		notification, err := subscription.Recv()
+		if err == io.EOF || ctx.Err() == context.Canceled {
+			d.log.Errorf("subscribePeers cancelled, shutting down")
+			return err
+		}
+
+		d.log.Infof("peer event type %v received for peer = %v", notification.Type, notification.PubKey)
+		if err != nil {
+			d.log.Errorf("subscribe peers Failed to get notification %v", err)
+			// in case of unexpected error, we will wait a bit so we won't get
+			// into infinite loop.
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		d.ntfnServer.SendUpdate(PeerEvent{notification})
+	}
 }
 
 func (d *Daemon) subscribeChannels(client lnrpc.LightningClient, ctx context.Context) error {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/breez/breez/account"
 	"github.com/breez/breez/backup"
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
@@ -77,11 +78,11 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		notificationsChan: make(chan data.NotificationEvent),
 	}
 
-	logBackend, err := breezlog.GetLogBackend(workingDir)
+	logger, err := breezlog.GetLogger(workingDir, "BRUI")
 	if err != nil {
 		return nil, err
 	}
-	app.log = logBackend.Logger("BRUI")
+	app.log = logger
 
 	app.cfg, err = config.GetConfig(workingDir)
 	if err != nil {
@@ -101,10 +102,13 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	}
 
 	app.log.Infof("New db")
-	dbPath := path.Join(workingDir, "breez.db")
-	breezDBInfo, err := os.Stat(dbPath)
+	walletdbPath := app.cfg.WorkingDir + "/data/chain/bitcoin/" + app.cfg.Network + "/wallet.db"
+	walletDBInfo, err := os.Stat(walletdbPath)
 	if err == nil {
-		app.log.Infof("breez db size is: %v", breezDBInfo.Size())
+		app.log.Infof("wallet db size is: %v", walletDBInfo.Size())
+	}
+	if err = compactWalletDB(app.cfg.WorkingDir+"/data/chain/bitcoin/"+app.cfg.Network, app.log); err != nil {
+		return nil, err
 	}
 
 	app.lnDaemon, err = lnnode.NewDaemon(app.cfg, app.breezDB, startBeforeSync)
@@ -122,13 +126,17 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		return nil, fmt.Errorf("Failed to start doubleratchet: %v", err)
 	}
 
+	backupLogger, err := breezlog.GetLogger(workingDir, "BCKP")
+	if err != nil {
+		return nil, err
+	}
 	app.BackupManager, err = backup.NewManager(
 		applicationServices.BackupProviderName(),
 		&AuthService{appServices: applicationServices},
 		app.onServiceEvent,
 		app.prepareBackupInfo,
 		app.cfg,
-		logBackend.Logger("BCKP"),
+		backupLogger,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to start backup manager: %v", err)
@@ -153,7 +161,9 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.ServicesClient,
 		app.lnDaemon,
 		app.AccountService.SendPaymentForRequest,
-		app.AccountService.GetAccountLimits,
+		app.AccountService.AddInvoice,
+		app.ServicesClient.LSPList,
+		app.AccountService.GetGlobalMaxReceiveLimit,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New SwapService")
@@ -205,4 +215,36 @@ func (a *App) breezdbCopy(breezDB *db.DB) (string, error) {
 		return "", err
 	}
 	return a.breezDB.BackupDb(dir)
+}
+
+func compactWalletDB(walletDBDir string, logger btclog.Logger) error {
+	dbName := "wallet.db"
+	dbPath := path.Join(walletDBDir, dbName)
+	f, err := os.Stat(dbPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if f.Size() <= 10000000 {
+		return nil
+	}
+	newFile, err := ioutil.TempFile(walletDBDir, "cdb-compact")
+	if err != nil {
+		return err
+	}
+	if err = chainservice.BoltCopy(dbPath, newFile.Name(),
+		func(keyPath [][]byte, k []byte, v []byte) bool { return false }); err != nil {
+		return err
+	}
+	if err = os.Rename(dbPath, dbPath+".old"); err != nil {
+		return err
+	}
+	if err = os.Rename(newFile.Name(), dbPath); err != nil {
+		logger.Criticalf("Error when renaming the new walletdb file: %v", err)
+		return err
+	}
+	logger.Infof("wallet.db was compacted because it's too big")
+	return nil
 }

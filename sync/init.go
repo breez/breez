@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/breez/breez/config"
-	"github.com/breez/breez/log"
+	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
 )
 
@@ -30,14 +30,13 @@ func NewJob(workingDir string) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
-	logBackend, err := log.GetLogBackend(workingDir)
+	logger, err := breezlog.GetLogger(workingDir, "SYNC")
 	if err != nil {
 		return nil, err
 	}
-	log := logBackend.Logger("SYNC")
 
 	return &Job{
-		log:        log,
+		log:        logger,
 		workingDir: workingDir,
 		network:    config.Network,
 		config:     config.JobCfg,

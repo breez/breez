@@ -242,11 +242,10 @@ func NewClosedChannelsJob(workingDir string) (JobController, error) {
 GetLogger creates a logger that logs to the same breez central log file
 */
 func GetLogger(appDir string) (Logger, error) {
-	backend, err := breezlog.GetLogBackend(appDir)
+	logger, err := breezlog.GetLogger(appDir, "BIND")
 	if err != nil {
 		return nil, err
 	}
-	logger := backend.Logger("BIND")
 	return &BreezLogger{logger}, nil
 }
 
@@ -345,8 +344,13 @@ func EnableAccount(enabled bool) error {
 /*
 AddFundsInit is part of the binding inteface which is delegated to breez.AddFundsInit
 */
-func AddFundsInit(breezID string) ([]byte, error) {
-	return marshalResponse(getBreezApp().SwapService.AddFundsInit(breezID))
+func AddFundsInit(initRequest []byte) ([]byte, error) {
+	request := &data.AddFundInitRequest{}
+	if err := proto.Unmarshal(initRequest, request); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().SwapService.AddFundsInit(
+		request.NotificationToken, request.LspID))
 }
 
 //Refund transfers the funds in address to the user destination address
@@ -438,10 +442,11 @@ func SendPaymentFailureBugReport(report string) error {
 /*
 AddInvoice is part of the binding inteface which is delegated to breez.AddInvoice
 */
-func AddInvoice(invoice []byte) (paymentRequest string, err error) {
-	decodedInvoiceMemo := &data.InvoiceMemo{}
-	proto.Unmarshal(invoice, decodedInvoiceMemo)
-	return getBreezApp().AccountService.AddInvoice(decodedInvoiceMemo)
+func AddInvoice(invoice []byte) ([]byte, error) {
+	decodedRequest := &data.AddInvoiceRequest{}
+	proto.Unmarshal(invoice, decodedRequest)
+	payreq, fee, err := getBreezApp().AccountService.AddInvoice(decodedRequest)
+	return marshalResponse(&data.AddInvoiceReply{PaymentRequest: payreq, LspFee: fee}, err)
 }
 
 /*
@@ -678,6 +683,10 @@ func LSPList() ([]byte, error) {
 
 func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
+}
+
+func ConnectToLSPPeer(id string) error {
+	return getBreezApp().AccountService.ConnectLSPPeer(id)
 }
 
 func ConnectToLnurl(lnurl string) error {

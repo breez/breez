@@ -173,7 +173,7 @@ func (u *rpcUtxoSource) ListUnspentWitness(minConfs, maxConfs int32) ([]*lnwalle
 	for _, utxo := range utxoOutputs.Utxos {
 
 		var addrType lnwallet.AddressType
-		switch utxo.Type {
+		switch utxo.AddressType {
 		case lnrpc.AddressType_WITNESS_PUBKEY_HASH:
 			addrType = lnwallet.WitnessPubKey
 
@@ -220,7 +220,7 @@ func NewRpcSigner(s signrpc.SignerClient) *rpcSigner {
 	}
 }
 
-func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor) ([]byte, error) {
+func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor) (input.Signature, error) {
 	//if s.tx == nil {
 	//	s.tx = tx.Copy()
 	//}
@@ -252,7 +252,7 @@ func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor
 	if err != nil {
 		return nil, fmt.Errorf("srpc.SignOutputRaw %#v: %w", tx, err)
 	}
-	return r.RawSigs[0], nil
+	return btcec.ParseDERSignature(r.RawSigs[0], btcec.S256())
 }
 
 func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescriptor) (*input.Script, error) {

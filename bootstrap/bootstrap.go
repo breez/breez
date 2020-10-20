@@ -7,6 +7,7 @@ import (
 
 	"github.com/breez/breez/channeldbservice"
 	"github.com/btcsuite/btclog"
+	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
@@ -24,18 +25,22 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 	}
 
 	// open the source database.
-	sourceChanDB, err := channeldb.Open(dir)
+	channelDBSource, err := channeldb.Open(dir)
 	if err != nil {
 		return err
 	}
-	defer sourceChanDB.Close()
+	defer channelDBSource.Close()
 
 	// open the destination database.
-	channelDB, cleanup, err := channeldbservice.Get(workingDir)
+	channelDBDest, cleanup, err := channeldbservice.Get(workingDir)
 	if err != nil {
 		return fmt.Errorf("failed to open channeldb %v", err)
 	}
 	defer cleanup()
+	sourceDB, err := bdb.UnderlineDB(channelDBSource.Backend)
+	if err != nil {
+		return err
+	}
 
 	// buckets we want to copy from source to destination.
 	bucketsToCopy := map[string]struct{}{
@@ -53,29 +58,33 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return append(path, string(key))
 	}
 
-	ourNode, err := ourNode(channelDB)
+	ourNode, err := ourNode(channelDBDest)
 	if err != nil {
 		return err
 	}
 
-	tx, err := channelDB.DB.Begin(true)
+	kvdbTx, err := channelDBDest.BeginReadWriteTx()
+	if err != nil {
+		return err
+	}
+	tx, err := bdb.UnderlineTX(kvdbTx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
 	if ourNode == nil && hasSourceNode(tx) {
-		return errors.New("source node was set before sync transaction, rolling back.")
+		return errors.New("source node was set before sync transaction, rolling back")
 	}
 
 	if ourNode != nil {
-		channelNodes, channels, policies, err := ourData(tx, ourNode)
+		channelNodes, channels, policies, err := ourData(kvdbTx, ourNode)
 		if err != nil {
 			return err
 		}
 
 		// add our data to the source db.
-		if err := putOurData(sourceChanDB, ourNode, channelNodes, channels, policies); err != nil {
+		if err := putOurData(channelDBSource, ourNode, channelNodes, channels, policies); err != nil {
 			return err
 		}
 	}
@@ -87,7 +96,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		}
 	}
 
-	err = merge(tx, sourceChanDB.DB,
+	err = merge(tx, sourceDB,
 		func(keyPath [][]byte, k []byte, v []byte) bool {
 			pathElements := extractPathElements(keyPath, k)
 			_, shouldCopy := bucketsToCopy[pathElements[0]]

@@ -4,7 +4,7 @@ import (
 	"path"
 
 	"github.com/breez/breez/config"
-	bolt "github.com/coreos/bbolt"
+	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
 
@@ -33,19 +33,19 @@ func Drop(workingDir string) error {
 // initBuckets ensures that the primary buckets used by the circuit are
 // initialized so that we can assume their existence after startup.
 func deleteBuckets(db *channeldb.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx walletdb.ReadWriteTx) error {
 		var err error
-		spendBucket := tx.Bucket(spendHintBucket)
+		spendBucket := tx.ReadWriteBucket(spendHintBucket)
 		if spendBucket != nil {
-			err = tx.DeleteBucket(spendHintBucket)
+			err = tx.DeleteTopLevelBucket(spendHintBucket)
 			if err != nil {
 				return err
 			}
 		}
 
-		confirmBucket := tx.Bucket(confirmHintBucket)
+		confirmBucket := tx.ReadWriteBucket(confirmHintBucket)
 		if confirmBucket != nil {
-			err = tx.DeleteBucket(confirmHintBucket)
+			err = tx.DeleteTopLevelBucket(confirmHintBucket)
 		}
 		return err
 	})

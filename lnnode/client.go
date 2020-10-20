@@ -11,14 +11,6 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/lightningnetwork/lnd"
-	"github.com/lightningnetwork/lnd/lnrpc"
-	"github.com/lightningnetwork/lnd/lnrpc/backuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
-	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
-	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
-	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
-	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -51,30 +43,8 @@ func checkMacaroons(cfg *config.Config) {
 }
 
 // NewLightningClient returns an instance of lnrpc.LightningClient
-func newLightningClient(cfg *config.Config) (
-	lnrpc.LightningClient, backuprpc.BackupClient,
-	submarineswaprpc.SubmarineSwapperClient,
-	breezbackuprpc.BreezBackuperClient,
-	routerrpc.RouterClient,
-	walletrpc.WalletKitClient,
-	chainrpc.ChainNotifierClient,
-	signrpc.SignerClient,
-	error) {
-
-	grpcCon, err := newLightningConnection(cfg)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-
-	return lnrpc.NewLightningClient(grpcCon),
-		backuprpc.NewBackupClient(grpcCon),
-		submarineswaprpc.NewSubmarineSwapperClient(grpcCon),
-		breezbackuprpc.NewBreezBackuperClient(grpcCon),
-		routerrpc.NewRouterClient(grpcCon),
-		walletrpc.NewWalletKitClient(grpcCon),
-		chainrpc.NewChainNotifierClient(grpcCon),
-		signrpc.NewSignerClient(grpcCon),
-		nil
+func newLightningClient(cfg *config.Config) (*grpc.ClientConn, error) {
+	return newLightningConnection(cfg)
 }
 
 func NewClientConnection(cfg *config.Config) (*grpc.ClientConn, error) {

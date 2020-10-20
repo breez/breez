@@ -42,6 +42,8 @@ const (
 
 	//reverse swap
 	reverseSwapBucket = "reverse_swap"
+
+	zeroConfInvoicesBucket = "zero-conf-invoices-bucket"
 )
 
 var (
@@ -68,11 +70,7 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 }
 
 func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
-	logBackend, err := breezlog.GetLogBackend(workingDir)
-	if err != nil {
-		return nil, nil, err
-	}
-	log := logBackend.Logger("BRDB")
+	log, err := breezlog.GetLogger(workingDir, "BRDB")
 
 	dbPath := path.Join(workingDir, "breez.db")
 	db, err := openDB(dbPath, log)
@@ -154,6 +152,10 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte(closedChannelsBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(zeroConfInvoicesBucket))
 		if err != nil {
 			return err
 		}

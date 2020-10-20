@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"golang.org/x/sync/singleflight"
@@ -21,6 +21,8 @@ import (
 
 const (
 	transferFundsRequest = "Bitcoin Transfer"
+	maxPaymentAllowedSat = math.MaxUint32 / 1000
+	maxDepositAmount     = 3_500_000
 )
 
 var (
@@ -30,7 +32,7 @@ var (
 /*
 AddFundsInit is responsible for topping up an existing channel
 */
-func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply, error) {
+func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundInitReply, error) {
 	accountID := s.daemonAPI.NodePubkey()
 	if accountID == "" {
 		return nil, fmt.Errorf("Account is not ready")
@@ -43,7 +45,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 		return nil, err
 	}
 
-	c, ctx, cancel := s.breezAPI.NewFundManager()
+	c, ctx, cancel := s.breezAPI.NewSwapper()
 	defer cancel()
 
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
@@ -72,6 +74,7 @@ func (s *Service) AddFundsInit(notificationToken string) (*data.AddFundInitReply
 	}
 
 	swapInfo := &db.SwapAddressInfo{
+		LspID:            lspID,
 		Address:          r.Address,
 		CreatedTimestamp: time.Now().Unix(),
 		PaymentHash:      swap.Hash,
@@ -156,7 +159,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 	s.log.Infof("GetFundStatus got %v non mempool addresses to query", len(nonMempoolAddresses))
 	if len(nonMempoolAddresses) > 0 {
-		c, ctx, cancel := s.breezAPI.NewFundManager()
+		c, ctx, cancel := s.breezAPI.NewSwapper()
 		defer cancel()
 
 		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: nonMempoolAddresses})
@@ -378,11 +381,11 @@ func (s *Service) updateUnspentAmount(address string) (bool, error) {
 func (s *Service) getPaymentsForConfirmedTransactions() {
 	s.log.Infof("getPaymentsForConfirmedTransactions: asking for pending payments")
 
-	if !s.lightningTransfersReady() {
-		s.log.Infof("Skipping getPaymentsForConfirmedTransactions HasActiveChannel=%v",
-			s.daemonAPI.HasActiveChannel())
-		return
-	}
+	// if !s.lightningTransfersReady() {
+	// 	s.log.Infof("Skipping getPaymentsForConfirmedTransactions HasActiveChannel=%v",
+	// 		s.daemonAPI.HasActiveChannel())
+	// 	return
+	// }
 
 	confirmedAddresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
 		return addr.ConfirmedAmount > 0 && addr.PaidAmount == 0 && addr.LastRefundTxID == ""
@@ -426,20 +429,8 @@ func isTemporaryChannelError(err string) bool {
 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	//first lookup for an existing invoice
-	var paymentRequest string
-	lnclient := s.daemonAPI.APIClient()
-	invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
-	if invoice != nil {
-		if invoice.Value != addressInfo.ConfirmedAmount {
-			errorMsg := "Money was added after the invoice was created"
-			_, err = s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-				a.ErrorMessage = errorMsg
-				return nil
-			})
-			return false, errors.New(errorMsg)
-		}
-		paymentRequest = invoice.PaymentRequest
-	} else {
+	paymentRequest := addressInfo.PaymentRequest
+	if paymentRequest == "" {
 		invoice, errorReason, err := s.createSwapInvoice(addressInfo)
 		if err != nil {
 			s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
@@ -449,10 +440,34 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 			})
 			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
-		paymentRequest = invoice.PaymentRequest
+		addressInfo.PaymentRequest = invoice
+		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+			a.PaymentRequest = invoice
+			return nil
+		})
+		paymentRequest = invoice
+	}
+	lnclient := s.daemonAPI.APIClient()
+	invoice, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+	if err != nil {
+		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+			a.ErrorMessage = err.Error()
+			a.SwapErrorReason = int32(data.SwapError_NO_ERROR)
+			return nil
+		})
+		return false, fmt.Errorf("failed to decode swap payment request %w", err)
 	}
 
-	c, ctx, cancel := s.breezAPI.NewFundManager()
+	if invoice.NumSatoshis != addressInfo.ConfirmedAmount {
+		errorMsg := "Money was added after the invoice was created"
+		_, err = s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+			a.ErrorMessage = errorMsg
+			return nil
+		})
+		return false, errors.New(errorMsg)
+	}
+
+	c, ctx, cancel := s.breezAPI.NewSwapper()
 	defer cancel()
 	var paymentError string
 	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: paymentRequest})
@@ -481,23 +496,42 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	return deadlineExceeded, nil
 }
 
-func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (invoice *lnrpc.AddInvoiceResponse, reason data.SwapError, err error) {
-	maxReceive, _, _, err := s.getAccountLimits()
+func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq string, reason data.SwapError, err error) {
+	maxReceive, err := s.getGlobalReceiveLimit()
 	if err != nil {
 		s.log.Error("unable to get account limits")
-		return nil, data.SwapError_NO_ERROR, err
+		return "", data.SwapError_NO_ERROR, err
+	}
+	if maxReceive > maxDepositAmount {
+		maxReceive = maxDepositAmount
 	}
 
-	if addressInfo.ConfirmedAmount > int64(lnd.MaxPaymentMSat.ToSatoshis()) || addressInfo.ConfirmedAmount > maxReceive {
+	if addressInfo.ConfirmedAmount > maxPaymentAllowedSat || addressInfo.ConfirmedAmount > maxReceive {
 		s.log.Errorf("invoice limit exceeded amount: %v, max able to receive: %v", addressInfo.ConfirmedAmount, maxReceive)
-		return nil, data.SwapError_FUNDS_EXCEED_LIMIT, errors.New("invoice limit exceeded")
+		return "", data.SwapError_FUNDS_EXCEED_LIMIT, errors.New("invoice limit exceeded")
 	}
 
-	lnclient := s.daemonAPI.APIClient()
-	addInvoice, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{RPreimage: addressInfo.Preimage, Value: addressInfo.ConfirmedAmount, Memo: transferFundsRequest, Private: true, Expiry: 60 * 60 * 24 * 30})
+	lsps, err := s.lspList()
+	if err != nil {
+		return "", data.SwapError_NO_ERROR, err
+	}
+	lsp, ok := lsps.Lsps[addressInfo.LspID]
+	if !ok {
+		return "", data.SwapError_NO_ERROR, errors.New("LSP is not selected")
+	}
+	addInvoice, _, err := s.addInvoice(&data.AddInvoiceRequest{
+		InvoiceDetails: &data.InvoiceMemo{
+			Preimage:    addressInfo.Preimage,
+			Amount:      addressInfo.ConfirmedAmount,
+			Description: transferFundsRequest,
+			Expiry:      60 * 60 * 24 * 30,
+		},
+		LspInfo: lsp,
+	})
+
 	if err != nil {
 		s.log.Error("unable to create invoice: %v", err)
-		return nil, data.SwapError_NO_ERROR, err
+		return "", data.SwapError_NO_ERROR, err
 	}
 
 	return addInvoice, data.SwapError_NO_ERROR, nil

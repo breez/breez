@@ -2,6 +2,36 @@ syntax = "proto3";
 
 package data;
 
+service BreezAPI {
+  rpc GetLSPList (LSPListRequest) returns (LSPList) {}
+  rpc ConnectToLSP (ConnectLSPRequest) returns (ConnectLSPReply) {}
+  rpc AddFundInit(AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc GetFundStatus(FundStatusRequest) returns (FundStatusReply) {}
+  rpc AddInvoice(AddInvoiceRequest) returns (AddInvoiceReply) {}
+  rpc PayInvoice(PayInvoiceRequest) returns (PaymentResponse) {}
+  rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonReply) {}
+  rpc ListPayments(ListPaymentsRequest) returns (PaymentsList) {}
+}
+
+message ListPaymentsRequest{}
+
+message RestartDaemonRequest{}
+message RestartDaemonReply{}
+
+message AddFundInitRequest{
+    string notificationToken = 1;
+    string lspID = 2;
+}
+
+message FundStatusRequest {
+    string notificationToken = 1;
+}
+
+message AddInvoiceReply{
+    string paymentRequest = 1;
+    int64 lsp_fee = 2;
+}
+
 message ChainStatus {
     uint32 blockHeight = 1;
     bool syncedToChain = 2;
@@ -46,6 +76,12 @@ message Account {
 
     // the last known block height.
     int64 tipHeight = 13;
+
+    // public keys of peers this account is connected to.
+    repeated string connectedPeers = 14;
+
+    //The max amount this node can receive without opening a new channel
+    int64 max_inbound_liquidity = 15;   
 }
 
 message Payment {
@@ -73,6 +109,7 @@ message Payment {
     bool isChannelCloseConfimed = 16;
 	string closedChannelTxID = 17;
     bool isKeySend = 18;
+    bool PendingFull = 19;
 }
 
 message PaymentsList {
@@ -109,6 +146,12 @@ message InvoiceMemo {
     string payerImageURL = 6;
     bool transferRequest = 7;
     int64 expiry = 8;
+    bytes preimage = 9;
+}
+
+message AddInvoiceRequest {
+    InvoiceMemo invoiceDetails = 1;
+    LSPInformation lspInfo = 2;
 }
 
 message Invoice {   
@@ -270,33 +313,49 @@ message Rates {
 }
 
 message LSPInformation {
-    /// The name of of lsp
-    string name = 1;
+    ///The id of lsp
+    string id = 1;
 
-    string widget_url = 2;
+    /// The name of of lsp
+    string name = 2;
+
+    string widget_url = 3;
 
     /// The identity pubkey of the Lightning node
-    string pubkey = 3;
+    string pubkey = 4;
     /// The network location of the lightning node, e.g. `12.34.56.78:9012` or `localhost:10011`
-    string host = 4;
+    string host = 5;
 
     /// The channel capacity in satoshis
-    int64 channel_capacity = 5;
+    int64 channel_capacity = 6;
     /// The target number of blocks that the funding transaction should be confirmed by.
-    int32 target_conf = 6;
+    int32 target_conf = 7;
 
     /// The base fee charged regardless of the number of milli-satoshis sent.
-    int64 base_fee_msat = 7;
+    int64 base_fee_msat = 8;
     /// The effective fee rate in milli-satoshis. The precision of this value goes up to 6 decimal places, so 1e-6.
-    double fee_rate = 8;
+    double fee_rate = 9;
     /// The required timelock delta for HTLCs forwarded over the channel.
-    uint32 time_lock_delta = 9;
+    uint32 time_lock_delta = 10;
     /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
-    int64 min_htlc_msat = 10;
+    int64 min_htlc_msat = 11;
+
+    int64 channel_fee_permyriad = 12;
+
+    bytes lsp_pubkey = 13;
 }
+
+message LSPListRequest {}
+
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
 }
+
+message ConnectLSPRequest {
+    string lsp_id = 1;
+}
+
+message ConnectLSPReply {}
 
 message LNUrlResponse {
     oneof action {

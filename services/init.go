@@ -46,6 +46,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 type API interface {
 	NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc)
 	NewFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc)
+	NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc)
 	NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc)
 	NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc)
 }
@@ -62,12 +63,12 @@ type Client struct {
 
 // NewClient creates a new client struct
 func NewClient(cfg *config.Config) (*Client, error) {
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "CLIENT")
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
 		cfg: cfg,
-		log: logBackend.Logger("CLIENT"),
+		log: logger,
 	}, nil
 }

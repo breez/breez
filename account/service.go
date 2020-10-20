@@ -65,6 +65,7 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.wg.Add(1)
 				go a.watchPayments()
 				go a.watchCurrentInFlightPayments()
+				go a.trackZeroConfInvoice()
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
 				time.Sleep(5 * time.Second)
@@ -76,6 +77,8 @@ func (a *Service) watchDaemonEvents() (err error) {
 				}
 				a.calculateAccountAndNotify()
 			case lnnode.BackupNeededEvent:
+				a.calculateAccountAndNotify()
+			case lnnode.PeerEvent:
 				a.calculateAccountAndNotify()
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.daemonReady, 0)

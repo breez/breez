@@ -51,7 +51,7 @@ func NewService(
 	daemonAPI lnnode.API,
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
-	logBackend, err := breezlog.GetLogBackend(cfg.WorkingDir)
+	logger, err := breezlog.GetLogger(cfg.WorkingDir, "ACCNT")
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func NewService(
 
 	return &Service{
 		cfg:            cfg,
-		log:            logBackend.Logger("ACCNT"),
+		log:            logger,
 		daemonAPI:      daemonAPI,
 		breezDB:        breezDB,
 		breezAPI:       breezAPI,

@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	waitConnectTimeout = time.Second * 60
+	waitConnectTimeout = time.Second * 30
 )
 
 // ConnectChannelsPeers connects to all peers associated with a non active channel.
@@ -88,7 +88,7 @@ func (lsp *regularLSP) Connect(a *Service) error {
 	l, ok := r.Lsps[lsp.lspID]
 	if !ok {
 		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
-		return fmt.Errorf("The LSP ID is not in the LSPList: %v", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %w", lsp.lspID)
 	}
 
 	return a.ConnectPeer(l.Pubkey, l.Host)
@@ -198,6 +198,11 @@ func (a *Service) OpenLSPChannel(lspID string) error {
 	l := NewRegularLSP(lspID)
 	lsp := lsp(l)
 	return a.openChannel(lsp, false)
+}
+
+// ConnectLSPPeer connects to the LSP peer.
+func (a *Service) ConnectLSPPeer(lspID string) error {
+	return NewRegularLSP(lspID).Connect(a)
 }
 
 /*
