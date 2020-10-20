@@ -189,6 +189,12 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 				return
 			}
 			defer file.Close()
+			info, err := file.Stat()
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
 			uploadedFile, err := p.driveService.Files.Create(&drive.File{
 				Name:    fileName,
 				Parents: []string{newBackupFolder.Id}},
