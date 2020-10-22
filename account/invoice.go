@@ -170,8 +170,9 @@ func (a *Service) trackInvoice(invoiceHash []byte) error {
 				return
 			}
 
-			if invoice.Expiry < time.Now().Unix() {
-				a.log.Infof("removing zero-conf invoice %x", invoice.RHash)
+			if (invoice.CreationDate + invoice.Expiry) < time.Now().Unix() {
+				expirationDate := time.Unix(invoice.CreationDate+invoice.Expiry, 0)
+				a.log.Infof("removing expired zero-conf invoice at: %v", expirationDate)
 				a.breezDB.RemoveZeroConfHash(invoice.RHash)
 			}
 		}
