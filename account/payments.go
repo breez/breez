@@ -352,6 +352,10 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		}
 	}
 
+	if len(routingHints) == 0 {
+		return "", 0, errors.New("no routing information")
+	}
+
 	// create invoice with the lower amount.
 	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
 		RPreimage: invoice.Preimage,
