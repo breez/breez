@@ -228,6 +228,10 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 		a.log.Errorf("a.getMaxAmount error: %v", err)
 		return fmt.Errorf("a.getMaxAmount error: %w", err)
 	}
+	if max == 0 {
+		return errors.New(lnrpc.PaymentFailureReason_FAILURE_REASON_NO_ROUTE.String())
+	}
+
 	if uint64(amt) > max {
 		a.log.Errorf("insufficient balance: %v < %v", max, amt)
 		return fmt.Errorf("insufficient balance:%v", max/1000)
