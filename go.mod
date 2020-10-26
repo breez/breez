@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcwallet/wtxmgr v1.2.1-0.20200616004619-ca24ed58cf8a
 	github.com/coreos/bbolt v1.3.3
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fiatjaf/go-lnurl v0.0.0-20200322141859-984f796c1153
+	github.com/fiatjaf/go-lnurl v1.1.1
 	github.com/golang/protobuf v1.4.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/lightninglabs/neutrino v0.11.1-0.20200430233911-38bf97e348a3

@@ -705,6 +705,10 @@ func FetchLnurl(lnurl string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
 }
 
+func FinishLNURLAuth(params *data.LNURLAuth) error {
+	return getBreezApp().AccountService.FinishLNURLAuth(params)
+}
+
 func WithdrawLnurl(bolt11 string) error {
 	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
 }

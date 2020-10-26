@@ -24,6 +24,17 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 	}
 
 	switch params := iparams.(type) {
+	case lnurl.LNURLAuthParams:
+		return &data.LNUrlResponse{
+			Action: &data.LNUrlResponse_Auth{
+				Auth: &data.LNURLAuth{
+					Tag:      params.Tag,
+					Callback: params.Callback,
+					K1:       params.K1,
+					Host:     params.Host,
+				},
+			},
+		}, nil
 	case lnurl.LNURLWithdrawResponse:
 		qs := params.CallbackURL.Query()
 		qs.Set("k1", params.K1)
@@ -56,6 +67,10 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 	default:
 		return nil, errors.New("Unsupported LNUrl")
 	}
+}
+
+func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) error {
+	return nil
 }
 
 func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
