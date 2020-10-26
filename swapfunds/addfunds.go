@@ -22,7 +22,7 @@ import (
 const (
 	transferFundsRequest = "Bitcoin Transfer"
 	maxPaymentAllowedSat = math.MaxUint32 / 1000
-	maxDepositAmount     = 3_500_000
+	maxDepositAmount     = 4_000_000
 )
 
 var (
