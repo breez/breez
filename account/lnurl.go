@@ -1,11 +1,20 @@
 package account
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
+
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/tyler-smith/go-bip32"
 
 	"github.com/breez/breez/data"
 	"github.com/fiatjaf/go-lnurl"
@@ -69,7 +78,75 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 	}
 }
 
+// FinishLNURLAuth logs in using lnurl auth protocol
 func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) error {
+
+	key, err := a.getLNURLAuthKey()
+	if err != nil {
+		return err
+	}
+
+	// hash host using master key
+	h := hmac.New(sha256.New, key.Key)
+	if _, err := h.Write([]byte(authParams.Host)); err != nil {
+		return err
+	}
+	sha := h.Sum(nil)
+
+	// create 4 elements derivation path using hashed value.
+	first16 := sha[:16]
+	for i := 0; i < 4; i++ {
+		nextChildIndex := binary.BigEndian.Uint32(first16[i*4 : i*4+4])
+		for key, err = key.NewChildKey(nextChildIndex); err != nil; {
+			nextChildIndex++
+		}
+	}
+
+	// this is the result keypair.
+	linkingPrivKey, linkingPubKey := btcec.PrivKeyFromBytes(btcec.S256(), key.Key)
+	k1Decoded, err := hex.DecodeString(authParams.K1)
+	if err != nil {
+		return fmt.Errorf("failed to decode k1 challenge %w", err)
+	}
+
+	// sign the challenge
+	sig, err := linkingPrivKey.Sign(k1Decoded)
+	if err != nil {
+		return fmt.Errorf("failed to sign k1 challenge %w", err)
+	}
+
+	//convert to DER
+	wireSig, err := lnwire.NewSigFromSignature(sig)
+	if err != nil {
+		return fmt.Errorf("can't convert sig to wire format: %v", err)
+	}
+	der := wireSig.ToSignatureBytes()
+
+	// call the service
+	url, err := url.Parse(authParams.Callback)
+	if err != nil {
+		return fmt.Errorf("invalid callback url %v", err)
+	}
+	query := url.Query()
+	query.Add("key", hex.EncodeToString(linkingPubKey.SerializeCompressed()))
+	query.Add("sig", hex.EncodeToString(der))
+	url.RawQuery = query.Encode()
+	resp, err := http.Get(url.String())
+	if err != nil {
+		return err
+	}
+
+	// check response
+	var lnurlresp lnurl.LNURLResponse
+	err = json.NewDecoder(resp.Body).Decode(&lnurlresp)
+	if err != nil {
+		return err
+	}
+
+	if lnurlresp.Status == "ERROR" {
+		return errors.New(lnurlresp.Reason)
+	}
+
 	return nil
 }
 
@@ -92,4 +169,19 @@ func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
 	}
 
 	return nil
+}
+
+func (a *Service) getLNURLAuthKey() (*bip32.Key, error) {
+	key, err := a.breezDB.FetchLNURLAuthKey(bip32.NewSeed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch lnurl key %w", err)
+	}
+
+	// Create master private key from seed
+	masterKey, err := bip32.NewMasterKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("error creating lnurl master key: %w", err)
+	}
+
+	return masterKey, nil
 }

@@ -705,8 +705,12 @@ func FetchLnurl(lnurl string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
 }
 
-func FinishLNURLAuth(params *data.LNURLAuth) error {
-	return getBreezApp().AccountService.FinishLNURLAuth(params)
+func FinishLNURLAuth(request []byte) error {
+	var authData data.LNURLAuth
+	if err := proto.Unmarshal(request, &authData); err != nil {
+		return err
+	}
+	return getBreezApp().AccountService.FinishLNURLAuth(&authData)
 }
 
 func WithdrawLnurl(bolt11 string) error {
