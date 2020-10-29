@@ -74,7 +74,7 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 			},
 		}, nil
 	default:
-		return nil, errors.New("Unsupported LNUrl")
+		return nil, errors.New("Unsupported LNURL")
 	}
 }
 
