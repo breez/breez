@@ -30,6 +30,7 @@ type Service struct {
 	log                btclog.Logger
 	daemonAPI          lnnode.API
 	onServiceEvent     func(data.NotificationEvent)
+	requestBackup      func()
 	lnurlWithdrawing   string
 	activeParams       *chaincfg.Params
 
@@ -49,6 +50,7 @@ func NewService(
 	breezDB *db.DB,
 	breezAPI services.API,
 	daemonAPI lnnode.API,
+	requestBackup func(),
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
 	logger, err := breezlog.GetLogger(cfg.WorkingDir, "ACCNT")
@@ -77,5 +79,6 @@ func NewService(
 		onServiceEvent: onServiceEvent,
 		quitChan:       make(chan struct{}),
 		activeParams:   activeParams,
+		requestBackup:  requestBackup,
 	}, nil
 }

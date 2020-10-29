@@ -172,9 +172,16 @@ func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
 }
 
 func (a *Service) getLNURLAuthKey() (*bip32.Key, error) {
-	key, err := a.breezDB.FetchLNURLAuthKey(bip32.NewSeed)
+	needsBackup := false
+	key, err := a.breezDB.FetchLNURLAuthKey(func() ([]byte, error) {
+		needsBackup = true
+		return bip32.NewSeed()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch lnurl key %w", err)
+	}
+	if needsBackup {
+		a.requestBackup()
 	}
 
 	// Create master private key from seed
