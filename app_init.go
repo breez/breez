@@ -148,6 +148,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.breezDB,
 		app.ServicesClient,
 		app.lnDaemon,
+		app.RequestBackup,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New AccountService")

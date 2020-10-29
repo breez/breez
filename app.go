@@ -217,6 +217,10 @@ func (a *App) onServiceEvent(event data.NotificationEvent) {
 	}
 }
 
+func (a *App) RequestBackup() {
+	a.BackupManager.RequestBackup()
+}
+
 func (a *App) notify(event data.NotificationEvent) {
 	a.notificationsChan <- event
 }

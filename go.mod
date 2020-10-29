@@ -1,6 +1,8 @@
 module github.com/breez/breez
 
 require (
+	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
+	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/breez/boltz v0.0.0-20200125173807-d4eb28eda0f7
 	github.com/btcsuite/btcd v0.20.1-beta.0.20200730232343-1db1b6f8217f
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
@@ -10,7 +12,7 @@ require (
 	github.com/btcsuite/btcwallet/wtxmgr v1.2.1-0.20200616004619-ca24ed58cf8a
 	github.com/coreos/bbolt v1.3.3
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fiatjaf/go-lnurl v0.0.0-20200322141859-984f796c1153
+	github.com/fiatjaf/go-lnurl v1.1.1
 	github.com/golang/protobuf v1.4.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/lightninglabs/neutrino v0.11.1-0.20200430233911-38bf97e348a3
@@ -18,6 +20,7 @@ require (
 	github.com/lightningnetwork/lnd v0.10.0-beta.rc6.0.20200708211108-8cb1276dbf0b
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tidwall/gjson v1.6.0 // indirect
+	github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564
 	github.com/urfave/cli v1.18.0
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	golang.org/x/mobile v0.0.0-20200801112145-973feb4309de // indirect

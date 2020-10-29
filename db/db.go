@@ -44,6 +44,9 @@ const (
 	reverseSwapBucket = "reverse_swap"
 
 	zeroConfInvoicesBucket = "zero-conf-invoices-bucket"
+
+	//lnurl auth
+	lnurlAuthBucket = "lnurl-auth-bucket"
 )
 
 var (
@@ -156,6 +159,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(zeroConfInvoicesBucket))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(lnurlAuthBucket))
 		if err != nil {
 			return err
 		}
