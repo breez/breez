@@ -105,6 +105,7 @@ func (db *DB) FetchUnconfirmedClaimTransaction() (*chainrpc.ConfRequest, error) 
 // set unspendLockupTransaction to nil when the transaction is confirmed
 func (db *DB) SaveUnspendLockupInformation(unspendLockupTransaction *data.UnspendLockupInformation) error {
 	if unspendLockupTransaction == nil {
+		db.log.Infof("Resetting unconfirmed reverse swap")
 		return db.Update(func(tx *bbolt.Tx) error {
 			rsb := tx.Bucket([]byte(reverseSwapBucket))
 			return rsb.Delete(unspendLockupTransactionKey)
