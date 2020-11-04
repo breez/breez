@@ -73,8 +73,9 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			Preimage:                   payment.Preimage,
 			ClosedChannelPoint:         payment.ClosedChannelPoint,
 			IsChannelPending:           payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.ConfirmedClose,
-			IsChannelCloseConfimed:     payment.Type == db.ClosedChannelPayment && payment.ClosedChannelStatus != db.WaitingClose,
 			ClosedChannelTxID:          payment.ClosedChannelTxID,
+			ClosedChannelRemoteTxID:    payment.ClosedChannelRemoteTxID,
+			ClosedChannelSweepTxID:     payment.ClosedChannelSweepTxID,
 			IsKeySend:                  payment.IsKeySend,
 		}
 		if payment.Type != db.ClosedChannelPayment {

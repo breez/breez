@@ -105,11 +105,13 @@ message Payment {
     int64 fee = 12;
     string preimage = 13;
     string closedChannelPoint = 14;
-	bool isChannelPending = 15;
+	  bool isChannelPending = 15;
     bool isChannelCloseConfimed = 16;
-	string closedChannelTxID = 17;
+	  string closedChannelTxID = 17;
     bool isKeySend = 18;
     bool PendingFull = 19;
+    string closedChannelRemoteTxID = 20;
+	  string closedChannelSweepTxID = 21;
 }
 
 message PaymentsList {
