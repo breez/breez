@@ -1,12 +1,16 @@
 package account
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/db"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 )
 
 func (a *Service) syncClosedChannels() error {
@@ -16,8 +20,32 @@ func (a *Service) syncClosedChannels() error {
 	if err != nil {
 		return err
 	}
+	walletClient := a.daemonAPI.WalletKitClient()
+	sweepsResponse, err := walletClient.ListSweeps(context.Background(),
+		&walletrpc.ListSweepsRequest{Verbose: true})
+	if err != nil {
+		return err
+	}
+
+	closingToSweeps := make(map[string]string)
+	txDetails := sweepsResponse.Sweeps.(*walletrpc.ListSweepsResponse_TransactionDetails)
+	if txDetails != nil {
+		for _, s := range txDetails.TransactionDetails.Transactions {
+			var tx wire.MsgTx
+			rawTx, _ := hex.DecodeString(s.RawTxHex)
+			if err = tx.Deserialize(bytes.NewReader(rawTx)); err != nil {
+				return err
+			}
+			for _, txIn := range tx.TxIn {
+				a.log.Infof("syncClosedChannels: got sweep tx: %v previousOutpoint: ",
+					tx.TxHash().String(), tx.TxHash().String())
+				closingToSweeps[txIn.PreviousOutPoint.Hash.String()] = tx.TxHash().String()
+			}
+		}
+	}
+
 	for _, c := range closedChannels.Channels {
-		if err := a.onClosedChannel(c); err != nil {
+		if err := a.onClosedChannel(c, closingToSweeps[c.ClosingTxHash]); err != nil {
 			return err
 		}
 	}
@@ -31,12 +59,12 @@ func (a *Service) syncClosedChannels() error {
 		}
 	}
 	for _, c := range pendingChannels.PendingClosingChannels {
-		if err := a.onPendingClosedChannel(c); err != nil {
+		if err := a.onPendingClosedChannel(c, closingToSweeps[c.ClosingTxid]); err != nil {
 			return err
 		}
 	}
 	for _, c := range pendingChannels.PendingForceClosingChannels {
-		if err := a.onPendingForceClosedChannel(c); err != nil {
+		if err := a.onPendingForceClosedChannel(c, closingToSweeps[c.ClosingTxid]); err != nil {
 			return err
 		}
 	}
@@ -50,38 +78,46 @@ func (a *Service) onWaitingClosedChannel(waitingClose *lnrpc.PendingChannelsResp
 		return nil
 	}
 	paymentData := &db.PaymentInfo{
-		Type:                db.ClosedChannelPayment,
-		ClosedChannelPoint:  waitingClose.Channel.ChannelPoint,
-		ClosedChannelStatus: db.WaitingClose,
-		Amount:              waitingClose.Channel.LocalBalance,
-		Fee:                 0,
-		CreationTimestamp:   time.Now().Unix(),
-		Description:         "Closed Channel",
+		Type:                    db.ClosedChannelPayment,
+		ClosedChannelPoint:      waitingClose.Channel.ChannelPoint,
+		ClosedChannelStatus:     db.WaitingClose,
+		ClosedChannelTxID:       waitingClose.Commitments.LocalTxid,
+		ClosedChannelRemoteTxID: waitingClose.Commitments.RemoteTxid,
+		Amount:                  waitingClose.Channel.LocalBalance,
+		Fee:                     0,
+		CreationTimestamp:       time.Now().Unix(),
+		Description:             "Closed Channel",
 	}
 	return a.breezDB.AddChannelClosedPayment(paymentData)
 }
 
-func (a *Service) onPendingClosedChannel(pendingChannel *lnrpc.PendingChannelsResponse_ClosedChannel) error {
+func (a *Service) onPendingClosedChannel(
+	pendingChannel *lnrpc.PendingChannelsResponse_ClosedChannel, sweepTxID string) error {
+
 	a.log.Infof("onPendingClosedChannel %v", pendingChannel.Channel.ChannelPoint)
 	if pendingChannel.Channel.LocalBalance == 0 {
 		a.log.Infof("closed channel skipped due to zero amount")
 		return nil
 	}
 	paymentData := &db.PaymentInfo{
-		Type:                db.ClosedChannelPayment,
-		ClosedChannelPoint:  pendingChannel.Channel.ChannelPoint,
-		ClosedChannelStatus: db.PendingClose,
-		ClosedChannelTxID:   pendingChannel.ClosingTxid,
-		Amount:              pendingChannel.Channel.LocalBalance,
-		Fee:                 0,
-		CreationTimestamp:   time.Now().Unix(),
-		Description:         "Closed Channel",
+		Type:                    db.ClosedChannelPayment,
+		ClosedChannelPoint:      pendingChannel.Channel.ChannelPoint,
+		ClosedChannelStatus:     db.PendingClose,
+		ClosedChannelTxID:       pendingChannel.ClosingTxid,
+		ClosedChannelRemoteTxID: "",
+		ClosedChannelSweepTxID:  sweepTxID,
+		Amount:                  pendingChannel.Channel.LocalBalance,
+		Fee:                     0,
+		CreationTimestamp:       time.Now().Unix(),
+		Description:             "Closed Channel",
 	}
 	return a.breezDB.AddChannelClosedPayment(paymentData)
 }
 
-func (a *Service) onPendingForceClosedChannel(forceClosed *lnrpc.PendingChannelsResponse_ForceClosedChannel) error {
-	a.log.Infof("onPendingForceClosedChannel %v", forceClosed.Channel.ChannelPoint)
+func (a *Service) onPendingForceClosedChannel(
+	forceClosed *lnrpc.PendingChannelsResponse_ForceClosedChannel, sweepTxID string) error {
+
+	a.log.Infof("onPendingForceClosedChannel %v swweep: %v", forceClosed.Channel.ChannelPoint, sweepTxID)
 	if forceClosed.Channel.LocalBalance == 0 {
 		a.log.Infof("closed channel skipped due to zero amount")
 		return nil
@@ -91,6 +127,8 @@ func (a *Service) onPendingForceClosedChannel(forceClosed *lnrpc.PendingChannels
 		ClosedChannelPoint:      forceClosed.Channel.ChannelPoint,
 		ClosedChannelStatus:     db.PendingClose,
 		ClosedChannelTxID:       forceClosed.ClosingTxid,
+		ClosedChannelRemoteTxID: "",
+		ClosedChannelSweepTxID:  sweepTxID,
 		PendingExpirationHeight: forceClosed.MaturityHeight,
 		Amount:                  forceClosed.Channel.LocalBalance,
 		Fee:                     0,
@@ -100,8 +138,8 @@ func (a *Service) onPendingForceClosedChannel(forceClosed *lnrpc.PendingChannels
 	return a.breezDB.AddChannelClosedPayment(paymentData)
 }
 
-func (a *Service) onClosedChannel(closeSummary *lnrpc.ChannelCloseSummary) error {
-	a.log.Infof("onClosedChannel %v", closeSummary.ChannelPoint)
+func (a *Service) onClosedChannel(closeSummary *lnrpc.ChannelCloseSummary, sweepTxID string) error {
+	a.log.Infof("onClosedChannel %v sweepcloseid: %v", closeSummary.ChannelPoint, sweepTxID)
 	if closeSummary.SettledBalance == 0 {
 		a.log.Infof("closed channel skipped due to zero amount")
 		return nil
@@ -111,14 +149,15 @@ func (a *Service) onClosedChannel(closeSummary *lnrpc.ChannelCloseSummary) error
 		return err
 	}
 	paymentData := &db.PaymentInfo{
-		Type:                db.ClosedChannelPayment,
-		ClosedChannelPoint:  closeSummary.ChannelPoint,
-		ClosedChannelStatus: db.ConfirmedClose,
-		ClosedChannelTxID:   closeSummary.ClosingTxHash,
-		Amount:              closeSummary.SettledBalance,
-		Fee:                 0,
-		CreationTimestamp:   closeTime,
-		Description:         "Closed Channel",
+		Type:                   db.ClosedChannelPayment,
+		ClosedChannelPoint:     closeSummary.ChannelPoint,
+		ClosedChannelStatus:    db.ConfirmedClose,
+		ClosedChannelTxID:      closeSummary.ClosingTxHash,
+		ClosedChannelSweepTxID: sweepTxID,
+		Amount:                 closeSummary.SettledBalance,
+		Fee:                    0,
+		CreationTimestamp:      closeTime,
+		Description:            "Closed Channel",
 	}
 	return a.breezDB.AddChannelClosedPayment(paymentData)
 }

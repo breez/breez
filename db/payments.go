@@ -55,9 +55,11 @@ type PaymentInfo struct {
 	IsKeySend                  bool
 
 	//For closed channels
-	ClosedChannelPoint  string
-	ClosedChannelStatus ChannelCloseStatus
-	ClosedChannelTxID   string
+	ClosedChannelPoint      string
+	ClosedChannelStatus     ChannelCloseStatus
+	ClosedChannelTxID       string
+	ClosedChannelRemoteTxID string
+	ClosedChannelSweepTxID  string
 }
 
 /*
@@ -114,12 +116,16 @@ func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
 		}
 
 		// the payment reflects this channel is already in db.
-		if existingPayment != nil && existingPayment.ClosedChannelStatus >= accPayment.ClosedChannelStatus {
-			db.log.Infof("skipping closed channel payment %v", accPayment.ClosedChannelPoint)
-			return nil
+		if existingPayment != nil {
+			if existingPayment.ClosedChannelStatus == ConfirmedClose ||
+				existingPayment.ClosedChannelStatus > accPayment.ClosedChannelStatus {
+				db.log.Infof("skipping closed channel payment %v", accPayment.ClosedChannelPoint)
+				return nil
+			}
 		}
 
-		db.log.Infof("adding not existing closed channel payment %v", accPayment.ClosedChannelPoint)
+		db.log.Infof("adding not existing closed channel payment %v, sweep: ",
+			accPayment.ClosedChannelPoint, accPayment.ClosedChannelSweepTxID)
 
 		id, err := db.addPayment(accPayment, tx, paymentID)
 		if err != nil {

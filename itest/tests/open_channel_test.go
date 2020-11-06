@@ -11,6 +11,7 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/invoicesrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"google.golang.org/grpc"
 )
@@ -461,6 +462,133 @@ func Test_zero_conf_close(t *testing.T) {
 	}
 	if len(pCh.PendingClosingChannels) > 0 {
 		t.Fatalf("expected zero pending channels got %v", len(pCh.PendingClosingChannels))
+	}
+}
+
+func Test_zero_conf_force_close(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_force_close")
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        10000,
+			expectedChannels: 1,
+		},
+	})
+	aliceClient := lnrpc.NewLightningClient(test.aliceNode)
+	ch, err := aliceClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		t.Fatalf("unexpected error in list alice channels")
+	}
+
+	parts := strings.Split(ch.Channels[0].ChannelPoint, ":")
+	outputIndex, err := strconv.Atoi(parts[1])
+	closeRes, err := aliceClient.CloseChannel(context.Background(), &lnrpc.CloseChannelRequest{
+		Force: true,
+		ChannelPoint: &lnrpc.ChannelPoint{
+			FundingTxid: &lnrpc.ChannelPoint_FundingTxidStr{
+				FundingTxidStr: parts[0],
+			},
+
+			OutputIndex: uint32(outputIndex),
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in close alice channel")
+	}
+	for {
+		closeUpdate, err := closeRes.Recv()
+		if err != nil {
+			t.Fatalf("failed in close channel event %v", err)
+		}
+		if pending, ok := closeUpdate.Update.(*lnrpc.CloseStatusUpdate_ClosePending); ok {
+			test.test.Logf("pending closed channel: %v\n\n", pending.ClosePending.Txid)
+			payments, err := test.aliceBreezClient.ListPayments(context.Background(), &data.ListPaymentsRequest{})
+			if err != nil {
+				t.Fatalf("failed to get list of payments %v", err)
+			}
+			test.test.Logf("closed channel payment %+v\n\n", payments.PaymentsList[0])
+			break
+		}
+	}
+
+	err = poll(func() bool {
+		payments, err := test.aliceBreezClient.ListPayments(context.Background(), &data.ListPaymentsRequest{})
+		if err != nil {
+			t.Fatalf("failed to get list of payments %v", err)
+		}
+
+		if len(payments.PaymentsList) == 2 && payments.PaymentsList[0].ClosedChannelPoint != "" {
+			closeEntry := payments.PaymentsList[0]
+			if closeEntry.ClosedChannelTxID != "" && closeEntry.ClosedChannelRemoteTxID != "" && closeEntry.IsChannelPending {
+				test.test.Logf("waiting close payment %+v\n\n", payments.PaymentsList[0])
+				return true
+			}
+		}
+		return false
+	}, time.Second*10)
+	if err != nil {
+		t.Fatalf("failed to poll for waiting closed channel")
+	}
+
+	test.GenerateBlocks(6)
+
+	//var closingTxID, sweepTxId string
+	err = poll(func() bool {
+		payments, err := test.aliceBreezClient.ListPayments(context.Background(), &data.ListPaymentsRequest{})
+		if err != nil {
+			t.Fatalf("failed to get list of payments %v", err)
+		}
+		//test.test.Logf("before confirmed closed payment %+v\n", payments.PaymentsList[0])
+		closeEntry := payments.PaymentsList[0]
+		if closeEntry.ClosedChannelTxID != "" && closeEntry.ClosedChannelRemoteTxID == "" && closeEntry.IsChannelPending {
+			//closingTxID = closeEntry.ClosedChannelTxID
+			test.test.Logf("confirmed closed payment %+v\n\n", payments.PaymentsList[0])
+			return true
+		}
+		//return len(payments.PaymentsList) == 2 && payments.PaymentsList[0].ClosedChannelPoint != ""
+		return false
+	}, time.Second*10)
+	if err != nil {
+		t.Fatalf("failed to poll for closed channel %v", err)
+	}
+
+	// generate block to bypass timeout and enforce sweep tx.
+	test.GenerateBlocks(10)
+	walletClient := walletrpc.NewWalletKitClient(test.aliceNode)
+	var pollErr error
+	for i := 0; i < 10; i++ {
+		test.test.Logf("generating block...")
+		test.GenerateBlocks(1)
+		pollErr = poll(func() bool {
+			sweeps, err := walletClient.ListSweeps(context.Background(), &walletrpc.ListSweepsRequest{Verbose: true})
+			if err != nil {
+				t.Fatalf("failed to fetch wallet sweeps")
+			}
+			txDetails := sweeps.Sweeps.(*walletrpc.ListSweepsResponse_TransactionDetails)
+			return len(txDetails.TransactionDetails.Transactions) == 2
+		}, time.Second*6)
+		if err != nil {
+			continue
+		}
+	}
+	if pollErr != nil {
+		t.Fatalf("failed to poll wallet sweeps")
+	}
+
+	err = poll(func() bool {
+		payments, err := test.aliceBreezClient.ListPayments(context.Background(), &data.ListPaymentsRequest{})
+		if err != nil {
+			t.Fatalf("failed to get list of payments %v", err)
+		}
+		closeEntry := payments.PaymentsList[0]
+		if closeEntry.ClosedChannelTxID != "" && closeEntry.ClosedChannelSweepTxID != "" {
+			test.test.Logf("sweep closed channel payment %+v\n\n", payments.PaymentsList[0])
+			return true
+		}
+		return false
+	}, time.Second*10)
+	if err != nil {
+		t.Fatalf("failed to wait for wallet sweep transaction")
 	}
 }
 
