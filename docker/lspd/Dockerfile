@@ -4,7 +4,7 @@ RUN apk add git go musl-dev make
 COPY ./docker/lspd/.env .
 COPY ./docker/lspd/start.sh .
 RUN chmod +x ./start.sh
-RUN git clone https://github.com/breez/lspd
+RUN git clone https://github.com/breez/lspd -b master
 RUN cd lspd \
     && go build .
 RUN go get github.com/joho/godotenv/cmd/godotenv

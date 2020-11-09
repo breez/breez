@@ -428,26 +428,40 @@ func isTemporaryChannelError(err string) bool {
 }
 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
+	lnclient := s.daemonAPI.APIClient()
 	//first lookup for an existing invoice
 	paymentRequest := addressInfo.PaymentRequest
 	if paymentRequest == "" {
-		invoice, errorReason, err := s.createSwapInvoice(addressInfo)
-		if err != nil {
-			s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-				a.ErrorMessage = err.Error()
-				a.SwapErrorReason = int32(errorReason)
-				return nil
-			})
-			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
+		existingInvoice, _ := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
+		if existingInvoice != nil {
+			if existingInvoice.Value != addressInfo.ConfirmedAmount {
+				errorMsg := "Money was added after the invoice was created"
+				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+					a.ErrorMessage = errorMsg
+					return nil
+				})
+				return false, errors.New(errorMsg)
+			}
+			paymentRequest = existingInvoice.PaymentRequest
+		} else {
+			invoice, errorReason, err := s.createSwapInvoice(addressInfo)
+			if err != nil {
+				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+					a.ErrorMessage = err.Error()
+					a.SwapErrorReason = int32(errorReason)
+					return nil
+				})
+				return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
+			}
+			paymentRequest = invoice
 		}
-		addressInfo.PaymentRequest = invoice
+
+		addressInfo.PaymentRequest = paymentRequest
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-			a.PaymentRequest = invoice
+			a.PaymentRequest = paymentRequest
 			return nil
 		})
-		paymentRequest = invoice
 	}
-	lnclient := s.daemonAPI.APIClient()
 	invoice, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
