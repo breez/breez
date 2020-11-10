@@ -60,7 +60,7 @@ func (s *TokenSource) Token() (*oauth2.Token, error) {
 		s.log.Infof("Token source got error %v", err)
 		return nil, err
 	}
-	s.log.Infof("Token source succesfully got token with length: %v", len(token))
+	s.log.Infof("Token source successfully got token with length: %v", len(token))
 	return &oauth2.Token{
 		AccessToken: token,
 		Expiry:      time.Now().Add(time.Second),
@@ -246,7 +246,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 	if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
 		p.log.Errorf("failed to delete stale snapshots %v", err)
 	}
-	p.log.Infof("UploadBackupFiles finished succesfully")
+	p.log.Infof("UploadBackupFiles finished successfully")
 	return a.User.EmailAddress, nil
 }
 

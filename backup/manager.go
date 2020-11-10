@@ -253,7 +253,7 @@ func (b *Manager) Start() error {
 					_ = os.Remove(p)
 				}
 				b.db.markBackupRequestCompleted(pendingID)
-				b.log.Infof("backup finished succesfully")
+				b.log.Infof("backup finished successfully")
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS, Data: []string{accountName}})
 			case <-b.quitChan:
 				return
@@ -279,7 +279,7 @@ func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {
 	// After changing the encryption PIN we'll backup if we have
 	// pending backup requests.
 	b.backupRequestChan <- struct{}{}
-	b.log.Infof("Succesfully set new encryption key")
+	b.log.Infof("Successfully set new encryption key")
 	return nil
 }
 
@@ -291,7 +291,7 @@ func (b *Manager) Stop() error {
 	b.db.close()
 	close(b.quitChan)
 	b.wg.Wait()
-	b.log.Infof("BackupManager shutdown succesfully")
+	b.log.Infof("BackupManager shutdown successfully")
 	return nil
 }
 

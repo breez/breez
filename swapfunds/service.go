@@ -24,7 +24,7 @@ func (s *Service) Stop() error {
 	}
 	close(s.quitChan)
 	s.wg.Wait()
-	s.log.Infof("SwapService shutdown succesfully")
+	s.log.Infof("SwapService shutdown successfully")
 	return nil
 }
 

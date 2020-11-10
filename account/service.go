@@ -31,7 +31,7 @@ func (a *Service) Stop() error {
 	}
 	close(a.quitChan)
 	a.wg.Wait()
-	a.log.Infof("AccountService shutdown succesfully")
+	a.log.Infof("AccountService shutdown successfully")
 	return nil
 }
 

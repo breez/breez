@@ -132,7 +132,7 @@ func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
 			db.log.Infof("failed to add closed channel payment %v", err)
 			return err
 		}
-		db.log.Info("Closed channel payment added succesfully")
+		db.log.Info("Closed channel payment added successfully")
 		pb := tx.Bucket([]byte(paymentsBucket))
 		pb.Delete(chanIDKey[:])
 		b := tx.Bucket([]byte(closedChannelsBucket))

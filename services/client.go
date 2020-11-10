@@ -32,7 +32,7 @@ func (c *Client) Stop() (err error) {
 	if c.connection != nil {
 		err = c.connection.Close()
 	}
-	c.log.Infof("BreezServicesClient shutdown succesfully")
+	c.log.Infof("BreezServicesClient shutdown successfully")
 	return
 }
 

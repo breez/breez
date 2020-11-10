@@ -184,7 +184,7 @@ syncHeaders:
 			return false, err
 		}
 	}
-	s.log.Info("syncFilters completed succesfully, checking for close channels...")
+	s.log.Info("syncFilters completed successfully, checking for close channels...")
 
 	channelsWatcher, err := NewChannelsWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
 	if err != nil {
