@@ -384,7 +384,7 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	}
 	_, err = s.sendPayment(rs.Invoice, rs.LnAmount)
 	if err != nil {
-		return fmt.Errorf("s.sendPayment: %v", err)
+		return err
 	}
 	return nil
 }
