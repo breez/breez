@@ -122,6 +122,9 @@ func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
 				db.log.Infof("skipping closed channel payment %v", accPayment.ClosedChannelPoint)
 				return nil
 			}
+			if accPayment.ClosedChannelStatus != ConfirmedClose {
+				accPayment.CreationTimestamp = existingPayment.CreationTimestamp
+			}
 		}
 
 		db.log.Infof("adding not existing closed channel payment %v, sweep: ",
