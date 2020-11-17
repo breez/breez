@@ -441,6 +441,9 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 		status, txid, _, eta, err := boltz.GetTransaction(rs.Id, rs.LockupAddress, rs.OnchainAmount)
 		if err != nil {
 			s.log.Errorf("boltz.GetTransaction(%v, %v, %v): %v", rs.Id, rs.LockupAddress, rs.OnchainAmount, err)
+			if errors.Is(err, boltz.ErrSwapNotFound) {
+				continue
+			}
 			return nil, fmt.Errorf("boltz.GetTransaction(%v, %v, %v): %w", rs.Id, rs.LockupAddress, rs.OnchainAmount, err)
 		}
 		s.log.Infof("Reverse swap: hash=%v, status=%v, txid=%v, eta=%v", hash, status, txid, eta)
