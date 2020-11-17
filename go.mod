@@ -3,7 +3,7 @@ module github.com/breez/breez
 require (
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
-	github.com/breez/boltz v0.0.0-20200125173807-d4eb28eda0f7
+	github.com/breez/boltz v0.0.0-20201117160858-2001344ef712
 	github.com/btcsuite/btcd v0.20.1-beta.0.20200730232343-1db1b6f8217f
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v1.0.2
