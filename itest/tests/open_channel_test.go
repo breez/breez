@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -107,7 +108,7 @@ func Test_zero_conf_mining_during_pending(t *testing.T) {
 	paymentHash := paymentPreimage.Hash()
 	t.Logf("preImage: %v", paymentPreimage.String())
 	t.Logf("preImage: %v", paymentHash.String())
-	_, err = invoiceClient.AddHoldInvoice(context.Background(), &invoicesrpc.AddHoldInvoiceRequest{
+	holdInvoice, err := invoiceClient.AddHoldInvoice(context.Background(), &invoicesrpc.AddHoldInvoiceRequest{
 		RouteHints: hints,
 		Hash:       paymentHash[:],
 		Value:      1000,
@@ -116,60 +117,56 @@ func Test_zero_conf_mining_during_pending(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to add hold invoice %v", err)
 	}
-	t.Fatalf("error")
-	// //bobClient := test.bobBreezClient
-	// boblRouterClient := routerrpc.NewRouterClient(test.bobNode)
-	// _, err = boblRouterClient.SendPaymentV2(context.Background(), &routerrpc.SendPaymentRequest{
-	// 	PaymentRequest: holdInvoice.PaymentRequest,
-	// 	TimeoutSeconds: 20,
-	// })
-	// if err != nil {
-	// 	t.Fatalf("failed to send payment from bob")
-	// }
+	fmt.Println(holdInvoice.PaymentRequest)
+	go func() {
+		c := lnrpc.NewLightningClient(test.bobNode)
+		_, err := c.SendPaymentSync(context.Background(), &lnrpc.SendRequest{
+			PaymentRequest: holdInvoice.PaymentRequest,
+		})
+		if err != nil {
+			t.Fatalf("failed to send payment from bob")
+		}
+	}()
 
-	// stream, err := invoiceClient.SubscribeSingleInvoice(context.Background(),
-	// 	&invoicesrpc.SubscribeSingleInvoiceRequest{
-	// 		RHash: paymentHash[:],
-	// 	})
-	// if err != nil {
-	// 	t.Fatalf("failed to subscribe alice invoice %v", err)
-	// }
-	// for {
-	// 	payment, err := stream.Recv()
-	// 	if err != nil {
-	// 		t.Fatalf("error in payment %v", err)
-	// 	}
-	// 	t.Logf("invoice event state = %v", payment.State)
-	// 	if payment.State == lnrpc.Invoice_ACCEPTED {
-	// 		break
-	// 	}
-	// }
-	// // go func() {
-	// // 	res, err := bobClient.PayInvoice(context.Background(), &data.PayInvoiceRequest{
-	// // 		PaymentRequest: holdInvoice.PaymentRequest,
-	// // 	})
-	// // 	if err != nil || res.PaymentError != "" {
-	// // 		t.Fatalf("failed to send payment from Bob to alice holded invoice")
-	// // 	}
-	// // }()
-	// test.GenerateBlocks(6)
-	// _, err = invoiceClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
-	// 	Preimage: paymentPreimage[:],
-	// })
-	// if err != nil {
-	// 	t.Fatalf("failed to settle invoice %v", err)
-	// }
+	stream, err := invoiceClient.SubscribeSingleInvoice(context.Background(),
+		&invoicesrpc.SubscribeSingleInvoiceRequest{
+			RHash: paymentHash[:],
+		})
+	if err != nil {
+		t.Fatalf("failed to subscribe alice invoice %v", err)
+	}
+	for {
+		payment, err := stream.Recv()
+		if err != nil {
+			t.Fatalf("error in payment %v", err)
+		}
+		t.Logf("invoice event state = %v", payment.State)
+		if payment.State == lnrpc.Invoice_ACCEPTED {
+			break
+		}
+	}
+	stream.CloseSend()
+	t.Logf("generating blocks")
+	test.GenerateBlocks(6)
+	time.Sleep(3 * time.Second)
+	_, err = invoiceClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
+		Preimage: paymentPreimage[:],
+	})
+	if err != nil {
+		t.Fatalf("failed to settle invoice %v", err)
+	}
 
-	// err = poll(func() bool {
-	// 	balanceRes, err := aliceLightningClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
-	// 	if err != nil {
-	// 		t.Fatalf("failed to list local channels: %v", err)
-	// 	}
-	// 	return balanceRes.Balance > 1000
-	// }, time.Second*10)
-	// if err != nil {
-	// 	t.Fatalf("more than 1000 sat balance")
-	// }
+	err = poll(func() bool {
+		balanceRes, err := aliceLightningClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+		if err != nil {
+			t.Fatalf("failed to list local channels: %v", err)
+		}
+		return balanceRes.Balance > 1000
+	}, time.Second*10)
+
+	if err != nil {
+		t.Fatalf("more than 1000 sat balance")
+	}
 }
 
 func Test_zero_conf_10(t *testing.T) {
@@ -597,7 +594,6 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 	breezNodeClient := lnrpc.NewLightningClient(test.breezNode)
 	aliceClient := lnrpc.NewLightningClient(test.aliceNode)
 	t := test.test
-
 	test.initSwapperNode()
 	openBreezChannel(t, test, test.bobBreezClient, test.bobNode)
 	invoice, err := bobClient.AddInvoice(context.Background(), &lnrpc.Invoice{
@@ -728,8 +724,26 @@ func openBreezChannel(t *testing.T, test *framework,
 	localClient := lnrpc.NewLightningClient(breezLNDCon)
 	test.GenerateBlocks(5)
 
-	_, err := breezAPIClient.ConnectToLSP(
-		context.Background(), &data.ConnectLSPRequest{LspId: "lspd-secret"})
+	list, err := breezAPIClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+	if err != nil {
+		t.Fatalf("failed to get lsp list %v", err)
+	}
+	localClient.ConnectPeer(context.Background(), &lnrpc.ConnectPeerRequest{
+		Addr: &lnrpc.LightningAddress{
+			Host:   list.Lsps["lspd-secret"].Host,
+			Pubkey: list.Lsps["lspd-secret"].Pubkey,
+		},
+	})
+	bobInfo, err := localClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		t.Fatalf("failed to get bob info")
+	}
+	_, err = breezClient.OpenChannelSync(context.Background(), &lnrpc.OpenChannelRequest{
+		NodePubkeyString:   bobInfo.IdentityPubkey,
+		LocalFundingAmount: 5000000,
+		Private:            true,
+		TargetConf:         1,
+	})
 
 	if err != nil {
 		t.Fatalf("failed to connect to LSP: %v", err)
