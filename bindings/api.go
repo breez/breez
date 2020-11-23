@@ -623,7 +623,7 @@ func SetPeers(request []byte) error {
 }
 
 func TestPeer(peer string) error {
-	return chainservice.TestPeer(peer)
+	return getBreezApp().TestPeer(peer)
 }
 
 func DeleteGraph() error {

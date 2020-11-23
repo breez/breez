@@ -4,7 +4,7 @@ require (
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/breez/boltz v0.0.0-20201117160858-2001344ef712
-	github.com/btcsuite/btcd v0.20.1-beta.0.20200730232343-1db1b6f8217f
+	github.com/btcsuite/btcd v0.21.0-beta.0.20201120204312-0886f1e5c1fd
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/btcsuite/btcwallet v0.11.1-0.20200814001439-1d31f4ea6fc5
@@ -30,7 +30,7 @@ require (
 	golang.org/x/sys v0.0.0-20191008105621-543471e840be // indirect
 	golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69 // indirect
 	google.golang.org/api v0.20.0
-	google.golang.org/appengine v1.5.0
+	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/grpc v1.28.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/macaroon.v2 v2.0.0
@@ -38,10 +38,11 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
+	github.com/btcsuite/btcd v0.21.0-beta.0.20201120204312-0886f1e5c1fd => github.com/breez/btcd v0.0.0-20201123131710-9fd4ff766e00
 	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.11.1-0.20200726120254-83f8f93c32e9
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.3.2-0.20200726120254-83f8f93c32e9
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9
-	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20201009140859-946fb9f51bc0
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20201123135121-fb773eac2e15
 	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.11.0-beta.rc4.0.20201007182711-63d4c9b6e163
 	github.com/lightningnetwork/lnd/cert => github.com/lightningnetwork/lnd/cert v1.0.2-0.20200401010500-77df8e3a4386
 )

@@ -229,6 +229,16 @@ func (a *App) SetPeers(peers []string) error {
 	return a.breezDB.SetPeers(peers)
 }
 
+func (a *App) TestPeer(peer string) error {
+	if peer == "" {
+		if len(a.cfg.JobCfg.ConnectedPeers) == 0 {
+			return errors.New("no default peer")
+		}
+		peer = a.cfg.JobCfg.ConnectedPeers[0]
+	}
+	return chainservice.TestPeer(peer)
+}
+
 func (a *App) GetPeers() (peers []string, isDefault bool, err error) {
 	return a.breezDB.GetPeers(a.cfg.JobCfg.ConnectedPeers)
 }
