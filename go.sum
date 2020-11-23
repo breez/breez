@@ -37,6 +37,8 @@ github.com/breez/boltz v0.0.0-20201117155244-e0403bb07358 h1:CpHbMfhawQuIYIh7bu2
 github.com/breez/boltz v0.0.0-20201117155244-e0403bb07358/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
 github.com/breez/boltz v0.0.0-20201117160858-2001344ef712 h1:87yIt52d1QPbZ6jA/KHR6IMiUvDNGGGw0FlOUBcRlx0=
 github.com/breez/boltz v0.0.0-20201117160858-2001344ef712/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
+github.com/breez/btcd v0.0.0-20201123131710-9fd4ff766e00 h1:bKegUnULbeZGScwe2fVK3/QGQS6u6HyrM8mtbYAP1zs=
+github.com/breez/btcd v0.0.0-20201123131710-9fd4ff766e00/go.mod h1:Sv4JPQ3/M+teHz9Bo5jBpkNcP0x6r7rdihlNL/7tTAs=
 github.com/breez/btcwallet v0.11.1-0.20200726120254-83f8f93c32e9 h1:RsH4GpJ9PiD14B0t25l3l0/Gd7Qw659/WLo9Riki7E4=
 github.com/breez/btcwallet v0.11.1-0.20200726120254-83f8f93c32e9/go.mod h1:9+AH3V5mcTtNXTKe+fe63fDLKGOwQbZqmvOVUef+JFE=
 github.com/breez/btcwallet/walletdb v1.3.2-0.20200726120254-83f8f93c32e9 h1:era1GSf/ZezD6AifuOgHjbpXjqwiUZhqVTYDDXOn5Q4=
@@ -73,6 +75,8 @@ github.com/breez/neutrino v0.11.1-0.20200707124028-efe899f4cedb h1:G5aCMrfvpiYzk
 github.com/breez/neutrino v0.11.1-0.20200707124028-efe899f4cedb/go.mod h1:MlZmoKa7CJP3eR1s5yB7Rm5aSyadpKkxqAwLQmog7N0=
 github.com/breez/neutrino v0.11.1-0.20201009140859-946fb9f51bc0 h1:++ANtP9ycBD1E6wwILRFtdAX22x8Mug4pjFRF9OS4CI=
 github.com/breez/neutrino v0.11.1-0.20201009140859-946fb9f51bc0/go.mod h1:MlZmoKa7CJP3eR1s5yB7Rm5aSyadpKkxqAwLQmog7N0=
+github.com/breez/neutrino v0.11.1-0.20201123135121-fb773eac2e15 h1:PWUtW21wkd/8677qgKiUZQowaldrO6UFqF5AkIAJqlE=
+github.com/breez/neutrino v0.11.1-0.20201123135121-fb773eac2e15/go.mod h1:HU6seJRfNibzlMJ5//2Pmie9Tgjx7lssgof7iG8EWP8=
 github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
 github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
 github.com/btcsuite/btcd v0.20.1-beta h1:Ik4hyJqN8Jfyv3S4AGBOmyouMsYE3EdYODkMbQjwPGw=
