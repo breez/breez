@@ -196,6 +196,7 @@ message AddFundInitReply {
     string errorMessage = 3;
     string backupJson = 4;
     int64 requiredReserve = 5;
+    int64 minAllowedDeposit = 6;
 }
 
 message AddFundReply {

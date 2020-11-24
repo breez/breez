@@ -57,7 +57,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	s.log.Infof("AddFundInit response = %v, notification token=%v", r, notificationToken)
 
 	if r.ErrorMessage != "" {
-		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
+		return &data.AddFundInitReply{MaxAllowedDeposit: r.MaxAllowedDeposit, MinAllowedDeposit: r.MinAllowedDeposit, ErrorMessage: r.ErrorMessage}, nil
 	}
 
 	client, err := lnclient.SubSwapClientWatch(context.Background(), &submarineswaprpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
@@ -104,6 +104,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 		ErrorMessage:      r.ErrorMessage,
 		BackupJson:        string(jsonBytes[:]),
 		RequiredReserve:   r.RequiredReserve,
+		MinAllowedDeposit: r.MinAllowedDeposit,
 	}, nil
 }
 
