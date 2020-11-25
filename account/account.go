@@ -105,18 +105,19 @@ func (a *Service) getConnectedPeers() (peers []string, err error) {
 	return connectedPeers, nil
 }
 
-func (a *Service) hasUnconfirmedChannels() (bool, error) {
+func (a *Service) unconfirmedChannels() ([]string, error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
+	var unconfirmedChannels []string
 	for _, c := range channels.Channels {
 		if lnwire.NewShortChanIDFromInt(c.ChanId).IsFake() {
-			return true, nil
+			unconfirmedChannels = append(unconfirmedChannels, c.ChannelPoint)
 		}
 	}
-	return false, nil
+	return unconfirmedChannels, nil
 }
 
 func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
@@ -346,28 +347,28 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	hasUnconfirmed, err := a.hasUnconfirmedChannels()
+	unconfirmedChannels, err := a.unconfirmedChannels()
 	if err != nil {
 		return nil, err
 	}
 	onChainBalance := walletBalance.ConfirmedBalance
 	return &data.Account{
-		Id:                     lnInfo.IdentityPubkey,
-		Balance:                normalizedBalance,
-		MaxAllowedToReceive:    maxAllowedToReceive,
-		MaxAllowedToPay:        maxAllowedToPay,
-		MaxPaymentAmount:       maxPaymentAllowedSat,
-		MaxChanReserve:         maxChanReserve,
-		Status:                 accStatus,
-		WalletBalance:          onChainBalance,
-		RoutingNodeFee:         routingNodeFeeRate,
-		ReadyForPayments:       a.daemonAPI.HasActiveChannel(),
-		Enabled:                enabled,
-		ChannelPoint:           chanPoint,
-		TipHeight:              int64(lnInfo.BlockHeight),
-		ConnectedPeers:         connectedPeers,
-		MaxInboundLiquidity:    maxInboundLiquidity,
-		HasUnconfirmedChannels: hasUnconfirmed,
+		Id:                  lnInfo.IdentityPubkey,
+		Balance:             normalizedBalance,
+		MaxAllowedToReceive: maxAllowedToReceive,
+		MaxAllowedToPay:     maxAllowedToPay,
+		MaxPaymentAmount:    maxPaymentAllowedSat,
+		MaxChanReserve:      maxChanReserve,
+		Status:              accStatus,
+		WalletBalance:       onChainBalance,
+		RoutingNodeFee:      routingNodeFeeRate,
+		ReadyForPayments:    a.daemonAPI.HasActiveChannel(),
+		Enabled:             enabled,
+		ChannelPoint:        chanPoint,
+		TipHeight:           int64(lnInfo.BlockHeight),
+		ConnectedPeers:      connectedPeers,
+		MaxInboundLiquidity: maxInboundLiquidity,
+		UnconfirmedChannels: unconfirmedChannels,
 	}, nil
 }
 

@@ -83,7 +83,7 @@ message Account {
     //The max amount this node can receive without opening a new channel
     int64 max_inbound_liquidity = 15;   
 
-    bool has_unconfirmed_channels = 16;
+    repeated string unconfirmed_channels = 16;
 }
 
 message Payment {
