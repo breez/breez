@@ -277,10 +277,14 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	}
 	encKey := append([]byte(nil), encryptionKey...)
 	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
-	Log("error in calling BackupManager.Restore: "+err.Error(), "INFO")
+	if err != nil {
+		Log("error in calling BackupManager.Restore: "+err.Error(), "INFO")
+	}
 	var newAppErr error
 	breezApp, newAppErr = breez.NewApp(getBreezApp().GetWorkingDir(), appServices, false)
-	Log("error in calling breez.NewAp: "+newAppErr.Error(), "INFO")
+	if newAppErr != nil {
+		Log("error in calling breez.NewAp: "+newAppErr.Error(), "INFO")
+	}
 	return err
 }
 
