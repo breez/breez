@@ -272,11 +272,15 @@ RestoreBackup is part of the binding inteface which is delegated to breez.Restor
 */
 func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	if err = getBreezApp().Stop(); err != nil {
+		Log("error in calling RestoreBackup: "+err.Error(), "INFO")
 		return err
 	}
 	encKey := append([]byte(nil), encryptionKey...)
 	_, err = getBreezApp().BackupManager.Restore(nodeID, encKey)
-	breezApp, _ = breez.NewApp(getBreezApp().GetWorkingDir(), appServices, false)
+	Log("error in calling BackupManager.Restore: "+err.Error(), "INFO")
+	var newAppErr error
+	breezApp, newAppErr = breez.NewApp(getBreezApp().GetWorkingDir(), appServices, false)
+	Log("error in calling breez.NewAp: "+newAppErr.Error(), "INFO")
 	return err
 }
 
