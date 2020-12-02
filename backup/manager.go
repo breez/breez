@@ -103,19 +103,21 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 	paths := map[string]string{
 		"wallet.db":  "data/chain/bitcoin/{{network}}",
 		"channel.db": "data/graph/{{network}}",
-		"breez.db":   "",
 	}
 	var targetFiles []string
 	for _, f := range files {
 		basename := path.Base(f)
+		b.log.Infof("processing file %v base=%v", f, basename)
 		p, ok := paths[basename]
 		if !ok {
-			return nil, err
+			b.log.Infof("couldn't find base in path %v", basename)
+			continue
 		}
 		destDir := path.Join(b.workingDir, strings.Replace(p, "{{network}}", b.config.Network, -1))
 		if destDir != b.workingDir {
 			err = os.MkdirAll(destDir, 0700)
 			if err != nil {
+				b.log.Infof("couldn't create directory %v %v", destDir, err)
 				return nil, err
 			}
 		}
