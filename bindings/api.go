@@ -730,7 +730,7 @@ func NewReverseSwap(request []byte) (string, error) {
 	if err := proto.Unmarshal(request, &swapRequest); err != nil {
 		return "", err
 	}
-	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
+	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.FeesHash, swapRequest.Address)
 	if err != nil {
 		var badRequest *boltz.BadRequestError
 		if errors.As(err, &badRequest) {
@@ -751,9 +751,10 @@ func ReverseSwapInfo() ([]byte, error) {
 		return nil, err
 	}
 	return proto.Marshal(&data.ReverseSwapInfo{
-		Min: rsi.Min, Max: rsi.Max, Fees: &data.ReverseSwapFees{
+		Min: rsi.Min, Max: rsi.Max,
+		Fees: &data.ReverseSwapFees{
 			Percentage: rsi.Fees.Percentage, Lockup: rsi.Fees.Lockup, Claim: rsi.Fees.Claim},
-	})
+		FeesHash: rsi.FeesHash})
 }
 
 func SetReverseSwapClaimFee(request []byte) error {

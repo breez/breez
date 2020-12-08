@@ -392,6 +392,7 @@ message LNURLAuth {
 message ReverseSwapRequest {
   string address = 1;
   int64 amount = 2;
+  string fees_hash = 3;
 }
 
 message ReverseSwap {
@@ -420,6 +421,7 @@ message ReverseSwapInfo {
     int64 min = 1;
     int64 max = 2;
     ReverseSwapFees fees = 3;
+    string fees_hash = 4;
 }
 
 message ReverseSwapPaymentRequest {
