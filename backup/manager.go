@@ -62,7 +62,7 @@ func (b *Manager) requestBackup(delay time.Duration) {
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
 func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
-
+	b.log.Infof("Restore started")
 	backupID, err := b.getBackupIdentifier()
 	if err != nil {
 		return nil, err
@@ -75,24 +75,28 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	b.log.Infof("Download files completed %v", len(files))
 	if len(files) != 3 {
 		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
 	}
 
 	// If we got an encryption key, let's decrypt the files
 	if key != nil {
+		b.log.Infof("Restore has encryption key")
 		for i, p := range files {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, key)
 			if err != nil {
 				return nil, errors.New("Failed to restore backup due to incorrect PIN")
 			}
+			b.log.Infof("Restore file decrypted %v", i)
 			if err = os.Remove(files[i]); err != nil {
 				return nil, err
 			}
 			if err = os.Rename(destPath, files[i]); err != nil {
 				return nil, err
 			}
+			b.log.Infof("decrypted file renamed %v", i)
 		}
 	}
 
@@ -116,10 +120,12 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 			}
 		}
 
+		b.log.Infof("restore file before rename %v", basename)
 		err = os.Rename(f, path.Join(destDir, basename))
 		if err != nil {
 			return nil, err
 		}
+		b.log.Infof("restore file renamed %v", basename)
 		targetFiles = append(targetFiles, path.Join(destDir, basename))
 	}
 	return targetFiles, nil

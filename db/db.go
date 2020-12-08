@@ -86,12 +86,14 @@ func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
 
 // OpenDB opens the database and makes it ready to work
 func openDB(dbPath string, log btclog.Logger) (*DB, error) {
+	log.Infof("openDB started")
 	var err error
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
-		log.Criticalf("Failed to open database %v", err)
+		log.Infof("Failed to open database %v", err)
 		return nil, err
 	}
+	log.Infof("breez db opened successfully")
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
 		_, err = tx.CreateBucketIfNotExists([]byte(incomingPayReqBucket))
