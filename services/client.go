@@ -179,11 +179,11 @@ func dial(serverURL string, noTLS bool) (*grpc.ClientConn, error) {
 	if noTLS {
 		return grpc.Dial(serverURL, grpc.WithInsecure())
 	}
-	cp := x509.NewCertPool()
-	if !cp.AppendCertsFromPEM([]byte(letsencryptCert)) {
-		return nil, fmt.Errorf("credentials: failed to append certificates")
+	systemCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting SystemCertPool: %w", err)
 	}
-	creds := credentials.NewClientTLSFromCert(cp, "")
+	creds := credentials.NewClientTLSFromCert(systemCertPool, "")
 	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
 	return grpc.Dial(serverURL, dialOptions...)
 }
