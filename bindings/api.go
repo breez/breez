@@ -745,6 +745,18 @@ func NewReverseSwap(request []byte) (string, error) {
 	return h, err
 }
 
+func MaxReverseSwapAmount() (int64, error) {
+	pubKey, err := boltz.GetNodePubkey()
+	if err != nil {
+		return 0, err
+	}
+	v, err := getBreezApp().AccountService.GetMaxAmount(pubKey, nil)
+	if err != nil {
+		return 0, err
+	}
+	return int64(v) / 1000, nil
+}
+
 func ReverseSwapInfo() ([]byte, error) {
 	rsi, err := boltz.GetReverseSwapInfo()
 	if err != nil {
