@@ -80,6 +80,120 @@ func getLSPRoutingHints(t *testing.T, lnclient lnrpc.LightningClient, lspInfo *d
 	return hints, nil
 }
 
+func Test_zero_conf_mining_during_pending_sender(t *testing.T) {
+	t.Logf("Testing Test_zero_conf_mining_during_pending_sender")
+	test := newTestFramework(t)
+	runZeroConfMultiple(test, []zeroConfTest{
+		{
+			amountSat:        50000,
+			expectedChannels: 1,
+		},
+	})
+	bobInvoiceClient := invoicesrpc.NewInvoicesClient(test.bobNode)
+	bobLightningClient := lnrpc.NewLightningClient(test.bobNode)
+	paymentPreimage := &lntypes.Preimage{}
+	if _, err := rand.Read(paymentPreimage[:]); err != nil {
+		t.Fatalf("failed to generate preimage %v", err)
+	}
+	list, err := test.aliceBreezClient.GetLSPList(context.Background(), &data.LSPListRequest{})
+	if err != nil {
+		t.Fatalf("failed to get lsp list %v", err)
+	}
+
+	hints, err := getLSPRoutingHints(t, bobLightningClient, list.Lsps["lspd-secret"])
+	if err != nil {
+		t.Fatalf("failed to get routing hints %v", err)
+	}
+
+	paymentHash := paymentPreimage.Hash()
+	t.Logf("preImage: %v", paymentPreimage.String())
+	t.Logf("preImage: %v", paymentHash.String())
+	holdInvoice, err := bobInvoiceClient.AddHoldInvoice(context.Background(), &invoicesrpc.AddHoldInvoiceRequest{
+		RouteHints: hints,
+		Hash:       paymentHash[:],
+		Value:      12000,
+		Private:    true,
+	})
+	if err != nil {
+		t.Fatalf("failed to add hold invoice %v", err)
+	}
+	fmt.Println(holdInvoice.PaymentRequest)
+	go func() {
+		c := lnrpc.NewLightningClient(test.aliceNode)
+		_, err := c.SendPaymentSync(context.Background(), &lnrpc.SendRequest{
+			PaymentRequest: holdInvoice.PaymentRequest,
+		})
+		if err != nil {
+			t.Logf("failed to send payment from bob %v", err)
+		}
+	}()
+
+	stream, err := bobInvoiceClient.SubscribeSingleInvoice(context.Background(),
+		&invoicesrpc.SubscribeSingleInvoiceRequest{
+			RHash: paymentHash[:],
+		})
+	if err != nil {
+		t.Fatalf("failed to subscribe alice invoice %v", err)
+	}
+	for {
+		payment, err := stream.Recv()
+		if err != nil {
+			t.Fatalf("error in payment %v", err)
+		}
+		t.Logf("invoice event state = %v", payment.State)
+		if payment.State == lnrpc.Invoice_ACCEPTED {
+			break
+		}
+	}
+	stream.CloseSend()
+
+	t.Logf("restarting alice")
+	fmt.Println("restargin alice")
+	if err := test.restartAlice(); err != nil {
+		t.Fatalf("failed to restart alice %v", err)
+	}
+	time.Sleep(5 * time.Second)
+	t.Logf("generating blocks")
+	test.miner.Generate(6)
+
+	if err := waitForNodeSynced(aliceDir, aliceAddress, 0); err != nil {
+		t.Fatalf("failed to sync alice %v", err)
+	}
+	fmt.Println("after restargin alice")
+
+	_, err = bobInvoiceClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
+		Preimage: paymentPreimage[:],
+	})
+	if err != nil {
+		t.Fatalf("failed to settle invoice %v", err)
+	}
+
+	breezClient := lnrpc.NewLightningClient(test.breezNode)
+	err = poll(func() bool {
+		breezChannels, err := breezClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			t.Fatalf("failed to list breez node payments: %v", err)
+		}
+		for _, c := range breezChannels.Channels {
+			if len(c.PendingHtlcs) > 0 {
+				return false
+			}
+		}
+
+		aliceClient := lnrpc.NewLightningClient(test.aliceNode)
+		balanceRes, err := aliceClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
+		if err != nil {
+			return false
+		}
+		fmt.Println("balanceRes.Balance = ", balanceRes.Balance)
+		return balanceRes.Balance < 40000
+	}, time.Second*10)
+
+	if err != nil {
+		t.Fatalf("more than 1000 sat balance")
+	}
+}
+
 func Test_zero_conf_mining_during_pending(t *testing.T) {
 	t.Logf("Testing Test_zero_conf_mining_during_pending")
 	test := newTestFramework(t)
@@ -146,8 +260,8 @@ func Test_zero_conf_mining_during_pending(t *testing.T) {
 		}
 	}
 	stream.CloseSend()
-	t.Logf("generating blocks")
 	test.GenerateBlocks(6)
+	t.Logf("after generating blocks")
 	time.Sleep(3 * time.Second)
 	_, err = invoiceClient.SettleInvoice(context.Background(), &invoicesrpc.SettleInvoiceMsg{
 		Preimage: paymentPreimage[:],
@@ -156,7 +270,18 @@ func Test_zero_conf_mining_during_pending(t *testing.T) {
 		t.Fatalf("failed to settle invoice %v", err)
 	}
 
+	breezClient := lnrpc.NewLightningClient(test.breezNode)
 	err = poll(func() bool {
+		breezChannels, err := breezClient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			t.Fatalf("failed to list breez node payments: %v", err)
+		}
+		for _, c := range breezChannels.Channels {
+			if len(c.PendingHtlcs) > 0 {
+				return false
+			}
+		}
+
 		balanceRes, err := aliceLightningClient.ChannelBalance(context.Background(), &lnrpc.ChannelBalanceRequest{})
 		if err != nil {
 			t.Fatalf("failed to list local channels: %v", err)

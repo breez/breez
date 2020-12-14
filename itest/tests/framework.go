@@ -67,27 +67,40 @@ func setup() error {
 	if err != nil {
 		return err
 	}
+	info, err := miner.GetBlockChainInfo()
+	if err != nil {
+		return err
+	}
 	_, _ = miner.Generate(1)
 	fmt.Printf("alice dir %v\n", aliceDir)
+	if _, err := os.Create(fmt.Sprintf("%v/delete_node", aliceDir)); err != nil {
+		return err
+	}
 	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
 		return err
 	}
 	fmt.Printf("bob dir %v\n", bobDir)
+	os.Create(fmt.Sprintf("%v/delete_node", bobDir))
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
 
 	fmt.Printf("lnd dir %v\n", lndDir)
+	if _, err := os.Create(fmt.Sprintf("%v/delete_node", lndDir)); err != nil {
+		return err
+	}
 	if _, err := os.Create(fmt.Sprintf("%v/shutdown", lndDir)); err != nil {
 		return err
 	}
 
-	time.Sleep(time.Second * 2)
-	if err := waitForNodeSynced(aliceDir, aliceAddress); err != nil {
+	bestBlock := uint32(info.Blocks) + 1
+
+	time.Sleep(time.Second * 12)
+	if err := waitForNodeSynced(aliceDir, aliceAddress, bestBlock); err != nil {
 		return err
 	}
-	if err := waitForNodeSynced(bobDir, bobAddress); err != nil {
+	if err := waitForNodeSynced(bobDir, bobAddress, bestBlock); err != nil {
 		return err
 	}
-	if err := waitForNodeSynced(lndDir, lndAddress); err != nil {
+	if err := waitForNodeSynced(lndDir, lndAddress, bestBlock); err != nil {
 		return err
 	}
 	fmt.Println("setup completed")
@@ -113,44 +126,49 @@ func poll(pred func() bool, timeout time.Duration) error {
 	}
 }
 
-func waitForNodeSynced(dir, address string) error {
+func waitForNodeSynced(dir, address string, bestBlock uint32) error {
 	fmt.Println("waiting for node to sync")
 	var lastError error
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
+		fmt.Println("node sync iteration")
 		node, err := newLightningConnection(dir, address)
 		if err != nil {
 			lastError = err
+			fmt.Println("failed to create lightning connection ", err)
 			time.Sleep(time.Second)
 			continue
 		}
 		nodeClient := lnrpc.NewLightningClient(node)
 
 		info, err := nodeClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-		if err == nil && info.SyncedToChain {
+		if err == nil && info.SyncedToChain && (bestBlock == 0 || info.BlockHeight == bestBlock) {
+			fmt.Println("node is not synched")
 			return nil
 		}
 		if err != nil {
+			fmt.Println("failed to GetInfo ", err)
 			lastError = err
 		}
+		fmt.Printf("node sync iteration SyncedToChain=%v bestBlock=%v desired=%v", info.SyncedToChain, info.BlockHeight, bestBlock)
 		time.Sleep(time.Second)
 	}
 	return fmt.Errorf("Timeout in waiting for node to sync %w", lastError)
 }
 
-func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
-	var lastBlock uint32
-	for i := 0; i < 10; i++ {
-		info, err := nodeClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-		if err == nil && info.SyncedToChain && info.BlockHeight == bestBlock {
-			return nil
-		}
-		if info != nil {
-			lastBlock = info.BlockHeight
-		}
-		time.Sleep(time.Second)
-	}
-	return fmt.Errorf("Timeout in waiting for node to sync to best block %v only have %v", bestBlock, lastBlock)
-}
+// func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
+// 	var lastBlock uint32
+// 	for i := 0; i < 10; i++ {
+// 		info, err := nodeClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+// 		if err == nil && info.SyncedToChain && info.BlockHeight == bestBlock {
+// 			return nil
+// 		}
+// 		if info != nil {
+// 			lastBlock = info.BlockHeight
+// 		}
+// 		time.Sleep(time.Second)
+// 	}
+// 	return fmt.Errorf("Timeout in waiting for node to sync to best block %v only have %v", bestBlock, lastBlock)
+// }
 
 func newTestFramework(test *testing.T) *framework {
 	if err := setup(); err != nil {
@@ -227,12 +245,34 @@ func (f *framework) GenerateBlocks(num uint32) {
 		f.test.Fatalf("failed to generate blocks")
 	}
 	time.Sleep(time.Second)
-	for _, n := range []*grpc.ClientConn{f.aliceNode, f.bobNode, f.breezNode, f.subswapNode} {
-		nodeClient := lnrpc.NewLightningClient(n)
-		if err := waitSynced(nodeClient, bestBlock); err != nil {
-			f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
-		}
+	if err := waitForNodeSynced(aliceDir, aliceAddress, bestBlock); err != nil {
+		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 	}
+	if err := waitForNodeSynced(bobDir, bobAddress, bestBlock); err != nil {
+		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
+	}
+	if err := waitForNodeSynced(breezDir, breezAddress, bestBlock); err != nil {
+		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
+	}
+	if err := waitForNodeSynced(subswapDir, subswapAddress, bestBlock); err != nil {
+		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
+	}
+}
+
+func (f *framework) restartAlice() error {
+	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (f *framework) restartBob() error {
+	if _, err := os.Create(fmt.Sprintf("%v/shutdown", bobDir)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (f *framework) initSwapperNode() {
