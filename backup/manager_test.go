@@ -383,7 +383,7 @@ func TestEncryptedBackup(t *testing.T) {
 			return nil, errors.New("node id not found")
 		}
 
-		return downloads, nil
+		return []string{path.Join(dir, "backup.zip")}, nil
 	}
 
 	manager, err := createTestManager(tester)
