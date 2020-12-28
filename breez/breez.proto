@@ -30,6 +30,7 @@ service ChannelOpener {
   rpc LSPList (LSPListRequest) returns (LSPListReply) {}
   rpc OpenLSPChannel (OpenLSPChannelRequest) returns (OpenLSPChannelReply) {}
   rpc RegisterPayment (RegisterPaymentRequest) returns (RegisterPaymentReply) {}
+  rpc CheckChannels(CheckChannelsRequest) returns (CheckChannelsReply) {}
 }
 
 service FundManager {
@@ -114,6 +115,14 @@ message RegisterPaymentRequest {
   bytes blob = 3;
 }
 message RegisterPaymentReply {}
+
+message CheckChannelsRequest {
+  string lsp_id = 1;
+  bytes blob = 2;
+}
+message CheckChannelsReply {
+  bytes blob = 2;
+}
 
 message OpenLSPChannelRequest {
   string lsp_id = 1;

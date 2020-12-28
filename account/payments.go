@@ -19,11 +19,14 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lspd"
+	lspdrpc "github.com/breez/lspd/rpc"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
@@ -1050,4 +1053,66 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 		return fmt.Errorf("RegisterPayment() error: %w", err)
 	}
 	return nil
+}
+
+func (a *Service) checkChannels(fakeChannels, waitingCloseChannels map[string]uint64,
+	lspPubkey []byte, lspID string) (map[string]uint64, map[string]uint64, error) {
+	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
+	defer cancel()
+
+	priv, err := btcec.NewPrivateKey(btcec.S256())
+	if err != nil {
+		return nil, nil, err
+	}
+	checkChannelsRequest := &lspdrpc.CheckChannelsRequest{
+		EncryptPubkey:        priv.PubKey().SerializeCompressed(),
+		FakeChannels:         fakeChannels,
+		WaitingCloseChannels: waitingCloseChannels,
+	}
+	data, _ := proto.Marshal(checkChannelsRequest)
+	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
+	if err != nil {
+		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
+		return nil, nil, fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)
+	}
+
+	signerClient := a.daemonAPI.SignerClient()
+	signatureReply, err := signerClient.SignMessage(context.Background(), &signrpc.SignMessageReq{Msg: data,
+		KeyLoc: &signrpc.KeyLocator{
+			KeyFamily: int32(keychain.KeyFamilyNodeKey),
+			KeyIndex:  0,
+		}})
+	if err != nil {
+		a.log.Infof("signerClient.SignMessage() error: %v", err)
+		return nil, nil, fmt.Errorf("signerClient.SignMessage() error: %w", err)
+	}
+	pubKeyBytes, err := hex.DecodeString(a.daemonAPI.NodePubkey())
+	if err != nil {
+		a.log.Infof("hex.DecodeString(%v) error: %v", a.daemonAPI.NodePubkey(), err)
+		return nil, nil, fmt.Errorf("hex.DecodeString(%v) error: error: %w", a.daemonAPI.NodePubkey(), err)
+	}
+	signed := &lspdrpc.Signed{
+		Data:      data,
+		Pubkey:    pubKeyBytes,
+		Signature: signatureReply.Signature,
+	}
+	signedData, _ := proto.Marshal(signed)
+	encrypted, err := btcec.Encrypt(pubkey, signedData)
+	if err != nil {
+		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
+		return nil, nil, fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
+	}
+	r, err := c.CheckChannels(ctx, &breezservice.CheckChannelsRequest{LspId: lspID, Blob: encrypted})
+	decrypt, err := btcec.Decrypt(priv, r.Blob)
+	if err != nil {
+		a.log.Infof("btcec.Decrypt error: %v", err)
+		return nil, nil, fmt.Errorf("btcec.Decrypt error: %w", err)
+	}
+	var checkChannelsReply lspdrpc.CheckChannelsReply
+	err = proto.Unmarshal(decrypt, &checkChannelsReply)
+	if err != nil {
+		a.log.Infof("proto.Unmarshal() error: %v", err)
+		return nil, nil, fmt.Errorf("proto.Unmarshal() error: %w", err)
+	}
+	return checkChannelsReply.NotFakeChannels, checkChannelsReply.ClosedChannels, nil
 }
