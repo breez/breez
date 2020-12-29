@@ -149,7 +149,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 // 2. Uploads all files to the newly created folder.
 // 3. update the node folder metadata property "activeBackupFolderProperty" to contain the
 //    id of the new folder.
-func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, encryptionType string) (string, error) {
+func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error) {
 	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
 
 	// Fetch the node folder
@@ -180,53 +180,47 @@ func (p *GoogleDriveProvider) UploadBackupFiles(files []string, nodeID string, e
 
 	p.log.Infof("uploadBackupFiles backup folder created for node:%v", nodeFolder.Id)
 	// Upload the files
-	for _, fPath := range files {
-		go func(filePath string) {
-			fileName := path.Base(filePath)
-			file, err := os.Open(filePath)
-			if err != nil {
-				errorChan <- err
-				return
-			}
-			defer file.Close()
-			info, err := file.Stat()
-			if err != nil {
-				errorChan <- err
-				return
-			}
-			p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
-			uploadedFile, err := p.driveService.Files.Create(&drive.File{
-				Name:    fileName,
-				Parents: []string{newBackupFolder.Id}},
-			).Media(file).Fields("md5Checksum").Do()
-			if err != nil {
-				p.log.Infof("uploadBackupFiles failed to upload file at folder:%v", newBackupFolder.Id)
-				errorChan <- &driveServiceError{err}
-				return
-			}
-			checksum, err := fileChecksum(filePath)
-			if err != nil {
-				p.log.Infof("failed to calculate checksum for path: %v", filePath)
-				errorChan <- errors.New("failed to calculate checksum")
-				return
-			}
-			if uploadedFile.Md5Checksum != checksum {
-				p.log.Infof("backup file checksum mismatch: %v", filePath)
-				errorChan <- errors.New("uploaded file checksum doesn't match")
-				return
-			}
-			successChan <- struct{}{}
-		}(fPath)
-	}
+	go func(filePath string) {
+		fileName := path.Base(filePath)
+		file, err := os.Open(filePath)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		defer file.Close()
+		info, err := file.Stat()
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
+		uploadedFile, err := p.driveService.Files.Create(&drive.File{
+			Name:    fileName,
+			Parents: []string{newBackupFolder.Id}},
+		).Media(file).Fields("md5Checksum").Do()
+		if err != nil {
+			p.log.Infof("uploadBackupFiles failed to upload file at folder:%v", newBackupFolder.Id)
+			errorChan <- &driveServiceError{err}
+			return
+		}
+		checksum, err := fileChecksum(filePath)
+		if err != nil {
+			p.log.Infof("failed to calculate checksum for path: %v", filePath)
+			errorChan <- errors.New("failed to calculate checksum")
+			return
+		}
+		if uploadedFile.Md5Checksum != checksum {
+			p.log.Infof("backup file checksum mismatch: %v", filePath)
+			errorChan <- errors.New("uploaded file checksum doesn't match")
+			return
+		}
+		successChan <- struct{}{}
+	}(file)
 
 	var uploadErr error
-	for i := 0; i < len(files); i++ {
-		select {
-		case <-successChan:
-			continue
-		case uploadErr = <-errorChan:
-			continue
-		}
+	select {
+	case uploadErr = <-errorChan:
+	case <-successChan:
 	}
 
 	if uploadErr != nil {

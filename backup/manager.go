@@ -262,7 +262,7 @@ func (b *Manager) Start() error {
 					continue
 				}
 
-				accountName, err := provider.UploadBackupFiles([]string{compressedFile}, nodeID, encryptionType)
+				accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
 				if err != nil {
 					for _, p := range paths {
 						_ = os.Remove(p)
