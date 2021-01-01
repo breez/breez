@@ -52,6 +52,10 @@ func (a *App) Start() error {
 		a.BackupManager,
 	}
 
+	if err := a.lspChanStateSyncer.recordChannelsStatus(); err != nil {
+		a.log.Errorf("failed to collect channels state %v", err)
+	}
+
 	for _, s := range services {
 		if err := s.Start(); err != nil {
 			return err
@@ -178,7 +182,9 @@ func (a *App) watchDaemonEvents() error {
 					break
 				}
 				err = chainService.FilterDB.PurgeFilters(filterdb.RegularFilter)
-				a.log.Errorf("purge compact filters finished error = %v", err)
+				if err != nil {
+					a.log.Errorf("purge compact filters finished error = %v", err)
+				}
 				cleanupFn()
 			}
 		case <-client.Quit():
@@ -353,4 +359,13 @@ func (a *App) PopulateChannelPolicy() {
 	if err := a.lnDaemon.PopulateChannelsGraph(); err != nil {
 		a.log.Errorf("failed to populate graph %v", err)
 	}
+}
+
+func (a *App) SyncLSPChannels(request *data.SyncLSPChannelsRequest) (*data.SyncLSPChannelsResponse, error) {
+	lsp := request.LspInfo
+	mismatch, err := a.lspChanStateSyncer.syncChannels(lsp.Pubkey, lsp.LspPubkey, lsp.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &data.SyncLSPChannelsResponse{HasMismatch: mismatch}, nil
 }

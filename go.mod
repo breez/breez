@@ -4,7 +4,7 @@ require (
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/breez/boltz v0.0.0-20201210195214-d1fc9c9069c4
-	github.com/breez/lspd v0.0.0-20201224160157-11dc17ae2da4
+	github.com/breez/lspd v0.0.0-20201229143221-ea54442821ae
 	github.com/btcsuite/btcd v0.21.0-beta.0.20201208033208-6bd4c64a54fa
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v1.0.2

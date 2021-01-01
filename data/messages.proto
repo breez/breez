@@ -164,6 +164,14 @@ message Invoice {
     int64 amtPaid = 3;
 }
 
+message SyncLSPChannelsRequest {
+  LSPInformation lspInfo = 1;
+}
+
+message SyncLSPChannelsResponse {
+  bool hasMismatch = 1;
+}
+
 message NotificationEvent {
     enum NotificationType {
         READY = 0;

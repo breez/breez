@@ -701,6 +701,14 @@ func ConnectToLnurl(lnurl string) error {
 	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
+func SyncLSPChannels(request []byte) ([]byte, error) {
+	var s data.SyncLSPChannelsRequest
+	if err := proto.Unmarshal(request, &s); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().SyncLSPChannels(&s))
+}
+
 func ConnectDirectToLnurl(channel []byte) error {
 	var c data.LNURLChannel
 	if err := proto.Unmarshal(channel, &c); err != nil {
