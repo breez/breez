@@ -369,3 +369,25 @@ func (a *App) SyncLSPChannels(request *data.SyncLSPChannelsRequest) (*data.SyncL
 	}
 	return &data.SyncLSPChannelsResponse{HasMismatch: mismatch}, nil
 }
+
+func (a *App) ResetClosedChannelChainInfo(r *data.ResetClosedChannelChainInfoRequest) (
+	*data.ResetClosedChannelChainInfoReply, error) {
+
+	err := a.lspChanStateSyncer.resetClosedChannelChainInfo(r.ChanPoint, r.BlockHeight)
+	if err != nil {
+		return nil, err
+	}
+	return &data.ResetClosedChannelChainInfoReply{}, nil
+}
+
+func (a *App) CheckLSPClosedChannelMismatch(
+	r *data.CheckLSPClosedChannelMismatchRequest) (
+	*data.CheckLSPClosedChannelMismatchResponse, error) {
+
+	mismatch, err := a.lspChanStateSyncer.checkLSPClosedChannelMismatch(r.LspInfo.Pubkey,
+		r.LspInfo.LspPubkey, r.LspInfo.Id, r.ChanPoint)
+	if err != nil {
+		return nil, err
+	}
+	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
+}

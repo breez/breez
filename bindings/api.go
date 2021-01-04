@@ -709,6 +709,24 @@ func SyncLSPChannels(request []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().SyncLSPChannels(&s))
 }
 
+func CheckLSPClosedChannelMismatch(request []byte) ([]byte, error) {
+	var s data.CheckLSPClosedChannelMismatchRequest
+	if err := proto.Unmarshal(request, &s); err != nil {
+		return nil, err
+	}
+
+	return marshalResponse(getBreezApp().CheckLSPClosedChannelMismatch(&s))
+}
+
+func ResetClosedChannelChainInfo(request []byte) ([]byte, error) {
+	var r data.ResetClosedChannelChainInfoRequest
+	if err := proto.Unmarshal(request, &r); err != nil {
+		return nil, err
+	}
+
+	return marshalResponse(getBreezApp().ResetClosedChannelChainInfo(&r))
+}
+
 func ConnectDirectToLnurl(channel []byte) error {
 	var c data.LNURLChannel
 	if err := proto.Unmarshal(channel, &c); err != nil {

@@ -172,6 +172,22 @@ message SyncLSPChannelsResponse {
   bool hasMismatch = 1;
 }
 
+message CheckLSPClosedChannelMismatchRequest {
+  LSPInformation lspInfo = 1;
+  string chanPoint = 2;
+}
+
+message CheckLSPClosedChannelMismatchResponse {
+  bool mismatch = 1;
+}
+
+message ResetClosedChannelChainInfoRequest {
+  string chanPoint = 1;
+  int64 blockHeight = 2;
+}
+
+message ResetClosedChannelChainInfoReply {}
+
 message NotificationEvent {
     enum NotificationType {
         READY = 0;

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnwire"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -49,6 +50,61 @@ func newLSPChanStateSync(app *App) *lspChanStateSync {
 		cfg:       app.cfg,
 		snapshots: make(map[string]*peerSnapshot, 0),
 	}
+}
+
+func (a *lspChanStateSync) resetClosedChannelChainInfo(chanPoint string, blockHeight int64) error {
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	// query spend hint for channel
+	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+		QueryDisable: false,
+	}, chandb)
+
+	channel, err := a.findChannel(chanPoint)
+	if err != nil {
+		return err
+	}
+	return hintCache.CommitSpendHint(uint32(blockHeight),
+		chainntnfs.SpendRequest{OutPoint: channel.FundingOutpoint})
+}
+
+func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, lspPubkey []byte,
+	lspID string, chanPoint string) (bool, error) {
+
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return false, err
+	}
+	defer cleanup()
+
+	// query spend hint for channel
+	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+		QueryDisable: false,
+	}, chandb)
+
+	c, err := a.findChannel(chanPoint)
+	if err != nil || c == nil {
+		return false, err
+	}
+
+	remotePubkey := c.IdentityPub.SerializeCompressed()
+	if hex.EncodeToString(remotePubkey) != lspNodePubkey {
+		return false, nil
+	}
+	hint, err := hintCache.QuerySpendHint(chainntnfs.SpendRequest{OutPoint: c.FundingOutpoint})
+	if err != nil && err != chainntnfs.ErrSpendHintNotFound {
+		return false, err
+	}
+	_, unconfirmedClosed, err := a.checkChannels(map[string]uint64{}, map[string]uint64{chanPoint: uint64(hint)},
+		lspPubkey, lspID)
+	if err != nil {
+		return false, err
+	}
+	return len(unconfirmedClosed) > 0, nil
 }
 
 func (a *lspChanStateSync) recordChannelsStatus() error {
@@ -266,4 +322,24 @@ func (a *lspChanStateSync) commitHeightHint(lspPubkey string, mismatched []db.Mi
 	}
 
 	return nil
+}
+
+func (a *lspChanStateSync) findChannel(chanPoint string) (*channeldb.OpenChannel, error) {
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	channels, err := chandb.FetchAllChannels()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range channels {
+		if c.FundingOutpoint.String() == chanPoint {
+			return c, nil
+		}
+	}
+	return nil, nil
 }
