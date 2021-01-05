@@ -64,10 +64,17 @@ func (a *lspChanStateSync) resetClosedChannelChainInfo(chanPoint string, blockHe
 		QueryDisable: false,
 	}, chandb)
 
+	a.log.Infof("finding channel %v", chanPoint)
 	channel, err := a.findChannel(chanPoint)
 	if err != nil {
+		a.log.Infof("failed to find channel %v", err)
 		return err
 	}
+	if channel == nil {
+		a.log.Infof("could not find channel %v, no result", chanPoint)
+		return nil
+	}
+	a.log.Infof("resetting chain info for channel %v to block: %v", chanPoint, blockHeight)
 	return hintCache.CommitSpendHint(uint32(blockHeight),
 		chainntnfs.SpendRequest{OutPoint: channel.FundingOutpoint})
 }
@@ -86,10 +93,20 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 		QueryDisable: false,
 	}, chandb)
 
+	a.log.Infof("finding channel %v", chanPoint)
 	c, err := a.findChannel(chanPoint)
-	if err != nil || c == nil {
+	if err != nil {
+		a.log.Infof("failed to find channel %v", err)
 		return false, err
 	}
+	if c == nil {
+		a.log.Infof("could not find channel %v, no result", chanPoint)
+		return false, nil
+	}
+	if c.ChanStatus() == channeldb.ChanStatusDefault {
+		a.log.Infof("channel is not in in waiting close state: %v", chanPoint)
+	}
+	a.log.Infof("found waiting close channel: %v", chanPoint)
 
 	remotePubkey := c.IdentityPub.SerializeCompressed()
 	if hex.EncodeToString(remotePubkey) != lspNodePubkey {
