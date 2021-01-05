@@ -457,6 +457,10 @@ func AddInvoice(invoice []byte) ([]byte, error) {
 	return marshalResponse(&data.AddInvoiceReply{PaymentRequest: payreq, LspFee: fee}, err)
 }
 
+func SetNonBlockingUnconfirmedSwaps() error {
+	return getBreezApp().SwapService.SetNonBlockingUnconfirmed()
+}
+
 /*
 DecodePaymentRequest is part of the binding inteface which is delegated to breez.DecodePaymentRequest
 */

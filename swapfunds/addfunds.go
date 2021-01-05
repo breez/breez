@@ -143,6 +143,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 			SwapError:               data.SwapError(a.SwapErrorReason),
 			FundingTxID:             a.FundingTxID,
 			HoursToUnlock:           hoursToUnlock,
+			NonBlocking:             a.NonBlocking,
 		}
 	}
 
@@ -331,6 +332,27 @@ func (s *Service) onInvoice(invoice *lnrpc.Invoice) error {
 		})
 		if err != nil {
 			s.log.Criticalf("watchSettledSwapAddresses - failed to call updateSwapAddressByPaymentHash : %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) SetNonBlockingUnconfirmed() error {
+	addresses, err := s.breezDB.FetchSwapAddresses(func(addr *db.SwapAddressInfo) bool {
+		return !addr.Confirmed()
+	})
+	if err != nil {
+		return err
+	}
+	s.log.Infof("updating non blocking addresses")
+	for _, a := range addresses {
+		_, err := s.breezDB.UpdateSwapAddress(a.Address, func(address *db.SwapAddressInfo) error {
+			s.log.Infof("updating non blocking address")
+			address.NonBlocking = true
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 	}

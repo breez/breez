@@ -37,6 +37,7 @@ type SwapAddressInfo struct {
 
 	//refund
 	LastRefundTxID string
+	NonBlocking    bool
 }
 
 // Confirmed returns true if the transaction has confirmed in the past.
