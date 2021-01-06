@@ -2,12 +2,14 @@ package breez
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/channeldb/kvdb"
 	"github.com/lightningnetwork/lnd/lnwire"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -153,6 +155,19 @@ func (a *lspChanStateSync) collectChannelsStatus() (map[string]*peerSnapshot, er
 		return nil, err
 	}
 	defer cleanup()
+
+	a.log.Infof("iterating old fake ids")
+	_ = kvdb.View(chandb, func(tx kvdb.RTx) error {
+		fakeIDsBucket := tx.ReadBucket([]byte("fake-short-channel-ids"))
+		if err != nil {
+			return err
+		}
+		return fakeIDsBucket.ForEach(func(k, v []byte) error {
+			shortID := binary.BigEndian.Uint64(k)
+			a.log.Infof("fake channel id: %v", shortID, lnwire.NewShortChanIDFromInt(shortID).String())
+			return nil
+		})
+	})
 
 	// query spend hint for channel
 	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
