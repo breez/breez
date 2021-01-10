@@ -1,11 +1,14 @@
 package breez
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
 	"strings"
 
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -13,6 +16,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnwire"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 
 	breezservice "github.com/breez/breez/breez"
@@ -143,8 +147,116 @@ func (a *lspChanStateSync) recordChannelsStatus() error {
 	if err := a.commitHeightHint(channels.LSPPubkey, channels.ChanPoints); err != nil {
 		a.log.Errorf("failed to purge height hint for channels: %v error: %v", channels.ChanPoints, err)
 	}
+	for _, c := range channels.ChanPoints {
+		outpoint, err := parseOutpoint(c.ChanPoint)
+		if err != nil {
+			return err
+		}
+		hasFunding, err := a.hasActiveFundingWorkflow(outpoint)
+		if err != nil {
+			return err
+		}
+		a.log.Infof("channed point %v has funding - %v", c.ChanPoint, hasFunding)
+		if !hasFunding {
+			err = a.resetFundingFlow(outpoint, lnwire.NewShortChanIDFromInt(c.ShortChanID))
+			a.log.Infof("channed point %v reset funding, err = %v", c.ChanPoint, err)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	a.log.Infof("succesfully purged channels mismatch hints")
 	return a.breezDB.RemoveChannelMismatch()
+}
+
+func parseOutpoint(tx string) (*wire.OutPoint, error) {
+	txParts := strings.Split(tx, ":")
+	if len(txParts) != 2 {
+		return nil, errors.New("invalid outpoint")
+	}
+	hash, err := chainhash.NewHashFromStr(txParts[0])
+	if err != nil {
+		return nil, err
+	}
+	index, err := strconv.ParseUint(txParts[1], 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid outpoint: %v", err)
+	}
+	return wire.NewOutPoint(hash, uint32(index)), nil
+}
+
+func writeOutpoint(w io.Writer, o *wire.OutPoint) error {
+	scratch := make([]byte, 4)
+	if err := wire.WriteVarBytes(w, 0, o.Hash[:]); err != nil {
+		return err
+	}
+
+	binary.BigEndian.PutUint32(scratch, o.Index)
+	_, err := w.Write(scratch)
+	return err
+}
+
+func (a *lspChanStateSync) resetFundingFlow(chanPoint *wire.OutPoint,
+	shortChanID lnwire.ShortChannelID) error {
+
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	return kvdb.Update(chandb, func(tx kvdb.RwTx) error {
+
+		bucket, err := tx.CreateTopLevelBucket([]byte("channelOpeningState"))
+		if err != nil {
+			return err
+		}
+
+		var outpointBytes bytes.Buffer
+
+		if err = writeOutpoint(&outpointBytes, chanPoint); err != nil {
+			return err
+		}
+
+		scratch := make([]byte, 10)
+		binary.BigEndian.PutUint16(scratch[:2], uint16(1))
+		binary.BigEndian.PutUint64(scratch[2:], shortChanID.ToUint64())
+
+		return bucket.Put(outpointBytes.Bytes(), scratch)
+	})
+}
+
+func (a *lspChanStateSync) hasActiveFundingWorkflow(chanPoint *wire.OutPoint) (
+	bool, error) {
+
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return false, err
+	}
+	defer cleanup()
+
+	var exists bool
+	err = kvdb.View(chandb, func(tx kvdb.RTx) error {
+
+		bucket := tx.ReadBucket([]byte("channelOpeningState"))
+		if bucket == nil {
+			return nil
+		}
+
+		var outpointBytes bytes.Buffer
+		if err := writeOutpoint(&outpointBytes, chanPoint); err != nil {
+			return err
+		}
+
+		value := bucket.Get(outpointBytes.Bytes())
+		exists = value != nil
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 func (a *lspChanStateSync) collectChannelsStatus() (map[string]*peerSnapshot, error) {
