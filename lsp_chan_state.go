@@ -140,28 +140,30 @@ func (a *lspChanStateSync) recordChannelsStatus() error {
 	if err != nil {
 		return err
 	}
-	if channels == nil || len(channels.ChanPoints) == 0 {
-		return nil
-	}
-	a.log.Infof("found channels mismatch to purge: %v", channels.ChanPoints)
-	if err := a.commitHeightHint(channels.LSPPubkey, channels.ChanPoints); err != nil {
-		a.log.Errorf("failed to purge height hint for channels: %v error: %v", channels.ChanPoints, err)
-	}
-	for _, c := range channels.ChanPoints {
-		outpoint, err := parseOutpoint(c.ChanPoint)
-		if err != nil {
-			return err
+	if channels != nil && len(channels.ChanPoints) > 0 {
+		a.log.Infof("found channels mismatch to purge: %v", channels.ChanPoints)
+		if err := a.commitHeightHint(channels.LSPPubkey, channels.ChanPoints); err != nil {
+			a.log.Errorf("failed to purge height hint for channels: %v error: %v", channels.ChanPoints, err)
 		}
-		hasFunding, err := a.hasActiveFundingWorkflow(outpoint)
-		if err != nil {
-			return err
-		}
-		a.log.Infof("channed point %v has funding - %v", c.ChanPoint, hasFunding)
-		if !hasFunding {
-			err = a.resetFundingFlow(outpoint, lnwire.NewShortChanIDFromInt(c.ShortChanID))
-			a.log.Infof("channed point %v reset funding, err = %v", c.ChanPoint, err)
+	}
+
+	for _, p := range status {
+		for cp, shortID := range p.unconfirmedOpen {
+			outpoint, err := parseOutpoint(cp)
 			if err != nil {
 				return err
+			}
+			hasFunding, err := a.hasActiveFundingWorkflow(outpoint)
+			if err != nil {
+				return err
+			}
+			a.log.Infof("channed point %v has funding - %v", cp, hasFunding)
+			if !hasFunding {
+				err = a.resetFundingFlow(outpoint, lnwire.NewShortChanIDFromInt(shortID))
+				a.log.Infof("channed point %v reset funding, err = %v", cp, err)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
