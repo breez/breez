@@ -412,6 +412,7 @@ message LNURLAuth {
   string k1 = 2;
   string callback = 3;
   string host = 4;
+  bool jwt = 5;
 }
 
 message ReverseSwapRequest {

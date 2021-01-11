@@ -20,6 +20,11 @@ import (
 	"github.com/fiatjaf/go-lnurl"
 )
 
+type LoginResponse struct {
+	lnurl.LNURLResponse
+	Token string `json:"token"`
+}
+
 func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
 	if !ok {
@@ -79,17 +84,17 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 }
 
 // FinishLNURLAuth logs in using lnurl auth protocol
-func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) error {
+func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 
 	key, err := a.getLNURLAuthKey()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// hash host using master key
 	h := hmac.New(sha256.New, key.Key)
 	if _, err := h.Write([]byte(authParams.Host)); err != nil {
-		return err
+		return "", err
 	}
 	sha := h.Sum(nil)
 
@@ -106,48 +111,51 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) error {
 	linkingPrivKey, linkingPubKey := btcec.PrivKeyFromBytes(btcec.S256(), key.Key)
 	k1Decoded, err := hex.DecodeString(authParams.K1)
 	if err != nil {
-		return fmt.Errorf("failed to decode k1 challenge %w", err)
+		return "", fmt.Errorf("failed to decode k1 challenge %w", err)
 	}
 
 	// sign the challenge
 	sig, err := linkingPrivKey.Sign(k1Decoded)
 	if err != nil {
-		return fmt.Errorf("failed to sign k1 challenge %w", err)
+		return "", fmt.Errorf("failed to sign k1 challenge %w", err)
 	}
 
 	//convert to DER
 	wireSig, err := lnwire.NewSigFromSignature(sig)
 	if err != nil {
-		return fmt.Errorf("can't convert sig to wire format: %v", err)
+		return "", fmt.Errorf("can't convert sig to wire format: %v", err)
 	}
 	der := wireSig.ToSignatureBytes()
 
 	// call the service
 	url, err := url.Parse(authParams.Callback)
 	if err != nil {
-		return fmt.Errorf("invalid callback url %v", err)
+		return "", fmt.Errorf("invalid callback url %v", err)
 	}
 	query := url.Query()
 	query.Add("key", hex.EncodeToString(linkingPubKey.SerializeCompressed()))
 	query.Add("sig", hex.EncodeToString(der))
+	if authParams.Jwt {
+		query.Add("jwt", "true")
+	}
 	url.RawQuery = query.Encode()
 	resp, err := http.Get(url.String())
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// check response
-	var lnurlresp lnurl.LNURLResponse
+	var lnurlresp LoginResponse
 	err = json.NewDecoder(resp.Body).Decode(&lnurlresp)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if lnurlresp.Status == "ERROR" {
-		return errors.New(lnurlresp.Reason)
+		return "", errors.New(lnurlresp.Reason)
 	}
 
-	return nil
+	return lnurlresp.Token, nil
 }
 
 func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
