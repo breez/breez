@@ -131,7 +131,7 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 }
 
 func (a *lspChanStateSync) recordChannelsStatus() error {
-	status, err := a.collectChannelsStatus()
+	status, byOutpoint, err := a.collectChannelsStatus()
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (a *lspChanStateSync) recordChannelsStatus() error {
 	}
 
 	for _, p := range status {
-		for cp, shortID := range p.unconfirmedOpen {
+		for cp := range p.unconfirmedOpen {
 			outpoint, err := parseOutpoint(cp)
 			if err != nil {
 				return err
@@ -159,10 +159,13 @@ func (a *lspChanStateSync) recordChannelsStatus() error {
 			}
 			a.log.Infof("channed point %v has funding - %v", cp, hasFunding)
 			if !hasFunding {
-				err = a.resetFundingFlow(outpoint, lnwire.NewShortChanIDFromInt(shortID))
-				a.log.Infof("channed point %v reset funding, err = %v", cp, err)
-				if err != nil {
-					return err
+				ch, ok := byOutpoint[cp]
+				if ok {
+					err = a.resetFundingFlow(outpoint, lnwire.NewShortChanIDFromInt(ch.ShortChanID().ToUint64()))
+					a.log.Infof("channed point %v reset funding short id = %v, err = %v", cp, ch.ShortChanID().ToUint64(), err)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -261,20 +264,22 @@ func (a *lspChanStateSync) hasActiveFundingWorkflow(chanPoint *wire.OutPoint) (
 	return exists, nil
 }
 
-func (a *lspChanStateSync) collectChannelsStatus() (map[string]*peerSnapshot, error) {
+func (a *lspChanStateSync) collectChannelsStatus() (
+	map[string]*peerSnapshot, map[string]*channeldb.OpenChannel, error) {
+
 	snapshots := make(map[string]*peerSnapshot)
 
 	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer cleanup()
 
 	a.log.Infof("iterating old fake ids")
 	_ = kvdb.View(chandb, func(tx kvdb.RTx) error {
 		fakeIDsBucket := tx.ReadBucket([]byte("fake-short-channel-ids"))
-		if err != nil {
-			return err
+		if fakeIDsBucket == nil {
+			return nil
 		}
 		return fakeIDsBucket.ForEach(func(k, v []byte) error {
 			shortID := binary.BigEndian.Uint64(k)
@@ -290,9 +295,10 @@ func (a *lspChanStateSync) collectChannelsStatus() (map[string]*peerSnapshot, er
 
 	channels, err := chandb.FetchAllChannels()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	channelsMap := make(map[string]*channeldb.OpenChannel, 0)
 	for _, c := range channels {
 		if !c.ShortChanID().IsFake() {
 			continue
@@ -314,14 +320,15 @@ func (a *lspChanStateSync) collectChannelsStatus() (map[string]*peerSnapshot, er
 		if errors.Is(err, chainntnfs.ErrConfirmHintNotFound) {
 			height = 0
 		} else if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		snapshot.unconfirmedOpen[c.FundingOutpoint.String()] = uint64(height)
+		channelsMap[c.FundingOutpoint.String()] = c
 		a.log.Infof("adding unconfirmed channel to query %v fundingHeight=%v hint=%v",
 			c.FundingOutpoint.Hash.String(), c.FundingBroadcastHeight, height)
 	}
 
-	return snapshots, nil
+	return snapshots, channelsMap, nil
 }
 
 func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, lspID string) (bool, error) {
@@ -331,7 +338,7 @@ func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, 
 		return false, nil
 	}
 
-	currentSnapshots, err := a.collectChannelsStatus()
+	currentSnapshots, _, err := a.collectChannelsStatus()
 	if err != nil {
 		return false, err
 	}
