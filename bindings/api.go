@@ -268,6 +268,17 @@ func BackupFiles() (string, error) {
 }
 
 /*
+DownloadBackup is part of the binding inteface which is delegated to breez.DownloadBackup
+*/
+func DownloadBackup(nodeID string) ([]byte, error) {
+	files, err := getBreezApp().BackupManager.Download(nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return marshalResponse(&data.DownloadBackupResponse{Files: files}, nil)
+}
+
+/*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
 func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {

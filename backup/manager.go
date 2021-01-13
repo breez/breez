@@ -62,6 +62,25 @@ func (b *Manager) requestBackup(delay time.Duration) {
 	}()
 }
 
+// Download handles all the download process:
+// 1. Downloading the backed up files for a specific node id.
+func (b *Manager) Download(nodeID string) ([]string, error) {
+	b.log.Infof("Download started nodeID=%v", nodeID)
+	backupID, err := b.getBackupIdentifier()
+	if err != nil {
+		return nil, err
+	}
+	provider := b.getProvider()
+	if provider == nil {
+		return nil, ErrorNoProvider
+	}
+	files, err := provider.DownloadBackupFiles(nodeID, backupID)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
@@ -96,7 +115,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, key)
 			if err != nil {
-				return nil, errors.New("Failed to restore backup due to incorrect PIN")
+				return files, errors.New("Failed to restore backup due to incorrect PIN")
 			}
 			b.log.Infof("Restore file decrypted %v", i)
 			if err = os.Remove(files[i]); err != nil {

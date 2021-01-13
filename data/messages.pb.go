@@ -4552,6 +4552,53 @@ func (x *SweepAllCoinsTransactions) GetTransactions() map[int32]*TransactionDeta
 	return nil
 }
 
+type DownloadBackupResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Files []string `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"`
+}
+
+func (x *DownloadBackupResponse) Reset() {
+	*x = DownloadBackupResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_messages_proto_msgTypes[66]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownloadBackupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadBackupResponse) ProtoMessage() {}
+
+func (x *DownloadBackupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[66]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadBackupResponse.ProtoReflect.Descriptor instead.
+func (*DownloadBackupResponse) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *DownloadBackupResponse) GetFiles() []string {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
 var File_messages_proto protoreflect.FileDescriptor
 
 var file_messages_proto_rawDesc = []byte{
@@ -5150,7 +5197,10 @@ var file_messages_proto_rawDesc = []byte{
 	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x64,
 	0x61, 0x74, 0x61, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x44,
 	0x65, 0x74, 0x61, 0x69, 0x6c, 0x73, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38,
-	0x01, 0x2a, 0x72, 0x0a, 0x09, 0x53, 0x77, 0x61, 0x70, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x0c,
+	0x01, 0x22, 0x2e, 0x0a, 0x16, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x42, 0x61, 0x63,
+	0x6b, 0x75, 0x70, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x66,
+	0x69, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x05, 0x66, 0x69, 0x6c, 0x65,
+	0x73, 0x2a, 0x72, 0x0a, 0x09, 0x53, 0x77, 0x61, 0x70, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x0c,
 	0x0a, 0x08, 0x4e, 0x4f, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x00, 0x12, 0x16, 0x0a, 0x12,
 	0x46, 0x55, 0x4e, 0x44, 0x53, 0x5f, 0x45, 0x58, 0x43, 0x45, 0x45, 0x44, 0x5f, 0x4c, 0x49, 0x4d,
 	0x49, 0x54, 0x10, 0x01, 0x12, 0x10, 0x0a, 0x0c, 0x54, 0x58, 0x5f, 0x54, 0x4f, 0x4f, 0x5f, 0x53,
@@ -5207,7 +5257,7 @@ func file_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 69)
+var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_messages_proto_goTypes = []interface{}{
 	(SwapError)(0),                                // 0: data.SwapError
 	(Account_AccountStatus)(0),                    // 1: data.Account.AccountStatus
@@ -5279,9 +5329,10 @@ var file_messages_proto_goTypes = []interface{}{
 	(*UnspendLockupInformation)(nil),              // 67: data.UnspendLockupInformation
 	(*TransactionDetails)(nil),                    // 68: data.TransactionDetails
 	(*SweepAllCoinsTransactions)(nil),             // 69: data.SweepAllCoinsTransactions
-	nil,                                           // 70: data.LSPList.LspsEntry
-	nil,                                           // 71: data.ClaimFeeEstimates.FeesEntry
-	nil,                                           // 72: data.SweepAllCoinsTransactions.TransactionsEntry
+	(*DownloadBackupResponse)(nil),                // 70: data.DownloadBackupResponse
+	nil,                                           // 71: data.LSPList.LspsEntry
+	nil,                                           // 72: data.ClaimFeeEstimates.FeesEntry
+	nil,                                           // 73: data.SweepAllCoinsTransactions.TransactionsEntry
 }
 var file_messages_proto_depIdxs = []int32{
 	1,  // 0: data.Account.status:type_name -> data.Account.AccountStatus
@@ -5301,15 +5352,15 @@ var file_messages_proto_depIdxs = []int32{
 	0,  // 14: data.SwapAddressInfo.swapError:type_name -> data.SwapError
 	35, // 15: data.SwapAddressList.addresses:type_name -> data.SwapAddressInfo
 	46, // 16: data.Rates.rates:type_name -> data.rate
-	70, // 17: data.LSPList.lsps:type_name -> data.LSPList.LspsEntry
+	71, // 17: data.LSPList.lsps:type_name -> data.LSPList.LspsEntry
 	54, // 18: data.LNUrlResponse.withdraw:type_name -> data.LNUrlWithdraw
 	55, // 19: data.LNUrlResponse.channel:type_name -> data.LNURLChannel
 	56, // 20: data.LNUrlResponse.auth:type_name -> data.LNURLAuth
 	59, // 21: data.ReverseSwapInfo.fees:type_name -> data.ReverseSwapFees
 	62, // 22: data.ReverseSwapPaymentRequest.push_notification_details:type_name -> data.PushNotificationDetails
 	63, // 23: data.ReverseSwapPaymentStatuses.payments_status:type_name -> data.ReverseSwapPaymentStatus
-	71, // 24: data.ClaimFeeEstimates.fees:type_name -> data.ClaimFeeEstimates.FeesEntry
-	72, // 25: data.SweepAllCoinsTransactions.transactions:type_name -> data.SweepAllCoinsTransactions.TransactionsEntry
+	72, // 24: data.ClaimFeeEstimates.fees:type_name -> data.ClaimFeeEstimates.FeesEntry
+	73, // 25: data.SweepAllCoinsTransactions.transactions:type_name -> data.SweepAllCoinsTransactions.TransactionsEntry
 	48, // 26: data.LSPList.LspsEntry.value:type_name -> data.LSPInformation
 	68, // 27: data.SweepAllCoinsTransactions.TransactionsEntry.value:type_name -> data.TransactionDetails
 	49, // 28: data.BreezAPI.GetLSPList:input_type -> data.LSPListRequest
@@ -6133,6 +6184,18 @@ func file_messages_proto_init() {
 				return nil
 			}
 		}
+		file_messages_proto_msgTypes[66].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownloadBackupResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_messages_proto_msgTypes[49].OneofWrappers = []interface{}{
 		(*LNUrlResponse_Withdraw)(nil),
@@ -6145,7 +6208,7 @@ func file_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_messages_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   69,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -494,3 +494,7 @@ message SweepAllCoinsTransactions {
     int64 amt = 1;
     map<int32, TransactionDetails> transactions = 2;
 }
+
+message DownloadBackupResponse {
+  repeated string files = 1;
+}
