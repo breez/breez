@@ -52,6 +52,8 @@ type App struct {
 
 	//channel for external binding events
 	notificationsChan chan data.NotificationEvent
+
+	lspChanStateSyncer *lspChanStateSync
 }
 
 // AppServices defined the interface needed in Breez library in order to functional
@@ -155,6 +157,8 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create AccountService: %v", err)
 	}
+
+	app.lspChanStateSyncer = newLSPChanStateSync(app)
 
 	app.SwapService, err = swapfunds.NewService(
 		app.cfg,

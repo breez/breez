@@ -288,21 +288,23 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 		return nil, err
 	}
 	normalizedBalance := channelBalance.Balance
-	outgoingPending, err := a.getOutgoingPendingAmount()
-	if err != nil {
-		return nil, err
-	}
+	if normalizedBalance > 0 {
+		outgoingPending, err := a.getOutgoingPendingAmount()
+		if err != nil {
+			return nil, err
+		}
 
-	// add all pending htlcs to the balance.
-	normalizedBalance += outgoingPending
-	pendingPayments, err := a.getPendingPayments()
-	if err != nil {
-		return nil, err
-	}
-	for _, pending := range pendingPayments {
-		if pending.Type == db.SentPayment {
-			a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
-			normalizedBalance -= pending.Amount
+		// add all pending htlcs to the balance.
+		normalizedBalance += outgoingPending
+		pendingPayments, err := a.getPendingPayments()
+		if err != nil {
+			return nil, err
+		}
+		for _, pending := range pendingPayments {
+			if pending.Type == db.SentPayment {
+				a.log.Infof("removing pending amount %v", (pending.Amount + pending.Fee))
+				normalizedBalance -= pending.Amount
+			}
 		}
 	}
 

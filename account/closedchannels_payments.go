@@ -24,22 +24,24 @@ func (a *Service) syncClosedChannels() error {
 	sweepsResponse, err := walletClient.ListSweeps(context.Background(),
 		&walletrpc.ListSweepsRequest{Verbose: true})
 	if err != nil {
-		return err
+		a.log.Errorf("failed to list sweeps %v", err)
 	}
 
 	closingToSweeps := make(map[string]string)
-	txDetails := sweepsResponse.Sweeps.(*walletrpc.ListSweepsResponse_TransactionDetails)
-	if txDetails != nil {
-		for _, s := range txDetails.TransactionDetails.Transactions {
-			var tx wire.MsgTx
-			rawTx, _ := hex.DecodeString(s.RawTxHex)
-			if err = tx.Deserialize(bytes.NewReader(rawTx)); err != nil {
-				return err
-			}
-			for _, txIn := range tx.TxIn {
-				a.log.Infof("syncClosedChannels: got sweep tx: %v previousOutpoint: ",
-					tx.TxHash().String(), tx.TxHash().String())
-				closingToSweeps[txIn.PreviousOutPoint.Hash.String()] = tx.TxHash().String()
+	if sweepsResponse != nil {
+		txDetails := sweepsResponse.Sweeps.(*walletrpc.ListSweepsResponse_TransactionDetails)
+		if txDetails != nil {
+			for _, s := range txDetails.TransactionDetails.Transactions {
+				var tx wire.MsgTx
+				rawTx, _ := hex.DecodeString(s.RawTxHex)
+				if err = tx.Deserialize(bytes.NewReader(rawTx)); err != nil {
+					return err
+				}
+				for _, txIn := range tx.TxIn {
+					a.log.Infof("syncClosedChannels: got sweep tx: %v previousOutpoint: ",
+						tx.TxHash().String(), tx.TxHash().String())
+					closingToSweeps[txIn.PreviousOutPoint.Hash.String()] = tx.TxHash().String()
+				}
 			}
 		}
 	}

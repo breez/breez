@@ -177,6 +177,11 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	return a.sendPayment(hashStr, nil, req)
 }
 
+func (a *Service) GetMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
+	a.waitReadyForPayment()
+	return a.getMaxAmount(destination, routeHints)
+}
+
 func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})

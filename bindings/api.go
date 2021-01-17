@@ -268,6 +268,17 @@ func BackupFiles() (string, error) {
 }
 
 /*
+DownloadBackup is part of the binding inteface which is delegated to breez.DownloadBackup
+*/
+func DownloadBackup(nodeID string) ([]byte, error) {
+	files, err := getBreezApp().BackupManager.Download(nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return marshalResponse(&data.DownloadBackupResponse{Files: files}, nil)
+}
+
+/*
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
 func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
@@ -455,6 +466,10 @@ func AddInvoice(invoice []byte) ([]byte, error) {
 	proto.Unmarshal(invoice, decodedRequest)
 	payreq, fee, err := getBreezApp().AccountService.AddInvoice(decodedRequest)
 	return marshalResponse(&data.AddInvoiceReply{PaymentRequest: payreq, LspFee: fee}, err)
+}
+
+func SetNonBlockingUnconfirmedSwaps() error {
+	return getBreezApp().SwapService.SetNonBlockingUnconfirmed()
 }
 
 /*
@@ -701,6 +716,32 @@ func ConnectToLnurl(lnurl string) error {
 	return getBreezApp().AccountService.OpenLnurlChannel(lnurl)
 }
 
+func SyncLSPChannels(request []byte) ([]byte, error) {
+	var s data.SyncLSPChannelsRequest
+	if err := proto.Unmarshal(request, &s); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().SyncLSPChannels(&s))
+}
+
+func CheckLSPClosedChannelMismatch(request []byte) ([]byte, error) {
+	var s data.CheckLSPClosedChannelMismatchRequest
+	if err := proto.Unmarshal(request, &s); err != nil {
+		return nil, err
+	}
+
+	return marshalResponse(getBreezApp().CheckLSPClosedChannelMismatch(&s))
+}
+
+func ResetClosedChannelChainInfo(request []byte) ([]byte, error) {
+	var r data.ResetClosedChannelChainInfoRequest
+	if err := proto.Unmarshal(request, &r); err != nil {
+		return nil, err
+	}
+
+	return marshalResponse(getBreezApp().ResetClosedChannelChainInfo(&r))
+}
+
 func ConnectDirectToLnurl(channel []byte) error {
 	var c data.LNURLChannel
 	if err := proto.Unmarshal(channel, &c); err != nil {
@@ -713,10 +754,10 @@ func FetchLnurl(lnurl string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
 }
 
-func FinishLNURLAuth(request []byte) error {
+func FinishLNURLAuth(request []byte) (string, error) {
 	var authData data.LNURLAuth
 	if err := proto.Unmarshal(request, &authData); err != nil {
-		return err
+		return "", err
 	}
 	return getBreezApp().AccountService.FinishLNURLAuth(&authData)
 }
@@ -730,7 +771,7 @@ func NewReverseSwap(request []byte) (string, error) {
 	if err := proto.Unmarshal(request, &swapRequest); err != nil {
 		return "", err
 	}
-	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.Address)
+	h, err := getBreezApp().SwapService.NewReverseSwap(swapRequest.Amount, swapRequest.FeesHash, swapRequest.Address)
 	if err != nil {
 		var badRequest *boltz.BadRequestError
 		if errors.As(err, &badRequest) {
@@ -745,15 +786,28 @@ func NewReverseSwap(request []byte) (string, error) {
 	return h, err
 }
 
+func MaxReverseSwapAmount() (int64, error) {
+	pubKey, err := boltz.GetNodePubkey()
+	if err != nil {
+		return 0, err
+	}
+	v, err := getBreezApp().AccountService.GetMaxAmount(pubKey, nil)
+	if err != nil {
+		return 0, err
+	}
+	return int64(v) / 1000, nil
+}
+
 func ReverseSwapInfo() ([]byte, error) {
 	rsi, err := boltz.GetReverseSwapInfo()
 	if err != nil {
 		return nil, err
 	}
 	return proto.Marshal(&data.ReverseSwapInfo{
-		Min: rsi.Min, Max: rsi.Max, Fees: &data.ReverseSwapFees{
+		Min: rsi.Min, Max: rsi.Max,
+		Fees: &data.ReverseSwapFees{
 			Percentage: rsi.Fees.Percentage, Lockup: rsi.Fees.Lockup, Claim: rsi.Fees.Claim},
-	})
+		FeesHash: rsi.FeesHash})
 }
 
 func SetReverseSwapClaimFee(request []byte) error {

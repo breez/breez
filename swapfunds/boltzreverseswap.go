@@ -304,7 +304,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	return nil
 }
 
-func (s *Service) NewReverseSwap(amt int64, claimAddress string) (string, error) {
+func (s *Service) NewReverseSwap(amt int64, feesHash, claimAddress string) (string, error) {
 	lnClient := s.daemonAPI.APIClient()
 	if lnClient == nil {
 		return "", errors.New("daemon is not ready")
@@ -314,7 +314,7 @@ func (s *Service) NewReverseSwap(amt int64, claimAddress string) (string, error)
 		return "", fmt.Errorf("lnClient.GetInfo: %w", err)
 	}
 
-	r, err := boltz.NewReverseSwap(btcutil.Amount(amt))
+	r, err := boltz.NewReverseSwap(btcutil.Amount(amt), feesHash)
 	if err != nil {
 		s.log.Errorf("boltz.NewReverseSwap(%v): %v", amt, err)
 		return "", fmt.Errorf("boltz.NewReverseSwap(%v): %w", amt, err)

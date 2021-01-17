@@ -1,10 +1,12 @@
 package backup
 
 import (
+	"archive/zip"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,6 +16,8 @@ import (
 
 	"github.com/breez/breez/data"
 )
+
+const backupFileName = "backup.zip"
 
 var (
 	backupDelay     = time.Duration(time.Second * 2)
@@ -58,6 +62,25 @@ func (b *Manager) requestBackup(delay time.Duration) {
 	}()
 }
 
+// Download handles all the download process:
+// 1. Downloading the backed up files for a specific node id.
+func (b *Manager) Download(nodeID string) ([]string, error) {
+	b.log.Infof("Download started nodeID=%v", nodeID)
+	backupID, err := b.getBackupIdentifier()
+	if err != nil {
+		return nil, err
+	}
+	provider := b.getProvider()
+	if provider == nil {
+		return nil, ErrorNoProvider
+	}
+	files, err := provider.DownloadBackupFiles(nodeID, backupID)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // Restore handles all the restoring process:
 // 1. Downloading the backed up files for a specific node id.
 // 2. Put the backed up files in the right place according to the configuration
@@ -76,6 +99,11 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 		return nil, err
 	}
 	b.log.Infof("Download files completed %v", len(files))
+	if len(files) == 1 && path.Base(files[0]) == backupFileName {
+		if files, err = uncompressFiles(files[0]); err != nil {
+			return nil, err
+		}
+	}
 	if len(files) != 3 {
 		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
 	}
@@ -87,7 +115,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, key)
 			if err != nil {
-				return nil, errors.New("Failed to restore backup due to incorrect PIN")
+				return files, errors.New("Failed to restore backup due to incorrect PIN")
 			}
 			b.log.Infof("Restore file decrypted %v", i)
 			if err = os.Remove(files[i]); err != nil {
@@ -246,7 +274,14 @@ func (b *Manager) Start() error {
 					}
 				}
 
-				accountName, err := provider.UploadBackupFiles(paths, nodeID, encryptionType)
+				// Zip files
+				compressedFile := path.Join(path.Dir(paths[0]), backupFileName)
+				if err := b.compressFiles(paths, compressedFile); err != nil {
+					b.log.Infof("failed to compress backup files", err)
+					continue
+				}
+
+				accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
 				if err != nil {
 					for _, p := range paths {
 						_ = os.Remove(p)
@@ -269,6 +304,69 @@ func (b *Manager) Start() error {
 	b.backupRequestChan <- struct{}{}
 
 	return nil
+}
+
+func (b *Manager) compressFiles(paths []string, dest string) error {
+	destFile, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	w := zip.NewWriter(destFile)
+	for _, p := range paths {
+		f, err := w.Create(path.Base(p))
+		if err != nil {
+			return err
+		}
+		file, err := os.Open(p)
+		if err != nil {
+			b.log.Infof("failed to open backup file %v", err)
+			return err
+		}
+		defer file.Close()
+		if _, err := io.Copy(f, file); err != nil {
+			return err
+		}
+	}
+
+	// Make sure to check the error on Close.
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func uncompressFiles(zipFile string) ([]string, error) {
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	destDir := path.Dir(zipFile)
+	var destFiles []string
+	for _, f := range r.File {
+		rc, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+
+		destFile, err := os.OpenFile(path.Join(destDir, f.Name), os.O_RDWR|os.O_CREATE, 0600)
+		if err != nil {
+			return nil, err
+		}
+		defer destFile.Close()
+		if _, err := io.Copy(destFile, rc); err != nil {
+			return nil, err
+		}
+		destFiles = append(destFiles, destFile.Name())
+		rc.Close()
+	}
+
+	return destFiles, nil
 }
 
 // SetEncryptionKey sets the key which should be used to encrypt the backup files
