@@ -117,6 +117,8 @@ github.com/breez/lnd v0.11.0-beta.rc4.0.20201001144419-a922fc5b6f1c h1:opj2hBJq6
 github.com/breez/lnd v0.11.0-beta.rc4.0.20201001144419-a922fc5b6f1c/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20201007182711-63d4c9b6e163 h1:cXp1lAmeaZ9ezwRkRJCvg+/Gw52TzpjDQvN8TwtZ39g=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20201007182711-63d4c9b6e163/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
+github.com/breez/lnd v0.11.0-beta.rc4.0.20201203092200-6cb4ce7cb10e h1:69vyk1MCSbTkGpYpMgSQw21c66HoCyUtLZSGXSx5H+A=
+github.com/breez/lnd v0.11.0-beta.rc4.0.20201203092200-6cb4ce7cb10e/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lspd v0.0.0-20201224160157-11dc17ae2da4 h1:YC0IdlBsYGdbrx4Aehq2jghIrpkewgJZo3OC61dbFUw=
 github.com/breez/lspd v0.0.0-20201224160157-11dc17ae2da4/go.mod h1:HbICt1KpPE9dB9vFyPR37GcMkM5wTGa+WBBdPB6norg=
 github.com/breez/lspd v0.0.0-20201229143221-ea54442821ae h1:Gi8nyQEk5wVRnXDTn+y1/A7UF9zbklnhmixrFT76apw=
