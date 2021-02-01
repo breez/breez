@@ -77,6 +77,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			ClosedChannelRemoteTxID:    payment.ClosedChannelRemoteTxID,
 			ClosedChannelSweepTxID:     payment.ClosedChannelSweepTxID,
 			IsKeySend:                  payment.IsKeySend,
+			Group:                      payment.Group,
 		}
 		if payment.Type != db.ClosedChannelPayment {
 			paymentItem.InvoiceMemo = &data.InvoiceMemo{
@@ -144,7 +145,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64) (string, error) {
+func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64, group string) (string, error) {
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
@@ -172,6 +173,11 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	hashStr := hex.EncodeToString(hash[:])
 	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
 		return "", err
+	}
+	if group != "" {
+		if err := a.breezDB.SavePaymentGroupMessage(hashStr, []byte(group)); err != nil {
+			return "", err
+		}
 	}
 
 	return a.sendPayment(hashStr, nil, req)
@@ -928,6 +934,13 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		message, err := a.breezDB.FetchTipMessage(paymentItem.PaymentHash)
 		if err != nil {
 			return err
+		}
+		group, err := a.breezDB.FetchPaymentGroupMessage(paymentItem.PaymentHash)
+		if err != nil {
+			return err
+		}
+		if group != nil {
+			paymentData.Group = string(group)
 		}
 		// pathLength := len(paymentItem.Path)
 		// if pathLength > 0 {

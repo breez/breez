@@ -441,7 +441,7 @@ func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 
 	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(
-		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount)
+		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount, decodedRequest.Group)
 
 	if err != nil {
 		errorStr = err.Error()

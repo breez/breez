@@ -53,6 +53,7 @@ type PaymentInfo struct {
 	PendingFull                bool
 	Preimage                   string
 	IsKeySend                  bool
+	Group                      string
 
 	//For closed channels
 	ClosedChannelPoint      string
@@ -260,6 +261,16 @@ func (db *DB) SaveTipMessage(payReqHash string, message []byte) error {
 // FetchTipMessage fetches a a tip message related to payment hash
 func (db *DB) FetchTipMessage(payReqHash string) ([]byte, error) {
 	return db.fetchItem([]byte(keysendTipMessagBucket), []byte(payReqHash))
+}
+
+// SaveGroup saves a tip message related to payment hash into the database
+func (db *DB) SavePaymentGroupMessage(payReqHash string, message []byte) error {
+	return db.saveItem([]byte(paymentGroupBucket), []byte(payReqHash), message)
+}
+
+// FetchGroup fetches a a tip message related to payment hash
+func (db *DB) FetchPaymentGroupMessage(payReqHash string) ([]byte, error) {
+	return db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash))
 }
 
 func serializePaymentInfo(s *PaymentInfo) ([]byte, error) {

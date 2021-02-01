@@ -16,6 +16,7 @@ const (
 	versionBucket          = "version"
 	incomingPayReqBucket   = "paymentRequests"
 	keysendTipMessagBucket = "keysendTipMessagBucket"
+	paymentGroupBucket     = "paymentGroupBucket"
 
 	//add funds
 	addressesBucket           = "subswap_addresses"
@@ -101,6 +102,10 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(keysendTipMessagBucket))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(paymentGroupBucket))
 		if err != nil {
 			return err
 		}

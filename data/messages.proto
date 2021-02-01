@@ -113,7 +113,8 @@ message Payment {
     bool isKeySend = 18;
     bool PendingFull = 19;
     string closedChannelRemoteTxID = 20;
-	  string closedChannelSweepTxID = 21;
+    string closedChannelSweepTxID = 21;
+    string group = 22;
 }
 
 message PaymentsList {
@@ -139,6 +140,7 @@ message SpontaneousPaymentRequest {
     int64 amount = 1;
     string destNode = 2;
     string description = 3;
+    string group = 4;
 }
 
 message InvoiceMemo {
