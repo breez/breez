@@ -792,7 +792,14 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 				}
 			}
 		}
-		for _, p := range pendingByHash {
+		for h, p := range pendingByHash {
+			group, err := a.breezDB.FetchPaymentGroupMessage(h)
+			if err != nil {
+				return nil, err
+			}
+			if group != nil {
+				p.Group = string(group)
+			}
 			payments = append(payments, p)
 		}
 	}
