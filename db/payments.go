@@ -53,7 +53,8 @@ type PaymentInfo struct {
 	PendingFull                bool
 	Preimage                   string
 	IsKeySend                  bool
-	Group                      string
+	GroupKey                   string
+	GroupName                  string
 
 	//For closed channels
 	ClosedChannelPoint      string
@@ -263,14 +264,28 @@ func (db *DB) FetchTipMessage(payReqHash string) ([]byte, error) {
 	return db.fetchItem([]byte(keysendTipMessagBucket), []byte(payReqHash))
 }
 
-// SaveGroup saves a tip message related to payment hash into the database
-func (db *DB) SavePaymentGroupMessage(payReqHash string, message []byte) error {
-	return db.saveItem([]byte(paymentGroupBucket), []byte(payReqHash), message)
+// SavePaymentGroup saves a tip message related to payment hash into the database
+func (db *DB) SavePaymentGroup(payReqHash string, groupKey, groupName []byte) error {
+	if err := db.saveItem([]byte(paymentGroupBucket), []byte(payReqHash+"-key"), groupKey); err != nil {
+		return err
+	}
+	if err := db.saveItem([]byte(paymentGroupBucket), []byte(payReqHash+"-name"), groupName); err != nil {
+		return err
+	}
+	return nil
 }
 
-// FetchGroup fetches a a tip message related to payment hash
-func (db *DB) FetchPaymentGroupMessage(payReqHash string) ([]byte, error) {
-	return db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash))
+// FetchPaymentGroup fetches a a tip message related to payment hash
+func (db *DB) FetchPaymentGroup(payReqHash string) ([]byte, []byte, error) {
+	groupKey, err := db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash+"-key"))
+	if err != nil {
+		return nil, nil, err
+	}
+	groupName, err := db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash+"-key"))
+	if err != nil {
+		return nil, nil, err
+	}
+	return groupKey, groupName, nil
 }
 
 func serializePaymentInfo(s *PaymentInfo) ([]byte, error) {

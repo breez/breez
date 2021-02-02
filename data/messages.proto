@@ -107,14 +107,15 @@ message Payment {
     int64 fee = 12;
     string preimage = 13;
     string closedChannelPoint = 14;
-	  bool isChannelPending = 15;
+	   bool isChannelPending = 15;
     bool isChannelCloseConfimed = 16;
-	  string closedChannelTxID = 17;
+	   string closedChannelTxID = 17;
     bool isKeySend = 18;
     bool PendingFull = 19;
     string closedChannelRemoteTxID = 20;
     string closedChannelSweepTxID = 21;
-    string group = 22;
+    string groupKey = 22;
+    string groupName = 23;
 }
 
 message PaymentsList {
@@ -140,7 +141,8 @@ message SpontaneousPaymentRequest {
     int64 amount = 1;
     string destNode = 2;
     string description = 3;
-    string group = 4;
+    string groupKey = 4;
+    string groupName = 5;
 }
 
 message InvoiceMemo {

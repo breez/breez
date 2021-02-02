@@ -77,7 +77,8 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			ClosedChannelRemoteTxID:    payment.ClosedChannelRemoteTxID,
 			ClosedChannelSweepTxID:     payment.ClosedChannelSweepTxID,
 			IsKeySend:                  payment.IsKeySend,
-			Group:                      payment.Group,
+			GroupKey:                   payment.GroupKey,
+			GroupName:                  payment.GroupName,
 		}
 		if payment.Type != db.ClosedChannelPayment {
 			paymentItem.InvoiceMemo = &data.InvoiceMemo{
@@ -145,7 +146,9 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string, description string, amount int64, group string) (string, error) {
+func (a *Service) SendSpontaneousPayment(destNode string,
+	description string, amount int64, groupKey, groupName string) (string, error) {
+
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
@@ -174,8 +177,8 @@ func (a *Service) SendSpontaneousPayment(destNode string, description string, am
 	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
 		return "", err
 	}
-	if group != "" {
-		if err := a.breezDB.SavePaymentGroupMessage(hashStr, []byte(group)); err != nil {
+	if groupKey != "" {
+		if err := a.breezDB.SavePaymentGroup(hashStr, []byte(groupKey), []byte(groupName)); err != nil {
 			return "", err
 		}
 	}
@@ -793,12 +796,15 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 			}
 		}
 		for h, p := range pendingByHash {
-			group, err := a.breezDB.FetchPaymentGroupMessage(h)
+			groupKey, groupName, err := a.breezDB.FetchPaymentGroup(h)
 			if err != nil {
 				return nil, err
 			}
-			if group != nil {
-				p.Group = string(group)
+			if groupKey != nil {
+				p.GroupKey = string(groupKey)
+			}
+			if groupName != nil {
+				p.GroupName = string(groupName)
 			}
 			payments = append(payments, p)
 		}
@@ -942,12 +948,15 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		if err != nil {
 			return err
 		}
-		group, err := a.breezDB.FetchPaymentGroupMessage(paymentItem.PaymentHash)
+		groupKey, groupName, err := a.breezDB.FetchPaymentGroup(paymentItem.PaymentHash)
 		if err != nil {
 			return err
 		}
-		if group != nil {
-			paymentData.Group = string(group)
+		if groupKey != nil {
+			paymentData.GroupKey = string(groupKey)
+		}
+		if groupName != nil {
+			paymentData.GroupName = string(groupName)
 		}
 		// pathLength := len(paymentItem.Path)
 		// if pathLength > 0 {
