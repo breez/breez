@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 
 	bolt "github.com/coreos/bbolt"
 )
@@ -67,19 +68,23 @@ type PaymentInfo struct {
 /*
 AddAccountPayment adds a payment to the database
 */
-func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, sentTime uint64) error {
+func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, sentTime uint64) (bool, error) {
 	db.log.Infof("addAccountPayment hash = %v", accPayment.PaymentHash)
-	return db.Update(func(tx *bolt.Tx) error {
-		id, err := db.addPayment(accPayment, tx, 0)
+	var paymentExists bool
+	err := db.Update(func(tx *bolt.Tx) error {
+		var err error
+		paymentExists, err = db.hasAccountPayment(accPayment, tx)
+		if err != nil {
+			return err
+		}
+		if paymentExists {
+			return nil
+		}
+		_, err = db.addPayment(accPayment, tx, 0)
 		if err != nil {
 			return err
 		}
 		b := tx.Bucket([]byte(paymentsBucket))
-
-		hashB := tx.Bucket([]byte(paymentsHashBucket))
-		if err := hashB.Put([]byte(accPayment.PaymentHash), itob(id)); err != nil {
-			return err
-		}
 
 		syncInfoBucket := b.Bucket([]byte(paymentsSyncInfoBucket))
 
@@ -105,6 +110,7 @@ func (db *DB) AddAccountPayment(accPayment *PaymentInfo, receivedIndex uint64, s
 		}
 		return nil
 	})
+	return paymentExists, err
 }
 
 // AddChannelClosedPayment adds a payment that reflects channel close to the db.
@@ -161,6 +167,17 @@ func (db *DB) fetchClosedChannelPayment(tx *bolt.Tx, channelPoint []byte) (payme
 	return
 }
 
+func (db *DB) hasAccountPayment(accPayment *PaymentInfo, tx *bolt.Tx) (bool, error) {
+	if accPayment.PaymentHash == "" {
+		return false, errors.New("account payment must have payment hash")
+	}
+	hashB := tx.Bucket([]byte(paymentsHashBucket))
+	if oldID := hashB.Get([]byte(accPayment.PaymentHash)); oldID != nil {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (db *DB) addPayment(accPayment *PaymentInfo, tx *bolt.Tx, existingID uint64) (uint64, error) {
 	paymentBuf, err := serializePaymentInfo(accPayment)
 	if err != nil {
@@ -171,11 +188,17 @@ func (db *DB) addPayment(accPayment *PaymentInfo, tx *bolt.Tx, existingID uint64
 
 	id := existingID
 	if id == 0 {
-		nextSeq, err := b.NextSequence()
-		if err != nil {
-			return 0, err
+		hashB := tx.Bucket([]byte(paymentsHashBucket))
+		if oldID := hashB.Get([]byte(accPayment.PaymentHash)); oldID != nil {
+			id = btoi(oldID)
 		}
-		id = nextSeq
+		if id == 0 {
+			nextSeq, err := b.NextSequence()
+			if err != nil {
+				return 0, err
+			}
+			id = nextSeq
+		}
 	}
 
 	//write the payment value with the next sequence as key
@@ -281,7 +304,7 @@ func (db *DB) FetchPaymentGroup(payReqHash string) ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	groupName, err := db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash+"-key"))
+	groupName, err := db.fetchItem([]byte(paymentGroupBucket), []byte(payReqHash+"-name"))
 	if err != nil {
 		return nil, nil, err
 	}

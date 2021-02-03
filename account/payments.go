@@ -730,7 +730,7 @@ func (a *Service) syncSentPayments() error {
 	}
 	lastPaymentTime, _ := a.breezDB.FetchPaymentsSyncInfo()
 	for _, paymentItem := range lightningPayments.Payments {
-		if paymentItem.CreationDate <= lastPaymentTime {
+		if paymentItem.CreationDate <= lastPaymentTime-60 {
 			continue
 		}
 		a.log.Infof("syncSentPayments adding an outgoing payment")
@@ -975,9 +975,11 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		paymentData.Fee += paymentItem.Value - swap.OnchainAmount + swap.ClaimFee
 	}
 
-	err = a.breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
-	a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_PAYMENT_SENT})
-	a.onAccountChanged()
+	skipped, err := a.breezDB.AddAccountPayment(paymentData, 0, uint64(paymentItem.CreationDate))
+	if !skipped {
+		a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_PAYMENT_SENT})
+		a.onAccountChanged()
+	}
 	return err
 }
 
@@ -1029,7 +1031,7 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 		}
 	}
 
-	err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
+	_, err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
 	if err != nil {
 		a.log.Criticalf("Unable to add reveived payment : %v", err)
 		return err
