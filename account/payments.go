@@ -147,12 +147,17 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 	}
 	a.log.Infof("sendPaymentForRequest: before sending payment...")
 
+	maxParts := uint32(20)
+	if decodedReq.Features[uint32(lnwire.MPPOptional)] == nil &&
+		decodedReq.Features[uint32(lnwire.MPPRequired)] == nil {
+		maxParts = 1
+	}
 	// At this stage we are ready to send asynchronously the payment through the daemon.
 	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
 		TimeoutSeconds: 60,
 		FeeLimitSat:    math.MaxInt64,
-		MaxParts:       20,
+		MaxParts:       maxParts,
 		Amt:            amountSatoshi,
 		LastHopPubkey:  lastHopPubkey,
 	})
