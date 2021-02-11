@@ -213,6 +213,9 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 	}
 	var totalMax uint64
 	for _, c := range channels.Channels {
+		if c.LocalBalance == 0 {
+			continue
+		}
 		a.log.Infof("cid: %v, active: %v, balance: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, c.LocalConstraints.ChanReserveSat)
 		_, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
 			PubKey:         destination,
@@ -227,7 +230,12 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 			var max uint64
 			_, _ = fmt.Sscanf(errStatus.Message(), "insufficient local balance. Try to lower the amount to: %d mSAT", &max)
 			a.log.Infof("max: %v", max)
-			totalMax += max
+			if max <= uint64(c.LocalBalance) {
+				a.log.Infof("Adding: %v+%v -> %v", totalMax, max, totalMax+max)
+				totalMax += max
+			} else {
+				a.log.Infof("Not adding: %v to totalMax!!!", max)
+			}
 		}
 	}
 	return totalMax, nil
