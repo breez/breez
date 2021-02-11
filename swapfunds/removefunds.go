@@ -1,58 +1,8 @@
 package swapfunds
 
 import (
-	"context"
-
 	breezservice "github.com/breez/breez/breez"
-	"github.com/breez/breez/data"
-	"github.com/lightningnetwork/lnd/lnrpc"
 )
-
-/*
-RemoveFund transfers the user funds from the chanel to a supplied on-chain address
-It is executed in three steps:
-1. Send the breez server an address and an amount and get a corresponding payment request
-2. Pay the payment request.
-3. Redeem the removed funds from the server
-*/
-func (s *Service) RemoveFund(amount int64, address string) (*data.RemoveFundReply, error) {
-	c, ctx, cancel := s.breezAPI.NewFundManager()
-	defer cancel()
-	reply, err := c.RemoveFund(ctx, &breezservice.RemoveFundRequest{Address: address, Amount: amount})
-	if err != nil {
-		s.log.Errorf("RemoveFund: server endpoint call failed: %v", err)
-		return nil, err
-	}
-	if reply.ErrorMessage != "" {
-		return &data.RemoveFundReply{ErrorMessage: reply.ErrorMessage}, nil
-	}
-
-	s.log.Infof("RemoveFunds: got payment request: %v", reply.PaymentRequest)
-	lnclient := s.daemonAPI.APIClient()
-	payreq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: reply.PaymentRequest})
-	if err != nil {
-		s.log.Errorf("DecodePayReq of server response failed: %v", err)
-		return nil, err
-	}
-
-	//mark this payment request as redeemable
-	s.breezDB.AddRedeemablePaymentHash(payreq.PaymentHash)
-
-	s.log.Infof("RemoveFunds: Sending payment...")
-	_, err = s.sendPayment(reply.PaymentRequest, 0)
-	if err != nil {
-		s.log.Errorf("SendPaymentForRequest failed: %v", err)
-		return nil, err
-	}
-	s.log.Infof("SendPaymentForRequest finished successfully")
-	txID, err := s.redeemRemovedFundsForHash(payreq.PaymentHash)
-	if err != nil {
-		s.log.Errorf("RedeemRemovedFunds failed: %v", err)
-		return nil, err
-	}
-	s.log.Infof("RemoveFunds finished successfully")
-	return &data.RemoveFundReply{ErrorMessage: "", Txid: txID}, err
-}
 
 func (s *Service) redeemAllRemovedFunds() error {
 	s.log.Infof("redeemAllRemovedFunds")

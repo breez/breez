@@ -48,6 +48,7 @@ service Swapper {
   rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
   rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
   rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
+  rpc GetReverseRoutingNode (GetReverseRoutingNodeRequest) returns (GetReverseRoutingNodeReply) {}
 }
 
 service CTP {
@@ -332,4 +333,9 @@ message PushTxNotificationResponse {
 message BreezAppVersionsRequest {}
 message BreezAppVersionsReply {
   repeated string version = 1;
+}
+
+message GetReverseRoutingNodeRequest {}
+message GetReverseRoutingNodeReply {
+  bytes node_id = 1;
 }

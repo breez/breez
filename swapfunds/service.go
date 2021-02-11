@@ -14,6 +14,7 @@ func (s *Service) Start() error {
 
 	s.wg.Add(1)
 	go s.watchDaemonEvents()
+	go s.ReverseRoutingNode()
 
 	return nil
 }

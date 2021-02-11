@@ -20,6 +20,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
+	"github.com/lightningnetwork/lnd/zpay32"
 )
 
 func (s *Service) lockupOutScript(lockupAddress string, rawTx []byte) ([]byte, error) {
@@ -304,6 +305,22 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 	return nil
 }
 
+func (s *Service) ReverseRoutingNode() []byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.reverseRoutingNode != nil {
+		return s.reverseRoutingNode
+	}
+	c, ctx, cancel := s.breezAPI.NewSwapper()
+	defer cancel()
+	r, err := c.GetReverseRoutingNode(ctx, &breezservice.GetReverseRoutingNodeRequest{})
+	if err != nil {
+		s.log.Errorf("c.GetReverseRoutingNode(): %v", err)
+	}
+	s.reverseRoutingNode = r.NodeId
+	return s.reverseRoutingNode
+}
+
 func (s *Service) NewReverseSwap(amt int64, feesHash, claimAddress string) (string, error) {
 	lnClient := s.daemonAPI.APIClient()
 	if lnClient == nil {
@@ -313,8 +330,7 @@ func (s *Service) NewReverseSwap(amt int64, feesHash, claimAddress string) (stri
 	if err != nil {
 		return "", fmt.Errorf("lnClient.GetInfo: %w", err)
 	}
-
-	r, err := boltz.NewReverseSwap(btcutil.Amount(amt), feesHash)
+	r, err := boltz.NewReverseSwap(btcutil.Amount(amt), feesHash, s.ReverseRoutingNode())
 	if err != nil {
 		s.log.Errorf("boltz.NewReverseSwap(%v): %v", amt, err)
 		return "", fmt.Errorf("boltz.NewReverseSwap(%v): %w", amt, err)
@@ -382,7 +398,12 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	if err != nil {
 		s.log.Errorf("s.remoteSubscribeLockupNotification(%v, %v, %v, %v, %v, %v): %v", deviceID, title, body, rs.Id, rs.LockupAddress, rs.StartBlockHeight, err)
 	}
-	_, err = s.sendPayment(rs.Invoice, rs.LnAmount)
+	var nodeID []byte
+	payReq, err := zpay32.Decode(rs.Invoice, s.chainParams)
+	if err == nil && payReq != nil && len(payReq.RouteHints) >= 1 && len(payReq.RouteHints[0]) == 1 {
+		nodeID = payReq.RouteHints[0][0].NodeID.SerializeCompressed()
+	}
+	_, err = s.sendPayment(rs.Invoice, rs.LnAmount, nodeID)
 	if err != nil {
 		return err
 	}

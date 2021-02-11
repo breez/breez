@@ -144,6 +144,11 @@ func (c *Client) Rates() (*data.Rates, error) {
 //LSPList returns the list of the LSPs
 func (c *Client) LSPList() (*data.LSPList, error) {
 	con := c.getBreezClientConnection()
+	c.Lock()
+	defer c.Unlock()
+	if c.lspList != nil {
+		return c.lspList, nil
+	}
 	ctx, cancel := context.WithTimeout(
 		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
 		endpointTimeout*time.Second,
@@ -172,7 +177,8 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 			LspPubkey:           l.LspPubkey,
 		}
 	}
-	return &data.LSPList{Lsps: r}, nil
+	c.lspList = &data.LSPList{Lsps: r}
+	return c.lspList, nil
 }
 
 func dial(serverURL string, noTLS bool) (*grpc.ClientConn, error) {

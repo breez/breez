@@ -116,10 +116,22 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 }
 
 /*
+SendPaymentForRequestV2 send the payment according to the details specified in the bolt 11 payment request.
+If the payment was failed an error is returned
+*/
+func (a *Service) SendPaymentForRequestV2(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey)
+}
+
+/*
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil)
+}
+
+func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
@@ -142,6 +154,7 @@ func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int
 		FeeLimitSat:    math.MaxInt64,
 		MaxParts:       20,
 		Amt:            amountSatoshi,
+		LastHopPubkey:  lastHopPubkey,
 	})
 }
 
@@ -186,12 +199,12 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 	return a.sendPayment(hashStr, nil, req)
 }
 
-func (a *Service) GetMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
+func (a *Service) GetMaxAmount(destination string, routeHints []*lnrpc.RouteHint, lastHopPubkey []byte) (uint64, error) {
 	a.waitReadyForPayment()
-	return a.getMaxAmount(destination, routeHints)
+	return a.getMaxAmount(destination, routeHints, lastHopPubkey)
 }
 
-func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint) (uint64, error) {
+func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint, lastHopPubkey []byte) (uint64, error) {
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
@@ -206,6 +219,7 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
 			OutgoingChanId: c.ChanId,
 			RouteHints:     routeHints,
+			LastHopPubkey:  lastHopPubkey,
 		})
 		if err != nil {
 			errStatus, _ := status.FromError(err)
@@ -238,7 +252,7 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 		destination = hex.EncodeToString(sendRequest.Dest)
 		amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
 	}
-	max, err := a.getMaxAmount(destination, routeHints)
+	max, err := a.getMaxAmount(destination, routeHints, nil)
 	if err != nil {
 		a.log.Errorf("a.getMaxAmount error: %v", err)
 		return fmt.Errorf("a.getMaxAmount error: %w", err)

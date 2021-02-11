@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 
 	"github.com/breez/boltz"
@@ -23,6 +24,7 @@ import (
 	breezSync "github.com/breez/breez/sync"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
 const (
@@ -395,7 +397,7 @@ RemoveFund is part of the binding inteface which is delegated to breez.RemoveFun
 func RemoveFund(removeFundRequest []byte) ([]byte, error) {
 	request := &data.RemoveFundRequest{}
 	proto.Unmarshal(removeFundRequest, request)
-	return marshalResponse(getBreezApp().SwapService.RemoveFund(request.Amount, request.Address))
+	return nil, nil
 }
 
 func PopulateChannelPolicy() {
@@ -791,7 +793,29 @@ func MaxReverseSwapAmount() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	v, err := getBreezApp().AccountService.GetMaxAmount(pubKey, nil)
+
+	var routeHints []*lnrpc.RouteHint
+	routingNode := getBreezApp().SwapService.ReverseRoutingNode()
+	if routingNode != nil {
+		if bHints, err := boltz.GetRoutingHints(routingNode); err == nil {
+
+			for _, bh := range bHints {
+				var hopHints []*lnrpc.HopHint
+				for _, hh := range bh.HopHintsList {
+					chanID, _ := strconv.ParseUint(hh.ChanID, 10, 64)
+					hopHints = append(hopHints, &lnrpc.HopHint{
+						NodeId:                    hh.NodeID,
+						ChanId:                    chanID,
+						FeeBaseMsat:               hh.FeeBaseMsat,
+						FeeProportionalMillionths: hh.FeeProportionalMillionths,
+					})
+				}
+				routeHints = append(routeHints, &lnrpc.RouteHint{HopHints: hopHints})
+			}
+		}
+	}
+
+	v, err := getBreezApp().AccountService.GetMaxAmount(pubKey, routeHints, routingNode)
 	if err != nil {
 		return 0, err
 	}

@@ -165,7 +165,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.breezDB,
 		app.ServicesClient,
 		app.lnDaemon,
-		app.AccountService.SendPaymentForRequest,
+		app.AccountService.SendPaymentForRequestV2,
 		app.AccountService.AddInvoice,
 		app.ServicesClient.LSPList,
 		app.AccountService.GetGlobalMaxReceiveLimit,

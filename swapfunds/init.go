@@ -24,7 +24,8 @@ type Service struct {
 	daemonAPI             lnnode.API
 	breezAPI              services.API
 	chainParams           *chaincfg.Params
-	sendPayment           func(payreq string, amount int64) (string, error)
+	reverseRoutingNode    []byte
+	sendPayment           func(payreq string, amount int64, lastHopPubkey []byte) (string, error)
 	addInvoice            func(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, lspFee int64, err error)
 	lspList               func() (*data.LSPList, error)
 	getGlobalReceiveLimit func() (maxReceive int64, err error)
@@ -37,7 +38,7 @@ func NewService(
 	breezDB *db.DB,
 	breezAPI services.API,
 	daemonAPI lnnode.API,
-	sendPayment func(payreq string, amount int64) (string, error),
+	sendPayment func(payreq string, amount int64, lastHopPubkey []byte) (string, error),
 	addInvoice func(invoiceRequest *data.AddInvoiceRequest) (paymentRequest string, lspFee int64, err error),
 	lspList func() (*data.LSPList, error),
 	getGlobalReceiveLimit func() (maxReceive int64, err error),

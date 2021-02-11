@@ -6,6 +6,7 @@ import (
 
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/data"
 	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
 	"google.golang.org/grpc"
@@ -32,6 +33,7 @@ type Client struct {
 	cfg        *config.Config
 	log        btclog.Logger
 	connection *grpc.ClientConn
+	lspList    *data.LSPList
 }
 
 // NewClient creates a new client struct
