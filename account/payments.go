@@ -260,7 +260,7 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 		destination = hex.EncodeToString(sendRequest.Dest)
 		amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
 	}
-	max, err := a.getMaxAmount(destination, routeHints, nil)
+	max, err := a.getMaxAmount(destination, routeHints, sendRequest.LastHopPubkey)
 	if err != nil {
 		a.log.Errorf("a.getMaxAmount error: %v", err)
 		return fmt.Errorf("a.getMaxAmount error: %w", err)
