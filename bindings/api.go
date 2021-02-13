@@ -1,6 +1,7 @@
 package bindings
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -796,9 +797,10 @@ func MaxReverseSwapAmount() (int64, error) {
 
 	var routeHints []*lnrpc.RouteHint
 	routingNode := getBreezApp().SwapService.ReverseRoutingNode()
+	Log("RoutingNode: "+hex.EncodeToString(routingNode), "SEVERE")
 	if routingNode != nil {
 		if bHints, err := boltz.GetRoutingHints(routingNode); err == nil {
-
+			Log("Bolz Routing Hints: "+fmt.Sprintf("%#v", bHints), "SEVERE")
 			for _, bh := range bHints {
 				var hopHints []*lnrpc.HopHint
 				for _, hh := range bh.HopHintsList {
