@@ -316,6 +316,7 @@ func (s *Service) ReverseRoutingNode() []byte {
 	r, err := c.GetReverseRoutingNode(ctx, &breezservice.GetReverseRoutingNodeRequest{})
 	if err != nil {
 		s.log.Errorf("c.GetReverseRoutingNode(): %v", err)
+		return nil
 	}
 	s.reverseRoutingNode = r.NodeId
 	s.log.Errorf("c.GetReverseRoutingNode() nodeID: %x", r.NodeId)
