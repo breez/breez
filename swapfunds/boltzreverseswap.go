@@ -318,6 +318,7 @@ func (s *Service) ReverseRoutingNode() []byte {
 		s.log.Errorf("c.GetReverseRoutingNode(): %v", err)
 	}
 	s.reverseRoutingNode = r.NodeId
+	s.log.Errorf("c.GetReverseRoutingNode() nodeID: %x", r.NodeId)
 	return s.reverseRoutingNode
 }
 
