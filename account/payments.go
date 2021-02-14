@@ -205,6 +205,7 @@ func (a *Service) GetMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 }
 
 func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint, lastHopPubkey []byte) (uint64, error) {
+	a.log.Infof("destination: %v, routeHints: %#v (len: %v), lastHopPubkey: %x", destination, routeHints, len(routeHints), lastHopPubkey)
 	lnclient := a.daemonAPI.APIClient()
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
