@@ -229,6 +229,16 @@ func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 	if err := os.MkdirAll(neutrinoDataDir, 0700); err != nil {
 		return "", nil, err
 	}
+	logger.Errorf("checking reset chain service")
+	_, err = os.Stat(path.Join(neutrinoDataDir, "neutrino.db.deleted"))
+	if err != nil && os.IsNotExist(err) {
+		if err := resetChainService(workingDir); err != nil {
+			logger.Errorf("failed to reset chain service %v", err)
+			return "", nil, err
+		}
+		os.Create(path.Join(neutrinoDataDir, "neutrino.db.deleted"))
+		logger.Infof("chain service had been reset")
+	}
 
 	db, err := walletdb.Create("bdb", neutrinoDB, false)
 	return neutrinoDataDir, db, err
