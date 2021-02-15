@@ -848,8 +848,8 @@ func (a *Service) getInflightPaymentsMap() (map[string]*lnrpc.Payment, error) {
 	for _, pending := range lightningPayments.Payments {
 		if pending.Status == lnrpc.Payment_IN_FLIGHT {
 			a.log.Infof("found inflight payment %v", pending.PaymentHash)
-			mar, _ := json.Marshal(pending)
-			a.log.Infof(string(mar))
+			//mar, _ := json.Marshal(pending)
+			//a.log.Infof(string(mar))
 			payments[pending.PaymentHash] = pending
 		}
 	}
