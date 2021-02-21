@@ -143,6 +143,7 @@ message SpontaneousPaymentRequest {
     string description = 3;
     string groupKey = 4;
     string groupName = 5;
+    int64 feeLimitMsat = 6;
 }
 
 message InvoiceMemo {

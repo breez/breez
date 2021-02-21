@@ -160,17 +160,21 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(destNode string,
-	description string, amount int64, groupKey, groupName string) (string, error) {
+	description string, amount int64, feeLimitMSat int64, groupKey, groupName string) (string, error) {
 
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
 		return "", err
 	}
+	feeLimit := feeLimitMSat
+	if feeLimit == 0 {
+		feeLimit = math.MaxInt64
+	}
 	req := &routerrpc.SendPaymentRequest{
 		Dest:              destBytes,
 		Amt:               amount,
 		TimeoutSeconds:    60,
-		FeeLimitSat:       math.MaxInt64,
+		FeeLimitMsat:      feeLimit,
 		MaxParts:          20,
 		DestCustomRecords: make(map[uint64][]byte),
 	}
