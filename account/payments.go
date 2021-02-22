@@ -980,6 +980,15 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		if err != nil {
 			return err
 		}
+
+		numHtlcs := len(paymentItem.Htlcs)
+		if numHtlcs > 0 && paymentItem.Htlcs[0].Route != nil {
+			hops := paymentItem.Htlcs[0].Route.Hops
+			if len(hops) > 0 {
+				lastHop := hops[len(hops)-1]
+				paymentData.Destination = lastHop.PubKey
+			}
+		}
 		if groupKey != nil {
 			paymentData.GroupKey = string(groupKey)
 		}
