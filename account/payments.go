@@ -235,7 +235,7 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 			var max uint64
 			_, _ = fmt.Sscanf(errStatus.Message(), "insufficient local balance. Try to lower the amount to: %d mSAT", &max)
 			a.log.Infof("max: %v", max)
-			if max <= uint64(1000*c.LocalBalance) {
+			if max/1000 <= uint64(c.LocalBalance) {
 				a.log.Infof("Adding: %v+%v -> %v", totalMax, max, totalMax+max)
 				totalMax += max
 			} else {
@@ -294,6 +294,7 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return "", err
 	}
 
+	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
 	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
