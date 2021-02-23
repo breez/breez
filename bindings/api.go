@@ -707,6 +707,15 @@ func LSPList() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.LSPList())
 }
 
+func LSPActivity() ([]byte, error) {
+	lspList, err := getBreezApp().ServicesClient.LSPList()
+	if err != nil {
+		return nil, err
+	}
+
+	return marshalResponse(getBreezApp().AccountService.LSPActivity(lspList))
+}
+
 func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
 }

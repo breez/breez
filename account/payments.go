@@ -115,6 +115,66 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 	return resultPayments, nil
 }
 
+func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) {
+
+	lnclient := a.daemonAPI.APIClient()
+	if lnclient == nil {
+		return nil, errors.New("daemon is not ready")
+	}
+
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	lspPubkey := make(map[string]string)
+	for _, lsp := range lspList.Lsps {
+		lspPubkey[lsp.Pubkey] = lsp.Id
+	}
+	chanidLSP := make(map[uint64]string)
+	for _, channel := range channels.Channels {
+		if ID, ok := lspPubkey[channel.RemotePubkey]; ok {
+			chanidLSP[channel.ChanId] = ID
+		}
+	}
+
+	lastPayments := make(map[string]int64)
+
+	invoices, err := lnclient.ListInvoices(context.Background(), &lnrpc.ListInvoiceRequest{NumMaxInvoices: 100000})
+	if err != nil {
+		return nil, err
+	}
+	for _, invoice := range invoices.Invoices {
+		if invoice.State != lnrpc.Invoice_SETTLED {
+			continue
+		}
+		for _, htlc := range invoice.Htlcs {
+			lsp := chanidLSP[htlc.ChanId]
+			if lsp != "" && lastPayments[lsp] < invoice.SettleDate {
+				lastPayments[lsp] = invoice.SettleDate
+			}
+		}
+	}
+
+	payments, err := lnclient.ListPayments(context.Background(), &lnrpc.ListPaymentsRequest{MaxPayments: 100000})
+	if err != nil {
+		return nil, err
+	}
+	for _, payment := range payments.Payments {
+		if payment.Status != lnrpc.Payment_SUCCEEDED {
+			continue
+		}
+		for _, htlc := range payment.Htlcs {
+			lsp := chanidLSP[htlc.Route.Hops[0].ChanId]
+			htlcDate := time.Unix(0, htlc.ResolveTimeNs).Unix()
+			if lsp != "" && lastPayments[lsp] < htlcDate {
+				lastPayments[lsp] = htlcDate
+			}
+		}
+	}
+
+	return &data.LSPActivity{Activity: lastPayments}, nil
+}
+
 /*
 SendPaymentForRequestV2 send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned

@@ -378,12 +378,20 @@ message LSPInformation {
     int64 channel_fee_permyriad = 12;
 
     bytes lsp_pubkey = 13;
+    // The channel can be closed if not used this duration in seconds.
+    int64 max_inactive_duration = 14;
 }
 
 message LSPListRequest {}
 
 message LSPList {
     map<string, LSPInformation> lsps = 1; // The key is the lsp id
+}
+
+message LSPActivity {
+    // The key is the lsp id.
+    // The value is the timestamp in seconds of the last payment. 
+    map <string, int64> activity = 1;
 }
 
 message ConnectLSPRequest {
