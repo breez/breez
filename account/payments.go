@@ -165,7 +165,8 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(destNode string,
-	description string, amount int64, feeLimitMSat int64, groupKey, groupName string) (string, error) {
+	description string, amount int64, feeLimitMSat int64,
+	groupKey, groupName string, tlv map[int64]string) (string, error) {
 
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
@@ -199,6 +200,12 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
 		return "", err
 	}
+
+	for k, v := range tlv {
+		a.log.Infof("adding custom record %v, value: %v", uint64(k), v)
+		req.DestCustomRecords[uint64(k)] = []byte(v)
+	}
+
 	if groupKey != "" {
 		if err := a.breezDB.SavePaymentGroup(hashStr, []byte(groupKey), []byte(groupName)); err != nil {
 			return "", err
