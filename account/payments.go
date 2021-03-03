@@ -148,13 +148,14 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 			continue
 		}
 		for _, htlc := range invoice.Htlcs {
-			var lsp string
-			if lnwire.NewFakeShortChanIDFromInt(htlc.ChanId).IsFake() {
-				if len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
-					lsp = lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
+			lsp := chanidLSP[htlc.ChanId]
+			if lsp == "" && lnwire.NewFakeShortChanIDFromInt(htlc.ChanId).IsFake() &&
+				len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
+
+				lsp = lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
+				if lsp != "" {
+					chanidLSP[htlc.ChanId] = lsp
 				}
-			} else {
-				lsp = chanidLSP[htlc.ChanId]
 			}
 			if lsp != "" && lastPayments[lsp] < invoice.SettleDate {
 				lastPayments[lsp] = invoice.SettleDate
