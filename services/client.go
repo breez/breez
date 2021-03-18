@@ -175,6 +175,7 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 			MinHtlcMsat:         l.MinHtlcMsat,
 			ChannelFeePermyriad: l.ChannelFeePermyriad,
 			LspPubkey:           l.LspPubkey,
+			MaxInactiveDuration: l.MaxInactiveDuration,
 		}
 	}
 	c.lspList = &data.LSPList{Lsps: r}

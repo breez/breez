@@ -106,6 +106,8 @@ message LSPInformation {
   int64 channel_fee_permyriad = 11;
 
   bytes lsp_pubkey = 12;
+  // The channel can be closed if not used this duration in seconds.
+  int64 max_inactive_duration = 13;
 }
 message LSPListReply {
   map<string, LSPInformation> lsps = 1; // The key is the lsp id
