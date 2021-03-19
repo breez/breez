@@ -127,6 +127,8 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 		return nil, err
 	}
 	lspPubkey := make(map[string]string)
+	connectedLsps := make(map[string]struct{})
+	var exists = struct{}{}
 	for _, lsp := range lspList.Lsps {
 		lspPubkey[lsp.Pubkey] = lsp.Id
 	}
@@ -134,6 +136,7 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 	for _, channel := range channels.Channels {
 		if ID, ok := lspPubkey[channel.RemotePubkey]; ok {
 			chanidLSP[channel.ChanId] = ID
+			connectedLsps[ID] = exists
 		}
 	}
 
@@ -153,7 +156,7 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 				len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
 
 				lsp = lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
-				if lsp != "" {
+				if _, ok := connectedLsps[lsp]; ok {
 					chanidLSP[htlc.ChanId] = lsp
 				}
 			}
