@@ -155,8 +155,9 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 			if lsp == "" && lnwire.NewFakeShortChanIDFromInt(htlc.ChanId).IsFake() &&
 				len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
 
-				lsp = lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
-				if _, ok := connectedLsps[lsp]; ok {
+				htlcLSP := lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
+				if _, ok := connectedLsps[htlcLSP]; ok {
+					lsp = htlcLSP
 					chanidLSP[htlc.ChanId] = lsp
 				}
 			}
