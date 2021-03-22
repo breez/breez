@@ -24,6 +24,7 @@ service Information {
   rpc Ping (PingRequest) returns (PingReply) {}
   rpc Rates (RatesRequest) returns (RatesReply) {}
   rpc BreezAppVersions(BreezAppVersionsRequest) returns (BreezAppVersionsReply) {}
+  rpc ReceiverInfo(ReceiverInfoRequest) returns (ReceiverInfoReply) {}
 }
 
 service ChannelOpener {
@@ -31,6 +32,10 @@ service ChannelOpener {
   rpc OpenLSPChannel (OpenLSPChannelRequest) returns (OpenLSPChannelReply) {}
   rpc RegisterPayment (RegisterPaymentRequest) returns (RegisterPaymentReply) {}
   rpc CheckChannels(CheckChannelsRequest) returns (CheckChannelsReply) {}
+}
+
+service PublicChannelOpener {
+  rpc OpenPublicChannel(OpenPublicChannelRequest) returns (OpenPublicChannelReply) {}
 }
 
 service FundManager {
@@ -62,6 +67,20 @@ service SyncNotifier {
 
 service PushTxNotifier {
   rpc RegisterTxNotification(PushTxNotificationRequest) returns (PushTxNotificationResponse) {}
+}
+
+service InactiveNotifier {
+  rpc InactiveNotify(InactiveNotifyRequest) returns (InactiveNotifyResponse) {}
+}
+message InactiveNotifyRequest {
+  bytes pubkey = 1 [json_name = "pubkey"];
+  int32 days = 2 [json_name = "days"];
+}
+message InactiveNotifyResponse {}
+
+message ReceiverInfoRequest{}
+message ReceiverInfoReply {
+  string pubkey = 1 [json_name = "pubkey"];
 }
 
 message RatesRequest {}
@@ -139,6 +158,12 @@ message OpenChannelRequest {
 }
 
 message OpenChannelReply {}
+
+message OpenPublicChannelRequest {
+  string pubkey = 1;
+}
+
+message OpenPublicChannelReply {}
 
 message Captcha {
   string id = 1;

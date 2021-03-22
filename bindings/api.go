@@ -704,6 +704,10 @@ func Rate() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.Rates())
 }
 
+func ReceiverNode() (string, error) {
+	return getBreezApp().ServicesClient.ReceiverNode()
+}
+
 func LSPList() ([]byte, error) {
 	return marshalResponse(getBreezApp().ServicesClient.LSPList())
 }

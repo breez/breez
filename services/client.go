@@ -141,6 +141,18 @@ func (c *Client) Rates() (*data.Rates, error) {
 	return &data.Rates{Rates: r}, nil
 }
 
+func (c *Client) ReceiverNode() (string, error) {
+	con := c.getBreezClientConnection()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ic := breezservice.NewInformationClient(con)
+	receiverInfo, err := ic.ReceiverInfo(ctx, &breezservice.ReceiverInfoRequest{})
+	if err != nil {
+		return "", err
+	}
+	return receiverInfo.Pubkey, nil
+}
+
 //LSPList returns the list of the LSPs
 func (c *Client) LSPList() (*data.LSPList, error) {
 	con := c.getBreezClientConnection()
