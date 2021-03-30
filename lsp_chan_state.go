@@ -99,6 +99,8 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 		QueryDisable: false,
 	}, chandb)
 
+	var remotePubKey []byte
+	var fundingOutpoint wire.OutPoint
 	a.log.Infof("finding channel %v", chanPoint)
 	c, err := a.findChannel(chanPoint)
 	if err != nil {
@@ -106,19 +108,30 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 		return false, err
 	}
 	if c == nil {
-		a.log.Infof("could not find channel %v, no result", chanPoint)
-		return false, nil
+		a.log.Infof("could not find channel %v, no result, looking in closed channels", chanPoint)
+		summary, err := a.findPendingClosedChannel(chanPoint)
+		if err != nil {
+			a.log.Errorf("failed to query pending closed channels %v", err)
+			return false, err
+		}
+		if summary == nil {
+			a.log.Infof("channel %v was not found in pending closed", chanPoint)
+			return false, nil
+		}
+		a.log.Infof("found pending closed channel: %v", chanPoint)
+		remotePubKey = summary.RemotePub.SerializeCompressed()
+		fundingOutpoint = summary.ChanPoint
+	} else {
+		remotePubKey = c.IdentityPub.SerializeCompressed()
+		fundingOutpoint = c.FundingOutpoint
 	}
-	if c.ChanStatus() == channeldb.ChanStatusDefault {
-		a.log.Infof("channel is not in in waiting close state: %v", chanPoint)
-	}
+
 	a.log.Infof("found waiting close channel: %v", chanPoint)
 
-	remotePubkey := c.IdentityPub.SerializeCompressed()
-	if hex.EncodeToString(remotePubkey) != lspNodePubkey {
+	if hex.EncodeToString(remotePubKey) != lspNodePubkey {
 		return false, nil
 	}
-	hint, err := hintCache.QuerySpendHint(chainntnfs.SpendRequest{OutPoint: c.FundingOutpoint})
+	hint, err := hintCache.QuerySpendHint(chainntnfs.SpendRequest{OutPoint: fundingOutpoint})
 	if err != nil && err != chainntnfs.ErrSpendHintNotFound {
 		return false, err
 	}
@@ -127,7 +140,9 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 	if err != nil {
 		return false, err
 	}
-	return len(unconfirmedClosed) > 0, nil
+	hasMismatch := len(unconfirmedClosed) > 0
+	a.log.Infof("checkLSPClosedChannelMismatch finished, hasMismatch = %v", hasMismatch)
+	return hasMismatch, nil
 }
 
 func (a *lspChanStateSync) recordChannelsStatus() error {
@@ -491,6 +506,26 @@ func (a *lspChanStateSync) findChannel(chanPoint string) (*channeldb.OpenChannel
 
 	for _, c := range channels {
 		if c.FundingOutpoint.String() == chanPoint {
+			return c, nil
+		}
+	}
+	return nil, nil
+}
+
+func (a *lspChanStateSync) findPendingClosedChannel(chanPoint string) (*channeldb.ChannelCloseSummary, error) {
+	chandb, cleanup, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	channels, err := chandb.FetchClosedChannels(true)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range channels {
+		if c.ChanPoint.String() == chanPoint {
 			return c, nil
 		}
 	}
