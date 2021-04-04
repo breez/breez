@@ -457,7 +457,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	if paymentRequest == "" {
 		existingInvoice, _ := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
 		if existingInvoice != nil {
-			if existingInvoice.Value != addressInfo.ConfirmedAmount {
+			if addressInfo.InvoicedAmount != addressInfo.ConfirmedAmount {
 				errorMsg := "Money was added after the invoice was created"
 				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 					a.ErrorMessage = errorMsg
@@ -471,6 +471,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 			if err != nil {
 				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 					a.ErrorMessage = err.Error()
+					a.InvoicedAmount = addressInfo.ConfirmedAmount
 					a.SwapErrorReason = int32(errorReason)
 					return nil
 				})

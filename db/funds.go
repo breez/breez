@@ -24,6 +24,7 @@ type SwapAddressInfo struct {
 	//tracked data
 	ConfirmedTransactionIds []string
 	ConfirmedAmount         int64
+	InvoicedAmount          int64
 	PaidAmount              int64
 	LockHeight              uint32
 	FundingTxID             string
