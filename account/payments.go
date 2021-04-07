@@ -267,7 +267,7 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 	req.PaymentHash = hash[:]
 
 	// Also use the 'tip' key to set the description.
-	req.DestCustomRecords[7629169] = []byte(description)
+	req.DestCustomRecords[7629171] = []byte(description)
 	hashStr := hex.EncodeToString(hash[:])
 	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
 		return "", err
