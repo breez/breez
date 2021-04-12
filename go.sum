@@ -93,6 +93,8 @@ github.com/breez/lnd v0.11.0-beta.rc4.0.20210216134321-d7f38556e08d h1:JirVyo+Uc
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210216134321-d7f38556e08d/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210328174603-46540b3b5f92 h1:QKz6cf9Ok4EFCedTIgybl5xaSAET66+8nP0FJxmi/p4=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210328174603-46540b3b5f92/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
+github.com/breez/lnd v0.11.0-beta.rc4.0.20210412191241-f48e5b771d5a h1:gNr54I7yiqfTE/1prJ/ZZkyQQv3f9etRdNHsEa8BlAM=
+github.com/breez/lnd v0.11.0-beta.rc4.0.20210412191241-f48e5b771d5a/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lspd v0.0.0-20210211151315-ece77f65e116 h1:/3VDXaZXqPnXAqhmopmD8YevmdUXfArmZwsOoZdwDGA=
 github.com/breez/lspd v0.0.0-20210211151315-ece77f65e116/go.mod h1:IX/o0QEerKvc0jeV6AaBtaXvCLmB3JWtvofxxtO1/KE=
 github.com/breez/neutrino v0.11.1-0.20201009140859-946fb9f51bc0 h1:++ANtP9ycBD1E6wwILRFtdAX22x8Mug4pjFRF9OS4CI=
