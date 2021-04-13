@@ -2346,6 +2346,8 @@ func sendPayment(ctx *cli.Context) error {
 
 		hash := preimage.Hash()
 		rHash = hash[:]
+
+		req.DestFeatures = []lnrpc.FeatureBit{lnrpc.FeatureBit_TLV_ONION_OPT}
 	} else {
 		switch {
 		case ctx.IsSet("payment_hash"):

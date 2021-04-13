@@ -265,6 +265,8 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 	req.DestCustomRecords[record.KeySendType] = preimage[:]
 	hash := preimage.Hash()
 	req.PaymentHash = hash[:]
+	features := []lnrpc.FeatureBit{lnrpc.FeatureBit_TLV_ONION_OPT}
+	req.DestFeatures = features
 
 	// Also use the 'tip' key to set the description.
 	req.DestCustomRecords[7629171] = []byte(description)
