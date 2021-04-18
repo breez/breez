@@ -9,7 +9,7 @@ import (
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btclog"
-	bolt "github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 const (

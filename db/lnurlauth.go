@@ -1,6 +1,6 @@
 package db
 
-import bolt "github.com/coreos/bbolt"
+import bolt "go.etcd.io/bbolt"
 
 // FetchLNURLAuthKey fetches the bip32 master key for lnurl auth.
 func (db *DB) FetchLNURLAuthKey(createNew func() ([]byte, error)) ([]byte, error) {

@@ -48,5 +48,5 @@ func deleteBuckets(db *channeldb.DB) error {
 			err = tx.DeleteTopLevelBucket(confirmHintBucket)
 		}
 		return err
-	})
+	}, func() {})
 }

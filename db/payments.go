@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	bolt "github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 // PaymentType is the type of payment

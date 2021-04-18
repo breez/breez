@@ -2,8 +2,8 @@ package lnnode
 
 import (
 	"github.com/btcsuite/btcwallet/walletdb/bdb"
-	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"go.etcd.io/bbolt"
 )
 
 const (

@@ -75,10 +75,16 @@ github.com/breez/boltz v0.0.0-20210209180356-49e3bb7fe991 h1:EipS7CmmXUZII/j4qrU
 github.com/breez/boltz v0.0.0-20210209180356-49e3bb7fe991/go.mod h1:EYgeyMN6IYNW6vHfjplqKTZzPhwNVF9i2aZ9yYXrHv4=
 github.com/breez/btcwallet v0.11.1-0.20200726120254-83f8f93c32e9 h1:RsH4GpJ9PiD14B0t25l3l0/Gd7Qw659/WLo9Riki7E4=
 github.com/breez/btcwallet v0.11.1-0.20200726120254-83f8f93c32e9/go.mod h1:9+AH3V5mcTtNXTKe+fe63fDLKGOwQbZqmvOVUef+JFE=
+github.com/breez/btcwallet v0.11.1-0.20210414123232-efee8e15b2ad h1:QJlICcv85NwLIWe7zQNX07osj7yw7dkP0g/dmlVj58M=
+github.com/breez/btcwallet v0.11.1-0.20210414123232-efee8e15b2ad/go.mod h1:P1U4LKSB/bhFQdOM7ab1XqNoBGFyFAe7eKObEBD9mIo=
 github.com/breez/btcwallet/walletdb v1.3.2-0.20200726120254-83f8f93c32e9 h1:era1GSf/ZezD6AifuOgHjbpXjqwiUZhqVTYDDXOn5Q4=
 github.com/breez/btcwallet/walletdb v1.3.2-0.20200726120254-83f8f93c32e9/go.mod h1:9cwc1Yyg4uvd4ZdfdoMnALji+V9gfWSMfxEdLdR5Vwc=
+github.com/breez/btcwallet/walletdb v1.3.5-0.20210414123232-efee8e15b2ad h1:gneGI6Eu3mo/s/dpmRChWRvYu8DRj7hBKcqh4i309oY=
+github.com/breez/btcwallet/walletdb v1.3.5-0.20210414123232-efee8e15b2ad/go.mod h1:oJDxAEUHVtnmIIBaa22wSBPTVcs6hUp5NKWmI8xDwwU=
 github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9 h1:nnekk9kn7yLFIqSCUd5FSTPf0ya1TidhT6j2dcPU2RU=
 github.com/breez/btcwallet/wtxmgr v1.1.1-0.20200726120254-83f8f93c32e9/go.mod h1:cJGqxXtqQbmXuL7RlXjIM18x0bGHy1407/85mQCLca4=
+github.com/breez/btcwallet/wtxmgr v1.2.1-0.20210414123232-efee8e15b2ad h1:rY9EPdVgHNjYVkbijfaYCV6UTTdBHVNEBCUb7eLkwaY=
+github.com/breez/btcwallet/wtxmgr v1.2.1-0.20210414123232-efee8e15b2ad/go.mod h1:awQsh1n/0ZrEQ+JZgWvHeo153ubzEisf/FyNtwI0dDk=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20201203092200-6cb4ce7cb10e h1:69vyk1MCSbTkGpYpMgSQw21c66HoCyUtLZSGXSx5H+A=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20201203092200-6cb4ce7cb10e/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210215101241-8d9294f24400 h1:NSiFtBY/vmnip/9ItzvMcjU0xNNsNLQAF8T+u0VlGMg=
@@ -93,6 +99,8 @@ github.com/breez/lnd v0.11.0-beta.rc4.0.20210216134321-d7f38556e08d h1:JirVyo+Uc
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210216134321-d7f38556e08d/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210328174603-46540b3b5f92 h1:QKz6cf9Ok4EFCedTIgybl5xaSAET66+8nP0FJxmi/p4=
 github.com/breez/lnd v0.11.0-beta.rc4.0.20210328174603-46540b3b5f92/go.mod h1:REw95/bkC/6DqfpJYnVRr1ud5kGYtVJSfXoy+zyBRvE=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20210414123723-e06a30d26707 h1:qeX+isQjicaAGIzs/96tvwUokd1yG2Dz5q4VaD0tNjI=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20210414123723-e06a30d26707/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
 github.com/breez/lspd v0.0.0-20210211151315-ece77f65e116 h1:/3VDXaZXqPnXAqhmopmD8YevmdUXfArmZwsOoZdwDGA=
 github.com/breez/lspd v0.0.0-20210211151315-ece77f65e116/go.mod h1:IX/o0QEerKvc0jeV6AaBtaXvCLmB3JWtvofxxtO1/KE=
 github.com/breez/neutrino v0.11.1-0.20201009140859-946fb9f51bc0 h1:++ANtP9ycBD1E6wwILRFtdAX22x8Mug4pjFRF9OS4CI=
@@ -111,6 +119,8 @@ github.com/btcsuite/btcutil v1.0.2 h1:9iZ1Terx9fMIOtq1VrwdqfsATL9MC2l8ZrUY6YZ2ut
 github.com/btcsuite/btcutil v1.0.2/go.mod h1:j9HUFwoQRsZL3V4n+qG+CUnEGHOarIxfC3Le2Yhbcts=
 github.com/btcsuite/btcutil/psbt v1.0.2 h1:gCVY3KxdoEVU7Q6TjusPO+GANIwVgr9yTLqM+a6CZr8=
 github.com/btcsuite/btcutil/psbt v1.0.2/go.mod h1:LVveMu4VaNSkIRTZu2+ut0HDBRuYjqGocxDMNS1KuGQ=
+github.com/btcsuite/btcutil/psbt v1.0.3-0.20200826194809-5f93e33af2b0 h1:3Zumkyl6PWyHuVJ04me0xeD9CnPOhNgeGpapFbzy7O4=
+github.com/btcsuite/btcutil/psbt v1.0.3-0.20200826194809-5f93e33af2b0/go.mod h1:LVveMu4VaNSkIRTZu2+ut0HDBRuYjqGocxDMNS1KuGQ=
 github.com/btcsuite/btcwallet/wallet/txauthor v1.0.0 h1:KGHMW5sd7yDdDMkCZ/JpP0KltolFsQcB973brBnfj4c=
 github.com/btcsuite/btcwallet/wallet/txauthor v1.0.0/go.mod h1:VufDts7bd/zs3GV13f/lXc/0lXrPnvxD/NvmpG/FEKU=
 github.com/btcsuite/btcwallet/wallet/txrules v1.0.0 h1:2VsfS0sBedcM5KmDzRMT3+b6xobqWveZGvjb+jFez5w=
@@ -540,6 +550,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 go.etcd.io/bbolt v1.3.3 h1:MUGmc65QhB3pIlaQ5bB4LwqSj6GIonVJXpZiaKNyaKk=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
+go.etcd.io/bbolt v1.3.5-0.20200615073812-232d8fc87f50 h1:ASw9n1EHMftwnP3Az4XW6e308+gNsrHzmdhd0Olz9Hs=
+go.etcd.io/bbolt v1.3.5-0.20200615073812-232d8fc87f50/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 go.mongodb.org/mongo-driver v1.0.3/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
 go.opencensus.io v0.20.1/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=
 go.opencensus.io v0.20.2/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=
@@ -584,6 +596,7 @@ golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899/go.mod h1:LzIPMQfyMNhhGPh
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522/go.mod h1:ZjyILWgesfNpC6sMxTJOJm9Kp84zZh5NQWvqDGG3Qr8=
+golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56/go.mod h1:JhuoJpWY28nO4Vef9tZUw9qufEGTyX1+7lmHxV5q5G4=
 golang.org/x/exp v0.0.0-20190829153037-c13cbed26979/go.mod h1:86+5VVa7VpoJ4kLfm080zCjGlMRFzhUhsZKEZO7MGek=
 golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136/go.mod h1:JXzH8nQsPlswgeRAPE3MuO9GYsAcnJvJ4vnMwN/5qkY=
 golang.org/x/exp v0.0.0-20191129062945-2f5052295587/go.mod h1:2RIsYlXP63K8oxa1u096TMicItID8zy7Y6sNkU49FU4=
@@ -608,10 +621,13 @@ golang.org/x/lint v0.0.0-20200302205851-738671d3881b/go.mod h1:3xt1FjdF8hUf6vQPI
 golang.org/x/mobile v0.0.0-20190312151609-d3739f865fa6/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028 h1:4+4C/Iv2U4fMZBiMCc98MG1In4gJY5YRhtpDNeDeHWs=
 golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028/go.mod h1:E/iHnbuqvinMTCcRqshq8CkpyQDoeVncDDYHnLhea+o=
+golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08 h1:h+GZ3ubjuWaQjGe8owMGcmMVCqs0xYJtRG5y2bpHaqU=
+golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08/go.mod h1:skQtrUTUwhdJvXM/2KKJzY8pDgNr9I/FOMqDVRPBUS4=
 golang.org/x/mod v0.0.0-20190513183733-4bf6d317e70e/go.mod h1:mXi4GBBbnImb6dmsKGUJ2LatrhH/nqhxcFungHvyanc=
 golang.org/x/mod v0.1.0/go.mod h1:0QHyrYULN0/3qlju5TqG8bIK38QM8yzMo5ekMj3DlcY=
 golang.org/x/mod v0.1.1-0.20191105210325-c90efee705ee/go.mod h1:QqPTAvyqsEbceGzBzNggFXnrqF1CaUcvgkdR5Ot7KZg=
 golang.org/x/mod v0.1.1-0.20191107180719-034126e5016b/go.mod h1:QqPTAvyqsEbceGzBzNggFXnrqF1CaUcvgkdR5Ot7KZg=
+golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.2.0 h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/net v0.0.0-20180611182652-db08ff08e862/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
@@ -734,6 +750,7 @@ golang.org/x/tools v0.0.0-20191130070609-6e064ea0cf2d/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.0.0-20191216052735-49a3e744a425/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
 golang.org/x/tools v0.0.0-20191216173652-a0e659d51361/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
 golang.org/x/tools v0.0.0-20191227053925-7b8e75db28f4/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
+golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
 golang.org/x/tools v0.0.0-20200117161641-43d50277825c/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
 golang.org/x/tools v0.0.0-20200122220014-bf1340f18c4a/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=
 golang.org/x/tools v0.0.0-20200130002326-2f3ba24bd6e7/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=

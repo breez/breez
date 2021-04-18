@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	bolt "github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 //SwapAddressInfo contains all the infromation regarding

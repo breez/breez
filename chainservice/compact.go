@@ -3,7 +3,7 @@ package chainservice
 import (
 	"os"
 
-	bbolt "github.com/coreos/bbolt"
+	bbolt "go.etcd.io/bbolt"
 )
 
 const (

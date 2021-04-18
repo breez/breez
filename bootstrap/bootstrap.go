@@ -8,8 +8,8 @@ import (
 	"github.com/breez/breez/channeldbservice"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb/bdb"
-	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"go.etcd.io/bbolt"
 )
 
 var (

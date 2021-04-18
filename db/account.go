@@ -1,6 +1,6 @@
 package db
 
-import "github.com/coreos/bbolt"
+import "go.etcd.io/bbolt"
 
 // SaveAccount saves an account information to the database
 func (db *DB) SaveAccount(account []byte) error {
