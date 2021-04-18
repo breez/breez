@@ -96,7 +96,10 @@ func (a *Service) SweepAllCoinsTransactions(address string) (*data.SweepAllCoins
 		}
 		rus := NewRpcUtxoSource(lnClient)
 		sweepTxPkg, err := sweep.CraftSweepAllTx(
-			feePerKw, info.BlockHeight,
+			feePerKw,
+			lnwallet.DefaultDustLimit(),
+			info.BlockHeight,
+			nil,
 			targetAddr,
 			&nilCoinSelectionLocker,
 			rus,

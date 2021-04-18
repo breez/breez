@@ -243,7 +243,7 @@ func (a *lspChanStateSync) resetFundingFlow(chanPoint *wire.OutPoint,
 		binary.BigEndian.PutUint64(scratch[2:], shortChanID.ToUint64())
 
 		return bucket.Put(outpointBytes.Bytes(), scratch)
-	})
+	}, func() {})
 }
 
 func (a *lspChanStateSync) hasActiveFundingWorkflow(chanPoint *wire.OutPoint) (
@@ -271,7 +271,7 @@ func (a *lspChanStateSync) hasActiveFundingWorkflow(chanPoint *wire.OutPoint) (
 		value := bucket.Get(outpointBytes.Bytes())
 		exists = value != nil
 		return nil
-	})
+	}, func() {})
 	if err != nil {
 		return false, err
 	}
@@ -301,7 +301,7 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 			a.log.Infof("fake channel id: %v", shortID, lnwire.NewShortChanIDFromInt(shortID).String())
 			return nil
 		})
-	})
+	}, func() {})
 
 	// query spend hint for channel
 	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
