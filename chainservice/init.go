@@ -64,7 +64,7 @@ func TestPeer(peer string) error {
 		return err
 	}
 	neutrinoDB := path.Join(neutrinoDataDir, "neutrino.db")
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	db, err := walletdb.Create("bdb", neutrinoDB, false, time.Second*60)
 	if err != nil {
 		logger.Errorf("Error in walletdb.Create: %v", err)
 		return err
@@ -230,7 +230,7 @@ func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 		return "", nil, err
 	}
 
-	db, err := walletdb.Create("bdb", neutrinoDB, false)
+	db, err := walletdb.Create("bdb", neutrinoDB, false, time.Second*60)
 	return neutrinoDataDir, db, err
 }
 
