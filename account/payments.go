@@ -493,26 +493,47 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		return "", 0, errors.New("no routing information")
 	}
 
-	// create invoice with the lower amount.
-	response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
-		RPreimage: invoice.Preimage,
-		Memo:      memo, ValueMsat: smallAmountMsat,
-		Expiry: invoice.Expiry, RouteHints: routingHints,
-	})
-	if err != nil {
-		return "", 0, err
-	}
-	if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(response.PaymentRequest)); err != nil {
-		return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
-	}
-	a.trackInvoice(response.RHash)
-	a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, response.RHash)
+	var payeeInvoice string
+	var payeeInvoiceHash []byte
+	// check if inner invoice exists
+	if invoice.Preimage != nil {
+		preImage, err := lntypes.MakePreimage(invoice.Preimage)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to create preimage %w", err)
+		}
 
-	payeeInvoice := response.PaymentRequest
+		hash := preImage.Hash()
+		payeeInvoiceHash = hash[:]
+		existingInvoice, _ := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: payeeInvoiceHash})
+		if existingInvoice != nil {
+			payeeInvoice = existingInvoice.PaymentRequest
+			a.log.Infof("found and reusing existing invoice with given hash")
+		}
+	}
+
+	if payeeInvoice == "" {
+		// create invoice with the lower amount.
+		response, err := lnclient.AddInvoice(context.Background(), &lnrpc.Invoice{
+			RPreimage: invoice.Preimage,
+			Memo:      memo, ValueMsat: smallAmountMsat,
+			Expiry: invoice.Expiry, RouteHints: routingHints,
+		})
+		if err != nil {
+			return "", 0, err
+		}
+		payeeInvoice = response.PaymentRequest
+		payeeInvoiceHash = response.RHash
+		if err := a.breezDB.AddZeroConfHash(payeeInvoiceHash, []byte(response.PaymentRequest)); err != nil {
+			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+		}
+		a.trackInvoice(payeeInvoiceHash)
+		a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, payeeInvoiceHash)
+	}
+
 	// create invoice with the larger amount and send to LSP the details.
 	if needOpenChannel {
 		var paymentAddress []byte
-		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(response.PaymentRequest, amountMsat)
+		payeeInvoice, paymentAddress, err = a.generateInvoiceWithNewAmount(payeeInvoice, amountMsat)
 		if err != nil {
 			return "", 0, fmt.Errorf("failed to generate LSP invoice %w", err)
 		}
@@ -520,14 +541,20 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		lspInfo := invoiceRequest.LspInfo
 		pubKey := lspInfo.LspPubkey
 
-		if err := a.breezDB.AddZeroConfHash(response.RHash, []byte(payeeInvoice)); err != nil {
-			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+		existingZeroInvoice, err := a.breezDB.FetchZeroConfInvoice(payeeInvoiceHash)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to fetch zero-conf invoice %w", err)
+		}
+		if existingZeroInvoice == nil || string(existingZeroInvoice) != payeeInvoice {
+			if err := a.registerPayment(payeeInvoiceHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
+				return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
+			}
+			if err := a.breezDB.AddZeroConfHash(payeeInvoiceHash, []byte(payeeInvoice)); err != nil {
+				return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
+			}
 		}
 
-		if err := a.registerPayment(response.RHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
-			return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
-		}
-		a.log.Infof("Zero-conf payment registered: %v", string(response.RHash))
+		a.log.Infof("Zero-conf payment registered: %v", string(payeeInvoiceHash))
 	}
 
 	a.log.Infof("Generated Invoice: %v", payeeInvoice)
