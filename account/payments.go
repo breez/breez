@@ -940,6 +940,25 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 				}
 			}
 		}
+
+		// add pending payments that represents in flight outgoing payments
+		// without any htlcs.
+		for hash, inFlight := range inflightPayments {
+			if _, ok := pendingByHash[hash]; !ok {
+				hashBytes, err := hex.DecodeString(inFlight.PaymentHash)
+				if err != nil {
+					return nil, err
+				}
+
+				payment, err := a.createPendingPayment(&lnrpc.HTLC{HashLock: hashBytes, Incoming: false, Amount: inFlight.ValueSat},
+					chainInfo.BlockHeight, inflightPayments)
+				if err != nil {
+					return nil, err
+				}
+				pendingByHash[inFlight.PaymentHash] = payment
+			}
+		}
+
 		for h, p := range pendingByHash {
 			groupKey, groupName, err := a.breezDB.FetchPaymentGroup(h)
 			if err != nil {
