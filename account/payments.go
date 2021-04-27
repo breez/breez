@@ -950,7 +950,11 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 					return nil, err
 				}
 
-				payment, err := a.createPendingPayment(&lnrpc.HTLC{HashLock: hashBytes, Incoming: false, Amount: inFlight.ValueSat},
+				payment, err := a.createPendingPayment(&lnrpc.HTLC{
+					HashLock:         hashBytes,
+					Incoming:         false,
+					ExpirationHeight: chainInfo.BlockHeight + 144,
+					Amount:           inFlight.ValueSat},
 					chainInfo.BlockHeight, inflightPayments)
 				if err != nil {
 					return nil, err
