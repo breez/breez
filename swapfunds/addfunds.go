@@ -452,40 +452,20 @@ func isTemporaryChannelError(err string) bool {
 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 	lnclient := s.daemonAPI.APIClient()
-	//first lookup for an existing invoice
 	paymentRequest := addressInfo.PaymentRequest
 	if paymentRequest == "" {
-		existingInvoice, _ := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: addressInfo.PaymentHash})
-		if existingInvoice != nil {
-			if addressInfo.InvoicedAmount != addressInfo.ConfirmedAmount {
-				errorMsg := "Money was added after the invoice was created"
-				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-					a.ErrorMessage = errorMsg
-					return nil
-				})
-				return false, errors.New(errorMsg)
-			}
-			paymentRequest = existingInvoice.PaymentRequest
-		} else {
-			invoice, errorReason, err := s.createSwapInvoice(addressInfo)
-			if err != nil {
-				s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-					a.ErrorMessage = err.Error()
-					a.InvoicedAmount = addressInfo.ConfirmedAmount
-					a.SwapErrorReason = int32(errorReason)
-					return nil
-				})
-				return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
-			}
-			paymentRequest = invoice
+		payreq, errorReason, err := s.createSwapInvoice(addressInfo)
+		if err != nil {
+			s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+				a.ErrorMessage = err.Error()
+				a.SwapErrorReason = int32(errorReason)
+				return nil
+			})
+			return false, fmt.Errorf("failed to call AddInvoice, err = %v", err)
 		}
-
-		addressInfo.PaymentRequest = paymentRequest
-		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
-			a.PaymentRequest = paymentRequest
-			return nil
-		})
+		paymentRequest = payreq
 	}
+
 	invoice, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
 	if err != nil {
 		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
@@ -496,14 +476,20 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		return false, fmt.Errorf("failed to decode swap payment request %w", err)
 	}
 
-	if invoice.NumSatoshis != addressInfo.ConfirmedAmount {
+	if addressInfo.ConfirmedAmount != invoice.NumSatoshis {
 		errorMsg := "Money was added after the invoice was created"
-		_, err = s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+		s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
 			a.ErrorMessage = errorMsg
 			return nil
 		})
 		return false, errors.New(errorMsg)
 	}
+
+	addressInfo.PaymentRequest = paymentRequest
+	s.breezDB.UpdateSwapAddress(addressInfo.Address, func(a *db.SwapAddressInfo) error {
+		a.PaymentRequest = paymentRequest
+		return nil
+	})
 
 	c, ctx, cancel := s.breezAPI.NewSwapper()
 	defer cancel()
