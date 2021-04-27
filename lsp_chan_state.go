@@ -447,6 +447,9 @@ func (a *lspChanStateSync) checkChannels(fakeChannels, waitingCloseChannels map[
 		return nil, nil, fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
 	}
 	r, err := c.CheckChannels(ctx, &breezservice.CheckChannelsRequest{LspId: lspID, Blob: encrypted})
+	if err != nil {
+		return nil, nil, fmt.Errorf("CheckChannels error: %w", err)
+	}
 	decrypt, err := btcec.Decrypt(priv, r.Blob)
 	if err != nil {
 		a.log.Infof("btcec.Decrypt error: %v", err)
