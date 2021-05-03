@@ -52,7 +52,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 		return nil, err
 	}
 
-	pendingPayments, err := a.getPendingPayments()
+	pendingPayments, err := a.getPendingPayments(true)
 	if err != nil {
 		return nil, err
 	}
@@ -887,7 +887,7 @@ func (a *Service) syncSentPayments() error {
 	//TODO delete history of payment requests after the new payments API stablized.
 }
 
-func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
+func (a *Service) getPendingPayments(includeInflight bool) ([]*db.PaymentInfo, error) {
 	var payments []*db.PaymentInfo
 	lnclient := a.daemonAPI.APIClient()
 	if a.daemonRPCReady() {
@@ -941,25 +941,28 @@ func (a *Service) getPendingPayments() ([]*db.PaymentInfo, error) {
 			}
 		}
 
-		// add pending payments that represents in flight outgoing payments
-		// without any htlcs.
-		for hash, inFlight := range inflightPayments {
-			if _, ok := pendingByHash[hash]; !ok {
-				hashBytes, err := hex.DecodeString(inFlight.PaymentHash)
-				if err != nil {
-					return nil, err
+		if includeInflight {
+			// add pending payments that represents in flight outgoing payments
+			// without any htlcs.
+			for hash, inFlight := range inflightPayments {
+				if _, ok := pendingByHash[hash]; !ok {
+					hashBytes, err := hex.DecodeString(inFlight.PaymentHash)
+					if err != nil {
+						return nil, err
+					}
+					if time.Now().Sub(time.Unix(inFlight.CreationDate, 0)) < time.Second*60 {
+						payment, err := a.createPendingPayment(&lnrpc.HTLC{
+							HashLock:         hashBytes,
+							Incoming:         false,
+							ExpirationHeight: chainInfo.BlockHeight + 144,
+							Amount:           inFlight.ValueSat},
+							chainInfo.BlockHeight, inflightPayments)
+						if err != nil {
+							return nil, err
+						}
+						pendingByHash[inFlight.PaymentHash] = payment
+					}
 				}
-
-				payment, err := a.createPendingPayment(&lnrpc.HTLC{
-					HashLock:         hashBytes,
-					Incoming:         false,
-					ExpirationHeight: chainInfo.BlockHeight + 144,
-					Amount:           inFlight.ValueSat},
-					chainInfo.BlockHeight, inflightPayments)
-				if err != nil {
-					return nil, err
-				}
-				pendingByHash[inFlight.PaymentHash] = payment
 			}
 		}
 
