@@ -151,6 +151,7 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.ServicesClient,
 		app.lnDaemon,
 		app.RequestBackup,
+		app.lspChanStateSyncer.hasOutOfSyncUnconfirmedChannel,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New AccountService")

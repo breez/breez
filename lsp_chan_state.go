@@ -346,6 +346,41 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 	return snapshots, channelsMap, nil
 }
 
+func (a *lspChanStateSync) hasOutOfSyncUnconfirmedChannel() (bool, error) {
+	a.log.Info("hasOutOfSyncUnconfirmedChannel started")
+
+	lspList, err := a.breezAPI.LSPList()
+	if err != nil {
+		return false, err
+	}
+
+	currentSnapshots, _, err := a.collectChannelsStatus()
+	if err != nil {
+		return false, err
+	}
+
+	for _, lsp := range lspList.Lsps {
+		lspSnapshot, ok := currentSnapshots[lsp.Pubkey]
+		if !ok {
+			continue
+		}
+
+		if len(lspSnapshot.unconfirmedOpen) == 0 {
+			continue
+		}
+		confirmedOpen, _, err := a.checkChannels(lspSnapshot.unconfirmedOpen, map[string]uint64{}, lsp.LspPubkey, lsp.Id)
+		if err != nil {
+			return false, err
+		}
+
+		if len(confirmedOpen) > 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, lspID string) (bool, error) {
 	a.log.Infof("syncChannels for pubkey: %v", lspNodePubkey)
 	beforeStartSnapshot, ok := a.snapshots[lspNodePubkey]
