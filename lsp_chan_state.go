@@ -22,6 +22,7 @@ import (
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/breez/services"
@@ -346,17 +347,42 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 	return snapshots, channelsMap, nil
 }
 
-func (a *lspChanStateSync) hasOutOfSyncUnconfirmedChannel() (bool, error) {
-	a.log.Info("hasOutOfSyncUnconfirmedChannel started")
+func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.UnconfirmedChannelsStatus) (
+	*data.UnconfirmedChannelsStatus, error) {
+	a.log.Info("unconfirmedChannelsStatus started: %v", oldStatus)
 
 	lspList, err := a.breezAPI.LSPList()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	currentSnapshots, _, err := a.collectChannelsStatus()
 	if err != nil {
-		return false, err
+		return nil, err
+	}
+	heightHintMap := make(map[string]uint64, 0)
+	for _, snapshot := range currentSnapshots {
+		for channelPoint, hint := range snapshot.unconfirmedOpen {
+			heightHintMap[channelPoint] = hint
+		}
+	}
+
+	var newStatuses []*data.UnconfirmedChannelStatus
+
+	// in case we got old status we only need to update the height hints.
+	if oldStatus != nil {
+		for _, status := range oldStatus.Statuses {
+			newHint, ok := heightHintMap[status.ChannelPoint]
+			if !ok {
+				continue
+			}
+			newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+				ChannelPoint:       status.ChannelPoint,
+				HeightHint:         int64(newHint),
+				LspConfirmedHeight: status.LspConfirmedHeight,
+			})
+		}
+		return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
 	}
 
 	for _, lsp := range lspList.Lsps {
@@ -370,15 +396,31 @@ func (a *lspChanStateSync) hasOutOfSyncUnconfirmedChannel() (bool, error) {
 		}
 		confirmedOpen, _, err := a.checkChannels(lspSnapshot.unconfirmedOpen, map[string]uint64{}, lsp.LspPubkey, lsp.Id)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
-		if len(confirmedOpen) > 0 {
-			return true, nil
+		for cp, confirmedHeight := range confirmedOpen {
+			newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+				ChannelPoint:       cp,
+				HeightHint:         int64(heightHintMap[cp]),
+				LspConfirmedHeight: int64(confirmedHeight),
+			})
+		}
+		if len(confirmedOpen) == 0 {
+			continue
 		}
 	}
 
-	return false, nil
+	return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
+}
+
+func (a *lspChanStateSync) hasOutOfSyncUnconfirmedChannel() (bool, error) {
+	a.log.Info("hasOutOfSyncUnconfirmedChannel started")
+	status, err := a.unconfirmedChannelsStatus(nil)
+	if err != nil {
+		return false, err
+	}
+	return len(status.Statuses) > 0, nil
 }
 
 func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, lspID string) (bool, error) {
