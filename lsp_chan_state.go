@@ -370,7 +370,7 @@ func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.Unconfirmed
 	var newStatuses []*data.UnconfirmedChannelStatus
 
 	// in case we got old status we only need to update the height hints.
-	if oldStatus != nil {
+	if oldStatus != nil && len(oldStatus.Statuses) > 0 {
 		for _, status := range oldStatus.Statuses {
 			newHint, ok := heightHintMap[status.ChannelPoint]
 			if !ok {
@@ -411,16 +411,27 @@ func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.Unconfirmed
 		}
 	}
 
+	// // for testing
+	// for cp, h := range heightHintMap {
+	// 	a.log.Infof("adding test channel cp=%v, hint=%v", cp, h)
+	// 	newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+	// 		ChannelPoint:       cp,
+	// 		HeightHint:         int64(heightHintMap[cp]),
+	// 		LspConfirmedHeight: int64(h + 10),
+	// 	})
+	// }
+
+	a.log.Infof("unconfirmedChannelsStatus finished with %v statuses", len(newStatuses))
 	return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
 }
 
-func (a *lspChanStateSync) hasOutOfSyncUnconfirmedChannel() (bool, error) {
-	a.log.Info("hasOutOfSyncUnconfirmedChannel started")
+func (a *lspChanStateSync) unconfirmedChannelsInSync() (bool, error) {
+	a.log.Info("unconfirmedChannelsInSync started")
 	status, err := a.unconfirmedChannelsStatus(nil)
 	if err != nil {
 		return false, err
 	}
-	return len(status.Statuses) > 0, nil
+	return len(status.Statuses) == 0, nil
 }
 
 func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, lspID string) (bool, error) {

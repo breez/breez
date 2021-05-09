@@ -145,21 +145,21 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 	}
 	app.log.Infof("New backup")
 
+	app.lspChanStateSyncer = newLSPChanStateSync(app)
+
 	app.AccountService, err = account.NewService(
 		app.cfg,
 		app.breezDB,
 		app.ServicesClient,
 		app.lnDaemon,
 		app.RequestBackup,
-		app.lspChanStateSyncer.hasOutOfSyncUnconfirmedChannel,
+		app.lspChanStateSyncer.unconfirmedChannelsInSync,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New AccountService")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create AccountService: %v", err)
 	}
-
-	app.lspChanStateSyncer = newLSPChanStateSync(app)
 
 	app.SwapService, err = swapfunds.NewService(
 		app.cfg,
