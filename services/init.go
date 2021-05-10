@@ -23,6 +23,7 @@ type API interface {
 	NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc)
 	NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc)
 	NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc)
+	LSPList() (*data.LSPList, error)
 }
 
 // Client represents the client interface to breez services

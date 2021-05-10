@@ -370,6 +370,12 @@ func (a *App) SyncLSPChannels(request *data.SyncLSPChannelsRequest) (*data.SyncL
 	return &data.SyncLSPChannelsResponse{HasMismatch: mismatch}, nil
 }
 
+func (a *App) UnconfirmedChannelsStatus(request *data.UnconfirmedChannelsStatus) (
+	*data.UnconfirmedChannelsStatus, error) {
+
+	return a.lspChanStateSyncer.unconfirmedChannelsStatus(request)
+}
+
 func (a *App) ResetClosedChannelChainInfo(r *data.ResetClosedChannelChainInfoRequest) (
 	*data.ResetClosedChannelChainInfoReply, error) {
 

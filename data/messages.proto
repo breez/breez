@@ -178,6 +178,16 @@ message SyncLSPChannelsResponse {
   bool hasMismatch = 1;
 }
 
+message UnconfirmedChannelsStatus {
+ repeated UnconfirmedChannelStatus statuses = 1;
+}
+
+message UnconfirmedChannelStatus {
+ string channelPoint = 1;
+ int64 heightHint = 2;
+ int64 lspConfirmedHeight = 3;
+}
+
 message CheckLSPClosedChannelMismatchRequest {
   LSPInformation lspInfo = 1;
   string chanPoint = 2;

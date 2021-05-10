@@ -741,6 +741,15 @@ func SyncLSPChannels(request []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().SyncLSPChannels(&s))
 }
 
+//unconfirmedChannelsStatus
+func UnconfirmedChannelsStatus(request []byte) ([]byte, error) {
+	var s data.UnconfirmedChannelsStatus
+	if err := proto.Unmarshal(request, &s); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().UnconfirmedChannelsStatus(&s))
+}
+
 func CheckLSPClosedChannelMismatch(request []byte) ([]byte, error) {
 	var s data.CheckLSPClosedChannelMismatchRequest
 	if err := proto.Unmarshal(request, &s); err != nil {
