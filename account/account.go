@@ -296,7 +296,7 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 
 		// add all pending htlcs to the balance.
 		normalizedBalance += outgoingPending
-		pendingPayments, err := a.getPendingPayments()
+		pendingPayments, err := a.getPendingPayments(false)
 		if err != nil {
 			return nil, err
 		}
