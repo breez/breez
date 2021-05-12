@@ -9,7 +9,9 @@ GO111MODULE=off go get golang.org/x/mobile/cmd/gobind
 $GOPATH/bin/gomobile init
 cd gopath/src/github.com/breez/breez
 go mod vendor
+export PATH=$PATH:$GOPATH/bin
 ```
+
 ## Building `breez` for Android
 You need to install the ndk as part of your sdk Tools.
 If you have a separate ndk installed then make sure to set the ANDROID_NDK_HOME environment variable to your ndk install location.
