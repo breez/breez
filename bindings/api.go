@@ -779,7 +779,9 @@ func ConnectDirectToLnurl(channel []byte) error {
 }
 
 func FetchLnurl(lnurl string) ([]byte, error) {
-	return marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
+	result, err := marshalResponse(getBreezApp().AccountService.HandleLNURL(lnurl))
+	Log(fmt.Sprintf("FetchLnurl: %v", result), "INFO")
+	return result, err
 }
 
 func FinishLNURLAuth(request []byte) (string, error) {
@@ -792,6 +794,34 @@ func FinishLNURLAuth(request []byte) (string, error) {
 
 func WithdrawLnurl(bolt11 string) error {
 	return getBreezApp().AccountService.FinishLNURLWithdraw(bolt11)
+}
+
+func FinishLNURLPay(request []byte) (result []byte, err error) {
+
+	var d data.LNURLPayResponse1
+	if err = proto.Unmarshal(request, &d); err != nil {
+		return nil, errors.New("FinishLNURLPay: Failed to unmarshal data.")
+	}
+
+	result, err = marshalResponse(getBreezApp().AccountService.FinishLNURLPay(&d))
+	if err != nil {
+		Log(fmt.Sprintf("FinishLNURLPay error: %s", err), "WARNING")
+		return nil, err // FIXME TEST Is this actually returning an error that the client can use?
+	}
+
+	Log(fmt.Sprintf("FinishLNURLPay returned: %d bytes", len(result)), "INFO")
+	return result, nil
+}
+
+func GetLNUrlPayInfos() ([]byte, error) {
+	Log("GetLNUrlPayInfos", "INFO")
+	infos, err := getBreezApp().AccountService.GetAllLNUrlPayInfos()
+	Log(fmt.Sprintf("GetLNUrlPayInfos: infos: %v", infos), "INFO")
+	return marshalResponse(&data.LNUrlPayInfoList{InfoList: infos}, err)
+}
+
+func GetlNUrlPaySuccessAction(paymentHash string) ([]byte, error) {
+	return marshalResponse(getBreezApp().AccountService.GetLNUrlPaySuccessAction(paymentHash))
 }
 
 func NewReverseSwap(request []byte) (string, error) {

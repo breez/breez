@@ -1,3 +1,4 @@
+
 syntax = "proto3";
 
 package data;
@@ -420,6 +421,7 @@ message LNUrlResponse {
         LNUrlWithdraw withdraw = 1;
         LNURLChannel channel = 2;
         LNURLAuth auth = 3;
+        LNURLPayResponse1 payResponse1 = 4;
     }
 }
 
@@ -441,6 +443,45 @@ message LNURLAuth {
   string callback = 3;
   string host = 4;
   bool jwt = 5;
+}
+
+message LNURLPayResponse1 {
+
+    message Metadata  {
+        repeated string entry = 1;
+    }
+
+    string callback = 1;
+    int64 min_amount = 2;
+    int64 max_amount = 3;
+    repeated Metadata metadata = 4;        // this should be an array of an array of strings
+    string tag = 5;
+
+    uint64 amount      = 6;
+    string from_nodes  = 7;
+    string comment     = 8;
+    string host = 9;    
+}
+
+message SuccessAction {
+	string tag          = 1;
+	string description  = 2;
+	string url          = 3 ;
+	string message      = 4;
+	string ciphertext   = 5;
+	string iv           = 6;
+}
+
+message LNUrlPayInfo {
+    SuccessAction success_action = 1;
+    string invoice      = 2;
+    string paymentHash  = 3;
+    string comment      = 4;
+    string invoice_description  = 5;
+}
+
+message LNUrlPayInfoList {
+    repeated LNUrlPayInfo infoList = 1;
 }
 
 message ReverseSwapRequest {
