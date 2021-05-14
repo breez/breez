@@ -14,7 +14,7 @@ require (
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/decred/dcrd/lru v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fiatjaf/go-lnurl v1.1.1
+	github.com/fiatjaf/go-lnurl v1.3.1
 	github.com/golang/protobuf v1.4.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/kkdai/bstream v1.0.0 // indirect

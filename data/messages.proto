@@ -1,7 +1,6 @@
+
 syntax = "proto3";
-
 package data;
-
 option go_package = "./data";
 
 service BreezAPI {
@@ -109,15 +108,16 @@ message Payment {
     int64 fee = 12;
     string preimage = 13;
     string closedChannelPoint = 14;
-	   bool isChannelPending = 15;
+    bool isChannelPending = 15;
     bool isChannelCloseConfimed = 16;
-	   string closedChannelTxID = 17;
+    string closedChannelTxID = 17;
     bool isKeySend = 18;
     bool PendingFull = 19;
     string closedChannelRemoteTxID = 20;
     string closedChannelSweepTxID = 21;
     string groupKey = 22;
     string groupName = 23;
+    LNUrlPayInfo lnurlPayInfo  = 24;
 }
 
 message PaymentsList {
@@ -420,6 +420,7 @@ message LNUrlResponse {
         LNUrlWithdraw withdraw = 1;
         LNURLChannel channel = 2;
         LNURLAuth auth = 3;
+        LNURLPayResponse1 payResponse1 = 4;
     }
 }
 
@@ -441,6 +442,45 @@ message LNURLAuth {
   string callback = 3;
   string host = 4;
   bool jwt = 5;
+}
+
+message LNUrlPayMetadata  {
+    repeated string entry = 1;
+}
+
+message LNURLPayResponse1 {
+    string callback = 1;
+    int64 min_amount = 2;
+    int64 max_amount = 3;
+    repeated LNUrlPayMetadata metadata = 4;        
+    string tag = 5;
+    uint64 amount      = 6;
+    string from_nodes  = 7;
+    string comment     = 8;
+    string host = 9;    
+}
+
+message SuccessAction {
+	string tag          = 1;
+	string description  = 2;
+	string url          = 3 ;
+	string message      = 4;
+	string ciphertext   = 5;
+	string iv           = 6;
+}
+
+message LNUrlPayInfo {
+    string paymentHash  = 1;
+    string invoice      = 2;
+    SuccessAction success_action = 3;
+    string comment      = 4;
+    string invoice_description  = 5;
+    repeated LNUrlPayMetadata metadata = 6;
+    string host = 7;
+}
+
+message LNUrlPayInfoList {
+    repeated LNUrlPayInfo infoList = 1;
 }
 
 message ReverseSwapRequest {
