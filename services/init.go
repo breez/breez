@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	endpointTimeout = 5
+	endpointTimeout = 10
 )
 
 // API is the interface for external breez services.
