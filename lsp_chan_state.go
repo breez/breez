@@ -412,14 +412,14 @@ func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.Unconfirmed
 	}
 
 	// for testing
-	for cp, h := range heightHintMap {
-		a.log.Infof("adding test channel cp=%v, hint=%v", cp, h)
-		newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
-			ChannelPoint:       cp,
-			HeightHint:         int64(heightHintMap[cp]),
-			LspConfirmedHeight: int64(h + 3),
-		})
-	}
+	// for cp, h := range heightHintMap {
+	// 	a.log.Infof("adding test channel cp=%v, hint=%v", cp, h)
+	// 	newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+	// 		ChannelPoint:       cp,
+	// 		HeightHint:         int64(heightHintMap[cp]),
+	// 		LspConfirmedHeight: int64(h + 3),
+	// 	})
+	// }
 
 	a.log.Infof("unconfirmedChannelsStatus finished with %v statuses", len(newStatuses))
 	return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
