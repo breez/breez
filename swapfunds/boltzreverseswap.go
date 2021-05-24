@@ -311,7 +311,7 @@ func (s *Service) ReverseRoutingNode() []byte {
 	if s.reverseRoutingNode != nil {
 		return s.reverseRoutingNode
 	}
-	c, ctx, cancel := s.breezAPI.NewSwapper()
+	c, ctx, cancel := s.breezAPI.NewSwapper(0)
 	defer cancel()
 	r, err := c.GetReverseRoutingNode(ctx, &breezservice.GetReverseRoutingNodeRequest{})
 	if err != nil {

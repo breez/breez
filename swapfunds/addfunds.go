@@ -45,7 +45,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 		return nil, err
 	}
 
-	c, ctx, cancel := s.breezAPI.NewSwapper()
+	c, ctx, cancel := s.breezAPI.NewSwapper(0)
 	defer cancel()
 
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
@@ -161,7 +161,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 
 	s.log.Infof("GetFundStatus got %v non mempool addresses to query", len(nonMempoolAddresses))
 	if len(nonMempoolAddresses) > 0 {
-		c, ctx, cancel := s.breezAPI.NewSwapper()
+		c, ctx, cancel := s.breezAPI.NewSwapper(0)
 		defer cancel()
 
 		statusesMap, err := c.AddFundStatus(ctx, &breezservice.AddFundStatusRequest{NotificationToken: notificationToken, Addresses: nonMempoolAddresses})
@@ -491,7 +491,7 @@ func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
 		return nil
 	})
 
-	c, ctx, cancel := s.breezAPI.NewSwapper()
+	c, ctx, cancel := s.breezAPI.NewSwapper(time.Second * 30)
 	defer cancel()
 	var paymentError string
 	reply, err := c.GetSwapPayment(ctx, &breezservice.GetSwapPaymentRequest{PaymentRequest: paymentRequest})

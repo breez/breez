@@ -45,10 +45,14 @@ func (c *Client) NewFundManager() (breezservice.FundManagerClient, context.Conte
 }
 
 //NewSwapper creates a new Swapper
-func (c *Client) NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc) {
+func (c *Client) NewSwapper(timeout time.Duration) (breezservice.SwapperClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSwapper - connection state = %v", con.GetState())
-	ctx, cancel := context.WithTimeout(context.Background(), endpointTimeout*time.Second)
+	swapperTimeout := timeout
+	if timeout == 0 {
+		swapperTimeout = endpointTimeout * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), swapperTimeout)
 	return breezservice.NewSwapperClient(con), ctx, cancel
 }
 
