@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	logger btclog.Logger
+	logger                btclog.Logger
+	ErrMissingPolicyError = errors.New("missing channel policy")
 )
 
 // SyncGraphDB syncs the channeldb from another db.
