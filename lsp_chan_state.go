@@ -22,6 +22,7 @@ import (
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/config"
+	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/breez/services"
@@ -344,6 +345,93 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 	}
 
 	return snapshots, channelsMap, nil
+}
+
+func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.UnconfirmedChannelsStatus) (
+	*data.UnconfirmedChannelsStatus, error) {
+	a.log.Info("unconfirmedChannelsStatus started: %v", oldStatus)
+
+	lspList, err := a.breezAPI.LSPList()
+	if err != nil {
+		return nil, err
+	}
+
+	currentSnapshots, _, err := a.collectChannelsStatus()
+	if err != nil {
+		return nil, err
+	}
+	heightHintMap := make(map[string]uint64, 0)
+	for _, snapshot := range currentSnapshots {
+		for channelPoint, hint := range snapshot.unconfirmedOpen {
+			heightHintMap[channelPoint] = hint
+		}
+	}
+
+	var newStatuses []*data.UnconfirmedChannelStatus
+
+	// in case we got old status we only need to update the height hints.
+	if oldStatus != nil && len(oldStatus.Statuses) > 0 {
+		for _, status := range oldStatus.Statuses {
+			newHint, ok := heightHintMap[status.ChannelPoint]
+			if !ok {
+				continue
+			}
+			newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+				ChannelPoint:       status.ChannelPoint,
+				HeightHint:         int64(newHint),
+				LspConfirmedHeight: status.LspConfirmedHeight,
+			})
+		}
+		return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
+	}
+
+	for _, lsp := range lspList.Lsps {
+		lspSnapshot, ok := currentSnapshots[lsp.Pubkey]
+		if !ok {
+			continue
+		}
+
+		if len(lspSnapshot.unconfirmedOpen) == 0 {
+			continue
+		}
+		confirmedOpen, _, err := a.checkChannels(lspSnapshot.unconfirmedOpen, map[string]uint64{}, lsp.LspPubkey, lsp.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		for cp, confirmedHeight := range confirmedOpen {
+			newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+				ChannelPoint:       cp,
+				HeightHint:         int64(heightHintMap[cp]),
+				LspConfirmedHeight: int64(confirmedHeight),
+			})
+		}
+		if len(confirmedOpen) == 0 {
+			continue
+		}
+	}
+
+	// for testing
+	// for cp, h := range heightHintMap {
+	// 	a.log.Infof("adding test channel cp=%v, hint=%v", cp, h)
+	// 	newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
+	// 		ChannelPoint:       cp,
+	// 		HeightHint:         int64(heightHintMap[cp]),
+	// 		LspConfirmedHeight: int64(h + 3),
+	// 	})
+	// }
+
+	a.log.Infof("unconfirmedChannelsStatus finished with %v statuses", len(newStatuses))
+	return &data.UnconfirmedChannelsStatus{Statuses: newStatuses}, nil
+}
+
+func (a *lspChanStateSync) unconfirmedChannelsInSync() (bool, error) {
+	a.log.Info("unconfirmedChannelsInSync started")
+	status, err := a.unconfirmedChannelsStatus(nil)
+	if err != nil {
+		return false, err
+	}
+	return len(status.Statuses) == 0, nil
 }
 
 func (a *lspChanStateSync) syncChannels(lspNodePubkey string, lspPubkey []byte, lspID string) (bool, error) {
