@@ -179,6 +179,9 @@ func ourData(tx walletdb.ReadWriteTx, ourNode *channeldb.LightningNode) (
 		toPolicy *channeldb.ChannelEdgePolicy,
 		fromPolicy *channeldb.ChannelEdgePolicy) error {
 
+		if toPolicy == nil || fromPolicy == nil {
+			return ErrMissingPolicyError
+		}
 		nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
 		edges = append(edges, channelEdgeInfo)
 		if toPolicy != nil {
@@ -191,7 +194,7 @@ func ourData(tx walletdb.ReadWriteTx, ourNode *channeldb.LightningNode) (
 	})
 
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("ourNode.ForEachChannel: %w", err)
+		return nil, nil, nil, err
 	}
 	var nodes []*channeldb.LightningNode
 	for _, node := range nodeMap {

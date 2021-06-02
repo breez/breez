@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package data;
 
+option go_package = "./data";
+
 service BreezAPI {
   rpc GetLSPList (LSPListRequest) returns (LSPList) {}
   rpc ConnectToLSP (ConnectLSPRequest) returns (ConnectLSPReply) {}

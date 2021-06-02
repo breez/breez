@@ -914,6 +914,11 @@ func SweepAllCoinsTransactions(address string) ([]byte, error) {
 func SyncGraphFromFile(sourceFilePath string) error {
 	Log("SyncGraphFromFile started", "INFO")
 	err := bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	if err == bootstrap.ErrMissingPolicyError {
+		Log("SyncGraphFromFile missing policy, populating channel policy", "INFO")
+		getBreezApp().PopulateChannelPolicy()
+		err = bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	}
 	Log("SyncGraphFromFile finished", "INFO")
 	return err
 }

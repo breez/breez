@@ -1,0 +1,150 @@
+version: '3.1'
+
+services:
+
+  dev-btcd:
+    image: btcd
+    container_name: dev-btcd
+    build:
+      context: btcd/
+    environment:
+      - RPCUSER
+      - RPCPASS
+      - NETWORK
+      - DEBUG
+      - MINING_ADDRESS
+    volumes:
+      - shared:/rpc
+    ports:
+      - ${DEV_HOST_IP}:18555:18555
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.5
+    entrypoint: ["./start-btcd.sh"]
+  dev-breez:
+    container_name: "dev-breez"
+    domainname: breez_node.server
+    hostname: "breez_node"
+    build:
+      context: ../
+      dockerfile: docker/breez/Dockerfile
+    volumes:
+      - shared:/rpc
+      - ${TEST_DIR}/breez_node:/root/.lnd
+    ports:
+      - ${DEV_HOST_IP}:9736:9735
+      - ${DEV_HOST_IP}:10010:10009
+    links:
+      - "dev-btcd:blockchain"
+    depends_on:
+      - "dev-btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.3
+  dev-alice:
+    container_name: "dev-alice"
+    domainname: alice.client
+    hostname: alice
+    build:
+      context: ../
+      dockerfile: docker/alice/Dockerfile
+    volumes:
+      - ${TEST_DIR}/alice_node:/root/.lnd
+    ports:
+      - 9735:9735
+      - 10009:10009
+      - 50053:50053
+    links:
+      - "dev-btcd:blockchain"
+    depends_on:
+      - "dev-btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.2
+  dev-subswap_node:
+    container_name: "dev-subswap_node"
+    domainname: subswap_node.server
+    hostname: "subswap_node"
+    build:
+      context: ../
+      dockerfile: docker/breez/Dockerfile
+    volumes:
+      - shared:/rpc
+      - ${TEST_DIR}/subswap_node:/root/.lnd
+    ports:
+      - 9738:9735
+      - 10012:10009
+    links:
+      - "dev-btcd:blockchain"
+    depends_on:
+      - "dev-btcd"
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.11
+  dev-breez_server:
+    container_name: "dev-breez_server"
+    build:
+      context: ../
+      dockerfile: docker/breez_server/Dockerfile
+    depends_on:
+      - dev-breez
+      - dev-subswap_node
+      - dev-lspd
+      - dev-postgres
+    volumes:
+      - ${TEST_DIR}/breez_node:/root/breez_node
+      - ${TEST_DIR}/subswap_node:/root/subswap_node
+    links:
+      - "dev-postgres:postgres"
+      - "dev-redis:redis"
+    ports:
+      - ${DEV_HOST_IP}:50053:50053
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.4
+  dev-lspd:
+    container_name: "dev-lspd"
+    build:
+      context: ../
+      dockerfile: docker/lspd/Dockerfile
+    volumes:
+      - ${TEST_DIR}/breez_node:/root/breez_node
+    links:
+      - "dev-postgres_interceptor:postgres_interceptor"
+    depends_on:
+      - dev-postgres_interceptor
+      - dev-breez
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.9
+    environment:
+      NODE_HOST: ${DEV_HOST_IP}:9736
+  dev-postgres:
+    image: postgres
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.6
+    environment:
+      POSTGRES_PASSWORD: test
+  dev-postgres_interceptor:
+    image: postgres
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.8
+    environment:
+      POSTGRES_PASSWORD: test
+  dev-redis:
+    networks:
+      nodes:
+        ipv4_address: 10.5.0.7
+    build:
+      context: ./redis
+volumes:
+  shared:
+    driver: local
+networks:
+  nodes:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16

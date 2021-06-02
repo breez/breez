@@ -411,13 +411,13 @@ func (a *lspChanStateSync) unconfirmedChannelsStatus(oldStatus *data.Unconfirmed
 		}
 	}
 
-	// // for testing
+	// for testing
 	// for cp, h := range heightHintMap {
 	// 	a.log.Infof("adding test channel cp=%v, hint=%v", cp, h)
 	// 	newStatuses = append(newStatuses, &data.UnconfirmedChannelStatus{
 	// 		ChannelPoint:       cp,
 	// 		HeightHint:         int64(heightHintMap[cp]),
-	// 		LspConfirmedHeight: int64(h + 10),
+	// 		LspConfirmedHeight: int64(h + 3),
 	// 	})
 	// }
 

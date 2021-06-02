@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"sync"
+	"time"
 
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/config"
@@ -13,14 +14,14 @@ import (
 )
 
 const (
-	endpointTimeout = 5
+	endpointTimeout = 30
 )
 
 // API is the interface for external breez services.
 type API interface {
 	NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc)
 	NewFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc)
-	NewSwapper() (breezservice.SwapperClient, context.Context, context.CancelFunc)
+	NewSwapper(timeout time.Duration) (breezservice.SwapperClient, context.Context, context.CancelFunc)
 	NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc)
 	NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc)
 	LSPList() (*data.LSPList, error)
