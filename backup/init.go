@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"sync"
@@ -13,12 +14,19 @@ import (
 // ProviderFactory is a factory for create a specific provider.
 // This is the function needed to be implemented for a new provider
 // to be registered and used.
-type ProviderFactory func(authService AuthService, log btclog.Logger) (Provider, error)
+type ProviderFactory func(authService AuthService, authData string, log btclog.Logger) (Provider, error)
 
 var (
 	providersFactory = map[string]ProviderFactory{
-		"gdrive": func(authService AuthService, log btclog.Logger) (Provider, error) {
+		"gdrive": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
 			return NewGoogleDriveProvider(authService, log)
+		},
+		"nextcloud": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
+			var providerData ProviderData
+			if err := json.Unmarshal([]byte(authData), &providerData); err != nil {
+				return nil, err
+			}
+			return NewNextCloudProvider(providerData, log)
 		},
 	}
 )
@@ -55,7 +63,7 @@ func NewManager(
 	var provider Provider
 	var err error
 	if providerName != "" {
-		provider, err = createBackupProvider(providerName, authService, log)
+		provider, err = createBackupProvider(providerName, authService, "", log)
 		if err != nil {
 			return nil, err
 		}
@@ -85,10 +93,10 @@ func RegisterProvider(providerName string, factory ProviderFactory) {
 	providersFactory[providerName] = factory
 }
 
-func createBackupProvider(providerName string, authService AuthService, log btclog.Logger) (Provider, error) {
+func createBackupProvider(providerName string, authService AuthService, authData string, log btclog.Logger) (Provider, error) {
 	factory, ok := providersFactory[providerName]
 	if !ok {
 		return nil, fmt.Errorf("provider not found for %v", providerName)
 	}
-	return factory(authService, log)
+	return factory(authService, authData, log)
 }

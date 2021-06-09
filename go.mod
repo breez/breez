@@ -21,11 +21,13 @@ require (
 	github.com/lightninglabs/neutrino v0.11.1-0.20201210023533-e1978372d15e
 	github.com/lightninglabs/protobuf-hex-display v1.3.3-0.20191212020323-b444784ce75d
 	github.com/lightningnetwork/lnd v0.11.0-beta
+	github.com/remogatto/cloud v0.0.0-20200423094407-c201f07eb401 // indirect
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
+	github.com/studio-b12/gowebdav v0.0.0-20210427212133-86f8378cf140 // indirect
 	github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564
 	github.com/urfave/cli v1.22.1
 	go.etcd.io/bbolt v1.3.5-0.20200615073812-232d8fc87f50
-	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d

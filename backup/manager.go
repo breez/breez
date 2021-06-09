@@ -419,6 +419,7 @@ func (b *Manager) notifyBackupFailed(err error) {
 			return
 		}
 	}
+	b.log.Errorf("failed to backup: %v", err.Error())
 	b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_FAILED})
 }
 
@@ -450,8 +451,9 @@ func (b *Manager) getBackupIdentifier() (string, error) {
 	return "backup-id-" + hex.EncodeToString(id), nil
 }
 
-func (b *Manager) SetBackupProvider(providerName string) error {
-	provider, err := createBackupProvider(providerName, b.authService, b.log)
+func (b *Manager) SetBackupProvider(providerName, authData string) error {
+	b.log.Infof("setting backup provider %v, authData: %v", providerName, authData)
+	provider, err := createBackupProvider(providerName, b.authService, authData, b.log)
 	if err != nil {
 		return err
 	}

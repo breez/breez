@@ -74,7 +74,7 @@ func (b *NativeBackupProviderBridge) DownloadBackupFiles(nodeID, backupID string
 
 // RegisterNativeBackupProvider registered a native backup provider
 func RegisterNativeBackupProvider(name string, provider NativeBackupProvider) {
-	backup.RegisterProvider(name, func(authService backup.AuthService, log btclog.Logger) (backup.Provider, error) {
+	backup.RegisterProvider(name, func(authService backup.AuthService, authData string, log btclog.Logger) (backup.Provider, error) {
 		return &NativeBackupProviderBridge{nativeProvider: provider}, nil
 	})
 }

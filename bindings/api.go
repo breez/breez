@@ -167,8 +167,8 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 }
 
 // SetBackupProvider sets a new backup provider backend.
-func SetBackupProvider(providerName string) error {
-	return getBreezApp().BackupManager.SetBackupProvider(providerName)
+func SetBackupProvider(providerName, authData string) error {
+	return getBreezApp().BackupManager.SetBackupProvider(providerName, authData)
 }
 
 // SetBackupEncryptionKey sets the security key to the backup manager so it
