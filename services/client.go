@@ -178,20 +178,21 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 	r := make(map[string]*data.LSPInformation)
 	for id, l := range lsps.Lsps {
 		r[id] = &data.LSPInformation{
-			Id:                  id,
-			Name:                l.Name,
-			WidgetUrl:           l.WidgetUrl,
-			Pubkey:              l.Pubkey,
-			Host:                l.Host,
-			ChannelCapacity:     l.ChannelCapacity,
-			TargetConf:          l.TargetConf,
-			BaseFeeMsat:         l.BaseFeeMsat,
-			FeeRate:             l.FeeRate,
-			TimeLockDelta:       l.TimeLockDelta,
-			MinHtlcMsat:         l.MinHtlcMsat,
-			ChannelFeePermyriad: l.ChannelFeePermyriad,
-			LspPubkey:           l.LspPubkey,
-			MaxInactiveDuration: l.MaxInactiveDuration,
+			Id:                    id,
+			Name:                  l.Name,
+			WidgetUrl:             l.WidgetUrl,
+			Pubkey:                l.Pubkey,
+			Host:                  l.Host,
+			ChannelCapacity:       l.ChannelCapacity,
+			TargetConf:            l.TargetConf,
+			BaseFeeMsat:           l.BaseFeeMsat,
+			FeeRate:               l.FeeRate,
+			TimeLockDelta:         l.TimeLockDelta,
+			MinHtlcMsat:           l.MinHtlcMsat,
+			ChannelFeePermyriad:   l.ChannelFeePermyriad,
+			ChannelMinimumFeeMsat: l.ChannelMinimumFeeMsat,
+			LspPubkey:             l.LspPubkey,
+			MaxInactiveDuration:   l.MaxInactiveDuration,
 		}
 	}
 	c.lspList = &data.LSPList{Lsps: r}
