@@ -9,7 +9,7 @@ const (
 func (a *App) CheckVersion() error {
 	versions, err := a.ServicesClient.Versions()
 	if err != nil {
-		return nil
+		return err
 	}
 	for _, v := range versions {
 		if v == currentVersion {

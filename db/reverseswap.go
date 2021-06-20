@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/breez/breez/data"
-	"github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
+	"go.etcd.io/bbolt"
 )
 
 var (

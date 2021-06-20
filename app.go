@@ -291,7 +291,7 @@ func (a *App) DeleteGraph() error {
 			ourCids[channelEdgeInfo.ChannelID] = struct{}{}
 			return nil
 		})
-	})
+	}, func() {})
 	if err != nil {
 		a.log.Errorf("ourNode.ForEachChannel error = %v", err)
 		return fmt.Errorf("ourNode.ForEachChannel: %w", err)
@@ -313,7 +313,7 @@ func (a *App) DeleteGraph() error {
 				return nil
 			})
 		})
-	})
+	}, func() {})
 	if err != nil {
 		a.log.Errorf("DeleteNodeFromGraph->ForEachNodeChannel error = %v", err)
 		return fmt.Errorf("ForEachNodeChannel: %w", err)

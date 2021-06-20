@@ -266,7 +266,7 @@ func walletBirthday(workingDir string) (*time.Time, error) {
 		return nil, err
 	}
 
-	db, err := walletdb.Open("bdb", walletDBPath, false)
+	db, err := walletdb.Open("bdb", walletDBPath, false, time.Second*60)
 	if err != nil {
 		return nil, err
 	}

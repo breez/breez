@@ -2,6 +2,7 @@ package dropwtx
 
 import (
 	"path"
+	"time"
 
 	"github.com/breez/breez/config"
 	"github.com/btcsuite/btcwallet/waddrmgr"
@@ -20,7 +21,7 @@ func Drop(workingDir string) error {
 	if err != nil {
 		return err
 	}
-	db, err := walletdb.Open("bdb", path.Join(workingDir, "data/chain/bitcoin/", cfg.Network, "wallet.db"), false)
+	db, err := walletdb.Open("bdb", path.Join(workingDir, "data/chain/bitcoin/", cfg.Network, "wallet.db"), false, time.Second*60)
 	if err != nil {
 		return err
 	}

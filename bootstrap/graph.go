@@ -14,9 +14,9 @@ import (
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/btcsuite/btcwallet/walletdb/bdb"
-	"github.com/coreos/bbolt"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnwire"
+	"go.etcd.io/bbolt"
 )
 
 const (
@@ -69,7 +69,7 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 	err = chanDB.View(func(tx walletdb.ReadTx) error {
 		url, err = getURL(workingDir, chanDB, tx)
 		return err
-	})
+	}, func() {})
 	if err != nil {
 		logger.Errorf("getURL(): %v", err)
 		return "", fmt.Errorf("getURL(): %w", err)

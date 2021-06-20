@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	bolt "github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 const (
