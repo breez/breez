@@ -53,6 +53,7 @@ service Swapper {
   rpc AddFundInit (AddFundInitRequest) returns (AddFundInitReply) {}
   rpc AddFundStatus (AddFundStatusRequest) returns (AddFundStatusReply) {}
   rpc GetSwapPayment (GetSwapPaymentRequest) returns (GetSwapPaymentReply) {}
+  rpc RedeemSwapPayment (RedeemSwapPaymentRequest) returns (RedeemSwapPaymentReply) {}
   rpc GetReverseRoutingNode (GetReverseRoutingNodeRequest) returns (GetReverseRoutingNodeReply) {}
 }
 
@@ -127,6 +128,8 @@ message LSPInformation {
   bytes lsp_pubkey = 12;
   // The channel can be closed if not used this duration in seconds.
   int64 max_inactive_duration = 13;
+
+  int64 channel_minimum_fee_msat = 14;
 }
 message LSPListReply {
   map<string, LSPInformation> lsps = 1; // The key is the lsp id
@@ -245,6 +248,20 @@ message GetSwapPaymentReply {
   bool funds_exceeded_limit = 2;
 
   SwapError swap_error = 3;
+}
+
+message RedeemSwapPaymentRequest {
+  bytes preimage = 1;
+
+  /// The target number of blocks that the funding transaction should be confirmed by.
+  int32 target_conf = 2;
+
+  /// A manual fee rate set in sat/byte that should be used when crafting the funding transaction.
+  int64 sat_per_byte = 3;
+}
+
+message RedeemSwapPaymentReply {
+  string txid = 1;
 }
 
 // The request message containing the device id and lightning id
