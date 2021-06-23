@@ -487,8 +487,14 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 
 		// Calculate the channel fee such that it's an integral number of sat.
 		channelFeesMsat := amountMsat * lspInfo.ChannelFeePermyriad / 10_000 / 1_000 * 1_000
-		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v, total fees for channel: %v",
-			lspInfo.ChannelFeePermyriad, channelFeesMsat)
+		if channelFeesMsat < lspInfo.ChannelMinimumFeeMsat {
+			channelFeesMsat = lspInfo.ChannelMinimumFeeMsat
+		}
+		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
+			lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
+		if amountMsat < channelFeesMsat+1000 {
+			return "", 0, fmt.Errorf("the amount is smaller than the minimum fees (%v sats) + 1 sat", lspInfo.ChannelMinimumFeeMsat)
+		}
 
 		smallAmountMsat = amountMsat - channelFeesMsat
 	} else {

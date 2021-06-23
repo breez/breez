@@ -393,6 +393,8 @@ message LSPInformation {
     bytes lsp_pubkey = 13;
     // The channel can be closed if not used this duration in seconds.
     int64 max_inactive_duration = 14;
+
+    int64 channel_minimum_fee_msat = 15;
 }
 
 message LSPListRequest {}
