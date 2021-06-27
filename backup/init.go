@@ -23,9 +23,7 @@ var (
 		},
 		"nextcloud": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
 			var providerData ProviderData
-			if err := json.Unmarshal([]byte(authData), &providerData); err != nil {
-				return nil, err
-			}
+			_ = json.Unmarshal([]byte(authData), &providerData)
 			return NewNextCloudProvider(providerData, log)
 		},
 	}

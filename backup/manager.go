@@ -70,7 +70,7 @@ func (b *Manager) Download(nodeID string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider := b.getProvider()
+	provider := b.GetProvider()
 	if provider == nil {
 		return nil, ErrorNoProvider
 	}
@@ -90,7 +90,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider := b.getProvider()
+	provider := b.GetProvider()
 	if provider == nil {
 		return nil, ErrorNoProvider
 	}
@@ -162,7 +162,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 // AvailableSnapshots returns a list of snsapshot that the backup provider reports
 // it has. Every snapshot is for a specific node id.
 func (b *Manager) AvailableSnapshots() ([]SnapshotInfo, error) {
-	provider := b.getProvider()
+	provider := b.GetProvider()
 	if provider == nil {
 		return nil, ErrorNoProvider
 	}
@@ -173,7 +173,7 @@ func (b *Manager) AvailableSnapshots() ([]SnapshotInfo, error) {
 // It is considered safe if we don't know of another instance which is the last to restore
 // this node (nodeID)
 func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
-	provider := b.getProvider()
+	provider := b.GetProvider()
 	if provider == nil {
 		return false, ErrorNoProvider
 	}
@@ -236,7 +236,7 @@ func (b *Manager) Start() error {
 					b.notifyBackupFailed(err)
 					continue
 				}
-				provider := b.getProvider()
+				provider := b.GetProvider()
 				if provider == nil {
 					b.notifyBackupFailed(ErrorNoProvider)
 					continue
@@ -463,8 +463,14 @@ func (b *Manager) SetBackupProvider(providerName, authData string) error {
 	return nil
 }
 
-func (b *Manager) getProvider() Provider {
+func (b *Manager) GetProvider() Provider {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.provider
+}
+
+func (b *Manager) SetProvider(p Provider) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.provider = p
 }

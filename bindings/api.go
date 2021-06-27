@@ -285,6 +285,7 @@ func DownloadBackup(nodeID string) ([]byte, error) {
 RestoreBackup is part of the binding inteface which is delegated to breez.RestoreBackup
 */
 func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
+	oldProvider := getBreezApp().BackupManager.GetProvider()
 	if err = getBreezApp().Stop(); err != nil {
 		Log("error in calling RestoreBackup: "+err.Error(), "INFO")
 		return err
@@ -299,6 +300,7 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 	if newAppErr != nil {
 		Log("error in calling breez.NewAp: "+newAppErr.Error(), "INFO")
 	}
+	breezApp.BackupManager.SetProvider(oldProvider)
 	return err
 }
 

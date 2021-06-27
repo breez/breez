@@ -121,7 +121,7 @@ func (n *NextCloudProvider) UploadBackupFiles(file string, nodeID string, encryp
 			NodeID:         nodeID,
 			Encrypted:      encryptionType != "",
 			EncryptionType: encryptionType,
-			ModifiedTime:   time.Now().Format(timeFormat),
+			ModifiedTime:   time.Now().Format(time.RFC3339),
 		}}
 	data, err := json.Marshal(backupInfo)
 	if err != nil {
@@ -173,10 +173,15 @@ func (n *NextCloudProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	}
 	files, err := client.ListDir(breezDir)
 	if err != nil {
+		if ferr, ok := err.(*WebdavRequestError); ok {
+			if ferr.StatusCode == 404 {
+				return snapshots, nil
+			}
+		}
 		return nil, &webdavProviderError{err: err}
 	}
 	for _, file := range files.Files {
-		fmt.Println("fiole: ", file.Href)
+		fmt.Println("file: ", file.Href)
 	}
 
 	for _, file := range files.Files {
@@ -185,7 +190,6 @@ func (n *NextCloudProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 		if err != nil {
 			continue
 		}
-		fmt.Println(len(bytes))
 		var backupInfo BackupInfo
 		if err := json.Unmarshal(bytes, &backupInfo); err != nil {
 			return nil, err
