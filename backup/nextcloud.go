@@ -52,7 +52,6 @@ func (d *webdavProviderError) IsAuthError() bool {
 	return false
 }
 
-//y73BNCWYop2FB4mc
 func NewNextCloudProvider(authData ProviderData, log btclog.Logger) (*NextCloudProvider, error) {
 	return &NextCloudProvider{
 		authData: authData,
@@ -61,15 +60,6 @@ func NewNextCloudProvider(authData ProviderData, log btclog.Logger) (*NextCloudP
 }
 
 func (n *NextCloudProvider) getClient() (string, *WebdavClient, error) {
-	// provider := n.authData
-	// url := provider.Url + "/remote.php/webdav"
-	// //n.log.Infof("backup webdav url = %v breez dir = %v", url, provider.BreezDir)
-	// client := gowebdav.NewClient(url, provider.User, provider.Password)
-	// a := provider.User + ":" + provider.Password
-	// auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(a))
-	// client.SetHeader("Authorization", auth)
-	// return provider.BreezDir, client, nil
-
 	c, err := Dial(n.authData.Url, n.authData.User, n.authData.Password)
 	return n.authData.BreezDir, c, err
 }
