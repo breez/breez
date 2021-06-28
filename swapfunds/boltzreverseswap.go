@@ -149,7 +149,7 @@ func (s *Service) subscribeSpendTransaction(spendRequest *chainrpc.SpendRequest,
 		for {
 			SpendEvent, err := stream.Recv()
 			if err != nil {
-				s.log.Criticalf("Failed to receive an event : %v", err)
+				s.log.Errorf("Failed to receive an event : %v", err)
 				time.AfterFunc(time.Second*10, func() {
 					s.subscribeSpendTransaction(spendRequest, txid)
 				})
@@ -276,7 +276,7 @@ func (s *Service) subscribeLockupScript(rs *data.ReverseSwap) error {
 		for {
 			confEvent, err := stream.Recv()
 			if err != nil {
-				s.log.Criticalf("Failed to receive an event : %v", err)
+				s.log.Errorf("Failed to receive an event : %v", err)
 				time.AfterFunc(time.Second*10, func() {
 					s.subscribeLockupScript(rs)
 				})

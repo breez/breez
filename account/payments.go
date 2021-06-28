@@ -1221,7 +1221,7 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 
 	_, err = a.breezDB.AddAccountPayment(paymentData, invoice.SettleIndex, 0)
 	if err != nil {
-		a.log.Criticalf("Unable to add reveived payment : %v", err)
+		a.log.Errorf("Unable to add reveived payment : %v", err)
 		return err
 	}
 	a.onServiceEvent(data.NotificationEvent{

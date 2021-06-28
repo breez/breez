@@ -41,7 +41,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	lnclient := s.daemonAPI.SubSwapClient()
 	swap, err := lnclient.SubSwapClientInit(context.Background(), &submarineswaprpc.SubSwapClientInitRequest{})
 	if err != nil {
-		s.log.Criticalf("Failed to call SubSwapClientInit %v", err)
+		s.log.Errorf("Failed to call SubSwapClientInit %v", err)
 		return nil, err
 	}
 
@@ -62,7 +62,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 
 	client, err := lnclient.SubSwapClientWatch(context.Background(), &submarineswaprpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
-		s.log.Criticalf("Failed to call SubSwapClientWatch %v", err)
+		s.log.Errorf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
 	}
 
@@ -315,7 +315,7 @@ func (s *Service) onTransaction() error {
 	for _, addr := range addresses {
 		updated, err := s.updateUnspentAmount(addr.Address)
 		if err != nil {
-			s.log.Criticalf("Unable to call updateUnspentAmount for address %v", addr.Address)
+			s.log.Errorf("Unable to call updateUnspentAmount for address %v", addr.Address)
 		}
 		newConfirmation = newConfirmation || updated
 	}
@@ -338,7 +338,7 @@ func (s *Service) onInvoice(invoice *lnrpc.Invoice) error {
 			return nil
 		})
 		if err != nil {
-			s.log.Criticalf("watchSettledSwapAddresses - failed to call updateSwapAddressByPaymentHash : %v", err)
+			s.log.Errorf("watchSettledSwapAddresses - failed to call updateSwapAddressByPaymentHash : %v", err)
 			return err
 		}
 	}

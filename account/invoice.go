@@ -121,7 +121,7 @@ func (a *Service) trackInvoice(invoiceHash []byte) error {
 		for {
 			invoice, err := stream.Recv()
 			if err != nil {
-				a.log.Criticalf("trackZeroConfInvoice: failed to receive an invoice : %v", err)
+				a.log.Errorf("trackZeroConfInvoice: failed to receive an invoice : %v", err)
 				return
 			}
 			a.log.Infof("trackZeroConfInvoice: invoice received %v", invoice.State)
