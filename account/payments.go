@@ -8,9 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lspd"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -113,6 +116,114 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 
 	resultPayments := &data.PaymentsList{PaymentsList: paymentsList}
 	return resultPayments, nil
+}
+
+func executeChannelClose(client lnrpc.LightningClient, req *lnrpc.CloseChannelRequest,
+	txidChan chan<- string) error {
+
+	stream, err := client.CloseChannel(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		switch update := resp.Update.(type) {
+		case *lnrpc.CloseStatusUpdate_ClosePending:
+			closingHash := update.ClosePending.Txid
+			txid, err := chainhash.NewHash(closingHash)
+			if err != nil {
+				return err
+			}
+
+			txidChan <- txid.String()
+			return nil
+
+		case *lnrpc.CloseStatusUpdate_ChanClose:
+			return nil
+		}
+	}
+}
+
+func (a *Service) CloseAllChannels(lspPubkey string, targetConf int32, satPerByte int64) error {
+	lnclient := a.daemonAPI.APIClient()
+	if lnclient == nil {
+		return errors.New("daemon is not ready")
+	}
+
+	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		return err
+	}
+	var channelsToClose []*lnrpc.Channel
+	for _, channel := range channels.Channels {
+		channelsToClose = append(channelsToClose, channel)
+	}
+	type result struct {
+		ChannelPoint string `json:"channel_point"`
+		ClosingTxid  string `json:"closing_txid"`
+		FailErr      string `json:"error"`
+	}
+	resultChan := make(chan result, len(channelsToClose))
+	for _, channel := range channelsToClose {
+		go func(channel *lnrpc.Channel) {
+			res := result{}
+			res.ChannelPoint = channel.ChannelPoint
+			defer func() {
+				resultChan <- res
+			}()
+
+			// Parse the channel point in order to create the close
+			// channel request.
+			s := strings.Split(res.ChannelPoint, ":")
+			if len(s) != 2 {
+				res.FailErr = "expected channel point with " +
+					"format txid:index"
+				return
+			}
+			index, err := strconv.ParseUint(s[1], 10, 32)
+			if err != nil {
+				res.FailErr = fmt.Sprintf("unable to parse "+
+					"channel point output index: %v", err)
+				return
+			}
+
+			req := &lnrpc.CloseChannelRequest{
+				ChannelPoint: &lnrpc.ChannelPoint{
+					FundingTxid: &lnrpc.ChannelPoint_FundingTxidStr{
+						FundingTxidStr: s[0],
+					},
+					OutputIndex: uint32(index),
+				},
+				Force:      false,
+				TargetConf: targetConf,
+				SatPerByte: satPerByte,
+			}
+
+			txidChan := make(chan string, 1)
+			err = executeChannelClose(lnclient, req, txidChan)
+			if err != nil {
+				res.FailErr = fmt.Sprintf("unable to close "+
+					"channel: %v", err)
+				return
+			}
+
+			res.ClosingTxid = <-txidChan
+		}(channel)
+	}
+
+	for range channelsToClose {
+		res := <-resultChan
+		a.log.Infof("Close channel result - channel point: %v, closing txid: %v, error: %v", res.ChannelPoint, res.ClosingTxid, res.FailErr)
+	}
+
+	return nil
 }
 
 func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) {

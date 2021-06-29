@@ -721,6 +721,19 @@ func LSPActivity() ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.LSPActivity(lspList))
 }
 
+func CloseLspChannels(id string) error {
+	lspList, err := getBreezApp().ServicesClient.LSPList()
+	if err != nil {
+		return err
+	}
+	for _, lsp := range lspList.Lsps {
+		if lsp.Id == id {
+			return getBreezApp().AccountService.CloseAllChannels(lsp.Pubkey, 20, 0)
+		}
+	}
+	return nil
+}
+
 func ConnectToLSP(id string) error {
 	return getBreezApp().AccountService.OpenLSPChannel(id)
 }
