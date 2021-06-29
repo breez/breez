@@ -399,10 +399,20 @@ func (s *Service) updateUnspentAmount(address string) (bool, error) {
 			}
 		}
 
-		var confirmedTransactionIDs []string
-		for _, tx := range unspentResponse.Utxos {
-			confirmedTransactionIDs = append(confirmedTransactionIDs, tx.Txid)
+		confirmedTransactionIDs := swapInfo.ConfirmedTransactionIds
+		duplicates := make(map[string]struct{})
+
+		for _, c := range confirmedTransactionIDs {
+			duplicates[c] = struct{}{}
 		}
+
+		for _, tx := range unspentResponse.Utxos {
+			if _, ok := duplicates[tx.Txid]; !ok {
+				duplicates[tx.Txid] = struct{}{}
+				confirmedTransactionIDs = append(confirmedTransactionIDs, tx.Txid)
+			}
+		}
+
 		swapInfo.ConfirmedTransactionIds = confirmedTransactionIDs
 		return nil
 	})
