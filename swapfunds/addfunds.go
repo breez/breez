@@ -201,12 +201,12 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		// In case the transactino is confirmed and has positive output, we will check
 		// if it is ready for completing the process by the client or it has error.
 		if a.ConfirmedAmount > 0 {
-			// paid := a.PaidAmount > 0
+			paid := a.PaidAmount > 0
 
-			// // in case user got paid we don't need to do anything.
-			// if paid && len(a.ConfirmedTransactionIds) <= 1 {
-			// 	continue
-			// }
+			// in case user got paid we don't need to do anything.
+			if paid && len(a.ConfirmedTransactionIds) <= 1 {
+				continue
+			}
 
 			// in case we didn't get paid and there was either an error in payment or passed timeout we add this
 			// address to the refundable ones.
