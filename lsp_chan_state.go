@@ -320,6 +320,11 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 			continue
 		}
 
+		// ignore fake chanels with pending htlcs.
+		if len(c.ActiveHtlcs()) > 0 {
+			continue
+		}
+
 		a.log.Infof("collecting status for channel id: %v", c.ShortChannelID.String())
 		peerPubkey := hex.EncodeToString(c.IdentityPub.SerializeCompressed())
 		a.log.Infof("collecting lsp channels for pubkey: %v", peerPubkey)
