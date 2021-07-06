@@ -3,7 +3,6 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -85,7 +84,6 @@ func (n *NextCloudProvider) UploadBackupFiles(file string, nodeID string, encryp
 	if err := n.createDirIfNotExists(c, backupDir); err != nil {
 		return "", &webdavProviderError{err: err}
 	}
-	fmt.Println("after creating dirs")
 
 	// open the file to backup
 	fileInfo, err := os.Open(file)
@@ -100,7 +98,6 @@ func (n *NextCloudProvider) UploadBackupFiles(file string, nodeID string, encryp
 		return "", err
 	}
 	p := path.Join(backupDir, fileName)
-	fmt.Println(p)
 	if err := c.Upload(da, p); err != nil {
 		return "", err
 	}
@@ -170,12 +167,8 @@ func (n *NextCloudProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 		}
 		return nil, &webdavProviderError{err: err}
 	}
-	for _, file := range files.Files {
-		fmt.Println("file: ", file.Href)
-	}
 
 	for _, file := range files.Files {
-		fmt.Println("uri path", " ", path.Join(file.Path, "snapshotinfo"))
 		bytes, err := client.Download(path.Join(file.Path, "snapshotinfo"))
 		if err != nil {
 			continue

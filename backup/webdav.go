@@ -134,7 +134,7 @@ func (c *WebdavClient) Exists(path string) bool {
 
 func (c *WebdavClient) Rename(fromPath, toPath string) error {
 	b, err := c.sendWebDavRequest("MOVE", fromPath, nil, map[string]string{
-		"Destination": c.Url.String() + filepath.Join("/remote.php/webdav", toPath),
+		"Destination": c.Url.String() + toPath,
 		"Overwrite":   "T",
 	})
 	fmt.Println("reanme: ", string(b))
@@ -155,25 +155,22 @@ func (c *WebdavClient) ListDir(path string) (*ListFileResponse, error) {
 	response.Files = response.Files[1:]
 
 	for i, f := range response.Files {
-		f.Path = "/" + strings.Trim(strings.ReplaceAll(f.Href, "remote.php/webdav", ""), "/")
-		fmt.Println("pp", f.Path)
+		f.Path, err = c.getRelativePath(f.Href)
+		if err != nil {
+			return nil, err
+		}
 		response.Files[i] = f
 	}
 	return &response, err
 }
 
 func (c *WebdavClient) sendWebDavRequest(request string, path string, data []byte, headers map[string]string) ([]byte, error) {
-	// Create the https request
-
-	webdavPath := filepath.Join("remote.php/webdav", path)
-
-	folderUrl, err := url.Parse(webdavPath)
-	if err != nil {
-		return nil, err
-	}
+	fmt.Printf("webdav request %v: %v\n", request, path)
 
 	client := &http.Client{}
-	req, err := http.NewRequest(request, c.Url.ResolveReference(folderUrl).String(), bytes.NewReader(data))
+	//joined := strings.Join([]string{c.Url.String(), relativeURL}, "/")
+	joined := joinPath(c.Url.String(), path)
+	req, err := http.NewRequest(request, joined, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -211,4 +208,19 @@ func (c *WebdavClient) sendWebDavRequest(request string, path string, data []byt
 
 	}
 	return body, nil
+}
+
+func (n *WebdavClient) getRelativePath(fileURL string) (string, error) {
+	u, err := url.Parse(fileURL)
+	if err != nil {
+		return "", err
+	}
+	absolutePath := n.Url.ResolveReference(u).String()
+	serverPath := n.Url.String()
+	relativePath := absolutePath[len(serverPath):]
+	return relativePath, nil
+}
+
+func joinPath(path0 string, path1 string) string {
+	return strings.TrimSuffix(path0, "/") + "/" + strings.TrimPrefix(path1, "/")
 }
