@@ -21,10 +21,10 @@ var (
 		"gdrive": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
 			return NewGoogleDriveProvider(authService, log)
 		},
-		"nextcloud": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
+		"remoteserver": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
 			var providerData ProviderData
 			_ = json.Unmarshal([]byte(authData), &providerData)
-			return NewNextCloudProvider(providerData, log)
+			return NewRemoteServerProvider(providerData, log)
 		},
 	}
 )

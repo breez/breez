@@ -18,7 +18,7 @@ const (
 	timeFormat = "2006-01-02 15-04-05"
 )
 
-type NextCloudProvider struct {
+type RemoteServerProvider struct {
 	authData ProviderData
 	log      btclog.Logger
 }
@@ -51,19 +51,19 @@ func (d *webdavProviderError) IsAuthError() bool {
 	return false
 }
 
-func NewNextCloudProvider(authData ProviderData, log btclog.Logger) (*NextCloudProvider, error) {
-	return &NextCloudProvider{
+func NewRemoteServerProvider(authData ProviderData, log btclog.Logger) (*RemoteServerProvider, error) {
+	return &RemoteServerProvider{
 		authData: authData,
 		log:      log,
 	}, nil
 }
 
-func (n *NextCloudProvider) getClient() (string, *WebdavClient, error) {
+func (n *RemoteServerProvider) getClient() (string, *WebdavClient, error) {
 	c, err := Dial(n.authData.Url, n.authData.User, n.authData.Password)
 	return n.authData.BreezDir, c, err
 }
 
-func (n *NextCloudProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (
+func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (
 	string, error) {
 
 	breezDir, c, err := n.getClient()
@@ -142,7 +142,7 @@ func (n *NextCloudProvider) UploadBackupFiles(file string, nodeID string, encryp
 	return "", nil
 }
 
-func (n *NextCloudProvider) createDirIfNotExists(client *WebdavClient, destDir string) error {
+func (n *RemoteServerProvider) createDirIfNotExists(client *WebdavClient, destDir string) error {
 	if client.Exists(destDir) {
 		return nil
 	}
@@ -152,7 +152,7 @@ func (n *NextCloudProvider) createDirIfNotExists(client *WebdavClient, destDir s
 	return nil
 }
 
-func (n *NextCloudProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
+func (n *RemoteServerProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	var snapshots []SnapshotInfo
 	breezDir, client, err := n.getClient()
 	if err != nil {
@@ -183,7 +183,7 @@ func (n *NextCloudProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	return snapshots, nil
 }
 
-func (n *NextCloudProvider) DownloadBackupFiles(nodeID, backupID string) ([]string, error) {
+func (n *RemoteServerProvider) DownloadBackupFiles(nodeID, backupID string) ([]string, error) {
 	_, client, err := n.getClient()
 	if err != nil {
 		return nil, err
