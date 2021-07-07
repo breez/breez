@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"encoding/hex"
-	"io"
 
 	"github.com/breez/breez/data"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -44,8 +43,8 @@ func (a *Service) trackInFlightPayment(payment lnrpc.Payment) error {
 
 	for {
 		paymentStatus, err := trackStream.Recv()
-		if err == io.EOF || ctx.Err() == context.Canceled {
-			a.log.Infof("trackInFlightPayment completed for hash = %v", paymentHash)
+		if err != nil || ctx.Err() == context.Canceled {
+			a.log.Infof("trackInFlightPayment completed for hash = %v, %v", paymentHash, err)
 			return nil
 		}
 
