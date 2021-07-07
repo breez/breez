@@ -3,7 +3,7 @@ package breez
 import "fmt"
 
 const (
-	currentVersion = "2021-06-21"
+	currentVersion = "2021-07-07"
 )
 
 func (a *App) CheckVersion() error {
