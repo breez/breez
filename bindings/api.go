@@ -814,9 +814,7 @@ func FinishLNURLPay(request []byte) (result []byte, err error) {
 }
 
 func GetLNUrlPayInfos() ([]byte, error) {
-	Log("GetLNUrlPayInfos", "INFO")
 	infos, err := getBreezApp().AccountService.GetAllLNUrlPayInfos()
-	Log(fmt.Sprintf("GetLNUrlPayInfos: infos: %v", infos), "INFO")
 	return marshalResponse(&data.LNUrlPayInfoList{InfoList: infos}, err)
 }
 

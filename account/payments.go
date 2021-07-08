@@ -939,7 +939,7 @@ func (a *Service) getPendingPayments(includeInflight bool) ([]*db.PaymentInfo, e
 						pendingSoFar.Amount = 0
 						for _, ht := range currentInflight.Htlcs {
 							if ht.Status != lnrpc.HTLCAttempt_FAILED {
-								a.log.Infof("pendingPaymets: adding fee % and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
+								a.log.Infof("pendingPaymets: adding fee %v and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
 								pendingSoFar.Fee += ht.Route.TotalFees
 								pendingSoFar.Amount += (ht.Route.TotalAmt - ht.Route.TotalFees)
 							}
@@ -1120,7 +1120,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		   The client receives the invoice description in a separate request.
 		   We save the LNUrlPayInfo as soon as we receive it so it is ok to check the db for it here.
 		*/
-		if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil {
+		if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
 			if paymentData.Description == "" {
 				paymentData.Description = info.InvoiceDescription
 				a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
