@@ -445,16 +445,17 @@ message LNURLAuth {
   bool jwt = 5;
 }
 
+message LNUrlPayMetadata  {
+    repeated string entry = 1;
+}
+
 message LNURLPayResponse1 {
 
-    message Metadata  {
-        repeated string entry = 1;
-    }
 
     string callback = 1;
     int64 min_amount = 2;
     int64 max_amount = 3;
-    repeated Metadata metadata = 4;        // this should be an array of an array of strings
+    repeated LNUrlPayMetadata metadata = 4;        
     string tag = 5;
 
     uint64 amount      = 6;
@@ -473,11 +474,14 @@ message SuccessAction {
 }
 
 message LNUrlPayInfo {
-    SuccessAction success_action = 1;
+    string paymentHash  = 1;
     string invoice      = 2;
-    string paymentHash  = 3;
+    SuccessAction success_action = 3;
     string comment      = 4;
     string invoice_description  = 5;
+    repeated LNUrlPayMetadata metadata = 6;
+    string host = 7;
+
 }
 
 message LNUrlPayInfoList {

@@ -90,10 +90,14 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 		}
 		a.lnurlPayMetadata.encoded = params.EncodedMetadata
 		a.lnurlPayMetadata.data = params.Metadata
-		var metadata []*data.LNURLPayResponse1_Metadata
+		var metadata []*data.LNUrlPayMetadata
 		for _, e := range params.Metadata {
-			metadata = append(metadata, &data.LNURLPayResponse1_Metadata{Entry: []string{e[0], e[1]}})
+			metadata = append(metadata,
+				&data.LNUrlPayMetadata{
+					Entry: []string{e[0], e[1]},
+				})
 		}
+
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_PayResponse1{
 				&data.LNURLPayResponse1{
@@ -434,9 +438,11 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		SuccessAction:      _sa,
 		Comment:            params.Comment,
 		InvoiceDescription: lnurl.Metadata(a.lnurlPayMetadata.data).Description(),
+		Host:               params.Host,
+		Metadata:           params.Metadata,
+		Invoice:            payResponse2.PR,
 	}
 	a.breezDB.SaveLNUrlPayInfo(info)
-	info.Invoice = payResponse2.PR
 	return info, nil
 
 }
@@ -480,7 +486,7 @@ func (a *Service) DecryptLNUrlPayMessage(paymentHash string, preimage []byte) (s
 func (a *Service) GetLNUrlPaySuccessAction(paymentHash string) (*data.SuccessAction, error) {
 
 	a.log.Infof("GetLNUrlPaySuccessAction: for paymentHash: %v", paymentHash)
-	
+
 	info, err := a.breezDB.FetchLNUrlPayInfo(paymentHash)
 	if err != nil {
 		return nil, err
