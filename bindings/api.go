@@ -818,7 +818,7 @@ func GetLNUrlPayInfos() ([]byte, error) {
 	return marshalResponse(&data.LNUrlPayInfoList{InfoList: infos}, err)
 }
 
-func GetlNUrlPaySuccessAction(paymentHash string) ([]byte, error) {
+func GetLNUrlPaySuccessAction(paymentHash string) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.GetLNUrlPaySuccessAction(paymentHash))
 }
 

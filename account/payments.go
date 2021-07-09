@@ -432,6 +432,11 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return traceReport, errors.New(errorMsg)
 	}
 	a.log.Infof("sendPaymentForRequest finished successfully")
+	a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
+	/*
+		a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_PAYMENT_SUCCEEDED,
+			Data: []string{sendRequest.PaymentRequest, paymentHash}})
+	*/
 	go a.syncSentPayments()
 	return "", nil
 }
@@ -766,15 +771,18 @@ GetRelatedInvoice is used by the payee to fetch the related invoice of its sent 
 func (a *Service) GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 	lnclient := a.daemonAPI.APIClient()
 	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+
 	if err != nil {
 		a.log.Infof("Can't decode payment request: %v", paymentRequest)
 		return nil, err
 	}
+	a.log.Infof("GetRelatedInvoice: %s", decodedPayReq.PaymentHash)
 
 	invoiceMemo := a.extractMemo(decodedPayReq)
 
 	lookup, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
 	if err != nil {
+		a.log.Infof("GetRelatedInvoice: LookupInvoice failed.")
 		return nil, err
 	}
 
@@ -1120,20 +1128,22 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		   The client receives the invoice description in a separate request.
 		   We save the LNUrlPayInfo as soon as we receive it so it is ok to check the db for it here.
 		*/
-		if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
-			if paymentData.Description == "" {
-				paymentData.Description = info.InvoiceDescription
-				a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
-			}
+		/*
+			if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
+				if paymentData.Description == "" {
+					paymentData.Description = info.InvoiceDescription
+					a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
+				}
 
-			if info.SuccessAction != nil && info.SuccessAction.Tag == "aes" {
-				if info.SuccessAction.Message, err = a.DecryptLNUrlPayMessage(paymentItem.PaymentHash, invoiceMemo.Preimage); err != nil {
-					a.log.Infof("onNewSentPayment: Could not decrypt 'aes' lnurl-pay message: %s", err)
+				if info.SuccessAction != nil && info.SuccessAction.Tag == "aes" {
+					if info.SuccessAction.Message, err = a.DecryptLNUrlPayMessage(paymentItem.PaymentHash, invoiceMemo.Preimage); err != nil {
+						a.log.Infof("onNewSentPayment: Could not decrypt 'aes' lnurl-pay message: %s", err)
+					}
+
 				}
 
 			}
-
-		}
+		*/
 
 		paymentData.PayeeImageURL = invoiceMemo.PayeeImageURL
 		paymentData.PayeeName = invoiceMemo.PayeeName

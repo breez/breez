@@ -64,6 +64,7 @@ func (a *Service) trackInFlightPayment(payment lnrpc.Payment) error {
 func (a *Service) notifyPaymentResult(succeeded bool, paymentRequest, paymentHash, err, traceReport string) {
 	event := data.NotificationEvent_PAYMENT_FAILED
 	if succeeded {
+		a.log.Infof("notifyPaymentResult: Payment succeeded: %v", paymentRequest)
 		event = data.NotificationEvent_PAYMENT_SUCCEEDED
 	}
 	eventData := []string{paymentRequest, paymentHash}
