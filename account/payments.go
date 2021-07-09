@@ -750,6 +750,7 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 }
 
 func (a *Service) GetPaymentRequestHash(paymentRequest string) (string, error) {
+    a.log.Infof("GetPaymentRequestHash %v", paymentRequest)
 	lnclient := a.daemonAPI.APIClient()
 	if lnclient == nil {
 		return "", errors.New("daemon is not ready")

@@ -480,6 +480,7 @@ func (a *Service) DecryptLNUrlPayMessage(paymentHash string, preimage []byte) (s
 func (a *Service) GetLNUrlPaySuccessAction(paymentHash string) (*data.SuccessAction, error) {
 
 	a.log.Infof("GetLNUrlPaySuccessAction: for paymentHash: %v", paymentHash)
+	
 	info, err := a.breezDB.FetchLNUrlPayInfo(paymentHash)
 	if err != nil {
 		return nil, err
@@ -488,7 +489,7 @@ func (a *Service) GetLNUrlPaySuccessAction(paymentHash string) (*data.SuccessAct
 		return info.SuccessAction, nil
 	}
 
-	return nil, errors.New("LNUrlPaySuccessAction not found.")
+	return nil, fmt.Errorf("LNUrlPaySuccessAction not found for paymentHash %v.", paymentHash)
 }
 
 func (a *Service) GetAllLNUrlPayInfos() ([]*data.LNUrlPayInfo, error) {
