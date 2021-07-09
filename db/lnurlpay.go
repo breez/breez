@@ -48,13 +48,8 @@ func (db *DB) FetchLNUrlPayInfo(paymentHash string) (*data.LNUrlPayInfo, error) 
 		return nil
 	})
 
+	db.log.Infof("FetchLNUrlPayInfo info = %+v", *info)
 	return info, err
-}
-
-func deserializeLNUrlPayInfo(bytes []byte) (*data.LNUrlPayInfo, error) {
-	var info data.LNUrlPayInfo
-	err := json.Unmarshal(bytes, &info)
-	return &info, err
 }
 
 func (db *DB) FetchAllLNUrlPayInfos() ([]*data.LNUrlPayInfo, error) {
@@ -80,4 +75,10 @@ func (db *DB) FetchAllLNUrlPayInfos() ([]*data.LNUrlPayInfo, error) {
 
 	db.log.Infof("FetchAllLNUrlPayInfos infos = %v", infos)
 	return infos, err
+}
+
+func deserializeLNUrlPayInfo(bytes []byte) (*data.LNUrlPayInfo, error) {
+	var info data.LNUrlPayInfo
+	err := json.Unmarshal(bytes, &info)
+	return &info, err
 }

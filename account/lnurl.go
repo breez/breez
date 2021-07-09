@@ -351,7 +351,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		return nil, errors.New(payResponse2.Reason)
 	}
 
-	a.log.Infof("FinishLNURLPay: response.Body: %v", payResponse2)
+	a.log.Infof("FinishLNURLPay: payResponse2 %+v", payResponse2)
 
 	// 7. `LN WALLET` Verifies that `h` tag in provided invoice is a hash of `metadata` string converted to byte array in UTF-8 encoding.
 	// TODO Verify correctness
@@ -409,8 +409,6 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 	var _sa *data.SuccessAction
 	if sa != nil {
 
-		a.log.Infof("FinishLNURLPay: Found SuccessAction.Tag: %v, SuccessActions.Description: %v", sa.Tag, sa.Description)
-
 		if t := sa.Tag; t != "message" &&
 			t != "url" &&
 			t != "aes" {
@@ -425,6 +423,8 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 			Ciphertext:  sa.Ciphertext,
 			Iv:          sa.IV,
 		}
+
+		a.log.Infof("FinishLNURLPay: Found SuccessAction: %+v", *sa)
 
 	}
 
@@ -449,35 +449,46 @@ func (a *Service) DecryptLNUrlPayMessage(paymentHash string, preimage []byte) (s
 			fmt.Errorf("Unable to get LNUrl-Pay info from database: %s", err)
 	}
 
-	sa := &lnurl.SuccessAction{
-		Tag:         info.SuccessAction.Tag,
-		Description: info.SuccessAction.Description,
-		URL:         info.SuccessAction.Url,
-		Message:     info.SuccessAction.Message,
-		Ciphertext:  info.SuccessAction.Ciphertext,
-		IV:          info.SuccessAction.Iv,
-	}
-	if sa.Ciphertext == "" {
-		return "", errors.New("LNUrl-Pay CipherText is empty.")
+	if info != nil {
+		sa := &lnurl.SuccessAction{
+			Tag:         info.SuccessAction.Tag,
+			Description: info.SuccessAction.Description,
+			URL:         info.SuccessAction.Url,
+			Message:     info.SuccessAction.Message,
+			Ciphertext:  info.SuccessAction.Ciphertext,
+			IV:          info.SuccessAction.Iv,
+		}
+		if sa.Ciphertext == "" {
+			return "", errors.New("LNUrl-Pay CipherText is empty.")
+		}
+
+		if info.SuccessAction.Message, err = sa.Decipher(preimage); err != nil {
+			return "", fmt.Errorf("Could not decrypt message: %v", err)
+		}
+
+		if err = a.breezDB.SaveLNUrlPayInfo(info); err != nil {
+			return "", fmt.Errorf("Could not save deciphered message: %s", err)
+		}
+
+		a.log.Info("DecryptLNUrlPayMessage: message = %q", info.SuccessAction.Message)
+		return info.SuccessAction.Message, nil
 	}
 
-	if info.SuccessAction.Message, err = sa.Decipher(preimage); err != nil {
-		return "", fmt.Errorf("Could not decrypt message: %v", err)
-	}
-
-	if err = a.breezDB.SaveLNUrlPayInfo(info); err != nil {
-		return "", fmt.Errorf("Could not save deciphered message: %s", err)
-	}
-
-	a.log.Info("DecryptLNUrlPayMessage: message = %q", info.SuccessAction.Message)
-	return info.SuccessAction.Message, nil
+	return "", errors.New("DecryptLNUrlPayMessage: could not find lnUrlPayInfo with given paymentHash.")
 }
 
 func (a *Service) GetLNUrlPaySuccessAction(paymentHash string) (*data.SuccessAction, error) {
 
+	a.log.Infof("GetLNUrlPaySuccessAction: for paymentHash: %v", paymentHash)
 	info, err := a.breezDB.FetchLNUrlPayInfo(paymentHash)
-	a.log.Infof("GetLNUrlPaySuccessAction: SuccessAction: %v", info.SuccessAction)
-	return info.SuccessAction, err
+	if err != nil {
+		return nil, err
+	}
+	if info != nil {
+		return info.SuccessAction, nil
+	}
+
+	return nil, errors.New("LNUrlPaySuccessAction not found.")
 }
 
 func (a *Service) GetAllLNUrlPayInfos() ([]*data.LNUrlPayInfo, error) {

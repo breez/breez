@@ -432,12 +432,9 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return traceReport, errors.New(errorMsg)
 	}
 	a.log.Infof("sendPaymentForRequest finished successfully")
-	a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
-	/*
-		a.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_PAYMENT_SUCCEEDED,
-			Data: []string{sendRequest.PaymentRequest, paymentHash}})
-	*/
 	go a.syncSentPayments()
+	// TODO(@nochiel) FINDOUT Should we notify client here? If we do, what breaks?
+	// a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 	return "", nil
 }
 
