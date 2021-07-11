@@ -813,15 +813,6 @@ func FinishLNURLPay(request []byte) (result []byte, err error) {
 	return result, nil
 }
 
-func GetLNUrlPayInfos() ([]byte, error) {
-	infos, err := getBreezApp().AccountService.GetAllLNUrlPayInfos()
-	return marshalResponse(&data.LNUrlPayInfoList{InfoList: infos}, err)
-}
-
-func GetLNUrlPaySuccessAction(paymentHash string) ([]byte, error) {
-	return marshalResponse(getBreezApp().AccountService.GetLNUrlPaySuccessAction(paymentHash))
-}
-
 func NewReverseSwap(request []byte) (string, error) {
 	var swapRequest data.ReverseSwapRequest
 	if err := proto.Unmarshal(request, &swapRequest); err != nil {
