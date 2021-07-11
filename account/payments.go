@@ -104,6 +104,14 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			paymentItem.Type = data.Payment_CLOSED_CHANNEL
 		}
 
+		info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash)
+		if err != nil {
+			return nil, err
+		}
+		if info != nil {
+			paymentItem.LnurlSuccessAction = info.SuccessAction
+		}
+
 		paymentsList = append(paymentsList, paymentItem)
 	}
 
@@ -750,7 +758,7 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 }
 
 func (a *Service) GetPaymentRequestHash(paymentRequest string) (string, error) {
-    a.log.Infof("GetPaymentRequestHash %v", paymentRequest)
+	a.log.Infof("GetPaymentRequestHash %v", paymentRequest)
 	lnclient := a.daemonAPI.APIClient()
 	if lnclient == nil {
 		return "", errors.New("daemon is not ready")
@@ -1119,29 +1127,19 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 
 		paymentData.Description = invoiceMemo.Description
 
-		/* If invoiceMemo.Description == nil check if
+		/* If invoiceMemo.Description is empty check if
 		   there's an LNUrlPayInfo with this paymentHash and
 		   store that description. Why? Because in LNUrl-Pay,
 		   an invoice will only have a descriptionHash in the `h` tag.
 		   The client receives the invoice description in a separate request.
 		   We save the LNUrlPayInfo as soon as we receive it so it is ok to check the db for it here.
 		*/
-		/*
-			if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
-				if paymentData.Description == "" {
-					paymentData.Description = info.InvoiceDescription
-					a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
-				}
-
-				if info.SuccessAction != nil && info.SuccessAction.Tag == "aes" {
-					if info.SuccessAction.Message, err = a.DecryptLNUrlPayMessage(paymentItem.PaymentHash, invoiceMemo.Preimage); err != nil {
-						a.log.Infof("onNewSentPayment: Could not decrypt 'aes' lnurl-pay message: %s", err)
-					}
-
-				}
-
+		if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
+			if paymentData.Description == "" {
+				paymentData.Description = info.InvoiceDescription
+				a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
 			}
-		*/
+		}
 
 		paymentData.PayeeImageURL = invoiceMemo.PayeeImageURL
 		paymentData.PayeeName = invoiceMemo.PayeeName

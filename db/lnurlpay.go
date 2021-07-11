@@ -48,7 +48,6 @@ func (db *DB) FetchLNUrlPayInfo(paymentHash string) (*data.LNUrlPayInfo, error) 
 		return nil
 	})
 
-	if info != nil { db.log.Infof("FetchLNUrlPayInfo info = %+v", info) }
 	return info, err
 }
 

@@ -119,6 +119,7 @@ message Payment {
     string closedChannelSweepTxID = 21;
     string groupKey = 22;
     string groupName = 23;
+    SuccessAction lnurlSuccessAction = 24;
 }
 
 message PaymentsList {
