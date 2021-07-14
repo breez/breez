@@ -58,11 +58,6 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 	}
 	rawPayments = append(rawPayments, pendingPayments...)
 
-	lnurlPayInfos, err := a.breezDB.FetchAllLNUrlPayInfos()
-	if err != nil {
-		a.log.Errorf("GetPayments: %s", err)
-	}
-
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
 		paymentItem := &data.Payment{
@@ -99,10 +94,8 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 		switch payment.Type {
 		case db.SentPayment:
 			paymentItem.Type = data.Payment_SENT
-			for _, info := range lnurlPayInfos {
-				if info.PaymentHash == paymentItem.PaymentHash {
-					paymentItem.LnurlPayInfo = info
-				}
+			if paymentItem.LnurlPayInfo, err = a.breezDB.FetchLNUrlPayInfo(payment.PaymentHash); err != nil {
+				return nil, err
 			}
 		case db.ReceivedPayment:
 			paymentItem.Type = data.Payment_RECEIVED
