@@ -17,6 +17,11 @@ import (
 
 // Service is the account service that controls all aspects of routing node connection
 // and user channels as an abstracted account.
+type LnurlPayMetadata struct {
+	encoded string
+	data    [][]string
+}
+
 type Service struct {
 	started            int32
 	stopped            int32
@@ -31,12 +36,13 @@ type Service struct {
 	daemonAPI          lnnode.API
 	onServiceEvent     func(data.NotificationEvent)
 	requestBackup      func()
+
 	lnurlWithdrawing   string
-	activeParams       *chaincfg.Params
+	lnurlPayMetadata LnurlPayMetadata
+
+	activeParams     *chaincfg.Params
 	lspReadyPayment    func() (bool, error)
-
 	notification *notificationRequest
-
 	quitChan chan struct{}
 }
 

@@ -73,6 +73,7 @@ func (a *Service) notifyPaymentResult(succeeded bool, paymentRequest, paymentHas
 			eventData = append(eventData, traceReport)
 		}
 	}
+    a.log.Infof("notifyPaymentResult: event %v for paymentHash %v", event, paymentHash)
 	a.onServiceEvent(data.NotificationEvent{
 		Type: event,
 		Data: eventData})

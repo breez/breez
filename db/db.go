@@ -48,6 +48,9 @@ const (
 
 	//lnurl auth
 	lnurlAuthBucket = "lnurl-auth-bucket"
+
+	//lnurl-pay
+	lnurlPayBucket = "lnurl-pay-bucket"
 )
 
 var (
@@ -109,11 +112,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 		if err != nil {
 			return err
 		}
-		paymenetBucket, err := tx.CreateBucketIfNotExists([]byte(paymentsBucket))
+		paymentBucket, err := tx.CreateBucketIfNotExists([]byte(paymentsBucket))
 		if err != nil {
 			return err
 		}
-		_, err = paymenetBucket.CreateBucketIfNotExists([]byte(paymentsSyncInfoBucket))
+		_, err = paymentBucket.CreateBucketIfNotExists([]byte(paymentsSyncInfoBucket))
 		if err != nil {
 			return err
 		}
@@ -171,6 +174,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte(lnurlAuthBucket))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(lnurlPayBucket))
 		if err != nil {
 			return err
 		}

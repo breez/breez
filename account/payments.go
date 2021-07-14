@@ -58,6 +58,11 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 	}
 	rawPayments = append(rawPayments, pendingPayments...)
 
+	lnurlPayInfos, err := a.breezDB.FetchAllLNUrlPayInfos()
+	if err != nil {
+		a.log.Errorf("GetPayments: %s", err)
+	}
+
 	var paymentsList []*data.Payment
 	for _, payment := range rawPayments {
 		paymentItem := &data.Payment{
@@ -94,6 +99,11 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 		switch payment.Type {
 		case db.SentPayment:
 			paymentItem.Type = data.Payment_SENT
+			for _, info := range lnurlPayInfos {
+				if info.PaymentHash == paymentItem.PaymentHash {
+					paymentItem.LnurlPayInfo = info
+				}
+			}
 		case db.ReceivedPayment:
 			paymentItem.Type = data.Payment_RECEIVED
 		case db.DepositPayment:
@@ -433,6 +443,8 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 	}
 	a.log.Infof("sendPaymentForRequest finished successfully")
 	go a.syncSentPayments()
+	// TODO(@nochiel) FINDOUT Should we notify client here? If we do, what breaks?
+	// a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 	return "", nil
 }
 
@@ -748,6 +760,7 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 }
 
 func (a *Service) GetPaymentRequestHash(paymentRequest string) (string, error) {
+	a.log.Infof("GetPaymentRequestHash %v", paymentRequest)
 	lnclient := a.daemonAPI.APIClient()
 	if lnclient == nil {
 		return "", errors.New("daemon is not ready")
@@ -766,15 +779,18 @@ GetRelatedInvoice is used by the payee to fetch the related invoice of its sent 
 func (a *Service) GetRelatedInvoice(paymentRequest string) (*data.Invoice, error) {
 	lnclient := a.daemonAPI.APIClient()
 	decodedPayReq, err := lnclient.DecodePayReq(context.Background(), &lnrpc.PayReqString{PayReq: paymentRequest})
+
 	if err != nil {
 		a.log.Infof("Can't decode payment request: %v", paymentRequest)
 		return nil, err
 	}
+	a.log.Infof("GetRelatedInvoice: %s", decodedPayReq.PaymentHash)
 
 	invoiceMemo := a.extractMemo(decodedPayReq)
 
 	lookup, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHashStr: decodedPayReq.PaymentHash})
 	if err != nil {
+		a.log.Infof("GetRelatedInvoice: LookupInvoice failed.")
 		return nil, err
 	}
 
@@ -939,7 +955,7 @@ func (a *Service) getPendingPayments(includeInflight bool) ([]*db.PaymentInfo, e
 						pendingSoFar.Amount = 0
 						for _, ht := range currentInflight.Htlcs {
 							if ht.Status != lnrpc.HTLCAttempt_FAILED {
-								a.log.Infof("pendingPaymets: adding fee % and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
+								a.log.Infof("pendingPaymets: adding fee %v and amount %v", ht.Route.TotalFees, ht.Route.TotalAmt)
 								pendingSoFar.Fee += ht.Route.TotalFees
 								pendingSoFar.Amount += (ht.Route.TotalAmt - ht.Route.TotalFees)
 							}
@@ -1112,6 +1128,28 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		}
 
 		paymentData.Description = invoiceMemo.Description
+
+		/* If invoiceMemo.Description is empty check if
+		   there's an LNUrlPayInfo with this paymentHash and
+		   store that description. Why? Because in LNUrl-Pay,
+		   an invoice will only have a descriptionHash in the `h` tag.
+		   The client receives the invoice description in a separate request.
+		   We save the LNUrlPayInfo as soon as we receive it so it is ok to check the db for it here.
+		*/
+		if info, err := a.breezDB.FetchLNUrlPayInfo(paymentItem.PaymentHash); err == nil && info != nil {
+			if paymentData.Description == "" {
+				paymentData.Description = info.InvoiceDescription
+				a.log.Infof("onNewSentPayment: No description found in this invoice. Using :%q", paymentData.Description)
+			}
+
+			if info.SuccessAction != nil && info.SuccessAction.Tag == "aes" {
+				if info.SuccessAction.Message, err = a.DecryptLNUrlPayMessage(paymentItem.PaymentHash, invoiceMemo.Preimage); err != nil {
+					a.log.Errorf("onNewSentPayment: Could not decrypt 'aes' lnurl-pay message: %s", err)
+				}
+
+			}
+		}
+
 		paymentData.PayeeImageURL = invoiceMemo.PayeeImageURL
 		paymentData.PayeeName = invoiceMemo.PayeeName
 		paymentData.PayerImageURL = invoiceMemo.PayerImageURL
