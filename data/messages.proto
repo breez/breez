@@ -462,6 +462,7 @@ message LNURLPayResponse1 {
     string from_nodes  = 7;
     string comment     = 8;
     string host = 9;    
+    int64 commentAllowed = 10;
 }
 
 message SuccessAction {
