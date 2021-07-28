@@ -79,6 +79,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			IsKeySend:                  payment.IsKeySend,
 			GroupKey:                   payment.GroupKey,
 			GroupName:                  payment.GroupName,
+			RouteHops:                  payment.RouteHops,
 		}
 		if payment.Type != db.ClosedChannelPayment {
 			paymentItem.InvoiceMemo = &data.InvoiceMemo{
@@ -195,18 +196,18 @@ SendPaymentForRequestV2 send the payment according to the details specified in t
 If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequestV2(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey)
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey, true)
 }
 
 /*
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil)
+func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64, skipCheckAmount bool) (string, error) {
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil, skipCheckAmount)
 }
 
-func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
+func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, skipCheckAmount bool) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
@@ -235,25 +236,21 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 		MaxParts:       maxParts,
 		Amt:            amountSatoshi,
 		LastHopPubkey:  lastHopPubkey,
-	})
+	}, skipCheckAmount)
 }
 
-// SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string,
-	description string, amount int64, feeLimitMSat int64,
-	groupKey, groupName string, tlv map[int64]string) (string, error) {
-
-	destBytes, err := hex.DecodeString(destNode)
+func (a *Service) SendSpontaneousPayment(payment *data.SpontaneousPaymentRequest) (string, error) {
+	destBytes, err := hex.DecodeString(payment.DestNode)
 	if err != nil {
 		return "", err
 	}
-	feeLimit := feeLimitMSat
+	feeLimit := payment.FeeLimitMsat
 	if feeLimit == 0 {
 		feeLimit = math.MaxInt64
 	}
 	req := &routerrpc.SendPaymentRequest{
 		Dest:              destBytes,
-		Amt:               amount,
+		Amt:               payment.Amount,
 		TimeoutSeconds:    60,
 		FeeLimitMsat:      feeLimit,
 		MaxParts:          20,
@@ -276,24 +273,38 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 	req.DestFeatures = features
 
 	// Also use the 'tip' key to set the description.
-	req.DestCustomRecords[7629171] = []byte(description)
+	req.DestCustomRecords[7629171] = []byte(payment.Description)
 	hashStr := hex.EncodeToString(hash[:])
-	if err := a.breezDB.SaveTipMessage(hashStr, []byte(description)); err != nil {
+	if err := a.breezDB.SaveTipMessage(hashStr, []byte(payment.Description)); err != nil {
 		return "", err
 	}
 
-	for k, v := range tlv {
+	for k, v := range payment.Tlv {
 		a.log.Infof("adding custom record %v, value: %v", uint64(k), v)
 		req.DestCustomRecords[uint64(k)] = []byte(v)
 	}
 
-	if groupKey != "" {
-		if err := a.breezDB.SavePaymentGroup(hashStr, []byte(groupKey), []byte(groupName)); err != nil {
+	if payment.GroupKey != "" {
+		if err := a.breezDB.SavePaymentGroup(hashStr, []byte(payment.GroupKey), []byte(payment.GroupName)); err != nil {
 			return "", err
 		}
 	}
 
-	return a.sendPayment(hashStr, nil, req)
+	// try end to route if hops exist
+	if len(payment.Hops) > 0 {
+		a.log.Infof("received hops in payment, trying to build a route %v", payment.Hops)
+		err := a.sendToRoutePayment(hashStr, payment.Hops, payment.Amount, req.DestCustomRecords)
+		if err != nil {
+			a.log.Infof("failed to send to route with hops: %v %v", payment.Hops, err)
+		} else {
+			a.log.Infof("successfully sent to route with hops %v", payment.Hops)
+			a.syncSentPayments()
+			return "", nil
+		}
+	}
+
+	// use regular send payment
+	return a.sendPayment(hashStr, nil, req, true)
 }
 
 func (a *Service) GetMaxAmount(destination string, routeHints []*lnrpc.RouteHint, lastHopPubkey []byte) (uint64, error) {
@@ -374,8 +385,33 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 	return nil
 }
 
-func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
+func (a *Service) sendToRoutePayment(paymentHash string, hops []string, amount int64, customRecords map[uint64][]byte) error {
+	hash, err := hex.DecodeString(paymentHash)
+	if err != nil {
+		return err
+	}
+	route, err := a.BuildRoute(hops, amount)
+	if err != nil {
+		return err
+	}
+	lastHopIndex := len(route.Route.Hops) - 1
+	lastHop := route.Route.Hops[lastHopIndex]
+	lastHop.TlvPayload = true
+	lastHop.CustomRecords = customRecords
+	attempt, err := a.daemonAPI.RouterClient().SendToRouteV2(context.Background(), &routerrpc.SendToRouteRequest{
+		Route:       route.Route,
+		PaymentHash: hash,
+	})
+	if err != nil {
+		return err
+	}
+	if attempt.Failure != nil {
+		return errors.New(attempt.Failure.String())
+	}
+	return nil
+}
 
+func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest, skipCheckAmount bool) (string, error) {
 	lnclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
@@ -390,9 +426,11 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return "", errors.New("LSP is not ready for payment")
 	}
 
-	if err := a.checkAmount(payReq, sendRequest); err != nil {
-		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-		return "", err
+	if !skipCheckAmount {
+		if err := a.checkAmount(payReq, sendRequest); err != nil {
+			a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+			return "", err
+		}
 	}
 
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
@@ -419,6 +457,17 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		break
 	}
 
+	traceReport, err := a.checkPaymentError(sendRequest, failureReason)
+	if err != nil {
+		return traceReport, err
+	}
+
+	a.log.Infof("sendPaymentForRequest finished successfully")
+	a.syncSentPayments()
+	return "", nil
+}
+
+func (a *Service) checkPaymentError(sendRequest *routerrpc.SendPaymentRequest, failureReason lnrpc.PaymentFailureReason) (string, error) {
 	if failureReason != lnrpc.PaymentFailureReason_FAILURE_REASON_NONE {
 		a.log.Infof("sendPaymentForRequest finished with error, %v", failureReason.String())
 		traceReport, err := a.createPaymentTraceReport(sendRequest.PaymentRequest, sendRequest.AmtMsat, failureReason.String())
@@ -434,10 +483,6 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		}
 		return traceReport, errors.New(errorMsg)
 	}
-	a.log.Infof("sendPaymentForRequest finished successfully")
-	a.syncSentPayments()
-	// TODO(@nochiel) FINDOUT Should we notify client here? If we do, what breaks?
-	// a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 	return "", nil
 }
 
@@ -688,18 +733,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		a.log.Errorf("GetInfo error: %v", err)
 		return "", err
 	}
-
-	netInfo, err := lnclient.GetNetworkInfo(context.Background(), &lnrpc.NetworkInfoRequest{})
-	if err != nil {
-		a.log.Errorf("GetNetworkInfo error: %v", err)
-		return "", err
-	}
 	marshaller := jsonpb.Marshaler{}
-	netInfoData, err := marshaller.MarshalToString(netInfo)
-	if err != nil {
-		a.log.Errorf("failed to marshal network info: %v", err)
-		return "", err
-	}
 
 	channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
@@ -721,7 +755,6 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 			"source_node":     lnInfo.IdentityPubkey,
 			"amount":          amount,
 			"payment_request": decodedPayReq,
-			"network_info":    netInfoData,
 			"channels":        chanData,
 		},
 	}
@@ -735,6 +768,35 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 	}
 
 	return string(response), nil
+}
+
+func (a *Service) BuildRoute(hopsKeys []string, amount int64) (*routerrpc.BuildRouteResponse, error) {
+	var hops = [][]byte{}
+	for _, h := range hopsKeys {
+		b, err := hex.DecodeString(h)
+		if err != nil {
+			return nil, err
+		}
+		hops = append(hops, b)
+	}
+	response, err := a.daemonAPI.RouterClient().BuildRoute(context.Background(), &routerrpc.BuildRouteRequest{
+		AmtMsat:        amount * 1000,
+		HopPubkeys:     hops,
+		FinalCltvDelta: int32(a.daemonAPI.LNDConfig().Bitcoin.TimeLockDelta),
+	})
+	return response, err
+}
+
+func (a *Service) FindRoute(pubkey string, amount int64) (*lnrpc.QueryRoutesResponse, error) {
+	response, err := a.daemonAPI.APIClient().QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+		PubKey: pubkey,
+		Amt:    amount,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 /*
@@ -1104,7 +1166,6 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 }
 
 func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
-
 	paymentData := &db.PaymentInfo{
 		Type:              db.SentPayment,
 		Amount:            paymentItem.Value,
@@ -1174,6 +1235,11 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 			hops := paymentItem.Htlcs[0].Route.Hops
 			if len(hops) > 0 {
 				lastHop := hops[len(hops)-1]
+				var hopsList []string
+				for _, h := range hops {
+					hopsList = append(hopsList, h.PubKey)
+				}
+				paymentData.RouteHops = hopsList
 				paymentData.Destination = lastHop.PubKey
 			}
 		}

@@ -37,6 +37,12 @@ func (d *Daemon) Start() error {
 	}
 	d.startTime = time.Now()
 
+	lndConfig, err := d.createConfig(d.cfg.WorkingDir)
+	if err != nil {
+		d.log.Errorf("failed to create config %v", err)
+	}
+	d.lndConfig = lndConfig
+
 	if err := d.ntfnServer.Start(); err != nil {
 		return err
 	}
@@ -47,6 +53,10 @@ func (d *Daemon) Start() error {
 	}
 
 	return nil
+}
+
+func (d *Daemon) LNDConfig() *lnd.Config {
+	return d.lndConfig
 }
 
 // HasActiveChannel returns true if the node has at least one active channel.
@@ -264,10 +274,8 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		lndConfig, err := d.createConfig(deps.workingDir)
-		if err != nil {
-			d.log.Errorf("failed to create config %v", err)
-		}
+
+		lndConfig := d.lndConfig
 		d.log.Infof("Stating LND Daemon")
 		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
 		if err != nil {

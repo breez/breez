@@ -118,6 +118,7 @@ message Payment {
     string groupKey = 22;
     string groupName = 23;
     LNUrlPayInfo lnurlPayInfo  = 24;
+    repeated string routeHops = 25;
 }
 
 message PaymentsList {
@@ -137,6 +138,7 @@ message SendWalletCoinsRequest {
 message PayInvoiceRequest {
     int64 amount = 1;
     string paymentRequest = 2;
+    bool skipCheckMaxAmount = 3;
 }
 
 message SpontaneousPaymentRequest {
@@ -146,7 +148,9 @@ message SpontaneousPaymentRequest {
     string groupKey = 4;
     string groupName = 5;
     int64 feeLimitMsat = 6;
-    map<int64, string> tlv = 7; 
+    map<int64, string> tlv = 7;
+    bool skipCheckMaxAmount = 8;
+    repeated string hops = 9;
 }
 
 message InvoiceMemo {

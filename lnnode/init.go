@@ -13,6 +13,7 @@ import (
 	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
@@ -31,6 +32,7 @@ import (
 // It is mainly enable the service to subscribe to various daemon events
 // and get an APIClient to query the daemon directly via RPC.
 type API interface {
+	LNDConfig() *lnd.Config
 	SubscribeEvents() (*subscribe.Client, error)
 	HasActiveChannel() bool
 	IsReadyForPayment() bool
@@ -69,6 +71,7 @@ type Daemon struct {
 	ntfnServer          *subscribe.Server
 	quitChan            chan struct{}
 	startBeforeSync     bool
+	lndConfig           *lnd.Config
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning

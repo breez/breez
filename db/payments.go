@@ -63,6 +63,8 @@ type PaymentInfo struct {
 	ClosedChannelTxID       string
 	ClosedChannelRemoteTxID string
 	ClosedChannelSweepTxID  string
+
+	RouteHops []string
 }
 
 /*

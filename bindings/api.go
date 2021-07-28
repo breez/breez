@@ -26,6 +26,7 @@ import (
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 )
 
 const (
@@ -430,11 +431,19 @@ func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 
 	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendPaymentForRequest(
-		decodedRequest.PaymentRequest, decodedRequest.Amount)
+		decodedRequest.PaymentRequest, decodedRequest.Amount, decodedRequest.SkipCheckMaxAmount)
 	if err != nil {
 		errorStr = err.Error()
 	}
 	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil)
+}
+
+func FindRoute(pubkey string, amount int64) (*lnrpc.QueryRoutesResponse, error) {
+	return getBreezApp().AccountService.FindRoute(pubkey, amount)
+}
+
+func BuildRoute(pubkeys []string, amount int64) (*routerrpc.BuildRouteResponse, error) {
+	return getBreezApp().AccountService.BuildRoute(pubkeys, amount)
 }
 
 /*
@@ -445,9 +454,7 @@ func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 	proto.Unmarshal(spontaneousPayment, decodedRequest)
 
 	var errorStr string
-	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(
-		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount,
-		decodedRequest.FeeLimitMsat, decodedRequest.GroupKey, decodedRequest.GroupName, decodedRequest.Tlv)
+	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(decodedRequest)
 
 	if err != nil {
 		errorStr = err.Error()
