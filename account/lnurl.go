@@ -83,6 +83,17 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 			},
 		}, nil
 	case lnurl.LNURLPayResponse1:
+
+		/* 2. `LN WALLET` gets JSON response from `LN SERVICE` of form:
+		   {
+		       callback: String, // the URL from LN SERVICE which will accept the pay request parameters
+		       maxSendable: MilliSatoshi, // max amount LN SERVICE is willing to receive
+		       minSendable: MilliSatoshi, // min amount LN SERVICE is willing to receive, can not be less than 1 or more than `maxSendable`
+		       metadata: String, // metadata json which must be presented as raw string here, this is required to pass signature verification at a later step
+		       commentAllowed: Number, // optional number of characters accepted for the `comment` query parameter on subsequent callback, defaults to 0 if not provided. (no comment allowed)
+		       tag: "payRequest" // type of LNURL
+		   }
+		*/
 		a.log.Info("lnurl.LNURLPayResponse1.")
 		host := ""
 		if url, err := url.Parse(rawurl); err == nil {
@@ -101,11 +112,12 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_PayResponse1{
 				&data.LNURLPayResponse1{
-					Host:      host,
-					Callback:  params.Callback,
-					MinAmount: int64(math.Floor(float64(params.MinSendable) / 1000)),
-					MaxAmount: int64(math.Floor(float64(params.MaxSendable) / 1000)),
-					Metadata:  metadata,
+					Host:           host,
+					Callback:       params.Callback,
+					MinAmount:      int64(math.Floor(float64(params.MinSendable) / 1000)),
+					MaxAmount:      int64(math.Floor(float64(params.MaxSendable) / 1000)),
+					Metadata:       metadata,
+					CommentAllowed: params.CommentAllowed,
 				},
 			},
 		}, nil
@@ -270,7 +282,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 	   }
 	*/
 
-	if params.Comment != "" {
+	if params.CommentAllowed > 0 && params.Comment != "" {
 		query.Add("comment", params.Comment)
 	}
 
