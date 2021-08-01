@@ -116,6 +116,7 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 	})
 
 	resultPayments := &data.PaymentsList{PaymentsList: paymentsList}
+	a.log.Infof("fetched %v payments", len(resultPayments.PaymentsList))
 	return resultPayments, nil
 }
 
