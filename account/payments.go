@@ -395,6 +395,17 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return "", err
 	}
 
+	if payReq != nil && len(payReq.RouteHints) == 1 && len(payReq.RouteHints[0].HopHints) == 1 {
+		lnclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
+			Pairs: []*routerrpc.PairHistory{{
+				NodeFrom: []byte(payReq.RouteHints[0].HopHints[0].NodeId),
+				NodeTo:   []byte(payReq.Destination),
+				History: &routerrpc.PairData{
+					SuccessTime:    time.Now().UnixNano(),
+					SuccessAmtMsat: payReq.NumMsat,
+				},
+			}}})
+	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
 	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
