@@ -12,7 +12,9 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/mail"
 	"net/url"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lightningnetwork/lnd/lnwire"
@@ -29,16 +31,38 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
+func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err error) {
+	var lightningAddress string
+
+	handleLNUrlError := fmt.Errorf("%q does not contain an LNURL.", rawString)
+
 	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
 	if !ok {
-		return nil, fmt.Errorf("'%s' does not contain an LNURL.", rawString)
+
+		// ref. Lightning-Address https://github.com/andrerfneves/lightning-address/blob/master/DIY.md
+		parsedAddress, err := mail.ParseAddress(rawString)
+		if err != nil {
+			return nil, fmt.Errorf("%v : %w", handleLNUrlError, err)
+		}
+
+		parts := strings.Split(parsedAddress.Address, "@")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("%w : %q is not an e-mail address", handleLNUrlError, parsedAddress.Address)
+		}
+
+		lightningAddress = parsedAddress.Address
+
+		url := &url.URL{
+			Scheme: "https",
+			Host:   parts[1],
+			Path:   ".well-known/lnurlp/" + parts[0],
+		}
+		encodedLnurl = url.String()
 	}
 
-	a.log.Infof("HandleLNURL %v", encodedLnurl)
 	rawurl, iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%v : %w", handleLNUrlError, err)
 	}
 
 	switch params := iparams.(type) {
@@ -85,14 +109,14 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 	case lnurl.LNURLPayResponse1:
 
 		/* 2. `LN WALLET` gets JSON response from `LN SERVICE` of form:
-		   {
-		       callback: String, // the URL from LN SERVICE which will accept the pay request parameters
-		       maxSendable: MilliSatoshi, // max amount LN SERVICE is willing to receive
-		       minSendable: MilliSatoshi, // min amount LN SERVICE is willing to receive, can not be less than 1 or more than `maxSendable`
-		       metadata: String, // metadata json which must be presented as raw string here, this is required to pass signature verification at a later step
-		       commentAllowed: Number, // optional number of characters accepted for the `comment` query parameter on subsequent callback, defaults to 0 if not provided. (no comment allowed)
-		       tag: "payRequest" // type of LNURL
-		   }
+		{
+			callback: String, // the URL from LN SERVICE which will accept the pay request parameters
+			maxSendable: MilliSatoshi, // max amount LN SERVICE is willing to receive
+			minSendable: MilliSatoshi, // min amount LN SERVICE is willing to receive, can not be less than 1 or more than `maxSendable`
+			metadata: String, // metadata json which must be presented as raw string here, this is required to pass signature verification at a later step
+			commentAllowed: Number, // optional number of characters accepted for the `comment` query parameter on subsequent callback, defaults to 0 if not provided. (no comment allowed)
+			tag: "payRequest" // type of LNURL
+		}
 		*/
 		a.log.Info("lnurl.LNURLPayResponse1.")
 		host := ""
@@ -112,12 +136,13 @@ func (a *Service) HandleLNURL(rawString string) (*data.LNUrlResponse, error) {
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_PayResponse1{
 				&data.LNURLPayResponse1{
-					Host:           host,
-					Callback:       params.Callback,
-					MinAmount:      int64(math.Floor(float64(params.MinSendable) / 1000)),
-					MaxAmount:      int64(math.Floor(float64(params.MaxSendable) / 1000)),
-					Metadata:       metadata,
-					CommentAllowed: params.CommentAllowed,
+					Host:             host,
+					LightningAddress: lightningAddress,
+					Callback:         params.Callback,
+					MinAmount:        int64(math.Floor(float64(params.MinSendable) / 1000)),
+					MaxAmount:        int64(math.Floor(float64(params.MaxSendable) / 1000)),
+					Metadata:         metadata,
+					CommentAllowed:   params.CommentAllowed,
 				},
 			},
 		}, nil
@@ -293,7 +318,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		return nil, err
 	}
 	if resp.StatusCode != 200 && resp.StatusCode != 320 {
-		return nil, fmt.Errorf("Error in http request: %s", resp.Status)
+		return nil, fmt.Errorf("error in http request: %s", resp.Status)
 	}
 
 	a.log.Infof("FinishLNURLPay: response.Status: %s", resp.Status)
