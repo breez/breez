@@ -459,6 +459,7 @@ message LNURLPayResponse1 {
     string comment     = 8;
     string host = 9;    
     int64 commentAllowed = 10;
+    string lightning_address = 11;
 }
 
 message SuccessAction {
