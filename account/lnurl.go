@@ -34,7 +34,7 @@ type LoginResponse struct {
 func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err error) {
 	var lightningAddress string
 
-	handleLNUrlError := fmt.Errorf("%q does not contain an LNURL.", rawString)
+	handleLNUrlError := fmt.Errorf("%q does not contain an LNURL", rawString)
 
 	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
 	if !ok {
@@ -62,7 +62,7 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 
 	rawurl, iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
-		return nil, fmt.Errorf("%v : %w", handleLNUrlError, err)
+		return nil, fmt.Errorf("%s : %w", handleLNUrlError, err)
 	}
 
 	switch params := iparams.(type) {
@@ -464,16 +464,15 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		Comment:            params.Comment,
 		InvoiceDescription: lnurl.Metadata(a.lnurlPayMetadata.data).Description(),
 		Host:               params.Host,
+		LightningAddress:   params.LightningAddress,
 		Metadata:           params.Metadata,
 		Invoice:            payResponse2.PR,
 	}
 	a.breezDB.SaveLNUrlPayInfo(info)
 	return info, nil
-
 }
 
 func (a *Service) DecryptLNUrlPayMessage(paymentHash string, preimage []byte) (string, error) {
-
 	info, err := a.breezDB.FetchLNUrlPayInfo(paymentHash)
 	if err != nil {
 		return "",
