@@ -434,6 +434,17 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		}
 	}
 
+	if payReq != nil && len(payReq.RouteHints) == 1 && len(payReq.RouteHints[0].HopHints) == 1 {
+		lnclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
+			Pairs: []*routerrpc.PairHistory{{
+				NodeFrom: []byte(payReq.RouteHints[0].HopHints[0].NodeId),
+				NodeTo:   []byte(payReq.Destination),
+				History: &routerrpc.PairData{
+					SuccessTime:    time.Now().UnixNano(),
+					SuccessAmtMsat: payReq.NumMsat,
+				},
+			}}})
+	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
 	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
@@ -544,7 +555,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
 			lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
 		if amountMsat < channelFeesMsat+1000 {
-			return "", 0, fmt.Errorf("the amount is smaller than the minimum fees (%v sats) + 1 sat", lspInfo.ChannelMinimumFeeMsat)
+			return "", 0, fmt.Errorf("amount should be more than the minimum fees (%v sats)", lspInfo.ChannelMinimumFeeMsat/1000)
 		}
 
 		smallAmountMsat = amountMsat - channelFeesMsat
