@@ -458,7 +458,7 @@ message LNURLPayResponse1 {
     string from_nodes  = 7;
     string comment     = 8;
     string host = 9;    
-    int64 commentAllowed = 10;
+    int64 comment_allowed = 10;
     string lightning_address = 11;
 }
 
@@ -479,6 +479,7 @@ message LNUrlPayInfo {
     string invoice_description  = 5;
     repeated LNUrlPayMetadata metadata = 6;
     string host = 7;
+    string lightning_address = 8;
 }
 
 message LNUrlPayInfoList {
