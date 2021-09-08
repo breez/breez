@@ -45,46 +45,20 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		return err
 	}
 
-	useTor, _ := a.breezDB.GetTorActive()
-	if useTor {
-		if torConfig == nil {
-			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
-			a.log.Errorf("app.go: starting breez without tor: %v", err)
-			/* TODO(nochiel) Notify the user of an error. Give them options
-			- Try again.
-			- Disable Tor.
-			*/
-			a.breezDB.SetTorActive(false)
-			return err
-		}
+	useTor, _ := a.breezDB.GetUseTor()
+	if useTor && torConfig == nil {
+		err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
+		a.log.Errorf("app.go: starting breez without tor: %v", err)
+		// return err
+	}
 
+	if useTor && torConfig != nil {
 		a.log.Infof("app.Start: useTor = %v, torConfig = %+v.", useTor, *torConfig)
 		_torConfig := &tor.TorConfig{
 			Socks:   torConfig.Socks,
 			Http:    torConfig.Http,
 			Control: torConfig.Control,
 		}
-
-		/* The current backup provider has a pointer to a torConfig
-		but if torConfig was nil, then setting a.BackupManager.TorConfig
-		will only affect newly created backup providers. Therefore, we
-		reset the current backup provider's torConfig pointer here.
-		*/
-		provider := a.BackupManager.GetProvider()
-		provider.SetTor(_torConfig)
-		a.BackupManager.SetProvider(provider)
-
-		a.BackupManager.TorConfig = _torConfig
-		a.lnDaemon.TorConfig = _torConfig
-
-	} else {
-
-		a.lnDaemon.TorConfig = nil
-
-		a.BackupManager.TorConfig = nil
-		provider := a.BackupManager.GetProvider()
-		provider.SetTor(nil)
-		a.BackupManager.SetProvider(provider)
 
 	}
 
@@ -442,17 +416,17 @@ func (a *App) CheckLSPClosedChannelMismatch(
 	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
 }
 
-func (a *App) SetTorActive(enable bool) error {
-	a.log.Infof("setTorActive: setting enabled = %v", enable)
-	return a.breezDB.SetTorActive(enable)
+func (a *App) EnableOrDisableTor(enable bool) error {
+	a.log.Infof("EnableOrDisableTor: setting enabled = %v", enable)
+	return a.breezDB.SetUseTor(enable)
 }
 
-func (a *App) GetTorActive() bool {
-	a.log.Info("getTorActive")
+func (a *App) IsTorActive() bool {
+	a.log.Info("IsTorActive?")
 
-	b, err := a.breezDB.GetTorActive()
+	b, err := a.breezDB.GetUseTor()
 	if err != nil {
-		a.log.Infof("getTorActive: %v", err)
+		a.log.Infof("IsTorActive: %v", err)
 	}
 	return b
 }

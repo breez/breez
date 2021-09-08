@@ -1,21 +1,23 @@
 package db
 
 const (
-	torActiveKey = "torActive"
+	useTorKey = "useTor"
 )
 
-func (db *DB) SetTorActive(active bool) error {
-	var _active byte
-	if active {
-		_active = 1
+func (db *DB) SetUseTor(useTor bool) error {
+
+	var _useTor byte
+	if useTor {
+		_useTor = 1
 	}
 
-	return db.saveItem([]byte(torBucket), []byte(torActiveKey), []byte{_active})
+	return db.saveItem([]byte(torBucket), []byte(useTorKey), []byte{_useTor})
 }
 
-func (db *DB) GetTorActive() (result bool, err error) {
-	if active, err := db.fetchItem([]byte(torBucket), []byte(torActiveKey)); err == nil {
-		if active != nil && active[0] == 1 {
+func (db *DB) GetUseTor() (result bool, err error) {
+
+	if useTor, err := db.fetchItem([]byte(torBucket), []byte(useTorKey)); err == nil {
+		if useTor != nil && useTor[0] == 1 {
 			result = true
 		}
 	}
