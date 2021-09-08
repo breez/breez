@@ -11,7 +11,12 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
+<<<<<<< HEAD
 	"github.com/btcsuite/btcd/btcec/v2"
+=======
+	"github.com/breez/breez/tor"
+	"github.com/btcsuite/btcd/btcec"
+>>>>>>> bc15363 (Configure LND to use Tor.)
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -71,6 +76,8 @@ type Daemon struct {
 	quitChan            chan struct{}
 	startBeforeSync     bool
 	interceptor         signal.Interceptor
+
+	TorConfig *tor.TorConfig
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning
