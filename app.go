@@ -60,6 +60,12 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			Control: torConfig.Control,
 		}
 
+		a.lnDaemon.TorConfig = _torConfig
+
+	} else {
+
+		a.lnDaemon.TorConfig = nil
+
 	}
 
 	services := []Service{
