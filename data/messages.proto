@@ -581,3 +581,9 @@ message SweepAllCoinsTransactions {
 message DownloadBackupResponse {
   repeated string files = 1;
 }
+
+message TorConfig {
+    string control = 1;
+    string http = 2;
+    string socks = 3;
+}
