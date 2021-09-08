@@ -3,7 +3,6 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -247,34 +246,6 @@ func (n *RemoteServerProvider) DownloadBackupFiles(nodeID, backupID string) ([]s
 	return downloaded, nil
 }
 
-func (n *RemoteServerProvider) SetTor(torConfig *tor.TorConfig) {
-	n.torConfig = torConfig
-}
-
-func (n *RemoteServerProvider) TestAuth() (err error) {
-	_, client, err := n.getClient()
-	if err != nil {
-		return err
-	}
-
-	if _, err = client.ListDir("/"); err != nil {
-
-		n.log.Errorf("webdav_provider.go: TestAuth: %v", err)
-		var (
-			authError     = errors.New("AuthError")
-			notFoundError = errors.New("NotFoundError")
-		)
-		if ferr, ok := err.(*WebdavRequestError); ok {
-			switch ferr.StatusCode {
-			case 401, 403:
-				return &webdavProviderError{err: authError}
-			case 404:
-				return &webdavProviderError{err: notFoundError}
-			}
-		}
-
-		return err
-	}
-
-	return nil
+func (p *RemoteServerProvider) SetTor(torConfig *tor.TorConfig) {
+	p.torConfig = torConfig
 }
