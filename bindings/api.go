@@ -182,8 +182,16 @@ func SetBackupEncryptionKey(key []byte, encryptionType string) error {
 /*
 Start the lightning client
 */
-func Start() error {
-	err := getBreezApp().Start()
+func Start(torConfig []byte) error {
+
+	_torConfig := &data.TorConfig{}
+	fmt.Println("api.go: Start: Using tor config to configure app.")
+	if err := proto.Unmarshal(torConfig, _torConfig); err != nil {
+		return err
+	}
+
+	fmt.Println("api.go: Start")
+	err := getBreezApp().Start(_torConfig)
 	if err != nil {
 		return err
 	}
@@ -967,6 +975,14 @@ func SyncGraphFromFile(sourceFilePath string) error {
 
 func PublishTransaction(tx []byte) error {
 	return getBreezApp().AccountService.PublishTransaction(tx)
+}
+
+func EnableOrDisableTor(enable bool) (err error) {
+	return getBreezApp().EnableOrDisableTor(enable)
+}
+
+func IsTorActive() bool {
+	return getBreezApp().IsTorActive()
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

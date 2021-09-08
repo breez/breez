@@ -17,6 +17,7 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -33,15 +34,32 @@ type Service interface {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func (a *App) Start() error {
+func (a *App) Start(torConfig *data.TorConfig) error {
 	if atomic.SwapInt32(&a.started, 1) == 1 {
 		return errors.New("Breez already started")
 	}
 
 	a.log.Info("app.start before bootstrap")
 	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
-		a.log.Info("app.start bootstrap error %v", err)
+		a.log.Infof("app.start bootstrap error %v", err)
 		return err
+	}
+
+	useTor, _ := a.breezDB.GetUseTor()
+	if useTor && torConfig == nil {
+		err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
+		a.log.Errorf("app.go: starting breez without tor: %v", err)
+		// return err
+	}
+
+	if useTor && torConfig != nil {
+		a.log.Infof("app.Start: useTor = %v, torConfig = %+v.", useTor, *torConfig)
+		_torConfig := &tor.TorConfig{
+			Socks:   torConfig.Socks,
+			Http:    torConfig.Http,
+			Control: torConfig.Control,
+		}
+
 	}
 
 	services := []Service{
@@ -396,4 +414,19 @@ func (a *App) CheckLSPClosedChannelMismatch(
 		return nil, err
 	}
 	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
+}
+
+func (a *App) EnableOrDisableTor(enable bool) error {
+	a.log.Infof("EnableOrDisableTor: setting enabled = %v", enable)
+	return a.breezDB.SetUseTor(enable)
+}
+
+func (a *App) IsTorActive() bool {
+	a.log.Info("IsTorActive?")
+
+	b, err := a.breezDB.GetUseTor()
+	if err != nil {
+		a.log.Infof("IsTorActive: %v", err)
+	}
+	return b
 }
