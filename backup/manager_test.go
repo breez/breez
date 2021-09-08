@@ -12,6 +12,7 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btclog"
 )
 
@@ -30,6 +31,7 @@ type MockTester struct {
 	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
 	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
 	MsgChannel              chan data.NotificationEvent
+	torConfig               *tor.TorConfig
 }
 
 func newDefaultMockTester() *MockTester {
@@ -61,6 +63,10 @@ func (m *MockTester) AvailableSnapshots() ([]SnapshotInfo, error) {
 }
 func (m *MockTester) DownloadBackupFiles(nodeID, backupID string) ([]string, error) {
 	return m.DownloadBackupFilesImpl(nodeID, backupID)
+}
+
+func (m *MockTester) SetTor(torConfig *tor.TorConfig) {
+	m.torConfig = torConfig
 }
 
 func prepareBackupData() (paths []string, nodeID string, err error) {

@@ -1,5 +1,7 @@
 package backup
 
+import "github.com/breez/breez/tor"
+
 // SnapshotInfo is an existing backup information for a specific node id.
 type SnapshotInfo struct {
 	NodeID         string
@@ -23,6 +25,7 @@ type Provider interface {
 	UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error)
 	AvailableSnapshots() ([]SnapshotInfo, error)
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
+	SetTor(t *tor.TorConfig)
 }
 
 // ProviderError is the error that is used by the Provider to tell the BackupService
