@@ -1,6 +1,6 @@
 package breez
 
-//protoc -I data data/messages.proto --go_out=plugins=grpc:data
+// protoc -I data data/messages.proto --go_out=plugins=grpc:data
 
 import (
 	"bytes"
@@ -46,13 +46,18 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 	}
 
 	useTor, _ := a.breezDB.GetUseTor()
-	if useTor && torConfig == nil {
-		err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
-		a.log.Errorf("app.go: starting breez without tor: %v", err)
-		// return err
-	}
+	if useTor {
+		if torConfig == nil {
+			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
+			a.log.Errorf("app.go: starting breez without tor: %v", err)
+			/* TODO(nochiel) Notify the user of an error. Give them options
+			- Try again.
+			- Disable Tor.
+			*/
+			a.breezDB.SetUseTor(false)
+			return err
+		}
 
-	if useTor && torConfig != nil {
 		a.log.Infof("app.Start: useTor = %v, torConfig = %+v.", useTor, *torConfig)
 		_torConfig := &tor.TorConfig{
 			Socks:   torConfig.Socks,
@@ -60,14 +65,31 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			Control: torConfig.Control,
 		}
 
+		/* The current backup provider has a pointer to a torConfig
+		but if torConfig was nil, then setting a.BackupManager.TorConfig
+		will only affect newly created backup providers. Therefore, we
+		reset the current backup provider's torConfig pointer here.
+		*/
+		provider := a.BackupManager.GetProvider()
+		provider.SetTor(_torConfig)
+		a.BackupManager.SetProvider(provider)
+
+		a.BackupManager.TorConfig = _torConfig
 		a.lnDaemon.TorConfig = _torConfig
 
 	} else {
+		a.log.Info("app.Start: starting without Tor.")
 
 		a.lnDaemon.TorConfig = nil
 
+		a.BackupManager.TorConfig = nil
+		provider := a.BackupManager.GetProvider()
+		provider.SetTor(nil)
+		a.BackupManager.SetProvider(provider)
+
 	}
 
+	a.log.Info("app.start: starting services.")
 	services := []Service{
 		a.lnDaemon,
 		a.ServicesClient,
@@ -330,7 +352,7 @@ func (a *App) DeleteGraph() error {
 				channelEdgeInfo *channeldb.ChannelEdgeInfo,
 				_ *channeldb.ChannelEdgePolicy,
 				_ *channeldb.ChannelEdgePolicy) error {
-				//Add the channel only if it's not connected to our node
+				// Add the channel only if it's not connected to our node
 				if _, ok := ourCids[channelEdgeInfo.ChannelID]; !ok {
 					cids[channelEdgeInfo.ChannelID] = struct{}{}
 				}

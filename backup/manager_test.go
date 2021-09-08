@@ -69,10 +69,6 @@ func (m *MockTester) SetTor(torConfig *tor.TorConfig) {
 	m.torConfig = torConfig
 }
 
-func (m *MockTester) TestAuth() {
-	return
-}
-
 func prepareBackupData() (paths []string, nodeID string, err error) {
 	return []string{"file1"}, "test-node-id", nil
 }
