@@ -5,8 +5,10 @@ package tor
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/breez/breez/data"
 )
@@ -14,18 +16,19 @@ import (
 type TorConfig data.TorConfig
 
 func (t *TorConfig) NewHttpClient() (*http.Client, error) {
-
-	httpAddress := fmt.Sprintf("http://127.0.0.1:%v", t.Http)
-	proxyUrl, err := url.Parse(httpAddress)
+	proxyAddress := fmt.Sprintf("socks5://127.0.0.1:%v", t.Socks)
+	proxyUrl, err := url.Parse(proxyAddress)
 	if err != nil {
 		return nil, fmt.Errorf("NewHttpClient: %w", err)
 	}
 
-	tr := &http.Transport{}
-	tr.Proxy = func(r *http.Request) (result *url.URL, err error) {
-		return proxyUrl, nil
+	tr := &http.Transport{
+		Proxy: http.ProxyURL(proxyUrl),
+		Dial: (&net.Dialer{
+			Timeout: 30 * time.Second,
+		}).Dial,
 	}
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr, Timeout: time.Second * 30}
 	return client, nil
 }
