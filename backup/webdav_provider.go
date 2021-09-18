@@ -246,6 +246,16 @@ func (n *RemoteServerProvider) DownloadBackupFiles(nodeID, backupID string) ([]s
 	return downloaded, nil
 }
 
-func (p *RemoteServerProvider) SetTor(torConfig *tor.TorConfig) {
-	p.torConfig = torConfig
+func (n *RemoteServerProvider) SetTor(torConfig *tor.TorConfig) {
+	n.torConfig = torConfig
+}
+
+func (n *RemoteServerProvider) TestAuth() (err error) {
+	_, client, err := n.getClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ListDir("/")
+	return err
 }

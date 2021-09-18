@@ -358,10 +358,6 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	return downloaded, nil
 }
 
-func (p *GoogleDriveProvider) SetTor(torConfig *tor.TorConfig) {
-	return
-}
-
 // nodeFolder is responsible for fetching the node folder. If it doesn't exist it creates it.
 func (p *GoogleDriveProvider) nodeFolder(nodeID string) (*drive.File, error) {
 	r, err := p.driveService.Files.List().Spaces("appDataFolder").
@@ -443,6 +439,14 @@ func (p *GoogleDriveProvider) deleteStaleSnapshots(nodeFolderID, activeBackupFol
 			}
 		}()
 	}
+	return nil
+}
+
+func (p *GoogleDriveProvider) SetTor(torConfig *tor.TorConfig) {
+	return
+}
+
+func (p *GoogleDriveProvider) TestAuth() error {
 	return nil
 }
 

@@ -26,6 +26,7 @@ type Provider interface {
 	AvailableSnapshots() ([]SnapshotInfo, error)
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
 	SetTor(t *tor.TorConfig)
+	TestAuth() error
 }
 
 // ProviderError is the error that is used by the Provider to tell the BackupService
