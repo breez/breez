@@ -77,6 +77,10 @@ func (b *NativeBackupProviderBridge) SetTor(torConfig *tor.TorConfig) {
 	return
 }
 
+func (b *NativeBackupProviderBridge) TestAuth() error {
+	return nil
+}
+
 // RegisterNativeBackupProvider registered a native backup provider
 func RegisterNativeBackupProvider(name string, provider NativeBackupProvider) {
 	backup.RegisterProvider(name, func(providerFactoryInfo backup.ProviderFactoryInfo) (backup.Provider, error) {

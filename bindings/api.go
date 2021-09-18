@@ -331,6 +331,16 @@ func AvailableSnapshots() (string, error) {
 	return string(bytes), nil
 }
 
+func TestBackupAuth(provider, authData string) error {
+	manager := getBreezApp().BackupManager
+	if err := manager.SetBackupProvider(provider, authData); err != nil {
+		return errors.New("Failed to set backup provider.")
+	}
+	p := manager.GetProvider()
+
+	return p.TestAuth()
+}
+
 /*
 DaemonReady returns the status of the daemon
 */
@@ -975,11 +985,11 @@ func PublishTransaction(tx []byte) error {
 	return getBreezApp().AccountService.PublishTransaction(tx)
 }
 
-func setTorActive(enable bool) (err error) {
+func SetTorActive(enable bool) (err error) {
 	return getBreezApp().SetTorActive(enable)
 }
 
-func getTorActive() bool {
+func GetTorActive() bool {
 	return getBreezApp().GetTorActive()
 }
 
