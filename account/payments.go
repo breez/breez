@@ -249,7 +249,7 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 	}
 	// At this stage we are ready to send asynchronously the payment through the daemon.
 	var timeoutSeconds int32 = 60
-	if useTor, _ := a.breezDB.GetUseTor(); useTor {
+	if useTor, _ := a.breezDB.GetTorActive(); useTor {
 		/* @nochiel: If Tor is active, extend the timeout to avoid
 		frequent payment timeout failures observed in testing.
 		*/
