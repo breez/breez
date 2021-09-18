@@ -975,12 +975,12 @@ func PublishTransaction(tx []byte) error {
 	return getBreezApp().AccountService.PublishTransaction(tx)
 }
 
-func EnableOrDisableTor(enable bool) (err error) {
-	return getBreezApp().EnableOrDisableTor(enable)
+func setTorActive(enable bool) (err error) {
+	return getBreezApp().SetTorActive(enable)
 }
 
-func IsTorActive() bool {
-	return getBreezApp().IsTorActive()
+func getTorActive() bool {
+	return getBreezApp().GetTorActive()
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

@@ -45,7 +45,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		return err
 	}
 
-	useTor, _ := a.breezDB.GetUseTor()
+	useTor, _ := a.breezDB.GetTorActive()
 	if useTor {
 		if torConfig == nil {
 			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
@@ -54,7 +54,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			- Try again.
 			- Disable Tor.
 			*/
-			a.breezDB.SetUseTor(false)
+			a.breezDB.SetTorActive(false)
 			return err
 		}
 
@@ -444,17 +444,17 @@ func (a *App) CheckLSPClosedChannelMismatch(
 	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
 }
 
-func (a *App) EnableOrDisableTor(enable bool) error {
-	a.log.Infof("EnableOrDisableTor: setting enabled = %v", enable)
-	return a.breezDB.SetUseTor(enable)
+func (a *App) SetTorActive(enable bool) error {
+	a.log.Infof("setTorActive: setting enabled = %v", enable)
+	return a.breezDB.SetTorActive(enable)
 }
 
-func (a *App) IsTorActive() bool {
-	a.log.Info("IsTorActive?")
+func (a *App) GetTorActive() bool {
+	a.log.Info("getTorActive")
 
-	b, err := a.breezDB.GetUseTor()
+	b, err := a.breezDB.GetTorActive()
 	if err != nil {
-		a.log.Infof("IsTorActive: %v", err)
+		a.log.Infof("getTorActive: %v", err)
 	}
 	return b
 }
