@@ -76,6 +76,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 
 		a.BackupManager.TorConfig = _torConfig
 		a.lnDaemon.TorConfig = _torConfig
+		a.AccountService.TorConfig = _torConfig
 
 	} else {
 		a.log.Info("app.Start: starting without Tor.")
@@ -87,6 +88,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		provider.SetTor(nil)
 		a.BackupManager.SetProvider(provider)
 
+		a.AccountService.TorConfig = nil
 	}
 
 	a.log.Info("app.start: starting services.")
