@@ -10,6 +10,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/services"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/subscribe"
@@ -37,13 +38,15 @@ type Service struct {
 	onServiceEvent     func(data.NotificationEvent)
 	requestBackup      func()
 
-	lnurlWithdrawing   string
+	lnurlWithdrawing string
 	lnurlPayMetadata LnurlPayMetadata
 
-	activeParams     *chaincfg.Params
-	lspReadyPayment    func() (bool, error)
-	notification *notificationRequest
-	quitChan chan struct{}
+	activeParams    *chaincfg.Params
+	lspReadyPayment func() (bool, error)
+	notification    *notificationRequest
+	quitChan        chan struct{}
+
+	TorConfig *tor.TorConfig
 }
 
 type notificationRequest struct {
