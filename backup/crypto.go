@@ -4,12 +4,23 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 )
 
+const (
+	keyLength = 32
+	nonceSize = 12
+)
+
 func encryptFile(source, dest string, key []byte) error {
+
+	if(len(key) != keyLength) {
+		return fmt.Errorf("wrong key length given: %d, expected: %d", len(key), keyLength)
+	}
+
 	fileContent, err := ioutil.ReadFile(source)
 	if err != nil {
 		return err
@@ -20,7 +31,7 @@ func encryptFile(source, dest string, key []byte) error {
 		return err
 	}
 
-	nonce := make([]byte, 12)
+	nonce := make([]byte, nonceSize )
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return err
 	}
@@ -40,6 +51,11 @@ func encryptFile(source, dest string, key []byte) error {
 }
 
 func decryptFile(source, dest string, key []byte) error {
+
+	if(len(key) != keyLength) {
+		return fmt.Errorf("wrong key length given: %d, expected: %d", len(key), keyLength)
+	}
+
 	fileContent, err := ioutil.ReadFile(source)
 	if err != nil {
 		return err
