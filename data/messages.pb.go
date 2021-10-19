@@ -1235,6 +1235,7 @@ type SpontaneousPaymentRequest struct {
 	GroupName    string           `protobuf:"bytes,5,opt,name=groupName,proto3" json:"groupName,omitempty"`
 	FeeLimitMsat int64            `protobuf:"varint,6,opt,name=feeLimitMsat,proto3" json:"feeLimitMsat,omitempty"`
 	Tlv          map[int64]string `protobuf:"bytes,7,rep,name=tlv,proto3" json:"tlv,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	LspInfo      *LSPInformation  `protobuf:"bytes,8,opt,name=lspInfo,proto3" json:"lspInfo,omitempty"`
 }
 
 func (x *SpontaneousPaymentRequest) Reset() {
@@ -1314,6 +1315,13 @@ func (x *SpontaneousPaymentRequest) GetFeeLimitMsat() int64 {
 func (x *SpontaneousPaymentRequest) GetTlv() map[int64]string {
 	if x != nil {
 		return x.Tlv
+	}
+	return nil
+}
+
+func (x *SpontaneousPaymentRequest) GetLspInfo() *LSPInformation {
+	if x != nil {
+		return x.LspInfo
 	}
 	return nil
 }
@@ -5416,7 +5424,7 @@ var file_messages_proto_rawDesc = []byte{
 	0x01, 0x28, 0x03, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x26, 0x0a, 0x0e, 0x70,
 	0x61, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x61, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x22, 0xc3, 0x02, 0x0a, 0x19, 0x53, 0x70, 0x6f, 0x6e, 0x74, 0x61, 0x6e, 0x65,
+	0x65, 0x73, 0x74, 0x22, 0xf3, 0x02, 0x0a, 0x19, 0x53, 0x70, 0x6f, 0x6e, 0x74, 0x61, 0x6e, 0x65,
 	0x6f, 0x75, 0x73, 0x50, 0x61, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x03, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x65, 0x73,
@@ -5433,7 +5441,10 @@ var file_messages_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x28, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x2e, 0x53, 0x70, 0x6f, 0x6e, 0x74, 0x61,
 	0x6e, 0x65, 0x6f, 0x75, 0x73, 0x50, 0x61, 0x79, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x2e, 0x54, 0x6c, 0x76, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x03, 0x74, 0x6c,
-	0x76, 0x1a, 0x36, 0x0a, 0x08, 0x54, 0x6c, 0x76, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
+	0x76, 0x12, 0x2e, 0x0a, 0x07, 0x6c, 0x73, 0x70, 0x49, 0x6e, 0x66, 0x6f, 0x18, 0x08, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x14, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x2e, 0x4c, 0x53, 0x50, 0x49, 0x6e, 0x66,
+	0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x6c, 0x73, 0x70, 0x49, 0x6e, 0x66,
+	0x6f, 0x1a, 0x36, 0x0a, 0x08, 0x54, 0x6c, 0x76, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
 	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
 	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
 	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xad, 0x02, 0x0a, 0x0b, 0x49, 0x6e,
@@ -6123,58 +6134,59 @@ var file_messages_proto_depIdxs = []int32{
 	63, // 3: data.Payment.lnurlPayInfo:type_name -> data.LNUrlPayInfo
 	12, // 4: data.PaymentsList.paymentsList:type_name -> data.Payment
 	79, // 5: data.SpontaneousPaymentRequest.tlv:type_name -> data.SpontaneousPaymentRequest.TlvEntry
-	18, // 6: data.AddInvoiceRequest.invoiceDetails:type_name -> data.InvoiceMemo
-	50, // 7: data.AddInvoiceRequest.lspInfo:type_name -> data.LSPInformation
-	18, // 8: data.Invoice.memo:type_name -> data.InvoiceMemo
-	50, // 9: data.SyncLSPChannelsRequest.lspInfo:type_name -> data.LSPInformation
-	24, // 10: data.UnconfirmedChannelsStatus.statuses:type_name -> data.UnconfirmedChannelStatus
-	50, // 11: data.CheckLSPClosedChannelMismatchRequest.lspInfo:type_name -> data.LSPInformation
-	3,  // 12: data.NotificationEvent.type:type_name -> data.NotificationEvent.NotificationType
-	37, // 13: data.AddFundError.swapAddressInfo:type_name -> data.SwapAddressInfo
-	37, // 14: data.FundStatusReply.unConfirmedAddresses:type_name -> data.SwapAddressInfo
-	37, // 15: data.FundStatusReply.confirmedAddresses:type_name -> data.SwapAddressInfo
-	37, // 16: data.FundStatusReply.refundableAddresses:type_name -> data.SwapAddressInfo
-	0,  // 17: data.SwapAddressInfo.swapError:type_name -> data.SwapError
-	37, // 18: data.SwapAddressList.addresses:type_name -> data.SwapAddressInfo
-	48, // 19: data.Rates.rates:type_name -> data.rate
-	80, // 20: data.LSPList.lsps:type_name -> data.LSPList.LspsEntry
-	81, // 21: data.LSPActivity.activity:type_name -> data.LSPActivity.ActivityEntry
-	57, // 22: data.LNUrlResponse.withdraw:type_name -> data.LNUrlWithdraw
-	58, // 23: data.LNUrlResponse.channel:type_name -> data.LNURLChannel
-	59, // 24: data.LNUrlResponse.auth:type_name -> data.LNURLAuth
-	61, // 25: data.LNUrlResponse.payResponse1:type_name -> data.LNURLPayResponse1
-	60, // 26: data.LNURLPayResponse1.metadata:type_name -> data.LNUrlPayMetadata
-	62, // 27: data.LNUrlPayInfo.success_action:type_name -> data.SuccessAction
-	60, // 28: data.LNUrlPayInfo.metadata:type_name -> data.LNUrlPayMetadata
-	63, // 29: data.LNUrlPayInfoList.infoList:type_name -> data.LNUrlPayInfo
-	67, // 30: data.ReverseSwapInfo.fees:type_name -> data.ReverseSwapFees
-	70, // 31: data.ReverseSwapPaymentRequest.push_notification_details:type_name -> data.PushNotificationDetails
-	71, // 32: data.ReverseSwapPaymentStatuses.payments_status:type_name -> data.ReverseSwapPaymentStatus
-	82, // 33: data.ClaimFeeEstimates.fees:type_name -> data.ClaimFeeEstimates.FeesEntry
-	83, // 34: data.SweepAllCoinsTransactions.transactions:type_name -> data.SweepAllCoinsTransactions.TransactionsEntry
-	50, // 35: data.LSPList.LspsEntry.value:type_name -> data.LSPInformation
-	76, // 36: data.SweepAllCoinsTransactions.TransactionsEntry.value:type_name -> data.TransactionDetails
-	51, // 37: data.BreezAPI.GetLSPList:input_type -> data.LSPListRequest
-	54, // 38: data.BreezAPI.ConnectToLSP:input_type -> data.ConnectLSPRequest
-	7,  // 39: data.BreezAPI.AddFundInit:input_type -> data.AddFundInitRequest
-	8,  // 40: data.BreezAPI.GetFundStatus:input_type -> data.FundStatusRequest
-	19, // 41: data.BreezAPI.AddInvoice:input_type -> data.AddInvoiceRequest
-	16, // 42: data.BreezAPI.PayInvoice:input_type -> data.PayInvoiceRequest
-	5,  // 43: data.BreezAPI.RestartDaemon:input_type -> data.RestartDaemonRequest
-	4,  // 44: data.BreezAPI.ListPayments:input_type -> data.ListPaymentsRequest
-	52, // 45: data.BreezAPI.GetLSPList:output_type -> data.LSPList
-	55, // 46: data.BreezAPI.ConnectToLSP:output_type -> data.ConnectLSPReply
-	30, // 47: data.BreezAPI.AddFundInit:output_type -> data.AddFundInitReply
-	34, // 48: data.BreezAPI.GetFundStatus:output_type -> data.FundStatusReply
-	9,  // 49: data.BreezAPI.AddInvoice:output_type -> data.AddInvoiceReply
-	14, // 50: data.BreezAPI.PayInvoice:output_type -> data.PaymentResponse
-	6,  // 51: data.BreezAPI.RestartDaemon:output_type -> data.RestartDaemonReply
-	13, // 52: data.BreezAPI.ListPayments:output_type -> data.PaymentsList
-	45, // [45:53] is the sub-list for method output_type
-	37, // [37:45] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	50, // 6: data.SpontaneousPaymentRequest.lspInfo:type_name -> data.LSPInformation
+	18, // 7: data.AddInvoiceRequest.invoiceDetails:type_name -> data.InvoiceMemo
+	50, // 8: data.AddInvoiceRequest.lspInfo:type_name -> data.LSPInformation
+	18, // 9: data.Invoice.memo:type_name -> data.InvoiceMemo
+	50, // 10: data.SyncLSPChannelsRequest.lspInfo:type_name -> data.LSPInformation
+	24, // 11: data.UnconfirmedChannelsStatus.statuses:type_name -> data.UnconfirmedChannelStatus
+	50, // 12: data.CheckLSPClosedChannelMismatchRequest.lspInfo:type_name -> data.LSPInformation
+	3,  // 13: data.NotificationEvent.type:type_name -> data.NotificationEvent.NotificationType
+	37, // 14: data.AddFundError.swapAddressInfo:type_name -> data.SwapAddressInfo
+	37, // 15: data.FundStatusReply.unConfirmedAddresses:type_name -> data.SwapAddressInfo
+	37, // 16: data.FundStatusReply.confirmedAddresses:type_name -> data.SwapAddressInfo
+	37, // 17: data.FundStatusReply.refundableAddresses:type_name -> data.SwapAddressInfo
+	0,  // 18: data.SwapAddressInfo.swapError:type_name -> data.SwapError
+	37, // 19: data.SwapAddressList.addresses:type_name -> data.SwapAddressInfo
+	48, // 20: data.Rates.rates:type_name -> data.rate
+	80, // 21: data.LSPList.lsps:type_name -> data.LSPList.LspsEntry
+	81, // 22: data.LSPActivity.activity:type_name -> data.LSPActivity.ActivityEntry
+	57, // 23: data.LNUrlResponse.withdraw:type_name -> data.LNUrlWithdraw
+	58, // 24: data.LNUrlResponse.channel:type_name -> data.LNURLChannel
+	59, // 25: data.LNUrlResponse.auth:type_name -> data.LNURLAuth
+	61, // 26: data.LNUrlResponse.payResponse1:type_name -> data.LNURLPayResponse1
+	60, // 27: data.LNURLPayResponse1.metadata:type_name -> data.LNUrlPayMetadata
+	62, // 28: data.LNUrlPayInfo.success_action:type_name -> data.SuccessAction
+	60, // 29: data.LNUrlPayInfo.metadata:type_name -> data.LNUrlPayMetadata
+	63, // 30: data.LNUrlPayInfoList.infoList:type_name -> data.LNUrlPayInfo
+	67, // 31: data.ReverseSwapInfo.fees:type_name -> data.ReverseSwapFees
+	70, // 32: data.ReverseSwapPaymentRequest.push_notification_details:type_name -> data.PushNotificationDetails
+	71, // 33: data.ReverseSwapPaymentStatuses.payments_status:type_name -> data.ReverseSwapPaymentStatus
+	82, // 34: data.ClaimFeeEstimates.fees:type_name -> data.ClaimFeeEstimates.FeesEntry
+	83, // 35: data.SweepAllCoinsTransactions.transactions:type_name -> data.SweepAllCoinsTransactions.TransactionsEntry
+	50, // 36: data.LSPList.LspsEntry.value:type_name -> data.LSPInformation
+	76, // 37: data.SweepAllCoinsTransactions.TransactionsEntry.value:type_name -> data.TransactionDetails
+	51, // 38: data.BreezAPI.GetLSPList:input_type -> data.LSPListRequest
+	54, // 39: data.BreezAPI.ConnectToLSP:input_type -> data.ConnectLSPRequest
+	7,  // 40: data.BreezAPI.AddFundInit:input_type -> data.AddFundInitRequest
+	8,  // 41: data.BreezAPI.GetFundStatus:input_type -> data.FundStatusRequest
+	19, // 42: data.BreezAPI.AddInvoice:input_type -> data.AddInvoiceRequest
+	16, // 43: data.BreezAPI.PayInvoice:input_type -> data.PayInvoiceRequest
+	5,  // 44: data.BreezAPI.RestartDaemon:input_type -> data.RestartDaemonRequest
+	4,  // 45: data.BreezAPI.ListPayments:input_type -> data.ListPaymentsRequest
+	52, // 46: data.BreezAPI.GetLSPList:output_type -> data.LSPList
+	55, // 47: data.BreezAPI.ConnectToLSP:output_type -> data.ConnectLSPReply
+	30, // 48: data.BreezAPI.AddFundInit:output_type -> data.AddFundInitReply
+	34, // 49: data.BreezAPI.GetFundStatus:output_type -> data.FundStatusReply
+	9,  // 50: data.BreezAPI.AddInvoice:output_type -> data.AddInvoiceReply
+	14, // 51: data.BreezAPI.PayInvoice:output_type -> data.PaymentResponse
+	6,  // 52: data.BreezAPI.RestartDaemon:output_type -> data.RestartDaemonReply
+	13, // 53: data.BreezAPI.ListPayments:output_type -> data.PaymentsList
+	46, // [46:54] is the sub-list for method output_type
+	38, // [38:46] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_messages_proto_init() }

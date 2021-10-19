@@ -239,9 +239,14 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
-func (a *Service) SendSpontaneousPayment(destNode string,
-	description string, amount int64, feeLimitMSat int64,
-	groupKey, groupName string, tlv map[int64]string) (string, error) {
+func (a *Service) SendSpontaneousPayment(request *data.SpontaneousPaymentRequest) (string, error) {
+	destNode := request.DestNode
+	description := request.Description
+	amount := request.Amount
+	feeLimitMSat := request.FeeLimitMsat
+	groupName := request.GroupName
+	groupKey := request.GroupKey
+	tlv := request.Tlv
 
 	destBytes, err := hex.DecodeString(destNode)
 	if err != nil {
@@ -252,12 +257,21 @@ func (a *Service) SendSpontaneousPayment(destNode string,
 		feeLimit = math.MaxInt64
 	}
 	req := &routerrpc.SendPaymentRequest{
+		// RouteHints: a.getFakeChannelRoutingHint(lspInfo),
 		Dest:              destBytes,
 		Amt:               amount,
 		TimeoutSeconds:    60,
 		FeeLimitMsat:      feeLimit,
 		MaxParts:          20,
 		DestCustomRecords: make(map[uint64][]byte),
+	}
+	if request.LspInfo != nil {
+		hint, err := a.getFakeChannelRoutingHint(request.LspInfo)
+		if err != nil {
+			return "", err
+		}
+		req.RouteHints = []*lnrpc.RouteHint{hint}
+		a.log.Infof("adding route hints: %v", req.RouteHints)
 	}
 
 	// Since this is a spontaneous payment we need to generate the pre-image and hash by ourselves.
@@ -342,7 +356,7 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) error {
 	var amt lnwire.MilliSatoshi
 	var destination string
-	var routeHints []*lnrpc.RouteHint
+	routeHints := sendRequest.RouteHints
 	if payReq != nil {
 		destination = payReq.Destination
 		routeHints = payReq.RouteHints
@@ -407,6 +421,7 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 			}}})
 	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
+	a.log.Infof("sending payment with route hints = %v", sendRequest.RouteHints)
 	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
@@ -498,6 +513,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		if err != nil {
 			return "", 0, err
 		}
+		fakeHints.HopHints[0].ChanId = uint64(767765880026038272)
 		routingHints = []*lnrpc.RouteHint{fakeHints}
 		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 

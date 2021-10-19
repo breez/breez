@@ -146,7 +146,8 @@ message SpontaneousPaymentRequest {
     string groupKey = 4;
     string groupName = 5;
     int64 feeLimitMsat = 6;
-    map<int64, string> tlv = 7; 
+    map<int64, string> tlv = 7;
+    LSPInformation lspInfo = 8; 
 }
 
 message InvoiceMemo {

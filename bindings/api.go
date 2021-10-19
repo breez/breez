@@ -445,9 +445,7 @@ func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 	proto.Unmarshal(spontaneousPayment, decodedRequest)
 
 	var errorStr string
-	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(
-		decodedRequest.DestNode, decodedRequest.Description, decodedRequest.Amount,
-		decodedRequest.FeeLimitMsat, decodedRequest.GroupKey, decodedRequest.GroupName, decodedRequest.Tlv)
+	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(decodedRequest)
 
 	if err != nil {
 		errorStr = err.Error()
