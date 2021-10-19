@@ -309,6 +309,7 @@ func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
 		return nil, err
 	}
 	cfg.LogWriter = writer
+	cfg.AcceptKeySend = true
 	cfg.MinBackoff = time.Second * 20
 	cfg.Bitcoin.SkipChannelConfirmation = true
 	conf, err := lnd.ValidateConfig(cfg, "")
