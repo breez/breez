@@ -179,6 +179,15 @@ func SetBackupEncryptionKey(key []byte, encryptionType string) error {
 	return getBreezApp().BackupManager.SetEncryptionKey(encKey, encryptionType)
 }
 
+func SetBackupTorConfig(torConfig []byte) error {
+	_torConfig := &data.TorConfig{}
+	if err := proto.Unmarshal(torConfig, _torConfig); err != nil {
+		return err
+	}
+	getBreezApp().BackupManager.SetTorConfig(_torConfig)
+	return nil
+}
+
 /*
 Start the lightning client
 */
