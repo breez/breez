@@ -280,6 +280,9 @@ func (b *Manager) Start() error {
 					b.log.Infof("failed to compress backup files", err)
 					continue
 				}
+				defer func() {
+					_ = os.Remove(compressedFile)
+				}()
 
 				accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
 				if err != nil {
