@@ -1236,7 +1236,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 }
 
 func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
-	var invoiceMemo *data.InvoiceMemo
+	invoiceMemo := &data.InvoiceMemo{Amount: invoice.AmtPaidSat}
 	var err error
 	if len(invoice.PaymentRequest) > 0 {
 		if invoiceMemo, err = a.DecodePaymentRequest(invoice.PaymentRequest); err != nil {
