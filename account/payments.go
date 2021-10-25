@@ -97,6 +97,11 @@ func (a *Service) GetPayments() (*data.PaymentsList, error) {
 			if paymentItem.LnurlPayInfo, err = a.breezDB.FetchLNUrlPayInfo(payment.PaymentHash); err != nil {
 				return nil, err
 			}
+
+			// Give old reverse swap payments the correct type if necessary.
+			if swap, _ := a.breezDB.FetchReverseSwap(paymentItem.PaymentHash); swap != nil {
+				paymentItem.Type = data.Payment_WITHDRAWAL
+			}
 		case db.ReceivedPayment:
 			paymentItem.Type = data.Payment_RECEIVED
 		case db.DepositPayment:
@@ -1206,6 +1211,7 @@ func (a *Service) onNewSentPayment(paymentItem *lnrpc.Payment) error {
 		return err
 	}
 	if swap != nil {
+		paymentData.Type = db.WithdrawalPayment
 		paymentData.RedeemTxID = swap.ClaimTxid
 		paymentData.Amount = swap.OnchainAmount - swap.ClaimFee
 		paymentData.Fee += paymentItem.Value - swap.OnchainAmount + swap.ClaimFee
