@@ -760,6 +760,12 @@ func (a *Service) DecodePaymentRequest(paymentRequest string) (*data.InvoiceMemo
 		return nil, err
 	}
 	invoiceMemo := a.extractMemo(decodedPayReq)
+	// TODO(nochiel) FINDOUT How slow is this in practice if we call lnclient.QueryRoutes?
+	// Is it better for BreezMobile.PaymentRequestInfoDialog to load the fee asynchronously
+	// so that the user can get immediate feedback?
+	// FIXME(nochiel) Is DecodePaymentRequest ever called in a situation where we don't care about
+	// the network fee?
+	invoiceMemo.MaxFee = a.estimateInvoiceNetworkFee(decodedPayReq)
 	return invoiceMemo, nil
 }
 
@@ -805,6 +811,62 @@ func (a *Service) GetRelatedInvoice(paymentRequest string) (*data.Invoice, error
 	}
 
 	return invoice, nil
+}
+
+func (a *Service) estimateInvoiceNetworkFee(p *lnrpc.PayReq) (result uint32) {
+
+	a.log.Infof("estimateInvoiceNetworkFee: estimating network fee to pay %d sats.", p.NumSatoshis)
+	a.log.Infof("estimateInvoiceNetworkFee: %d routes in invoice.", len(p.RouteHints))
+	amount := uint32(p.NumSatoshis)
+
+	// TODO(nochiel) Check if invoice has routes hints. If it has one route then naively sum the fee along it.
+	// If it has multiple routes then calculate the fee along each and return the max.
+	var routeFees []uint32
+	if len(p.RouteHints) > 0 {
+		routeFees = make([]uint32, len(p.RouteHints))
+		for i, r := range p.RouteHints {
+			fee := &routeFees[i]
+			*fee = 0
+			a.log.Infof("estimateInvoiceNetworkFee: route %d has %d hops.", i, len(r.HopHints))
+			if len(r.HopHints) > 0 {
+				for _, h := range r.HopHints {
+					*fee += (h.FeeBaseMsat / 1e3) + (amount * h.FeeProportionalMillionths / 1e6)
+				}
+			}
+		}
+	} else {
+		// No routes were found in the payment request so instead we'll take the slow path and ask LND.
+		lnclient := a.daemonAPI.APIClient()
+		queryRoutesResponse, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+			PubKey: p.Destination,
+			Amt:    p.NumSatoshis,
+			// LastHopPubkey:  lastHopPubkey,	// TODO(nochiel) Should we set this if we only have one route with one hop?
+		})
+
+		if err != nil {
+			a.log.Infof("estimateInvoiceNetworkFee: QueryRoutes failed: %s.", err)
+			return 0
+		}
+
+		routes := queryRoutesResponse.Routes
+		if len(routes) > 0 {
+			a.log.Infof("estimateInvoiceNetworkFee: %d routes returned from QueryRoutes.", len(routes))
+			routeFees = make([]uint32, len(routes))
+			for i, r := range routes {
+				routeFees[i] = uint32(r.TotalFeesMsat / 1e3) // FIXME(nochiel) Should fees be uint64?
+			}
+		}
+	}
+
+	a.log.Infof("estimateInvoiceNetworkFee: route fees: %v.", routeFees)
+	result = routeFees[0]
+	for _, fee := range routeFees[1:] {
+		if result < fee {
+			result = fee
+		}
+	}
+
+	return result
 }
 
 func (a *Service) extractMemo(decodedPayReq *lnrpc.PayReq) *data.InvoiceMemo {
