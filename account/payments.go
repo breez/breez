@@ -238,6 +238,27 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 	})
 }
 
+func convertRoutingHints(hints []*data.RouteHint) []*lnrpc.RouteHint {
+	var converedHints []*lnrpc.RouteHint
+	for _, h := range hints {
+		var convertedHops []*lnrpc.HopHint
+		for _, hop := range h.HopHints {
+			convertedHops = append(convertedHops, &lnrpc.HopHint{
+				NodeId:                    hop.NodeId,
+				ChanId:                    hop.ChanId,
+				FeeBaseMsat:               hop.FeeBaseMsat,
+				FeeProportionalMillionths: hop.FeeProportionalMillionths,
+				CltvExpiryDelta:           hop.CltvExpiryDelta,
+			})
+		}
+		convertedHint := &lnrpc.RouteHint{
+			HopHints: convertedHops,
+		}
+		converedHints = append(converedHints, convertedHint)
+	}
+	return converedHints
+}
+
 // SendSpontaneousPayment send a payment without a payment request.
 func (a *Service) SendSpontaneousPayment(request *data.SpontaneousPaymentRequest) (string, error) {
 	destNode := request.DestNode
@@ -265,12 +286,8 @@ func (a *Service) SendSpontaneousPayment(request *data.SpontaneousPaymentRequest
 		MaxParts:          20,
 		DestCustomRecords: make(map[uint64][]byte),
 	}
-	if request.LspInfo != nil {
-		hint, err := a.getFakeChannelRoutingHint(request.LspInfo)
-		if err != nil {
-			return "", err
-		}
-		req.RouteHints = []*lnrpc.RouteHint{hint}
+	if request.RouteHints != nil {
+		req.RouteHints = convertRoutingHints(request.RouteHints)
 		a.log.Infof("adding route hints: %v", req.RouteHints)
 	}
 
@@ -530,9 +547,11 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 
 		smallAmountMsat = amountMsat - channelFeesMsat
 	} else {
-		if routingHints, err = a.getLSPRoutingHints(lspInfo); err != nil {
+		hints, err := a.GetLSPRoutingHints(lspInfo)
+		if err != nil {
 			return "", 0, fmt.Errorf("failed to get LSP routing hints %w", err)
 		}
+		routingHints = convertRoutingHints(hints.Hints)
 	}
 
 	if len(routingHints) == 0 {
@@ -622,7 +641,7 @@ func (a *Service) getFakeChannelRoutingHint(lspInfo *data.LSPInformation) (*lnrp
 	}, nil
 }
 
-func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.RouteHint, error) {
+func (a *Service) GetLSPRoutingHints(lspInfo *data.LSPInformation) (*data.RoutingHints, error) {
 
 	lnclient := a.daemonAPI.APIClient()
 	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
@@ -632,7 +651,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 		return nil, err
 	}
 
-	var hints []*lnrpc.RouteHint
+	var hints []*data.RouteHint
 	usedPeers := make(map[string]struct{})
 	for _, h := range channelsRes.Channels {
 		if _, ok := usedPeers[h.RemotePubkey]; ok {
@@ -664,8 +683,8 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 			cltvExpiryDelta = remotePolicy.TimeLockDelta
 		}
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
-		hints = append(hints, &lnrpc.RouteHint{
-			HopHints: []*lnrpc.HopHint{
+		hints = append(hints, &data.RouteHint{
+			HopHints: []*data.HopHint{
 				{
 					NodeId:                    h.RemotePubkey,
 					ChanId:                    h.ChanId,
@@ -677,7 +696,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 		})
 		usedPeers[h.RemotePubkey] = struct{}{}
 	}
-	return hints, nil
+	return &data.RoutingHints{Hints: hints}, nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.
