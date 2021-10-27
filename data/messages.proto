@@ -147,7 +147,23 @@ message SpontaneousPaymentRequest {
     string groupName = 5;
     int64 feeLimitMsat = 6;
     map<int64, string> tlv = 7;
-    LSPInformation lspInfo = 8; 
+    repeated RouteHint routeHints = 8; 
+}
+
+message HopHint { 
+ string node_id = 1; 
+ uint64 chan_id = 2;
+ uint32 fee_base_msat = 3;
+ uint32 fee_proportional_millionths = 4;
+ uint32 cltv_expiry_delta = 5;
+}
+
+message RouteHint { 
+ repeated HopHint hop_hints = 1;
+}
+
+message RoutingHints {
+ repeated RouteHint hints = 1;
 }
 
 message InvoiceMemo {
