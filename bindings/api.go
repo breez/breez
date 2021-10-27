@@ -442,7 +442,9 @@ SendSpontaneousPayment is part of the binding inteface which is delegated to bre
 */
 func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 	decodedRequest := &data.SpontaneousPaymentRequest{}
-	proto.Unmarshal(spontaneousPayment, decodedRequest)
+	if err := proto.Unmarshal(spontaneousPayment, decodedRequest); err != nil {
+		return nil, err
+	}
 
 	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendSpontaneousPayment(decodedRequest)
@@ -451,6 +453,14 @@ func SendSpontaneousPayment(spontaneousPayment []byte) ([]byte, error) {
 		errorStr = err.Error()
 	}
 	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil)
+}
+
+func GetLSPRoutingHints(lspInfo []byte) ([]byte, error) {
+	decodedLspInfo := &data.LSPInformation{}
+	if err := proto.Unmarshal(lspInfo, decodedLspInfo); err != nil {
+		return nil, err
+	}
+	return marshalResponse(getBreezApp().AccountService.GetLSPRoutingHints(decodedLspInfo))
 }
 
 //SpontaneousPaymentRequest
