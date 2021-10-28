@@ -437,6 +437,10 @@ func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 	return marshalResponse(&data.PaymentResponse{TraceReport: traceReport, PaymentError: errorStr}, nil)
 }
 
+func SignMessage(msg []byte) ([]byte, error) {
+	return getBreezApp().SignMessage(msg)
+}
+
 /*
 SendSpontaneousPayment is part of the binding inteface which is delegated to breez.SendSpontaneousPayment
 */
@@ -461,6 +465,10 @@ func GetLSPRoutingHints(lspInfo []byte) ([]byte, error) {
 		return nil, err
 	}
 	return marshalResponse(getBreezApp().AccountService.GetLSPRoutingHints(decodedLspInfo))
+}
+
+func SignMessage(message []byte) ([]byte, error) {
+	getBreezApp().
 }
 
 //SpontaneousPaymentRequest

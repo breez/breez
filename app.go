@@ -20,8 +20,10 @@ import (
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 )
 
 //Service is the interface to be implemeted by all breez services
@@ -396,4 +398,16 @@ func (a *App) CheckLSPClosedChannelMismatch(
 		return nil, err
 	}
 	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
+}
+
+func (a *App) SignMessage(msg []byte) ([]byte, error) {
+	resp, err := a.lnDaemon.SignerClient().SignMessage(context.Background(), &signrpc.SignMessageReq{Msg: msg,
+		KeyLoc: &signrpc.KeyLocator{
+			KeyFamily: int32(keychain.KeyFamilyNodeKey),
+			KeyIndex:  0,
+		}})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Signature, nil
 }
