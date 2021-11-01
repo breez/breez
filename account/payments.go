@@ -914,7 +914,9 @@ func (a *Service) syncSentPayments() error {
 	}
 	lastPaymentTime, _ := a.breezDB.FetchPaymentsSyncInfo()
 	for _, paymentItem := range lightningPayments.Payments {
-		if paymentItem.CreationDate <= lastPaymentTime-60 {
+		// We go back up to 36 hours to make sure we sync payments that were pending
+		// for a long time before we update the sync time
+		if paymentItem.CreationDate <= lastPaymentTime-60*60*36 {
 			continue
 		}
 		a.log.Infof("syncSentPayments adding an outgoing payment")
