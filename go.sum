@@ -131,6 +131,8 @@ github.com/breez/lnd v0.12.1-beta.rc6.0.20210622110244-3dc30928c3a2 h1:sFycuqBms
 github.com/breez/lnd v0.12.1-beta.rc6.0.20210622110244-3dc30928c3a2/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
 github.com/breez/lnd v0.12.1-beta.rc6.0.20210719131344-b444ae37125d h1:GZ1GEkE9L/DbWM7vhjEsByO7IZqE2PeTzj/LZDJJOIA=
 github.com/breez/lnd v0.12.1-beta.rc6.0.20210719131344-b444ae37125d/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20211103133610-12c3a08e6d9b h1:IP73dQbSZTano61DqBG2pQs7VyUdR+2w1wWEccOTU2Y=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20211103133610-12c3a08e6d9b/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
 github.com/breez/lnd/cert v1.0.4-0.20210418142716-88eb7459a966 h1:X91JwQ2LGJDQxZkSMYjelnsmMr+0rBTa0I2Nq5IDvWU=
 github.com/breez/lnd/cert v1.0.4-0.20210418142716-88eb7459a966/go.mod h1:3MWXVLLPI0Mg0XETm9fT4N9Vyy/8qQLmaM5589bEggM=
 github.com/breez/lnd/cert v1.0.4-0.20210418144450-b6bc19f0c4dd h1:oY27JwFZiaWiSP+m6VV71XK4F6mkQHXltLX4QGSV+AA=
