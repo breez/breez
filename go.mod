@@ -46,7 +46,7 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.3.5-0.20210414123232-efee8e15b2ad
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.2.1-0.20210414123232-efee8e15b2ad
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.11.1-0.20210510081759-0f2f35bed719
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.12.1-beta.rc6.0.20211107103738-3814c145f173
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.12.1-beta.rc6.0.20211107133407-a424761787e1
 	github.com/lightningnetwork/lnd/cert => github.com/breez/lnd/cert v1.0.4-0.20210531094737-c875a5650e2b
 )
 
