@@ -311,6 +311,7 @@ func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
 	cfg.LogWriter = writer
 	cfg.MinBackoff = time.Second * 20
 	cfg.Bitcoin.SkipChannelConfirmation = true
+	cfg.TLSDisableAutofill = true
 	conf, err := lnd.ValidateConfig(cfg, "")
 	if err != nil {
 		d.log.Errorf("ValidateConfig returned with error: %v", err)
