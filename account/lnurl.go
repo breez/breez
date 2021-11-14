@@ -317,7 +317,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 && resp.StatusCode != 320 {
+	if (resp.StatusCode < 200 || resp.StatusCode >= 300) && resp.StatusCode != 320 {
 		return nil, fmt.Errorf("error in http request: %s", resp.Status)
 	}
 
