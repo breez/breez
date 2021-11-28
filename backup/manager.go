@@ -115,6 +115,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 			destPath := p + ".decrypted"
 			err = decryptFile(p, destPath, key)
 			if err != nil {
+				b.log.Errorf("failed to restore backup due to incorrect PIN %v", err)
 				return files, fmt.Errorf("failed to restore backup due to incorrect PIN %v", err)
 			}
 			b.log.Infof("Restore file decrypted %v", i)
