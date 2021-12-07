@@ -467,10 +467,6 @@ func GetLSPRoutingHints(lspInfo []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().AccountService.GetLSPRoutingHints(decodedLspInfo))
 }
 
-func SignMessage(message []byte) ([]byte, error) {
-	getBreezApp().
-}
-
 //SpontaneousPaymentRequest
 
 /*
