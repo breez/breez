@@ -13,7 +13,6 @@ import (
 
 	"github.com/breez/boltz"
 	"github.com/breez/breez"
-	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
@@ -933,15 +932,17 @@ func SweepAllCoinsTransactions(address string) ([]byte, error) {
 }
 
 func SyncGraphFromFile(sourceFilePath string) error {
-	Log("SyncGraphFromFile started", "INFO")
-	err := bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
-	if err == bootstrap.ErrMissingPolicyError {
-		Log("SyncGraphFromFile missing policy, populating channel policy", "INFO")
-		getBreezApp().PopulateChannelPolicy()
-		err = bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
-	}
-	Log("SyncGraphFromFile finished", "INFO")
-	return err
+	Log("SyncGraphFromFile skipped", "INFO")
+	return nil
+	// Log("SyncGraphFromFile started", "INFO")
+	// err := bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	// if err == bootstrap.ErrMissingPolicyError {
+	// 	Log("SyncGraphFromFile missing policy, populating channel policy", "INFO")
+	// 	getBreezApp().PopulateChannelPolicy()
+	// 	err = bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
+	// }
+	// Log("SyncGraphFromFile finished", "INFO")
+	// return err
 }
 
 func PublishTransaction(tx []byte) error {
