@@ -9,7 +9,7 @@ RUN cd lspd \
     && go mod tidy \
     && go build .
 RUN go get github.com/joho/godotenv/cmd/godotenv
-RUN git clone https://github.com/breez/lnd -b breez-node-v0.11.0-beta
+RUN git clone https://github.com/breez/lnd -b fix-subswapper-macaroon
 RUN cd lnd \
     && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install
