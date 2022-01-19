@@ -106,7 +106,7 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 				},
 			},
 		}, nil
-	case lnurl.LNURLPayResponse1:
+	case lnurl.LNURLPayParams:
 
 		/* 2. `LN WALLET` gets JSON response from `LN SERVICE` of form:
 		{
@@ -118,15 +118,21 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 			tag: "payRequest" // type of LNURL
 		}
 		*/
-		a.log.Info("lnurl.LNURLPayResponse1.")
+		a.log.Info("lnurl.LNURLPayParams.")
 		host := ""
 		if url, err := url.Parse(rawurl); err == nil {
 			host = url.Host
 		}
 		a.lnurlPayMetadata.encoded = params.EncodedMetadata
-		a.lnurlPayMetadata.data = params.Metadata
+		a.lnurlPayMetadata.data = [][]string{}
 		var metadata []*data.LNUrlPayMetadata
-		for _, e := range params.Metadata {
+
+		var adapter = [][]string{
+			{"text/plain", params.Metadata.Description},
+			{"text/long-desc", params.Metadata.LongDescription},
+			{"image/png;base64", params.Metadata.Image.DataURI},
+		}
+		for _, e := range adapter {
 			metadata = append(metadata,
 				&data.LNUrlPayMetadata{
 					Entry: []string{e[0], e[1]},
@@ -385,7 +391,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 
 	*/
 
-	var payResponse2 lnurl.LNURLPayResponse2
+	var payResponse2 lnurl.LNURLPayValues
 	if err = json.NewDecoder(resp.Body).Decode(&payResponse2); err != nil {
 		return nil, err
 	}
@@ -421,18 +427,6 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		return nil, errors.New("Invoice amount does not match the amount set by user.")
 	}
 
-	/* TODO 9. If routes array is not empty: verifies signature for every provided `ChannelUpdate`, may use these routes if fee levels are acceptable.
-
-	   ref. https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md#the-channel_update-message
-	   ref. github.com\lightningnetwork\lnd\lnwire\channel_update.go
-
-	   ref. github.com/lightningnetwork/lnd/lnwire/channel_update.go
-	   ref. github.com/lightningnetwork/lnd/lnwire/message.go
-	*/
-	if len(payResponse2.Routes) > 0 {
-		a.log.Info("FinishLNURLPay: response has routes.")
-	}
-
 	// 10. If `successAction` is not null: `LN WALLET` makes sure that `tag` value of is of supported type, aborts a payment otherwise.
 	sa := payResponse2.SuccessAction
 	var _sa *data.SuccessAction
@@ -462,7 +456,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		PaymentHash:        hex.EncodeToString(invoice.PaymentHash[:]),
 		SuccessAction:      _sa,
 		Comment:            params.Comment,
-		InvoiceDescription: lnurl.Metadata(a.lnurlPayMetadata.data).Description(),
+		InvoiceDescription: description(a.lnurlPayMetadata.data),
 		Host:               params.Host,
 		LightningAddress:   params.LightningAddress,
 		Metadata:           params.Metadata,
@@ -505,4 +499,14 @@ func (a *Service) DecryptLNUrlPayMessage(paymentHash string, preimage []byte) (s
 	}
 
 	return "", errors.New("DecryptLNUrlPayMessage: could not find lnUrlPayInfo with given paymentHash.")
+}
+
+/// Returns the description from the metadata.
+func description(metadata [][]string) string {
+	for _, e := range metadata {
+		if e[0] == "text/plain" {
+			return e[1]
+		}
+	}
+	return ""
 }
