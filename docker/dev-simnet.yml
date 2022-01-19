@@ -52,8 +52,7 @@ services:
       - ${TEST_DIR}/alice_node:/root/.lnd
     ports:
       - 9735:9735
-      - 10009:10009
-      - 50053:50053
+      - 10009:10009      
     links:
       - "dev-btcd:blockchain"
     depends_on:
