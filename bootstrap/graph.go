@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"path"
 	"time"
 
@@ -42,8 +43,13 @@ func getURL(workingDir string, db *channeldb.DB, tx walletdb.ReadTx) (string, er
 	}
 
 	filename := "graph-" + fmt.Sprintf("%04x", meta.DbVersionNumber) + ".db"
-	url := path.Join(cfg.BootstrapURL, cfg.Network, "/graph/", filename)
-	return url, nil
+	u, err := url.Parse(cfg.BootstrapURL)
+	if err != nil {
+		logger.Errorf("url.Parse(%v): %v", cfg.BootstrapURL, err)
+		return "", fmt.Errorf("url.Parse(%v): %w", cfg.BootstrapURL, err)
+	}
+	u.Path = path.Join(u.Path, cfg.Network, "/graph/", filename)
+	return u.String(), nil
 }
 
 func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
