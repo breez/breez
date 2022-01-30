@@ -281,21 +281,19 @@ func (b *Manager) Start() error {
 					b.log.Infof("failed to compress backup files", err)
 					continue
 				}
-				defer func() {
-					_ = os.Remove(compressedFile)
-				}()
 
 				accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
 				if err != nil {
 					for _, p := range paths {
-						_ = os.Remove(p)
+						_ = os.RemoveAll(path.Dir(p))
 					}
 					b.log.Errorf("error in backup %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
+
 				for _, p := range paths {
-					_ = os.Remove(p)
+					_ = os.RemoveAll(path.Dir(p))
 				}
 				b.db.markBackupRequestCompleted(pendingID)
 				b.log.Infof("backup finished successfully")
