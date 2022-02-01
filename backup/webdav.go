@@ -128,7 +128,9 @@ func (c *WebdavClient) Download(path string) ([]byte, error) {
 }
 
 func (c *WebdavClient) Exists(path string) bool {
-	_, err := c.sendWebDavRequest("PROPFIND", path, nil, nil)
+	_, err := c.sendWebDavRequest("PROPFIND", path, nil, map[string]string{
+		"Depth": "0",
+	})
 	return err == nil
 }
 
