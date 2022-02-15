@@ -80,7 +80,7 @@ func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, enc
 	if err := n.createDirIfNotExists(c, nodeDir); err != nil {
 		return "", &webdavProviderError{err: err}
 	}
-	backupDir := path.Join(nodeDir, time.Now().Format(timeFormat))
+	backupDir := path.Join(nodeDir, "node_data")
 	if err := n.createDirIfNotExists(c, backupDir); err != nil {
 		return "", &webdavProviderError{err: err}
 	}
@@ -97,10 +97,12 @@ func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, enc
 	if err != nil {
 		return "", err
 	}
-	p := path.Join(backupDir, fileName)
-	if err := c.Upload(da, p); err != nil {
+
+	dest := path.Join(backupDir, fileName)
+	if err := c.Upload(da, dest); err != nil {
 		return "", err
 	}
+
 	backupInfo := &BackupInfo{
 		BackupDir: backupDir,
 		Info: &SnapshotInfo{

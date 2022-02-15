@@ -166,18 +166,12 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 		return "", &driveServiceError{err}
 	}
 
-	// Create the backup folder
-	newBackupFolder, err := p.createFolder(nodeFolder.Id, "backup")
-	if err != nil {
-		p.log.Infof("uploadBackupFiles failed to create backkup folder:%v", nodeFolder.Id)
-		return "", &driveServiceError{err}
-	}
-
 	successChan := make(chan struct{})
 	defer close(successChan)
 	errorChan := make(chan error)
 	defer close(errorChan)
 
+	var backupFolderID string
 	p.log.Infof("uploadBackupFiles backup folder created for node:%v", nodeFolder.Id)
 	// Upload the files
 	go func(filePath string) {
@@ -193,16 +187,63 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 			errorChan <- err
 			return
 		}
-		p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
-		uploadedFile, err := p.driveService.Files.Create(&drive.File{
-			Name:    fileName,
-			Parents: []string{newBackupFolder.Id}},
-		).Media(file).Fields("md5Checksum").Do()
+
+		var uploadedFile *drive.File
+
+		// get the current backup folder id
+		currentFolderID, ok := nodeFolder.AppProperties[activeBackupFolderProperty]
+		if !ok {
+			// Create the backup folder
+			newBackupFolder, err := p.createFolder(nodeFolder.Id, "backup")
+			if err != nil {
+				p.log.Infof("uploadBackupFiles failed to create backkup folder:%v", nodeFolder.Id)
+				errorChan <- err
+				return
+			}
+
+			currentFolderID = newBackupFolder.Id
+		}
+
+		// List all filed under the backup folder
+		r, err := p.driveService.Files.List().Spaces("appDataFolder").Q(fmt.Sprintf("'%v' in parents", currentFolderID)).Do()
 		if err != nil {
-			p.log.Infof("uploadBackupFiles failed to upload file at folder:%v", newBackupFolder.Id)
-			errorChan <- &driveServiceError{err}
+			errorChan <- err
 			return
 		}
+
+		// Find our file if exists
+		for _, f := range r.Files {
+			if f.Name == fileName {
+				uploadedFile = f
+				break
+			}
+		}
+
+		// If the file exists we need to update its content
+		if uploadedFile != nil {
+			p.log.Infof("Updating file %v size: %v", fileName, info.Size())
+			uploadedFile, err = p.driveService.Files.Update(uploadedFile.Id, &drive.File{}).Media(file).Fields("md5Checksum").Do()
+			if err != nil {
+				p.log.Infof("uploadBackupFiles failed to update file at folder:%v", currentFolderID)
+				errorChan <- &driveServiceError{err}
+				return
+			}
+			p.log.Infof("uploadBackupFiles  succeeded to update file at folder:%v", currentFolderID)
+		} else {
+			// At this case we need to upload a new file
+			p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
+			uploadedFile, err = p.driveService.Files.Create(&drive.File{
+				Name:    fileName,
+				Parents: []string{currentFolderID}},
+			).Media(file).Fields("md5Checksum").Do()
+			if err != nil {
+				p.log.Infof("uploadBackupFiles failed to upload file at folder:%v", currentFolderID)
+				errorChan <- &driveServiceError{err}
+				return
+			}
+			p.log.Infof("uploadBackupFiles  succeeded to upload file at folder:%v", currentFolderID)
+		}
+
 		checksum, err := fileChecksum(filePath)
 		if err != nil {
 			p.log.Infof("failed to calculate checksum for path: %v", filePath)
@@ -214,6 +255,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 			errorChan <- errors.New("uploaded file checksum doesn't match")
 			return
 		}
+		backupFolderID = currentFolderID
 		successChan <- struct{}{}
 	}(file)
 
@@ -229,7 +271,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 
 	// Update active backup folder for this specific node folder
 	folderUpdate := &drive.File{AppProperties: map[string]string{
-		activeBackupFolderProperty:   newBackupFolder.Id,
+		activeBackupFolderProperty:   backupFolderID,
 		backupEncryptionTypeProperty: encryptionType,
 	}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
@@ -237,7 +279,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 		p.log.Infof("backup update backup folder for nodeID: %v", nodeFolder.Id)
 		return "", &driveServiceError{err}
 	}
-	if err := p.deleteStaleSnapshots(nodeFolder.Id, newBackupFolder.Id); err != nil {
+	if err := p.deleteStaleSnapshots(nodeFolder.Id, backupFolderID); err != nil {
 		p.log.Errorf("failed to delete stale snapshots %v", err)
 	}
 	p.log.Infof("UploadBackupFiles finished successfully")

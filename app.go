@@ -219,12 +219,12 @@ func (a *App) onServiceEvent(event data.NotificationEvent) {
 	a.notify(event)
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED ||
 		event.Type == data.NotificationEvent_LSP_CHANNEL_OPENED {
-		a.BackupManager.RequestBackup()
+		a.BackupManager.RequestNodeBackup()
 	}
 }
 
 func (a *App) RequestBackup() {
-	a.BackupManager.RequestBackup()
+	a.BackupManager.RequestNodeBackup()
 }
 
 func (a *App) notify(event data.NotificationEvent) {

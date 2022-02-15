@@ -11,6 +11,11 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
+type BackupType int32
+
+const BackupTypeNode = BackupType(1)
+const BackupTypeAppData = BackupType(2)
+
 // ProviderFactory is a factory for create a specific provider.
 // This is the function needed to be implemented for a new provider
 // to be registered and used.
@@ -29,6 +34,10 @@ var (
 	}
 )
 
+type BackupRequest struct {
+	Type BackupType
+}
+
 // Manager holds the data needed for the backup to execute its work.
 type Manager struct {
 	started           int32
@@ -39,7 +48,7 @@ type Manager struct {
 	authService       AuthService
 	prepareBackupData DataPreparer
 	config            *config.Config
-	backupRequestChan chan struct{}
+	backupRequestChan chan BackupRequest
 	onServiceEvent    func(event data.NotificationEvent)
 	quitChan          chan struct{}
 	log               btclog.Logger
@@ -81,7 +90,7 @@ func NewManager(
 		config:            config,
 		log:               log,
 		authService:       authService,
-		backupRequestChan: make(chan struct{}, 10),
+		backupRequestChan: make(chan BackupRequest, 10),
 		quitChan:          make(chan struct{}),
 	}, nil
 }

@@ -28,20 +28,20 @@ var (
 // of the channel is changed. We add a small delay because we know such changes
 // are coming in batch
 func (b *Manager) RequestCommitmentChangedBackup() {
-	b.requestBackup(backupDelay)
+	b.requestBackup(BackupTypeNode, backupDelay)
 }
 
 /*
 RequestBackup push a request for the backup files of breez
 */
-func (b *Manager) RequestBackup() {
-	b.requestBackup(time.Duration(0))
+func (b *Manager) RequestNodeBackup() {
+	b.requestBackup(BackupTypeNode, time.Duration(0))
 }
 
 /*
 RequestBackup push a request for the backup files of breez
 */
-func (b *Manager) requestBackup(delay time.Duration) {
+func (b *Manager) requestBackup(backupType BackupType, delay time.Duration) {
 	b.log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
@@ -58,7 +58,7 @@ func (b *Manager) requestBackup(delay time.Duration) {
 		case <-b.quitChan:
 			return
 		}
-		b.backupRequestChan <- struct{}{}
+		b.backupRequestChan <- BackupRequest{backupType}
 	}()
 }
 
@@ -303,7 +303,7 @@ func (b *Manager) Start() error {
 			}
 		}
 	}()
-	b.backupRequestChan <- struct{}{}
+	b.backupRequestChan <- BackupRequest{BackupTypeNode}
 
 	return nil
 }
@@ -384,7 +384,7 @@ func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {
 
 	// After changing the encryption PIN we'll backup if we have
 	// pending backup requests.
-	b.backupRequestChan <- struct{}{}
+	b.backupRequestChan <- BackupRequest{BackupTypeNode | BackupTypeAppData}
 	b.log.Infof("Successfully set new encryption key")
 	return nil
 }
