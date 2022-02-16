@@ -224,7 +224,7 @@ func (a *App) onServiceEvent(event data.NotificationEvent) {
 }
 
 func (a *App) RequestBackup() {
-	a.BackupManager.RequestNodeBackup()
+	a.BackupManager.RequestFullBackup()
 }
 
 func (a *App) notify(event data.NotificationEvent) {

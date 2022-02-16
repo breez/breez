@@ -263,7 +263,7 @@ func Stop() {
 RequestBackup triggers breez RequestBackup
 */
 func RequestBackup() {
-	getBreezApp().BackupManager.RequestNodeBackup()
+	getBreezApp().BackupManager.RequestFullBackup()
 }
 
 func BackupFiles() (string, error) {

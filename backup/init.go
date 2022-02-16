@@ -11,11 +11,6 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
-type BackupType int32
-
-const BackupTypeNode = BackupType(1)
-const BackupTypeAppData = BackupType(2)
-
 // ProviderFactory is a factory for create a specific provider.
 // This is the function needed to be implemented for a new provider
 // to be registered and used.
@@ -35,7 +30,8 @@ var (
 )
 
 type BackupRequest struct {
-	Type BackupType
+	BackupNodeData bool
+	BackupAppData  bool
 }
 
 // Manager holds the data needed for the backup to execute its work.
