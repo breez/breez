@@ -88,7 +88,7 @@ func (lsp *regularLSP) Connect(a *Service) error {
 	l, ok := r.Lsps[lsp.lspID]
 	if !ok {
 		a.log.Infof("The LSP ID is not in the LSPList: %v", lsp.lspID)
-		return fmt.Errorf("The LSP ID is not in the LSPList: %w", lsp.lspID)
+		return fmt.Errorf("The LSP ID is not in the LSPList: %v", lsp.lspID)
 	}
 
 	return a.ConnectPeer(l.Pubkey, l.Host)
