@@ -199,10 +199,7 @@ func (c *WebdavClient) sendWebDavRequest(request string, path string, data []byt
 	if len(body) > 0 {
 		if body[0] == '<' {
 			error := Error{}
-			err = xml.Unmarshal(body, &error)
-			if err != nil {
-				return body, err
-			}
+			_ = xml.Unmarshal(body, &error)
 			if error.Exception != "" {
 				return nil, err
 			}
