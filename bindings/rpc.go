@@ -51,7 +51,7 @@ func (r *RPC) PayInvoice(ctx context.Context, in *data.PayInvoiceRequest) (
 	*data.PaymentResponse, error) {
 	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendPaymentForRequest(
-		in.PaymentRequest, in.Amount)
+		in.PaymentRequest, in.Amount, in.Fee)
 	if err != nil {
 		errorStr = err.Error()
 	}

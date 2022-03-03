@@ -137,6 +137,7 @@ message SendWalletCoinsRequest {
 message PayInvoiceRequest {
     int64 amount = 1;
     string paymentRequest = 2;
+    int64 fee = 3;
 }
 
 message SpontaneousPaymentRequest {
@@ -533,6 +534,7 @@ message ReverseSwapInfo {
 message ReverseSwapPaymentRequest {
     string hash = 1;
     PushNotificationDetails push_notification_details = 2;
+    int64 fee = 3;
 }
 
 message PushNotificationDetails {
