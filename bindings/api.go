@@ -430,7 +430,7 @@ func SendPaymentForRequest(payInvoiceRequest []byte) ([]byte, error) {
 
 	var errorStr string
 	traceReport, err := getBreezApp().AccountService.SendPaymentForRequest(
-		decodedRequest.PaymentRequest, decodedRequest.Amount)
+		decodedRequest.PaymentRequest, decodedRequest.Amount, decodedRequest.Fee)
 	if err != nil {
 		errorStr = err.Error()
 	}
@@ -907,6 +907,7 @@ func PayReverseSwap(request []byte) error {
 		r.PushNotificationDetails.DeviceId,
 		r.PushNotificationDetails.Title,
 		r.PushNotificationDetails.Body,
+		r.Fee,
 	)
 }
 

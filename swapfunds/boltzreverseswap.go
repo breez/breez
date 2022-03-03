@@ -381,7 +381,7 @@ func (s *Service) SetReverseSwapClaimFee(hash string, fee int64) error {
 	return nil
 }
 
-func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
+func (s *Service) PayReverseSwap(hash, deviceID, title, body string, fee int64) error {
 	rs, err := s.breezDB.FetchReverseSwap(hash)
 	if err != nil {
 		s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)
@@ -406,7 +406,7 @@ func (s *Service) PayReverseSwap(hash, deviceID, title, body string) error {
 	if err == nil && payReq != nil && len(payReq.RouteHints) >= 1 && len(payReq.RouteHints[0]) == 1 {
 		nodeID = payReq.RouteHints[0][0].NodeID.SerializeCompressed()
 	}
-	_, err = s.sendPayment(rs.Invoice, rs.LnAmount, nodeID)
+	_, err = s.sendPayment(rs.Invoice, rs.LnAmount, nodeID, fee)
 	if err != nil {
 		return err
 	}

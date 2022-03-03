@@ -199,19 +199,19 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 SendPaymentForRequestV2 send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func (a *Service) SendPaymentForRequestV2(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey)
+func (a *Service) SendPaymentForRequestV2(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, fee int64) (string, error) {
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey, fee)
 }
 
 /*
 SendPaymentForRequest send the payment according to the details specified in the bolt 11 payment request.
 If the payment was failed an error is returned
 */
-func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil)
+func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64, fee int64) (string, error) {
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil, fee)
 }
 
-func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte) (string, error) {
+func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, fee int64) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
@@ -232,11 +232,16 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 		decodedReq.Features[uint32(lnwire.MPPRequired)] == nil {
 		maxParts = 1
 	}
+
+	feeLimit := fee
+	if feeLimit < 0 {
+		feeLimit = math.MaxInt64
+	}
 	// At this stage we are ready to send asynchronously the payment through the daemon.
 	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
 		TimeoutSeconds: 60,
-		FeeLimitSat:    math.MaxInt64,
+		FeeLimitSat:    feeLimit,
 		MaxParts:       maxParts,
 		Amt:            amountSatoshi,
 		LastHopPubkey:  lastHopPubkey,
