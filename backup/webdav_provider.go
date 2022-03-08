@@ -143,7 +143,7 @@ func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, enc
 }
 
 func (n *RemoteServerProvider) createDirIfNotExists(client *WebdavClient, destDir string) error {
-	if client.Exists(destDir) {
+	if client.DirectoryExists(destDir) {
 		return nil
 	}
 	if err := client.Mkdir(destDir); err != nil {

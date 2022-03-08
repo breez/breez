@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 )
 
@@ -76,9 +75,16 @@ func Dial(host, username, password string) (*WebdavClient, error) {
 	}, nil
 }
 
+func toFolderPath(path string) string {
+	if !strings.HasSuffix(path, "/") {
+		return path + "/"
+	}
+	return path
+}
+
 // Mkdir creates a new directory on the cloud with the specified name.
 func (c *WebdavClient) Mkdir(path string) error {
-	_, err := c.sendWebDavRequest("MKCOL", path, nil, nil)
+	_, err := c.sendWebDavRequest("MKCOL", toFolderPath(path), nil, nil)
 	if webdavErr, ok := err.(*WebdavRequestError); ok {
 		if webdavErr.StatusCode == 409 {
 			return nil
@@ -101,50 +107,20 @@ func (c *WebdavClient) Upload(src []byte, dest string) error {
 	return err
 }
 
-// UploadDir uploads an entire directory on the cloud. It returns the
-// path of uploaded files or error. It uses glob pattern in src.
-func (c *WebdavClient) UploadDir(src string, dest string) ([]string, error) {
-	files, err := filepath.Glob(src)
-	if err != nil {
-		return nil, err
-	}
-	for _, file := range files {
-		data, err := ioutil.ReadFile(file)
-		if err != nil {
-			return nil, err
-		}
-		err = c.Upload(data, filepath.Join(dest, filepath.Base(file)))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return files, nil
-}
-
 // Download downloads a file from the specified path.
 func (c *WebdavClient) Download(path string) ([]byte, error) {
 	return c.sendWebDavRequest("GET", path, nil, nil)
 }
 
-func (c *WebdavClient) Exists(path string) bool {
-	_, err := c.sendWebDavRequest("PROPFIND", path, nil, map[string]string{
+func (c *WebdavClient) DirectoryExists(path string) bool {
+	_, err := c.sendWebDavRequest("PROPFIND", toFolderPath(path), nil, map[string]string{
 		"Depth": "0",
 	})
 	return err == nil
 }
 
-func (c *WebdavClient) Rename(fromPath, toPath string) error {
-	b, err := c.sendWebDavRequest("MOVE", fromPath, nil, map[string]string{
-		"Destination": c.Url.String() + toPath,
-		"Overwrite":   "T",
-	})
-	fmt.Println("reanme: ", string(b))
-	return err
-}
-
 func (c *WebdavClient) ListDir(path string) (*ListFileResponse, error) {
-	body, err := c.sendWebDavRequest("PROPFIND", path, nil, map[string]string{
+	body, err := c.sendWebDavRequest("PROPFIND", toFolderPath(path), nil, map[string]string{
 		"Depth": "1",
 	})
 	if err != nil {
@@ -176,6 +152,11 @@ func (c *WebdavClient) sendWebDavRequest(request string, path string, data []byt
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", "application/xml;charset=UTF-8")
+	req.Header.Add("Accept", "application/xml,text/xml")
+	req.Header.Add("Accept-Charset", "utf-8")
+	req.Header.Add("Accept-Encoding", "")
 
 	for k, v := range headers {
 		req.Header.Add(k, v)
