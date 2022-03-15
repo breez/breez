@@ -174,6 +174,9 @@ func (b *Manager) restoreAppData(f string, key []byte) error {
 	}
 	destZipFile := path.Join(b.config.WorkingDir, appDataBackupDir, appDataBackupFileName)
 	os.Rename(f, destZipFile)
+	defer func() {
+		os.Remove(destZipFile)
+	}()
 	appDataFiles, err := uncompressFiles(destZipFile)
 	if err != nil {
 		return err
