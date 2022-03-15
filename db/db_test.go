@@ -62,12 +62,12 @@ func TestAddPayments(t *testing.T) {
 	var err error
 	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 1, 0)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 1, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 0, 11)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 0, 11)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
@@ -85,20 +85,20 @@ func TestPaymentsSyncInfo(t *testing.T) {
 	var err error
 	db, err := openDB("testdb", btclog.Disabled)
 	defer db.DeleteDB()
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 5, 0)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h1"}, 5, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 4, 0)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h2"}, 4, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
 
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h3"}, 0, 13)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h3"}, 0, 13)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
-	err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h4"}, 0, 0)
+	_, err = db.AddAccountPayment(&PaymentInfo{PaymentHash: "h4"}, 0, 0)
 	if err != nil {
 		t.Error("failed to add payment", err)
 	}
