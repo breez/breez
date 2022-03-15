@@ -165,6 +165,7 @@ func (b *Manager) restoreNodeData(files []string, key []byte) ([]string, error) 
 }
 
 func (b *Manager) restoreAppData(f string, key []byte) error {
+	b.log.Infof("restoring app data %v", f)
 	if err := os.RemoveAll(path.Join(b.config.WorkingDir, appDataBackupDir)); err != nil {
 		return err
 	}
@@ -180,6 +181,7 @@ func (b *Manager) restoreAppData(f string, key []byte) error {
 	if key != nil {
 		return b.descryptFiles(appDataFiles, key)
 	}
+	b.log.Infof("succesfully restored app data %v", f)
 
 	return nil
 }
@@ -264,7 +266,7 @@ func (b *Manager) Start() error {
 
 				if req.BackupNodeData {
 					b.log.Infof("starting backup node data")
-					if accountName, err = b.processBackupRequest(req); err != nil {
+					if accountName, err = b.processBackupRequest(true); err != nil {
 						b.log.Errorf("failed to process backup request: %v", err)
 						b.notifyBackupFailed(err)
 						continue
@@ -272,7 +274,7 @@ func (b *Manager) Start() error {
 				}
 				if req.BackupAppData {
 					b.log.Infof("starting backup app data")
-					if accountName, err = b.processBackupRequest(req); err != nil {
+					if accountName, err = b.processBackupRequest(false); err != nil {
 						b.log.Errorf("failed to process backup request: %v", err)
 						b.notifyBackupFailed(err)
 						continue
@@ -293,7 +295,7 @@ func (b *Manager) Start() error {
 	return nil
 }
 
-func (b *Manager) processBackupRequest(req BackupRequest) (string, error) {
+func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 	b.mu.Lock()
 	encryptionKey := b.encryptionKey
 	encryptionType := b.encryptionType
@@ -313,15 +315,21 @@ func (b *Manager) processBackupRequest(req BackupRequest) (string, error) {
 		return "", fmt.Errorf("error in backup %v", err)
 	}
 	fileName := backupFileName
-	if req.BackupAppData {
+	if !nodeData {
 		appDataPath := path.Join(b.config.WorkingDir, appDataBackupDir)
+		tempDir := os.TempDir()
 		dirs, err := os.ReadDir(appDataPath)
 		if err != nil {
 			return "", fmt.Errorf("error in backup %v", err)
 		}
 		paths = []string{}
 		for _, d := range dirs {
-			paths = append(paths, path.Join(appDataPath, d.Name()))
+			srcPath := path.Join(appDataPath, d.Name())
+			destPath := path.Join(tempDir, d.Name())
+			if _, err := copyFile(srcPath, destPath); err != nil {
+				return "", fmt.Errorf("failed to copy app data file %v", err)
+			}
+			paths = append(paths, destPath)
 		}
 		fileName = appDataBackupFileName
 	}
@@ -548,4 +556,20 @@ func (b *Manager) SetProvider(p Provider) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.provider = p
+}
+
+func copyFile(src, dst string) (int64, error) {
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }
