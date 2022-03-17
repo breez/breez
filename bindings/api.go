@@ -266,6 +266,10 @@ func RequestBackup() {
 	getBreezApp().BackupManager.RequestFullBackup()
 }
 
+func RequestAppDataBackup() {
+	getBreezApp().BackupManager.RequestAppDataBackup()
+}
+
 func BackupFiles() (string, error) {
 	return getBreezApp().BackupFiles()
 }

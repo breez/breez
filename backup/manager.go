@@ -44,6 +44,10 @@ func (b *Manager) RequestFullBackup() {
 	b.requestBackup(BackupRequest{BackupNodeData: true, BackupAppData: true}, time.Duration(0))
 }
 
+func (b *Manager) RequestAppDataBackup() {
+	b.requestBackup(BackupRequest{BackupAppData: true}, time.Duration(0))
+}
+
 /*
 RequestBackup push a request for the backup files of breez
 */
