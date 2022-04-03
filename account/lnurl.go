@@ -15,6 +15,7 @@ import (
 	"net/mail"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lightningnetwork/lnd/lnwire"
@@ -59,7 +60,7 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 		}
 		encodedLnurl = url.String()
 	}
-
+	lnurl.Client.Timeout = time.Second * 30
 	rawurl, iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", handleLNUrlError, err)
