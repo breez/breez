@@ -324,7 +324,10 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 	fileName := backupFileName
 	if !nodeData {
 		appDataPath := path.Join(b.config.WorkingDir, appDataBackupDir)
-		tempDir := os.TempDir()
+		tempDir, err := ioutil.TempDir("", "app_data_backup")
+		if err != nil {
+			return "", err
+		}
 		dirs, err := os.ReadDir(appDataPath)
 		if err != nil {
 			return "", fmt.Errorf("error in backup %v", err)
@@ -384,12 +387,14 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 	accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
 	if err != nil {
 		for _, p := range paths {
+			fmt.Printf("removing backup dir: %v\n", path.Dir(p))
 			_ = os.RemoveAll(path.Dir(p))
 		}
 		return "", fmt.Errorf("error in backup %v", err)
 	}
 
 	for _, p := range paths {
+		fmt.Printf("removing backup dir: %v\n", path.Dir(p))
 		_ = os.RemoveAll(path.Dir(p))
 	}
 
