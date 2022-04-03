@@ -60,7 +60,7 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 		}
 		encodedLnurl = url.String()
 	}
-	lnurl.Client.Timeout = time.Second * 30
+	lnurl.Client.Timeout = time.Second * 60
 	rawurl, iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", handleLNUrlError, err)
