@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/lightningnetwork/lnd/channeldb"
 )
@@ -28,8 +29,15 @@ Run executes the download filter operation synchronousely
 func (s *Job) Run() error {
 	s.wg.Add(1)
 	defer s.wg.Done()
+	bootstrapped, err := chainservice.Bootstrapped(s.workingDir)
+	if err != nil {
+		return err
+	}
+	if !bootstrapped {
+		s.log.Info("closed channels started needs bootstrap, skiping job")
+		return nil
+	}
 
-	var err error
 	err = s.downloadClosedChannels()
 	if err != nil {
 		return fmt.Errorf("download closed channels finished with error %v", err)
