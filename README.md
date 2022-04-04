@@ -1,5 +1,5 @@
 # breez
-In order to build breez you will need to install [gomobile](https://github.com/golang/go/wiki/Mobile) and go 1.13.4. If you install go from homebrew, you will have to ensure the GOPATH environment variable is set yourself.
+In order to build breez you will need to install [gomobile](https://github.com/golang/go/wiki/Mobile) and [go 1.16.x](https://go.dev/dl/). If you install go from homebrew, you will have to ensure the GOPATH environment variable is set yourself.
 ## Prepare your environment
 ```
 git clone https://github.com/breez/breez.git
@@ -19,6 +19,8 @@ Or in case you want to use a direct ndk path
 ```
 export ANDROID_NDK_HOME=<your android ndk directory>
 ```
+If you are using NDK 24+, install [NDK r19](https://github.com/android/ndk/wiki/Unsupported-Downloads#r19c) and point ANDROID_NDK_HOME to it's folder due to [gomobile incompatibility](https://github.com/golang/go/issues/35030).
+
 Then you ready to run the build:
 ```
 ./build.sh
