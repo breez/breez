@@ -8046,7 +8046,7 @@ type UnsafeBreezAPIServer interface { //	mustEmbedUnimplementedBreezAPIServer()
 }
 
 func RegisterBreezAPIServer(s *grpc.Server, srv BreezAPIServer) {
-	s.RegisterService(&_BreezAPI_serviceDesc, srv)
+	s.RegisterService(&BreezAPI_ServiceDesc, srv)
 }
 
 func _BreezAPI_GetLSPList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
