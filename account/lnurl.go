@@ -86,7 +86,7 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 		a.log.Infof("lnurl response: %v", a.lnurlWithdrawing)
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_Withdraw{
-				&data.LNUrlWithdraw{
+				Withdraw: &data.LNUrlWithdraw{
 					MinAmount: int64(math.Ceil(
 						float64(params.MinWithdrawable) / 1000,
 					)),
@@ -126,30 +126,28 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 		}
 		a.lnurlPayMetadata.encoded = params.EncodedMetadata
 		a.lnurlPayMetadata.data = [][]string{}
-		var metadata []*data.LNUrlPayMetadata
-
-		var adapter = [][]string{
-			{"text/plain", params.Metadata.Description},
-			{"text/long-desc", params.Metadata.LongDescription},
-			{"image/png;base64", params.Metadata.Image.DataURI},
-		}
-		for _, e := range adapter {
-			metadata = append(metadata,
-				&data.LNUrlPayMetadata{
-					Entry: []string{e[0], e[1]},
-				})
-		}
 
 		return &data.LNUrlResponse{
 			Action: &data.LNUrlResponse_PayResponse1{
-				&data.LNURLPayResponse1{
+				PayResponse1: &data.LNURLPayResponse1{
 					Host:             host,
 					LightningAddress: lightningAddress,
 					Callback:         params.Callback,
 					MinAmount:        int64(math.Floor(float64(params.MinSendable) / 1000)),
 					MaxAmount:        int64(math.Floor(float64(params.MaxSendable) / 1000)),
-					Metadata:         metadata,
 					CommentAllowed:   params.CommentAllowed,
+					Metadata: []*data.LNUrlPayMetadata{
+						{
+							Entry:           []string{},
+							Description:     params.Metadata.Description,
+							LongDescription: params.Metadata.LongDescription,
+							Image: &data.LNUrlPayImage{
+								DataUri: params.Metadata.Image.DataURI,
+								Ext:     params.Metadata.Image.Ext,
+								Bytes:   params.Metadata.Image.Bytes,
+							},
+						},
+					},
 				},
 			},
 		}, nil

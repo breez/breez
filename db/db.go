@@ -50,7 +50,8 @@ const (
 	lnurlAuthBucket = "lnurl-auth-bucket"
 
 	//lnurl-pay
-	lnurlPayBucket = "lnurl-pay-bucket"
+	lnurlPayBucket                  = "lnurl-pay-bucket"
+	lnurlPayMetadataMigrationBucket = "lnurl-pay-metadata-migration-bucket"
 )
 
 var (
@@ -183,6 +184,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return err
 		}
 
+		_, err = tx.CreateBucketIfNotExists([]byte(lnurlPayMetadataMigrationBucket))
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -204,6 +210,10 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return nil, err
 		}
 	}
+
+	// migrate lnurl pay metadata if needed
+	breezDB.MigrateAllLNUrlPayMetadata()
+
 	return breezDB, nil
 }
 
