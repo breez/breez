@@ -29,6 +29,11 @@ var (
 	}
 )
 
+type BackupRequest struct {
+	BackupNodeData bool
+	BackupAppData  bool
+}
+
 // Manager holds the data needed for the backup to execute its work.
 type Manager struct {
 	started           int32
@@ -39,7 +44,7 @@ type Manager struct {
 	authService       AuthService
 	prepareBackupData DataPreparer
 	config            *config.Config
-	backupRequestChan chan struct{}
+	backupRequestChan chan BackupRequest
 	onServiceEvent    func(event data.NotificationEvent)
 	quitChan          chan struct{}
 	log               btclog.Logger
@@ -81,7 +86,7 @@ func NewManager(
 		config:            config,
 		log:               log,
 		authService:       authService,
-		backupRequestChan: make(chan struct{}, 10),
+		backupRequestChan: make(chan BackupRequest, 10),
 		quitChan:          make(chan struct{}),
 	}, nil
 }

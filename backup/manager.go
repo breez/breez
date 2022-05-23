@@ -18,6 +18,8 @@ import (
 )
 
 const backupFileName = "backup.zip"
+const appDataBackupFileName = "app_data_backup.zip"
+const appDataBackupDir = "app_data_backup"
 
 var (
 	backupDelay     = time.Duration(time.Second * 2)
@@ -28,20 +30,28 @@ var (
 // of the channel is changed. We add a small delay because we know such changes
 // are coming in batch
 func (b *Manager) RequestCommitmentChangedBackup() {
-	b.requestBackup(backupDelay)
+	b.requestBackup(BackupRequest{BackupNodeData: true}, backupDelay)
 }
 
 /*
 RequestBackup push a request for the backup files of breez
 */
-func (b *Manager) RequestBackup() {
-	b.requestBackup(time.Duration(0))
+func (b *Manager) RequestNodeBackup() {
+	b.requestBackup(BackupRequest{BackupNodeData: true}, time.Duration(0))
+}
+
+func (b *Manager) RequestFullBackup() {
+	b.requestBackup(BackupRequest{BackupNodeData: true, BackupAppData: true}, time.Duration(0))
+}
+
+func (b *Manager) RequestAppDataBackup() {
+	b.requestBackup(BackupRequest{BackupAppData: true}, time.Duration(0))
 }
 
 /*
 RequestBackup push a request for the backup files of breez
 */
-func (b *Manager) requestBackup(delay time.Duration) {
+func (b *Manager) requestBackup(request BackupRequest, delay time.Duration) {
 	b.log.Infof("Backup requested")
 	// first thing push a pending backup request to the database so we
 	// can recover in case of error.
@@ -58,7 +68,7 @@ func (b *Manager) requestBackup(delay time.Duration) {
 		case <-b.quitChan:
 			return
 		}
-		b.backupRequestChan <- struct{}{}
+		b.backupRequestChan <- request
 	}()
 }
 
@@ -99,33 +109,31 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 		return nil, err
 	}
 	b.log.Infof("Download files completed %v", len(files))
-	if len(files) == 1 && path.Base(files[0]) == backupFileName {
-		if files, err = uncompressFiles(files[0]); err != nil {
-			return nil, err
+
+	for _, f := range files {
+		if path.Base(f) == backupFileName {
+			if files, err = uncompressFiles(f); err != nil {
+				return nil, err
+			}
+		}
+		if path.Base(f) == appDataBackupFileName {
+			if err := b.restoreAppData(f, key); err != nil {
+				return nil, err
+			}
 		}
 	}
+
 	if len(files) != 3 {
 		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
 	}
+	return b.restoreNodeData(files, key)
+}
 
+func (b *Manager) restoreNodeData(files []string, key []byte) ([]string, error) {
 	// If we got an encryption key, let's decrypt the files
 	if key != nil {
-		b.log.Infof("Restore has encryption key")
-		for i, p := range files {
-			destPath := p + ".decrypted"
-			err = decryptFile(p, destPath, key)
-			if err != nil {
-				b.log.Errorf("failed to restore backup due to incorrect phrase %v", err)
-				return files, fmt.Errorf("failed to restore backup due to incorrect phrase %v", err)
-			}
-			b.log.Infof("Restore file decrypted %v", i)
-			if err = os.Remove(files[i]); err != nil {
-				return nil, err
-			}
-			if err = os.Rename(destPath, files[i]); err != nil {
-				return nil, err
-			}
-			b.log.Infof("decrypted file renamed %v", i)
+		if err := b.descryptFiles(files, key); err != nil {
+			return nil, err
 		}
 	}
 
@@ -139,18 +147,18 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 		basename := path.Base(f)
 		p, ok := paths[basename]
 		if !ok {
-			return nil, err
+			return nil, fmt.Errorf("unrecognized backup file %v", basename)
 		}
 		destDir := path.Join(b.workingDir, strings.Replace(p, "{{network}}", b.config.Network, -1))
 		if destDir != b.workingDir {
-			err = os.MkdirAll(destDir, 0700)
+			err := os.MkdirAll(destDir, 0700)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 		b.log.Infof("restore file before rename %v", basename)
-		err = os.Rename(f, path.Join(destDir, basename))
+		err := os.Rename(f, path.Join(destDir, basename))
 		if err != nil {
 			return nil, err
 		}
@@ -158,6 +166,52 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 		targetFiles = append(targetFiles, path.Join(destDir, basename))
 	}
 	return targetFiles, nil
+}
+
+func (b *Manager) restoreAppData(f string, key []byte) error {
+	b.log.Infof("restoring app data %v", f)
+	if err := os.RemoveAll(path.Join(b.config.WorkingDir, appDataBackupDir)); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(path.Join(b.config.WorkingDir, appDataBackupDir), 0700); err != nil {
+		return err
+	}
+	destZipFile := path.Join(b.config.WorkingDir, appDataBackupDir, appDataBackupFileName)
+	os.Rename(f, destZipFile)
+	defer func() {
+		os.Remove(destZipFile)
+	}()
+	appDataFiles, err := uncompressFiles(destZipFile)
+	if err != nil {
+		return err
+	}
+	if key != nil {
+		return b.descryptFiles(appDataFiles, key)
+	}
+	b.log.Infof("succesfully restored app data %v", f)
+
+	return nil
+}
+
+func (b *Manager) descryptFiles(files []string, key []byte) error {
+	b.log.Infof("Restore has encryption key")
+	for i, p := range files {
+		destPath := p + ".decrypted"
+		err := decryptFile(p, destPath, key)
+		if err != nil {
+			b.log.Errorf("failed to restore backup due to incorrect phrase %v", err)
+			return fmt.Errorf("failed to restore backup due to incorrect phrase %v", err)
+		}
+		b.log.Infof("Restore file decrypted %v", i)
+		if err = os.Remove(files[i]); err != nil {
+			return err
+		}
+		if err = os.Rename(destPath, files[i]); err != nil {
+			return err
+		}
+		b.log.Infof("decrypted file renamed %v", i)
+	}
+	return nil
 }
 
 // AvailableSnapshots returns a list of snsapshot that the backup provider reports
@@ -207,105 +261,144 @@ func (b *Manager) Start() error {
 
 		for {
 			select {
-			case <-b.backupRequestChan:
+			case req := <-b.backupRequestChan:
 				b.log.Infof("start processing backup request")
 				//First get the last pending request in the database
-				pendingID, err := b.db.lastBackupRequest()
+				pendingID, _ := b.db.lastBackupRequest()
 				if pendingID == 0 {
 					continue
 				}
+				var err error
+				var accountName string
 
-				b.mu.Lock()
-				encryptionKey := b.encryptionKey
-				encryptionType := b.encryptionType
-				b.mu.Unlock()
-
-				useEncryption, err := b.db.useEncryption()
-				if err != nil {
-					b.log.Errorf("error reading encryption settings from backup db %v", err)
-					continue
-				}
-				if useEncryption && encryptionKey == nil {
-					b.log.Errorf("fail to serve pending backup due to key not provided yet %v", err)
-					continue
-				}
-
-				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
-				paths, nodeID, err := b.prepareBackupData()
-				if err != nil {
-					b.log.Errorf("error in backup %v", err)
-					b.notifyBackupFailed(err)
-					continue
-				}
-				provider := b.GetProvider()
-				if provider == nil {
-					b.notifyBackupFailed(ErrorNoProvider)
-					continue
-				}
-
-				// If we have an encryption key let's encrypt the files.
-				encrypt := encryptionKey != nil
-				if encrypt {
-					b.log.Infof("using encryption to backup files")
-					for i, p := range paths {
-						destPath := p + ".enc"
-						err = encryptFile(p, destPath, encryptionKey)
-						if err != nil {
-							break
-						}
-						if err = os.Remove(paths[i]); err != nil {
-							break
-						}
-						if err = os.Rename(destPath, paths[i]); err != nil {
-							break
-						}
-					}
-
-					if err != nil {
+				if req.BackupNodeData {
+					b.log.Infof("starting backup node data")
+					if accountName, err = b.processBackupRequest(true); err != nil {
+						b.log.Errorf("failed to process backup request: %v", err)
 						b.notifyBackupFailed(err)
-						b.log.Errorf("error in encrypting backup files %v", err)
+						continue
+					}
+				}
+				if req.BackupAppData {
+					b.log.Infof("starting backup app data")
+					if accountName, err = b.processBackupRequest(false); err != nil {
+						b.log.Errorf("failed to process backup request: %v", err)
+						b.notifyBackupFailed(err)
 						continue
 					}
 				}
 
-				for _, p := range paths {
-					pathInfo, err := os.Stat(p)
-					if err == nil {
-						b.log.Infof("uploading %v with size: %v", p, pathInfo.Size())
-					}
-				}
-
-				// Zip files
-				compressedFile := path.Join(path.Dir(paths[0]), backupFileName)
-				if err := b.compressFiles(paths, compressedFile); err != nil {
-					b.log.Infof("failed to compress backup files", err)
-					continue
-				}
-
-				accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
-				if err != nil {
-					for _, p := range paths {
-						_ = os.RemoveAll(path.Dir(p))
-					}
-					b.log.Errorf("error in backup %v", err)
-					b.notifyBackupFailed(err)
-					continue
-				}
-
-				for _, p := range paths {
-					_ = os.RemoveAll(path.Dir(p))
-				}
 				b.db.markBackupRequestCompleted(pendingID)
 				b.log.Infof("backup finished successfully")
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS, Data: []string{accountName}})
+
 			case <-b.quitChan:
 				return
 			}
 		}
 	}()
-	b.backupRequestChan <- struct{}{}
+	b.backupRequestChan <- BackupRequest{BackupNodeData: true}
 
 	return nil
+}
+
+func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
+	b.mu.Lock()
+	encryptionKey := b.encryptionKey
+	encryptionType := b.encryptionType
+	b.mu.Unlock()
+
+	useEncryption, err := b.db.useEncryption()
+	if err != nil {
+		return "", fmt.Errorf("error reading encryption settings from backup db %v", err)
+	}
+	if useEncryption && encryptionKey == nil {
+		return "", fmt.Errorf("fail to serve pending backup due to key not provided yet %v", err)
+	}
+
+	b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
+	paths, nodeID, err := b.prepareBackupData()
+	if err != nil {
+		return "", fmt.Errorf("error in backup %v", err)
+	}
+	fileName := backupFileName
+	if !nodeData {
+		appDataPath := path.Join(b.config.WorkingDir, appDataBackupDir)
+		tempDir, err := ioutil.TempDir("", "app_data_backup")
+		if err != nil {
+			return "", err
+		}
+		dirs, err := os.ReadDir(appDataPath)
+		if err != nil {
+			return "", fmt.Errorf("error in backup %v", err)
+		}
+		paths = []string{}
+		for _, d := range dirs {
+			srcPath := path.Join(appDataPath, d.Name())
+			destPath := path.Join(tempDir, d.Name())
+			if _, err := copyFile(srcPath, destPath); err != nil {
+				return "", fmt.Errorf("failed to copy app data file %v", err)
+			}
+			paths = append(paths, destPath)
+		}
+		fileName = appDataBackupFileName
+	}
+	provider := b.GetProvider()
+	if provider == nil {
+		return "", ErrorNoProvider
+	}
+
+	// If we have an encryption key let's encrypt the files.
+	encrypt := encryptionKey != nil
+	if encrypt {
+		b.log.Infof("using encryption to backup files")
+		for i, p := range paths {
+			destPath := p + ".enc"
+			err = encryptFile(p, destPath, encryptionKey)
+			if err != nil {
+				break
+			}
+			if err = os.Remove(paths[i]); err != nil {
+				break
+			}
+			if err = os.Rename(destPath, paths[i]); err != nil {
+				break
+			}
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("error in encrypting backup files %v", err)
+		}
+	}
+
+	for _, p := range paths {
+		pathInfo, err := os.Stat(p)
+		if err == nil {
+			b.log.Infof("uploading %v with size: %v", p, pathInfo.Size())
+		}
+	}
+
+	// Zip files
+	compressedFile := path.Join(path.Dir(paths[0]), fileName)
+	if err := b.compressFiles(paths, compressedFile); err != nil {
+		return "", fmt.Errorf("failed to compress backup files", err)
+	}
+
+	accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
+	if err != nil {
+		for _, p := range paths {
+			fmt.Printf("removing backup dir: %v\n", path.Dir(p))
+			_ = os.RemoveAll(path.Dir(p))
+		}
+		return "", fmt.Errorf("error in backup %v", err)
+	}
+
+	for _, p := range paths {
+		fmt.Printf("removing backup dir: %v\n", path.Dir(p))
+		_ = os.RemoveAll(path.Dir(p))
+	}
+
+	return accountName, nil
 }
 
 func (b *Manager) compressFiles(paths []string, dest string) error {
@@ -384,7 +477,7 @@ func (b *Manager) SetEncryptionKey(encKey []byte, encryptionType string) error {
 
 	// After changing the encryption PIN we'll backup if we have
 	// pending backup requests.
-	b.backupRequestChan <- struct{}{}
+	b.backupRequestChan <- BackupRequest{BackupNodeData: true, BackupAppData: true}
 	b.log.Infof("Successfully set new encryption key")
 	return nil
 }
@@ -475,4 +568,20 @@ func (b *Manager) SetProvider(p Provider) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.provider = p
+}
+
+func copyFile(src, dst string) (int64, error) {
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }

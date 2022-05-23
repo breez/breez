@@ -141,7 +141,7 @@ func TestRequestBackup(t *testing.T) {
 	manager.Start()
 	defer manager.destroy()
 
-	manager.RequestBackup()
+	manager.RequestNodeBackup()
 	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter != 1 {
 		t.Error("Backup was not called after backup requested")
@@ -158,7 +158,7 @@ func TestMultipleRequestBackup(t *testing.T) {
 	defer manager.destroy()
 
 	for i := 0; i < 10; i++ {
-		manager.RequestBackup()
+		manager.RequestNodeBackup()
 	}
 	time.Sleep(300 * time.Millisecond)
 	if tester.uploadCounter > 2 {
@@ -179,7 +179,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 	manager.Start()
 	defer manager.destroy()
 
-	manager.RequestBackup()
+	manager.RequestNodeBackup()
 	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
@@ -198,7 +198,7 @@ func TestErrorInUpload(t *testing.T) {
 	manager.Start()
 	defer manager.destroy()
 
-	manager.RequestBackup()
+	manager.RequestNodeBackup()
 	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
@@ -220,7 +220,7 @@ func TestAuthError(t *testing.T) {
 	manager.Start()
 	defer manager.destroy()
 
-	manager.RequestBackup()
+	manager.RequestNodeBackup()
 	waitForBackupEnd(tester.MsgChannel)
 	if tester.uploadCounter > 0 {
 		t.Error("Backup was called despite error in preparing the data")
@@ -394,7 +394,7 @@ func TestEncryptedBackup(t *testing.T) {
 	manager.Start()
 	defer manager.destroy()
 
-	manager.RequestBackup()
+	manager.RequestNodeBackup()
 	waitForBackupEnd(tester.MsgChannel)
 	paths, err := manager.Restore("test-node-id", securityPIN)
 	if err != nil {
