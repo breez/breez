@@ -87,7 +87,7 @@ func deserializeLNUrlPayInfo(bytes []byte) (*data.LNUrlPayInfo, error) {
 func (db *DB) MigrateAllLNUrlPayMetadata() error {
 	err := db.Update(func(tx *bolt.Tx) (err error) {
 		b := tx.Bucket([]byte(lnurlPayMetadataMigrationBucket))
-		if v := b.Get([]byte("migrated")); v == nil {
+		if v := b.Get([]byte("migration_1")); v == nil {
 
 			infos, err := db.FetchAllLNUrlPayInfos()
 			if err != nil {
@@ -97,27 +97,42 @@ func (db *DB) MigrateAllLNUrlPayMetadata() error {
 			b := tx.Bucket([]byte(lnurlPayBucket))
 			for _, info := range infos {
 				if info != nil && info.Metadata != nil {
+					var description string
+					var longDescription string
+					var image *data.LNUrlPayImage
 					for _, m := range info.Metadata {
 						if m.Entry != nil && len(m.Entry) > 0 {
 							var key = m.Entry[0]
 							var value = m.Entry[1]
 							if key == "text/plain" {
-								m.Description = value
+								description = value
 							}
 							if key == "text/long-desc" {
-								m.LongDescription = value
+								longDescription = value
 							}
 							if key == "image/png;base64" || key == "image/jpeg;base64" {
-								converted, err := base64.StdEncoding.DecodeString(value)
-								if err != nil {
-									m.Image = &data.LNUrlPayImage{
-										DataUri: "data:" + key + "," + value,
-										Ext:     strings.Split(strings.Split(key, "/")[1], ";")[0],
-										Bytes:   converted,
+								split := strings.Split(value, "base64,")
+								if len(split) > 1 {
+									converted, err := base64.StdEncoding.DecodeString(split[1])
+									if err == nil {
+										image = &data.LNUrlPayImage{
+											DataUri: value,
+											Ext:     strings.Split(strings.Split(key, "/")[1], ";")[0],
+											Bytes:   converted,
+										}
 									}
 								}
 							}
+						} else if m.Image != nil && image == nil {
+							image = m.Image
 						}
+					}
+					info.Metadata = []*data.LNUrlPayMetadata{
+						{
+							Description:     description,
+							LongDescription: longDescription,
+							Image:           image,
+						},
 					}
 					buf, err := json.Marshal(info)
 					if err != nil {
@@ -131,7 +146,7 @@ func (db *DB) MigrateAllLNUrlPayMetadata() error {
 				}
 			}
 		}
-		err = b.Put([]byte("migrated"), []byte("true"))
+		err = b.Put([]byte("migration_1"), []byte("true"))
 		if err != nil {
 			return err
 		}
