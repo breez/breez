@@ -3,6 +3,7 @@ package breez
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -212,15 +213,24 @@ func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 	}
 	files := append(response.Files, f)
 	chanBackupFile := a.cfg.WorkingDir + "/data/chain/bitcoin/" + a.cfg.Network + "/channel.backup"
+
+	// check if we have channel.backup file
 	_, err = os.Stat(chanBackupFile)
 	if err != nil {
 		a.log.Infof("Not adding channel.backup to the backup: %v", err)
-	}
-
-	if err == nil {
-		files = append(files, chanBackupFile)
+	} else {
+		dir, err := ioutil.TempDir("", "chanelbackup")
+		if err != nil {
+			return nil, "", err
+		}
+		destFile := fmt.Sprintf("%v/channel.backup", dir)
+		if _, err := copyFile(chanBackupFile, destFile); err != nil {
+			return nil, "", err
+		}
+		files = append(files, destFile)
 		a.log.Infof("adding channel.backup to the backup")
 	}
+
 	a.log.Infof("extractBackupInfo completd")
 	return files, info.IdentityPubkey, nil
 }
@@ -231,6 +241,22 @@ func (a *App) breezdbCopy(breezDB *db.DB) (string, error) {
 		return "", err
 	}
 	return a.breezDB.BackupDb(dir)
+}
+
+func copyFile(src, dst string) (int64, error) {
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }
 
 func compactWalletDB(walletDBDir string, logger btclog.Logger) error {
