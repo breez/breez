@@ -211,6 +211,16 @@ func (a *App) prepareBackupInfo() (paths []string, nodeID string, err error) {
 		return nil, "", err
 	}
 	files := append(response.Files, f)
+	chanBackupFile := a.cfg.WorkingDir + "/data/chain/bitcoin/" + a.cfg.Network + "/channel.backup"
+	_, err = os.Stat(chanBackupFile)
+	if err != nil {
+		a.log.Infof("Not adding channel.backup to the backup: %v", err)
+	}
+
+	if err == nil {
+		files = append(files, chanBackupFile)
+		a.log.Infof("adding channel.backup to the backup")
+	}
 	a.log.Infof("extractBackupInfo completd")
 	return files, info.IdentityPubkey, nil
 }

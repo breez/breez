@@ -123,7 +123,7 @@ func (b *Manager) Restore(nodeID string, key []byte) ([]string, error) {
 		}
 	}
 
-	if len(files) != 3 {
+	if len(files) < 3 {
 		return nil, fmt.Errorf("wrong number of backup files %v", len(files))
 	}
 	return b.restoreNodeData(files, key)
@@ -138,9 +138,10 @@ func (b *Manager) restoreNodeData(files []string, key []byte) ([]string, error) 
 	}
 
 	paths := map[string]string{
-		"wallet.db":  "data/chain/bitcoin/{{network}}",
-		"channel.db": "data/graph/{{network}}",
-		"breez.db":   "",
+		"wallet.db":      "data/chain/bitcoin/{{network}}",
+		"channel.backup": "data/chain/bitcoin/{{network}}",
+		"channel.db":     "data/graph/{{network}}",
+		"breez.db":       "",
 	}
 	var targetFiles []string
 	for _, f := range files {
