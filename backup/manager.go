@@ -138,17 +138,16 @@ func (b *Manager) restoreNodeData(files []string, key []byte) ([]string, error) 
 	}
 
 	paths := map[string]string{
-		"wallet.db":      "data/chain/bitcoin/{{network}}",
-		"channel.backup": "data/chain/bitcoin/{{network}}",
-		"channel.db":     "data/graph/{{network}}",
-		"breez.db":       "",
+		"wallet.db":  "data/chain/bitcoin/{{network}}",
+		"channel.db": "data/graph/{{network}}",
+		"breez.db":   "",
 	}
 	var targetFiles []string
 	for _, f := range files {
 		basename := path.Base(f)
 		p, ok := paths[basename]
 		if !ok {
-			return nil, fmt.Errorf("unrecognized backup file %v", basename)
+			continue
 		}
 		destDir := path.Join(b.workingDir, strings.Replace(p, "{{network}}", b.config.Network, -1))
 		if destDir != b.workingDir {
