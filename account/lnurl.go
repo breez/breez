@@ -232,23 +232,35 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 }
 
 func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
+	a.log.Info("FinishLNURLWithdraw")
 	callback := a.lnurlWithdrawing
 
 	resp, err := http.Get(callback + "&pr=" + bolt11)
 	if err != nil {
+		a.log.Errorf("FinishLNURLWithdraw request error:", err.Error())
 		return err
+	}
+
+	if resp.StatusCode == 204 {
+		a.log.Info("FinishLNURLWithdraw response code: 204, skipping body parsing")
+		return nil
+	} else {
+		a.log.Infof("FinishLNURLWithdraw response code:", resp.StatusCode)
 	}
 
 	var lnurlresp lnurl.LNURLResponse
 	err = json.NewDecoder(resp.Body).Decode(&lnurlresp)
 	if err != nil {
+		a.log.Errorf("FinishLNURLWithdraw parse error:", err.Error())
 		return err
 	}
 
 	if lnurlresp.Status == "ERROR" {
+		a.log.Errorf("FinishLNURLWithdraw lnurl response error:", lnurlresp.Reason)
 		return errors.New(lnurlresp.Reason)
 	}
 
+	a.log.Info("FinishLNURLWithdraw ends without errors")
 	return nil
 }
 
