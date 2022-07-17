@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/zpay32"
 	"github.com/tyler-smith/go-bip32"
@@ -181,7 +181,7 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 	}
 
 	// this is the result keypair.
-	linkingPrivKey, linkingPubKey := btcec.PrivKeyFromBytes(btcec.S256(), key.Key)
+	linkingPrivKey, linkingPubKey := btcec.PrivKeyFromBytes(key.Key)
 	k1Decoded, err := hex.DecodeString(authParams.K1)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode k1 challenge %w", err)

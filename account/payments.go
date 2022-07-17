@@ -19,7 +19,7 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lspd"
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -1313,7 +1313,7 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 	defer cancel()
 
 	a.log.Infof("Register Payment pubkey = %v", lspPubkey)
-	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
+	pubkey, err := btcec.ParsePubKey(lspPubkey)
 	if err != nil {
 		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
 		return fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)

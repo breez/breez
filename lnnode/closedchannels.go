@@ -59,7 +59,7 @@ func closedChannels(log btclog.Logger, db *channeldb.DB, txSpentURL string) (int
 	if !(strings.Contains(txSpentURL, ":txid") && strings.Contains(txSpentURL, ":vout")) {
 		return 0, errors.New("Bad or disabled URL")
 	}
-	channels, err := db.FetchAllOpenChannels()
+	channels, err := db.ChannelStateDB().FetchAllOpenChannels()
 	if err != nil {
 		log.Errorf("Error in fetching channels:%v", err)
 		return 0, err

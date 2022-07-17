@@ -450,7 +450,7 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 	var statuses []*data.ReverseSwapPaymentStatus
 	for _, p := range payments {
 		s.log.Infof("Checking payment %v", p)
-		hash := p.Info.PaymentHash.String()
+		hash := p.Info.PaymentIdentifier.String()
 		s.log.Infof("Checking payment hash %v", hash)
 		rs, err := s.breezDB.FetchReverseSwap(hash)
 		if err != nil {
@@ -491,7 +491,7 @@ func (s *Service) handleReverseSwapsPayments() error {
 	}
 	s.log.Infof("Fetched %v in flight payments", len(payments))
 	for _, p := range payments {
-		hash := p.Info.PaymentHash.String()
+		hash := p.Info.PaymentIdentifier.String()
 		rs, err := s.breezDB.FetchReverseSwap(hash)
 		if err != nil {
 			s.log.Errorf("s.breezDB.FetchReverseSwap(%v): %w", hash, err)

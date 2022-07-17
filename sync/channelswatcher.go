@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/breez/breez/channeldbservice"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
-	"github.com/btcsuite/btcutil"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	"github.com/lightningnetwork/lnd/chainntnfs"
@@ -45,7 +45,7 @@ func NewChannelsWatcher(
 	}
 	defer cleanup()
 
-	channels, err := chandb.FetchAllOpenChannels()
+	channels, err := chandb.ChannelStateDB().FetchAllOpenChannels()
 	if err != nil {
 		return nil, err
 	}

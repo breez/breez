@@ -38,7 +38,7 @@ func GetLogger(workingDir string, logger string) (btclog.Logger, error) {
 	if initError != nil {
 		return nil, initError
 	}
-	return logWriter.GenSubLogger(logger), nil
+	return logWriter.GenSubLogger(logger, func() {}), nil
 }
 
 /*

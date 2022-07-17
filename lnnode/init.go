@@ -11,7 +11,7 @@ import (
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -23,6 +23,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/lightningnetwork/lnd/signal"
 	"github.com/lightningnetwork/lnd/subscribe"
 )
 
@@ -69,6 +70,7 @@ type Daemon struct {
 	ntfnServer          *subscribe.Server
 	quitChan            chan struct{}
 	startBeforeSync     bool
+	interceptor         signal.Interceptor
 }
 
 // NewDaemon is used to create a new daemon that wraps a lightning
@@ -95,7 +97,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		return fmt.Errorf("failed to populate channels graph %w", err)
 	}
 	defer cleanup()
-	closedChannels, err := chandb.FetchClosedChannels(false)
+	closedChannels, err := chandb.ChannelStateDB().FetchClosedChannels(false)
 	if err != nil {
 		return fmt.Errorf("failed to fetch closed graph %w", err)
 	}
@@ -103,13 +105,13 @@ func (a *Daemon) PopulateChannelsGraph() error {
 	graph := chandb.ChannelGraph()
 	for _, c := range closedChannels {
 		if !c.IsPending {
-			if err := graph.DeleteChannelEdges(c.ShortChanID.ToUint64()); err != nil {
+			if err := graph.DeleteChannelEdges(true, c.ShortChanID.ToUint64()); err != nil {
 				a.log.Infof("failed to delete channel edge %v", err)
 			}
 		}
 	}
 
-	channels, err := chandb.FetchAllOpenChannels()
+	channels, err := chandb.ChannelStateDB().FetchAllOpenChannels()
 	if err != nil {
 		return fmt.Errorf("failed to fetch channels graph %w", err)
 	}
@@ -118,7 +120,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		return fmt.Errorf("failed to decode pubkey %w", err)
 	}
 
-	localPubkey, err := btcec.ParsePubKey(pubkeyBytes, btcec.S256())
+	localPubkey, err := btcec.ParsePubKey(pubkeyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to fetch and parse node pubkey %w", err)
 	}

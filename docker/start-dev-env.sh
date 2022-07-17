@@ -1,5 +1,5 @@
-export DEV_HOST_IP=<desktop IP that is accessible from mobile>
-export TEST_DIR=<Where all the persistent data is stored>
+export DEV_HOST_IP=127.0.0.1
+export TEST_DIR=/Users/roeierez/test/docker
 
 export ALICE_BREEZ_ADDRESS="127.0.0.1:50053"
 export ALICE_DIR=$TEST_DIR/alice_node

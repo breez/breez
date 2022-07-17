@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -36,7 +36,7 @@ func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (
 	if err != nil {
 		return "", nil, err
 	}
-	pubKey, err := btcec.ParsePubKey(pubkeyBytes, btcec.S256())
+	pubKey, err := btcec.ParsePubKey(pubkeyBytes)
 	if err != nil {
 		return "", nil, err
 	}

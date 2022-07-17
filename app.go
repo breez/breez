@@ -323,7 +323,7 @@ func (a *App) DeleteGraph() error {
 	for cid := range cids {
 		chanIDs = append(chanIDs, cid)
 	}
-	err = graph.DeleteChannelEdges(chanIDs...)
+	err = graph.DeleteChannelEdges(true, chanIDs...)
 	if err != nil {
 		a.log.Errorf("DeleteNodeFromGraph->DeleteChannelEdges error = %v", err)
 		return fmt.Errorf("DeleteChannelEdges: %w", err)

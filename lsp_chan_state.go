@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/lightningnetwork/lnd/channeldb"
-	"github.com/lightningnetwork/lnd/channeldb/kvdb"
+	"github.com/lightningnetwork/lnd/kvdb"
 	"github.com/lightningnetwork/lnd/lnwire"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -27,7 +27,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/breez/services"
 	lspdrpc "github.com/breez/lspd/rpc"
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/keychain"
@@ -309,7 +309,7 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 		QueryDisable: false,
 	}, chandb)
 
-	channels, err := chandb.FetchAllChannels()
+	channels, err := chandb.ChannelStateDB().FetchAllChannels()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -497,7 +497,7 @@ func (a *lspChanStateSync) checkChannels(fakeChannels, waitingCloseChannels map[
 	c, ctx, cancel := a.breezAPI.NewChannelOpenerClient()
 	defer cancel()
 
-	priv, err := btcec.NewPrivateKey(btcec.S256())
+	priv, err := btcec.NewPrivateKey()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -507,7 +507,7 @@ func (a *lspChanStateSync) checkChannels(fakeChannels, waitingCloseChannels map[
 		WaitingCloseChannels: waitingCloseChannels,
 	}
 	data, _ := proto.Marshal(checkChannelsRequest)
-	pubkey, err := btcec.ParsePubKey(lspPubkey, btcec.S256())
+	pubkey, err := btcec.ParsePubKey(lspPubkey)
 	if err != nil {
 		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
 		return nil, nil, fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)
@@ -595,7 +595,7 @@ func (a *lspChanStateSync) findChannel(chanPoint string) (*channeldb.OpenChannel
 	}
 	defer cleanup()
 
-	channels, err := chandb.FetchAllChannels()
+	channels, err := chandb.ChannelStateDB().FetchAllChannels()
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +615,7 @@ func (a *lspChanStateSync) findPendingClosedChannel(chanPoint string) (*channeld
 	}
 	defer cleanup()
 
-	channels, err := chandb.FetchClosedChannels(true)
+	channels, err := chandb.ChannelStateDB().FetchClosedChannels(true)
 	if err != nil {
 		return nil, err
 	}

@@ -244,7 +244,7 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
-		c, err := chanDB.FetchAllChannels()
+		c, err := chanDB.ChannelStateDB().FetchAllChannels()
 		if err != nil {
 			d.log.Errorf("error when calling chanDB.FetchAllChannels(): %v", err)
 		} else {
@@ -259,17 +259,26 @@ func (d *Daemon) startDaemon() error {
 			d.log.Errorf("failed to create chainservice", err)
 			return
 		}
+		interceptor, err := signal.Intercept()
+		if err != nil {
+			d.log.Errorf("failed to create signal interceptor %v", err)
+			return
+		}
+		d.interceptor = interceptor
+
 		deps := &Dependencies{
 			workingDir:   d.cfg.WorkingDir,
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		lndConfig, err := d.createConfig(deps.workingDir)
+		lndConfig, err := d.createConfig(deps.workingDir, interceptor)
 		if err != nil {
 			d.log.Errorf("failed to create config %v", err)
 		}
 		d.log.Infof("Stating LND Daemon")
-		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, signal.ShutdownChannel(), deps)
+
+		implConfig := lndConfig.ImplementationConfig(interceptor, deps)
+		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, implConfig, interceptor)
 		if err != nil {
 			d.log.Errorf("Breez main function returned with error: %v", err)
 		}
@@ -281,7 +290,7 @@ func (d *Daemon) startDaemon() error {
 	return nil
 }
 
-func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
+func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor) (*lnd.Config, error) {
 	lndConfig := lnd.DefaultConfig()
 	lndConfig.Bitcoin.Active = true
 	if d.cfg.Network == "mainnet" {
@@ -308,11 +317,12 @@ func (d *Daemon) createConfig(workingDir string) (*lnd.Config, error) {
 		d.log.Errorf("GetLogWriter function returned with error: %v", err)
 		return nil, err
 	}
+
 	cfg.LogWriter = writer
 	cfg.MinBackoff = time.Second * 20
 	cfg.Bitcoin.SkipChannelConfirmation = true
 	cfg.TLSDisableAutofill = true
-	conf, err := lnd.ValidateConfig(cfg, "")
+	conf, err := lnd.ValidateConfig(cfg, interceptor, nil, nil)
 	if err != nil {
 		d.log.Errorf("ValidateConfig returned with error: %v", err)
 		return nil, err
@@ -326,10 +336,10 @@ func (d *Daemon) stopDaemon() {
 	if !d.daemonRunning {
 		return
 	}
-	alive := signal.Alive()
+	alive := d.interceptor.Alive()
 	d.log.Infof("Daemon.stop() called, stopping breez daemon alive=%v", alive)
 	if alive {
-		signal.RequestShutdown()
+		d.interceptor.RequestShutdown()
 	}
 	close(d.quitChan)
 
