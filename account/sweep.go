@@ -3,6 +3,7 @@ package account
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,11 +11,15 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/btcsuite/btcd/blockchain"
-	btcec "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcec/v2/schnorr/musig2"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightningnetwork/lnd/input"
+	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
@@ -97,7 +102,6 @@ func (a *Service) SweepAllCoinsTransactions(address string) (*data.SweepAllCoins
 		rus := NewRpcUtxoSource(lnClient)
 		sweepTxPkg, err := sweep.CraftSweepAllTx(
 			feePerKw,
-			lnwallet.DefaultDustLimit(),
 			info.BlockHeight,
 			nil,
 			targetAddr,
@@ -106,6 +110,7 @@ func (a *Service) SweepAllCoinsTransactions(address string) (*data.SweepAllCoins
 			&nilOutpointLocker,
 			nil,
 			NewRpcSigner(a.daemonAPI.SignerClient()),
+			0,
 		)
 
 		if err != nil {
@@ -163,7 +168,9 @@ func NewRpcUtxoSource(c lnrpc.LightningClient) *rpcUtxoSource {
 	}
 }
 
-func (u *rpcUtxoSource) ListUnspentWitness(minConfs, maxConfs int32) ([]*lnwallet.Utxo, error) {
+// ListUnspentWitness returns all UTXOs from the default wallet account
+// that have between minConfs and maxConfs number of confirmations.
+func (u *rpcUtxoSource) ListUnspentWitnessFromDefaultAccount(minConfs, maxConfs int32) ([]*lnwallet.Utxo, error) {
 	utxoOutputs, err := u.lightningClient.ListUnspent(context.Background(), &lnrpc.ListUnspentRequest{
 		MinConfs: 1, MaxConfs: math.MaxInt32,
 	})
@@ -232,7 +239,7 @@ func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor
 	if err != nil {
 		return nil, fmt.Errorf("tx.Serialize %#v: %w", tx, err)
 	}
-	signDescriptor := []*signrpc.SignDescriptor{&signrpc.SignDescriptor{
+	signDescriptor := []*signrpc.SignDescriptor{{
 		Output: &signrpc.TxOut{
 			Value:    signDesc.Output.Value,
 			PkScript: signDesc.Output.PkScript,
@@ -246,16 +253,60 @@ func (s *rpcSigner) SignOutputRaw(tx *wire.MsgTx, signDesc *input.SignDescriptor
 	r, err := srpc.SignOutputRaw(context.Background(), &signrpc.SignReq{
 		RawTxBytes: rawTx.Bytes(),
 		SignDescs:  signDescriptor,
-		SigHashes: &signrpc.TxSigHashes{
-			HashPrevOuts: signDesc.SigHashes.HashPrevOuts[:],
-			HashSequence: signDesc.SigHashes.HashSequence[:],
-			HashOutputs:  signDesc.SigHashes.HashOutputs[:],
-		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("srpc.SignOutputRaw %#v: %w", tx, err)
 	}
-	return btcec.ParseDERSignature(r.RawSigs[0], btcec.S256())
+	return ecdsa.ParseDERSignature(r.RawSigs[0])
+}
+
+// MuSig2CreateSession creates a new MuSig2 signing session using the local
+// key identified by the key locator. The complete list of all public keys of
+// all signing parties must be provided, including the public key of the local
+// signing key. If nonces of other parties are already known, they can be
+// submitted as well to reduce the number of method calls necessary later on.
+func (s *rpcSigner) MuSig2CreateSession(keychain.KeyLocator,
+	[]*btcec.PublicKey, *input.MuSig2Tweaks,
+	[][musig2.PubNonceSize]byte) (*input.MuSig2SessionInfo, error) {
+
+	return nil, nil
+}
+
+// MuSig2RegisterNonces registers one or more public nonces of other signing
+// participants for a session identified by its ID. This method returns true
+// once we have all nonces for all other signing participants.
+func (s *rpcSigner) MuSig2RegisterNonces(input.MuSig2SessionID,
+	[][musig2.PubNonceSize]byte) (bool, error) {
+
+	return false, nil
+}
+
+// MuSig2Sign creates a partial signature using the local signing key
+// that was specified when the session was created. This can only be
+// called when all public nonces of all participants are known and have
+// been registered with the session. If this node isn't responsible for
+// combining all the partial signatures, then the cleanup parameter
+// should be set, indicating that the session can be removed from memory
+// once the signature was produced.
+func (s *rpcSigner) MuSig2Sign(input.MuSig2SessionID,
+	[sha256.Size]byte, bool) (*musig2.PartialSignature, error) {
+
+	return nil, nil
+}
+
+// MuSig2CombineSig combines the given partial signature(s) with the
+// local one, if it already exists. Once a partial signature of all
+// participants is registered, the final signature will be combined and
+// returned.
+func (s *rpcSigner) MuSig2CombineSig(input.MuSig2SessionID,
+	[]*musig2.PartialSignature) (*schnorr.Signature, bool, error) {
+
+	return nil, false, nil
+}
+
+// MuSig2Cleanup removes a session from memory to free up resources.
+func (s *rpcSigner) MuSig2Cleanup(input.MuSig2SessionID) error {
+	return nil
 }
 
 func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescriptor) (*input.Script, error) {
@@ -267,7 +318,7 @@ func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescr
 	if err != nil {
 		return nil, fmt.Errorf("tx.Serialize %#v: %w", tx, err)
 	}
-	signDescriptor := []*signrpc.SignDescriptor{&signrpc.SignDescriptor{
+	signDescriptor := []*signrpc.SignDescriptor{{
 		Output: &signrpc.TxOut{
 			Value:    signDesc.Output.Value,
 			PkScript: signDesc.Output.PkScript,
@@ -280,16 +331,17 @@ func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescr
 	r, err := srpc.ComputeInputScript(context.Background(), &signrpc.SignReq{
 		RawTxBytes: rawTx.Bytes(),
 		SignDescs:  signDescriptor,
-		SigHashes: &signrpc.TxSigHashes{
+
+		/*SigHashes: &signrpc.TxSigHashes{
 			HashPrevOuts: signDesc.SigHashes.HashPrevOuts[:],
 			HashSequence: signDesc.SigHashes.HashSequence[:],
 			HashOutputs:  signDesc.SigHashes.HashOutputs[:],
-		},
+		},*/
 	})
 	if err != nil {
 		return nil, fmt.Errorf("srpc.ComputeInputScript: %w", err)
 	}
-	var hashPrevOuts, hashSequence, hashOutputs chainhash.Hash
+	/*var hashPrevOuts, hashSequence, hashOutputs chainhash.Hash
 	if err := hashPrevOuts.SetBytes(r.SigHashes.HashPrevOuts); err != nil {
 		return nil, fmt.Errorf("bad HashPrevOuts: %w", err)
 	}
@@ -301,7 +353,7 @@ func (s *rpcSigner) ComputeInputScript(tx *wire.MsgTx, signDesc *input.SignDescr
 	}
 	signDesc.SigHashes.HashPrevOuts = hashPrevOuts
 	signDesc.SigHashes.HashSequence = hashSequence
-	signDesc.SigHashes.HashOutputs = hashOutputs
+	signDesc.SigHashes.HashOutputs = hashOutputs*/
 	return &input.Script{
 		Witness:   r.InputScripts[0].Witness,
 		SigScript: r.InputScripts[0].SigScript,

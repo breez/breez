@@ -26,8 +26,9 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/breez/services"
+	"github.com/breez/lspd/btceclegacy"
 	lspdrpc "github.com/breez/lspd/rpc"
-	btcec "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/keychain"
@@ -534,7 +535,7 @@ func (a *lspChanStateSync) checkChannels(fakeChannels, waitingCloseChannels map[
 		Signature: signatureReply.Signature,
 	}
 	signedData, _ := proto.Marshal(signed)
-	encrypted, err := btcec.Encrypt(pubkey, signedData)
+	encrypted, err := btceclegacy.Encrypt(pubkey, signedData)
 	if err != nil {
 		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
 		return nil, nil, fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)
@@ -543,7 +544,7 @@ func (a *lspChanStateSync) checkChannels(fakeChannels, waitingCloseChannels map[
 	if err != nil {
 		return nil, nil, fmt.Errorf("CheckChannels error: %w", err)
 	}
-	decrypt, err := btcec.Decrypt(priv, r.Blob)
+	decrypt, err := btceclegacy.Decrypt(priv, r.Blob)
 	if err != nil {
 		a.log.Infof("btcec.Decrypt error: %v", err)
 		return nil, nil, fmt.Errorf("btcec.Decrypt error: %w", err)

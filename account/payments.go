@@ -19,7 +19,8 @@ import (
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/lspd"
-	btcec "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/breez/lspd/btceclegacy"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -1318,7 +1319,7 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 		a.log.Infof("btcec.ParsePubKey(%x) error: %v", lspPubkey, err)
 		return fmt.Errorf("btcec.ParsePubKey(%x) error: %w", lspPubkey, err)
 	}
-	blob, err := btcec.Encrypt(pubkey, data)
+	blob, err := btceclegacy.Encrypt(pubkey, data)
 	if err != nil {
 		a.log.Infof("btcec.Encrypt(%x) error: %v", data, err)
 		return fmt.Errorf("btcec.Encrypt(%x) error: %w", data, err)

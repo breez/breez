@@ -17,7 +17,8 @@ import (
 	"strings"
 	"time"
 
-	btcec "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/zpay32"
 	"github.com/tyler-smith/go-bip32"
@@ -188,10 +189,7 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 	}
 
 	// sign the challenge
-	sig, err := linkingPrivKey.Sign(k1Decoded)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign k1 challenge %w", err)
-	}
+	sig := ecdsa.Sign(linkingPrivKey, k1Decoded)
 
 	//convert to DER
 	wireSig, err := lnwire.NewSigFromSignature(sig)
