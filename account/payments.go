@@ -18,8 +18,9 @@ import (
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
-	"github.com/breez/breez/lspd"
+
 	"github.com/breez/lspd/btceclegacy"
+	lspd "github.com/breez/lspd/rpc"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"

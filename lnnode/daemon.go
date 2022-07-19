@@ -322,7 +322,21 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 	cfg.MinBackoff = time.Second * 20
 	cfg.Bitcoin.SkipChannelConfirmation = true
 	cfg.TLSDisableAutofill = true
-	conf, err := lnd.ValidateConfig(cfg, interceptor, nil, nil)
+
+	fileParser := flags.NewParser(&cfg, flags.Default)
+	err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Finally, parse the remaining command line options again to ensure
+	// they take precedence.
+	flagParser := flags.NewParser(&cfg, flags.Default)
+	if _, err := flagParser.Parse(); err != nil {
+		return nil, err
+	}
+
+	conf, err := lnd.ValidateConfig(cfg, interceptor, fileParser, flagParser)
 	if err != nil {
 		d.log.Errorf("ValidateConfig returned with error: %v", err)
 		return nil, err
