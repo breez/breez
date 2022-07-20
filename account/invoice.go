@@ -39,7 +39,7 @@ func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (
 				Msg:        msg,
 				KeyLoc:     &kl,
 				CompactSig: true,
-				DoubleHash: true,
+				DoubleHash: false,
 			})
 		if err != nil {
 			return nil, fmt.Errorf("m.client.SignMessage() error: %w", err)
