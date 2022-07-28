@@ -5,12 +5,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math"
 
 	"github.com/breez/breez/data"
-	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
@@ -25,7 +23,6 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"github.com/lightningnetwork/lnd/lnwallet"
 	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
-	"github.com/lightningnetwork/lnd/sweep"
 )
 
 var targets = []int{2, 6, 25}
@@ -87,58 +84,41 @@ func (a *Service) SweepAllCoinsTransactions(address string) (*data.SweepAllCoins
 	}
 
 	lnClient := a.daemonAPI.APIClient()
-	info, err := lnClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
-	if err != nil {
-		a.log.Errorf("lnClient.GetInfo: %v", err)
-		return nil, fmt.Errorf("lnClient.GetInfo: %w", err)
-	}
 	td := make(map[int32]*data.TransactionDetails)
 	var totalAmount int64
 	for _, confTarget := range targets {
-		feePerKw, err := a.determineFeePerKw(confTarget)
-		if err != nil {
-			return nil, fmt.Errorf("a.determineFeePerKw(%v): %w", confTarget, err)
-		}
-		rus := NewRpcUtxoSource(lnClient)
-		sweepTxPkg, err := sweep.CraftSweepAllTx(
-			feePerKw,
-			info.BlockHeight,
-			nil,
-			targetAddr,
-			&nilCoinSelectionLocker,
-			rus,
-			&nilOutpointLocker,
-			nil,
-			NewRpcSigner(a.daemonAPI.SignerClient()),
-			0,
-		)
 
+		sendCoinsRes, err := lnClient.SendCoins(context.Background(), &lnrpc.SendCoinsRequest{
+			Addr:       address,
+			SendAll:    true,
+			TargetConf: int32(confTarget),
+			DryRun:     true,
+		})
 		if err != nil {
-			// ignore validation errors of crafting specific transaction.
-			var ruleErr blockchain.RuleError
-			if errors.As(err, &ruleErr) {
-				continue
-			}
-			return nil, fmt.Errorf("sweep.CraftSweepAllTx(): %w", err)
+			return nil, fmt.Errorf("lnClient.SendCoins %v", err)
+		}
+		balance, err := lnClient.WalletBalance(context.Background(), &lnrpc.WalletBalanceRequest{})
+		if err != nil {
+			return nil, fmt.Errorf("lnClient.WalletBalance %v", err)
 		}
 
+		var msgTx wire.MsgTx
+		if err := msgTx.Deserialize(bytes.NewBuffer(sendCoinsRes.Tx)); err != nil {
+			return nil, fmt.Errorf("failed to deserialize")
+		}
 		var amtOut int64
-		for _, output := range sweepTxPkg.SweepTx.TxOut {
+		for _, output := range msgTx.TxOut {
 			amtOut += output.Value
 		}
 
-		var rawTx bytes.Buffer
-		err = sweepTxPkg.SweepTx.Serialize(&rawTx)
-		if err != nil {
-			return nil, fmt.Errorf("tx.Serialize %#v: %w", sweepTxPkg.SweepTx, err)
-		}
 		td[int32(confTarget)] = &data.TransactionDetails{
-			Tx:     rawTx.Bytes(),
-			TxHash: sweepTxPkg.SweepTx.TxHash().String(),
-			Fees:   rus.totalAmount - amtOut,
+			Tx:     sendCoinsRes.Tx,
+			TxHash: msgTx.TxHash().String(),
+			Fees:   balance.ConfirmedBalance - amtOut,
 		}
-		totalAmount = rus.totalAmount
+		totalAmount = balance.ConfirmedBalance
 	}
+
 	return &data.SweepAllCoinsTransactions{Amt: totalAmount, Transactions: td}, nil
 }
 
