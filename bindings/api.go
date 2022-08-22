@@ -381,7 +381,17 @@ func AddFundsInit(initRequest []byte) ([]byte, error) {
 		request.NotificationToken, request.LspID))
 }
 
-//Refund transfers the funds in address to the user destination address
+// RefundFees transfers the funds in address to the user destination address
+func RefundFees(refundRequest []byte) (int64, error) {
+	Log("binding: starting refund fees flow...", "INFO")
+	request := &data.RefundRequest{}
+	if err := proto.Unmarshal(refundRequest, request); err != nil {
+		return 0, err
+	}
+	return getBreezApp().SwapService.RefundFees(request.Address, request.RefundAddress, request.TargetConf, request.SatPerByte)
+}
+
+// Refund transfers the funds in address to the user destination address
 func Refund(refundRequest []byte) (string, error) {
 	Log("binding: starting refund flow...", "INFO")
 	request := &data.RefundRequest{}
@@ -747,7 +757,7 @@ func SyncLSPChannels(request []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().SyncLSPChannels(&s))
 }
 
-//unconfirmedChannelsStatus
+// unconfirmedChannelsStatus
 func UnconfirmedChannelsStatus(request []byte) ([]byte, error) {
 	var s data.UnconfirmedChannelsStatus
 	if err := proto.Unmarshal(request, &s); err != nil {

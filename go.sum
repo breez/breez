@@ -81,6 +81,8 @@ github.com/breez/btcwallet/wtxmgr v1.2.1-0.20210414123232-efee8e15b2ad h1:rY9EPd
 github.com/breez/btcwallet/wtxmgr v1.2.1-0.20210414123232-efee8e15b2ad/go.mod h1:awQsh1n/0ZrEQ+JZgWvHeo153ubzEisf/FyNtwI0dDk=
 github.com/breez/lnd v0.12.1-beta.rc6.0.20211107133407-a424761787e1 h1:R2AtN23ufMUrKWHBoOsG5zod1CMxA3EHVJagTxmgDeU=
 github.com/breez/lnd v0.12.1-beta.rc6.0.20211107133407-a424761787e1/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20220822092801-0f4488299a36 h1:JKH/3ovYZLty6VyCy/c9dXAJCwKib2k4vGzBO5lvBIY=
+github.com/breez/lnd v0.12.1-beta.rc6.0.20220822092801-0f4488299a36/go.mod h1:2GyP1IG1kXV5Af/LOCxnXfux1OP3fAGr8zptS5PB2YI=
 github.com/breez/lnd/cert v1.0.4-0.20210531094737-c875a5650e2b h1:bER6E7yLPXu2MzdVwyD3+v71ApG/pVSycq2YO294684=
 github.com/breez/lnd/cert v1.0.4-0.20210531094737-c875a5650e2b/go.mod h1:3MWXVLLPI0Mg0XETm9fT4N9Vyy/8qQLmaM5589bEggM=
 github.com/breez/lspd v0.0.0-20210211151315-ece77f65e116 h1:/3VDXaZXqPnXAqhmopmD8YevmdUXfArmZwsOoZdwDGA=
