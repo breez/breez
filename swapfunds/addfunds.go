@@ -201,12 +201,12 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 		// In case the transactino is confirmed and has positive output, we will check
 		// if it is ready for completing the process by the client or it has error.
 		if a.ConfirmedAmount > 0 {
-			paid := a.PaidAmount > 0
+			//paid := a.PaidAmount > 0
 
 			// in case user got paid we don't need to do anything.
-			if paid && len(a.ConfirmedTransactionIds) <= 1 {
-				continue
-			}
+			// if paid && len(a.ConfirmedTransactionIds) <= 1 {
+			// 	continue
+			// }
 
 			// in case we didn't get paid and there was either an error in payment or passed timeout we add this
 			// address to the refundable ones.
@@ -228,7 +228,7 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	return &statusReply, nil
 }
 
-//Refund broadcast a refund transaction for a sub swap address.
+// Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string, targetConf int32, satPerByte int64) (string, error) {
 	s.log.Infof("Starting refund flow...")
 	lnclient := s.daemonAPI.SubSwapClient()
@@ -300,10 +300,10 @@ func (s *Service) onDaemonReady() error {
 	return nil
 }
 
-//onTransaction subscribe to cofirmed transaction notifications in order
-//to update the status of changed SwapAddressInfo in the db.
-//On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
-//In order to calim the payments from the swap service.
+// onTransaction subscribe to cofirmed transaction notifications in order
+// to update the status of changed SwapAddressInfo in the db.
+// On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
+// In order to calim the payments from the swap service.
 func (s *Service) onTransaction() error {
 	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
@@ -370,11 +370,11 @@ func (s *Service) lightningTransfersReady() bool {
 	return s.daemonAPI.HasActiveChannel()
 }
 
-//SettlePendingTransfers watch for routing peer connection and once connected it does two things:
-//1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
-//   that the funds are confirmred
-//2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
-//   remove funds flow
+// SettlePendingTransfers watch for routing peer connection and once connected it does two things:
+//  1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
+//     that the funds are confirmred
+//  2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
+//     remove funds flow
 func (s *Service) SettlePendingTransfers() {
 	go s.getPaymentsForConfirmedTransactions()
 	go s.redeemAllRemovedFunds()
