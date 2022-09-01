@@ -150,7 +150,7 @@ func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file ui
 			chanIds = append(chanIds, chanID)
 		}
 	}
-	err = chanDB.ChannelGraph().DeleteChannelEdges(true, chanIds...)
+	err = chanDB.ChannelGraph().DeleteChannelEdges(true, true, chanIds...)
 	if err != nil {
 		s.log.Infof("DeleteChannelEdges error: %v", err)
 		return err

@@ -65,7 +65,6 @@ func (a *Service) watchDaemonEvents() (err error) {
 				a.wg.Add(1)
 				go a.watchPayments()
 				go a.watchCurrentInFlightPayments()
-				go a.trackZeroConfInvoice()
 				a.onAccountChanged()
 			case lnnode.TransactionEvent:
 				time.Sleep(5 * time.Second)

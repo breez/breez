@@ -24,7 +24,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 )
 
-//Service is the interface to be implemeted by all breez services
+// Service is the interface to be implemeted by all breez services
 type Service interface {
 	Start() error
 	Stop() error
@@ -323,7 +323,7 @@ func (a *App) DeleteGraph() error {
 	for cid := range cids {
 		chanIDs = append(chanIDs, cid)
 	}
-	err = graph.DeleteChannelEdges(true, chanIDs...)
+	err = graph.DeleteChannelEdges(true, true, chanIDs...)
 	if err != nil {
 		a.log.Errorf("DeleteNodeFromGraph->DeleteChannelEdges error = %v", err)
 		return fmt.Errorf("DeleteChannelEdges: %w", err)

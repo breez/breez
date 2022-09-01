@@ -142,8 +142,11 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 	for _, lsp := range lspList.Lsps {
 		lspPubkey[lsp.Pubkey] = lsp.Id
 	}
+
+	chanidChannel := make(map[uint64]*lnrpc.Channel)
 	chanidLSP := make(map[uint64]string)
 	for _, channel := range channels.Channels {
+		chanidChannel[channel.ChanId] = channel
 		if ID, ok := lspPubkey[channel.RemotePubkey]; ok {
 			chanidLSP[channel.ChanId] = ID
 			connectedLsps[ID] = exists
@@ -162,13 +165,16 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 		}
 		for _, htlc := range invoice.Htlcs {
 			lsp := chanidLSP[htlc.ChanId]
-			if lsp == "" && lnwire.NewFakeShortChanIDFromInt(htlc.ChanId).IsFake() &&
-				len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
+			c, ok := chanidChannel[htlc.ChanId]
+			if ok {
+				if lsp == "" && c.ZeroConf &&
+					len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
 
-				htlcLSP := lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
-				if _, ok := connectedLsps[htlcLSP]; ok {
-					lsp = htlcLSP
-					chanidLSP[htlc.ChanId] = lsp
+					htlcLSP := lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]
+					if _, ok := connectedLsps[htlcLSP]; ok {
+						lsp = htlcLSP
+						chanidLSP[htlc.ChanId] = lsp
+					}
 				}
 			}
 			if lsp != "" && lastPayments[lsp] < invoice.SettleDate {
@@ -568,7 +574,6 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		if err := a.breezDB.AddZeroConfHash(payeeInvoiceHash, []byte(response.PaymentRequest)); err != nil {
 			return "", 0, fmt.Errorf("failed to add zero-conf invoice %w", err)
 		}
-		a.trackInvoice(payeeInvoiceHash)
 		a.log.Infof("Tracking invoice amount=%v, hash=%v", smallAmountMsat, payeeInvoiceHash)
 	}
 

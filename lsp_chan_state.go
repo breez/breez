@@ -317,7 +317,7 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 
 	channelsMap := make(map[string]*channeldb.OpenChannel, 0)
 	for _, c := range channels {
-		if !c.ShortChanID().IsFake() {
+		if !c.IsZeroConf() {
 			continue
 		}
 

@@ -139,6 +139,7 @@ func (d *Daemon) subscribeChannelAcceptor(ctx context.Context, client lnrpc.Ligh
 			time.Sleep(2 * time.Second)
 			continue
 		}
+
 		private := request.ChannelFlags&uint32(lnwire.FFAnnounceChannel) == 0
 		d.log.Infof("channel creation requested from node: %v private: %v", request.NodePubkey, private)
 		err = channelAcceptorClient.Send(&lnrpc.ChannelAcceptResponse{

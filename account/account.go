@@ -5,8 +5,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/lightningnetwork/lnd/lnwire"
-
 	"github.com/breez/breez/db"
 
 	"github.com/breez/breez/data"
@@ -113,7 +111,7 @@ func (a *Service) unconfirmedChannels() ([]string, error) {
 	}
 	var unconfirmedChannels []string
 	for _, c := range channels.Channels {
-		if lnwire.NewShortChanIDFromInt(c.ChanId).IsFake() {
+		if c.ZeroConf {
 			unconfirmedChannels = append(unconfirmedChannels, c.ChannelPoint)
 		}
 	}
@@ -374,8 +372,8 @@ func (a *Service) calculateAccount() (*data.Account, error) {
 	}, nil
 }
 
-//We need to put some dealy on this bacause there is a gap between transaction hit LND and the other side effects that happen
-//like channel updates, balance updates etc...
+// We need to put some dealy on this bacause there is a gap between transaction hit LND and the other side effects that happen
+// like channel updates, balance updates etc...
 func (a *Service) onAccountChanged() {
 	time.Sleep(2 * time.Second)
 	a.calculateAccountAndNotify()

@@ -320,7 +320,6 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 
 	cfg.LogWriter = writer
 	cfg.MinBackoff = time.Second * 20
-	cfg.Bitcoin.SkipChannelConfirmation = true
 	cfg.TLSDisableAutofill = true
 
 	fileParser := flags.NewParser(&cfg, flags.Default)

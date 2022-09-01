@@ -105,7 +105,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 	graph := chandb.ChannelGraph()
 	for _, c := range closedChannels {
 		if !c.IsPending {
-			if err := graph.DeleteChannelEdges(true, c.ShortChanID.ToUint64()); err != nil {
+			if err := graph.DeleteChannelEdges(true, true, c.ShortChanID.ToUint64()); err != nil {
 				a.log.Infof("failed to delete channel edge %v", err)
 			}
 		}
