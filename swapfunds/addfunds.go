@@ -1,6 +1,7 @@
 package swapfunds
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -12,8 +13,10 @@ import (
 
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/submarineswaprpc"
+	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
 	"golang.org/x/sync/singleflight"
 
 	breezservice "github.com/breez/breez/breez"
@@ -228,7 +231,27 @@ func (s *Service) GetFundStatus(notificationToken string) (*data.FundStatusReply
 	return &statusReply, nil
 }
 
-//Refund broadcast a refund transaction for a sub swap address.
+// RefundFees return the fees of a refund transaction for a sub swap address.
+func (s *Service) RefundFees(address, refundAddress string, targetConf int32, satPerByte int64) (int64, error) {
+	s.log.Infof("Starting refund fees flow...")
+	lnclient := s.daemonAPI.SubSwapClient()
+	if lnclient == nil {
+		s.log.Error("unable to execute Refund: Daemon is not ready")
+	}
+	res, err := lnclient.SubSwapClientRefund(context.Background(), &submarineswaprpc.SubSwapClientRefundRequest{
+		Address:       address,
+		RefundAddress: refundAddress,
+		TargetConf:    targetConf,
+		SatPerByte:    satPerByte,
+	})
+	if err != nil {
+		s.log.Errorf("unable to execute SubSwapClientRefund: %v", err)
+		return 0, err
+	}
+	return res.Fees, nil
+}
+
+// Refund broadcast a refund transaction for a sub swap address.
 func (s *Service) Refund(address, refundAddress string, targetConf int32, satPerByte int64) (string, error) {
 	s.log.Infof("Starting refund flow...")
 	lnclient := s.daemonAPI.SubSwapClient()
@@ -246,9 +269,33 @@ func (s *Service) Refund(address, refundAddress string, targetConf int32, satPer
 		s.log.Errorf("unable to execute SubSwapClientRefund: %v", err)
 		return "", err
 	}
+	tx := &wire.MsgTx{}
+	txReader := bytes.NewReader(res.Tx)
+	if err := tx.Deserialize(txReader); err != nil {
+		s.log.Errorf("unable to deserialize the refund tx: %v", err)
+		return "", fmt.Errorf("unable to deserialize the refund tx: %w", err)
+	}
+	txHash := tx.TxHash().String()
+	wkClient := s.daemonAPI.WalletKitClient()
+	if wkClient == nil {
+		s.log.Error("unable to execute Refund: wkClient Daemon is not ready")
+		return "", fmt.Errorf("unable to execute Refund: wkClient Daemon is not ready")
+	}
+	pResp, err := wkClient.PublishTransaction(context.Background(), &walletrpc.Transaction{
+		TxHex: res.Tx,
+		Label: "SubSwap Refund",
+	})
+	if err != nil {
+		s.log.Error("unable to publish refund transaction: %v", err)
+		return "", fmt.Errorf("unable to publish refund transaction: %w", err)
+	}
+	if pResp.PublishError != "" {
+		s.log.Error("unable to publish refund transaction: %v", pResp.PublishError)
+		return "", fmt.Errorf("unable to publish refund transaction: %v", pResp.PublishError)
+	}
 	s.log.Infof("refund executed, res: %v", res)
 	_, err = s.breezDB.UpdateSwapAddress(address, func(a *db.SwapAddressInfo) error {
-		a.LastRefundTxID = res.Txid
+		a.LastRefundTxID = txHash
 		return nil
 	})
 	if err != nil {
@@ -257,7 +304,7 @@ func (s *Service) Refund(address, refundAddress string, targetConf int32, satPer
 	}
 	s.log.Infof("refund executed, triggerring unspendChangd event")
 	s.onUnspentChanged()
-	return res.Txid, nil
+	return txHash, nil
 }
 
 func (s *Service) onDaemonReady() error {
@@ -300,10 +347,10 @@ func (s *Service) onDaemonReady() error {
 	return nil
 }
 
-//onTransaction subscribe to cofirmed transaction notifications in order
-//to update the status of changed SwapAddressInfo in the db.
-//On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
-//In order to calim the payments from the swap service.
+// onTransaction subscribe to cofirmed transaction notifications in order
+// to update the status of changed SwapAddressInfo in the db.
+// On every notification if a new confirmation was detected it calls getPaymentsForConfirmedTransactions
+// In order to calim the payments from the swap service.
 func (s *Service) onTransaction() error {
 	addresses, err := s.breezDB.FetchAllSwapAddresses()
 	if err != nil {
@@ -370,11 +417,11 @@ func (s *Service) lightningTransfersReady() bool {
 	return s.daemonAPI.HasActiveChannel()
 }
 
-//SettlePendingTransfers watch for routing peer connection and once connected it does two things:
-//1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
-//   that the funds are confirmred
-//2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
-//   remove funds flow
+// SettlePendingTransfers watch for routing peer connection and once connected it does two things:
+//  1. Ask the breez server to pay in lightning for addresses that the user has sent funds to and
+//     that the funds are confirmred
+//  2. Ask the breez server to pay on-chain for funds were sent to him in lightning as part of the
+//     remove funds flow
 func (s *Service) SettlePendingTransfers() {
 	go s.getPaymentsForConfirmedTransactions()
 	go s.redeemAllRemovedFunds()

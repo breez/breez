@@ -26,6 +26,7 @@ require (
 	github.com/urfave/cli v1.22.9
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
 	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
