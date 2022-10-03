@@ -2,6 +2,7 @@ package lnnode
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"time"
 
@@ -142,10 +143,23 @@ func (d *Daemon) subscribeChannelAcceptor(ctx context.Context, client lnrpc.Ligh
 
 		private := request.ChannelFlags&uint32(lnwire.FFAnnounceChannel) == 0
 		d.log.Infof("channel creation requested from node: %v private: %v", request.NodePubkey, private)
-		err = channelAcceptorClient.Send(&lnrpc.ChannelAcceptResponse{
+		resp := &lnrpc.ChannelAcceptResponse{
 			PendingChanId: request.PendingChanId,
 			Accept:        private,
-		})
+		}
+		if request.WantsZeroConf {
+			d.log.Infof("channel requested wants zero conf")
+			resp.MinAcceptDepth = 0
+			resp.ZeroConf = true
+		}
+
+		serialized, err := json.Marshal(resp)
+		if err == nil {
+			d.log.Infof("sending response to channel acceptor: %v", serialized)
+		}
+
+		err = channelAcceptorClient.Send(resp)
+
 		if err != nil {
 			d.log.Errorf("Error in channelAcceptorClient.Send(%v, %v): %v", request.PendingChanId, private, err)
 			return err
