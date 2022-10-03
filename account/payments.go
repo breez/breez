@@ -11,19 +11,24 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/db"
 
 	"github.com/breez/lspd/btceclegacy"
 	lspd "github.com/breez/lspd/rpc"
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/lightningnetwork/lnd/aliasmgr"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
@@ -625,6 +630,17 @@ func (a *Service) getFakeChannelRoutingHint(lspInfo *data.LSPInformation) (*lnrp
 
 func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.RouteHint, error) {
 
+	chanDB, chanDBCleanUp, err := channeldbservice.Get(a.cfg.WorkingDir)
+	if err != nil {
+		return nil, fmt.Errorf("channeldbservice.Get(%v): %w", a.cfg.WorkingDir, err)
+	}
+	defer chanDBCleanUp()
+
+	aliasManager, err := aliasmgr.NewManager(chanDB.Backend)
+	if err != nil {
+		return nil, fmt.Errorf("error in aliasmgr.NewManager: %w", err)
+	}
+
 	lnclient := a.daemonAPI.APIClient()
 	channelsRes, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{
 		PrivateOnly: true,
@@ -639,6 +655,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 		if _, ok := usedPeers[h.RemotePubkey]; ok {
 			continue
 		}
+
 		ci, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
 			ChanId: h.ChanId,
 		})
@@ -646,6 +663,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 			a.log.Errorf("Unable to add routing hint for channel %v error=%v", h.ChanId, err)
 			continue
 		}
+
 		remotePolicy := ci.Node1Policy
 		if h.RemotePubkey == lspInfo.Pubkey && ci.Node2Pub == h.RemotePubkey {
 			remotePolicy = ci.Node2Policy
@@ -665,11 +683,16 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 			cltvExpiryDelta = remotePolicy.TimeLockDelta
 		}
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
+		hintID, err := a.getChannelLSPHint(aliasManager, h)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get lsp route hint for channel %v: %v", h.ChanId, err)
+		}
+
 		hints = append(hints, &lnrpc.RouteHint{
 			HopHints: []*lnrpc.HopHint{
 				{
 					NodeId:                    h.RemotePubkey,
-					ChanId:                    h.ChanId,
+					ChanId:                    hintID,
 					FeeBaseMsat:               feeBaseMsat,
 					FeeProportionalMillionths: proportionalFee,
 					CltvExpiryDelta:           cltvExpiryDelta,
@@ -679,6 +702,31 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 		usedPeers[h.RemotePubkey] = struct{}{}
 	}
 	return hints, nil
+}
+
+func (a *Service) getChannelLSPHint(aliasManager *aliasmgr.Manager, h *lnrpc.Channel) (uint64, error) {
+	hintID := lnwire.NewShortChanIDFromInt(h.ChanId)
+	if aliasmgr.IsAlias(hintID) {
+		s := strings.Split(h.ChannelPoint, ":")
+		if len(s) != 2 {
+			return 0, fmt.Errorf("expected channel point with format txid:index %v", s)
+		}
+		index, err := strconv.ParseUint(s[1], 10, 32)
+		if err != nil {
+			return 0, fmt.Errorf("unable to parse channel point output index: %w", err)
+		}
+
+		hash, err := chainhash.NewHashFromStr(s[0])
+		if err != nil {
+			return 0, fmt.Errorf("unable to parse channel point tx hash: %w", err)
+		}
+		outpoint := wire.NewOutPoint(hash, uint32(index))
+		hintID, err = aliasManager.GetPeerAlias(lnwire.NewChanIDFromOutPoint(outpoint))
+		if err != nil {
+			return 0, fmt.Errorf("error in aliasmgr.GetPeerAlias: %w", err)
+		}
+	}
+	return hintID.ToUint64(), nil
 }
 
 // SendPaymentFailureBugReport is used for investigating payment failures.
