@@ -20,8 +20,8 @@ func (a *App) CheckVersion() error {
 		if v == currentVersion {
 			currentVersionExists = true
 		}
-		if strings.Contains(v, "legacy-zeroconf") {
-			messages = append(messages, "no new channels")
+		if strings.Contains(v, "upgrading") {
+			messages = append(messages, "upgrading")
 		}
 	}
 
