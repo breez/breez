@@ -172,7 +172,7 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 			lsp := chanidLSP[htlc.ChanId]
 			c, ok := chanidChannel[htlc.ChanId]
 			if ok {
-				if lsp == "" && c.ZeroConf &&
+				if lsp == "" && c.ZeroConf && c.ZeroConfConfirmedScid == 0 &&
 					len(invoice.RouteHints) > 0 && len(invoice.RouteHints[0].HopHints) > 0 {
 
 					htlcLSP := lspPubkey[invoice.RouteHints[0].HopHints[0].NodeId]

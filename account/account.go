@@ -111,7 +111,7 @@ func (a *Service) unconfirmedChannels() ([]string, error) {
 	}
 	var unconfirmedChannels []string
 	for _, c := range channels.Channels {
-		if c.ZeroConf {
+		if c.ZeroConf && c.ZeroConfConfirmedScid == 0 {
 			unconfirmedChannels = append(unconfirmedChannels, c.ChannelPoint)
 		}
 	}
