@@ -11,7 +11,9 @@ import (
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btclog"
+	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/kvdb"
 )
 
 const (
@@ -114,8 +116,34 @@ func createService(workingDir string) (*channeldb.DB, error) {
 	}
 
 	logger.Infof("creating shared channeldb service.")
-	chanDB, err := channeldb.Open(graphDir,
-		channeldb.OptionSetSyncFreelist(true))
+	cfg := lnd.DefaultConfig()
+	dbOptions := []channeldb.OptionModifier{
+		channeldb.OptionSetRejectCacheSize(cfg.Caches.RejectCacheSize),
+		channeldb.OptionSetChannelCacheSize(cfg.Caches.ChannelCacheSize),
+		channeldb.OptionSetBatchCommitInterval(cfg.DB.BatchCommitInterval),
+		channeldb.OptionDryRunMigration(cfg.DryRunMigration),
+		channeldb.OptionSetUseGraphCache(!cfg.DB.NoGraphCache),
+		channeldb.OptionKeepFailedPaymentAttempts(cfg.KeepFailedPaymentAttempts),
+		channeldb.OptionPruneRevocationLog(cfg.DB.PruneRevocation),
+		channeldb.OptionSetPreAllocCacheNumNodes(channeldb.DefaultPreAllocCacheNumNodes),
+	}
+
+	opts := channeldb.DefaultOptions()
+	backend, err := kvdb.GetBoltBackend(&kvdb.BoltBackendConfig{
+		DBPath:            graphDir,
+		DBFileName:        dbName,
+		NoFreelistSync:    false,
+		AutoCompact:       opts.AutoCompact,
+		AutoCompactMinAge: opts.AutoCompactMinAge,
+		DBTimeout:         opts.DBTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	chanDB, err := channeldb.CreateWithBackend(
+		backend, dbOptions...,
+	)
 	if err != nil {
 		logger.Errorf("unable to open channeldb: %v", err)
 		return nil, err

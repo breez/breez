@@ -15,6 +15,7 @@ import (
 	"github.com/breez/breez"
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
+	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/closedchannels"
 	"github.com/breez/breez/data"
 	"github.com/breez/breez/doubleratchet"
@@ -956,7 +957,12 @@ func SyncGraphFromFile(sourceFilePath string) error {
 		err = bootstrap.SyncGraphDB(getBreezApp().GetWorkingDir(), sourceFilePath)
 	}
 	Log("SyncGraphFromFile finished", "INFO")
-	return err
+	chandb, clear, err := channeldbservice.Get(getBreezApp().GetWorkingDir())
+	if err != nil {
+		return err
+	}
+	defer clear()
+	return chandb.ChannelGraph().ReloadCache()
 }
 
 func PublishTransaction(tx []byte) error {
