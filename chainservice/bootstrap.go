@@ -107,7 +107,7 @@ func Bootstrap(workingDir string) error {
 
 	logger.Info("staring bootstrap flow")
 	//create temporary neturino db.
-	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
+	neutrinoDataDir, db, err := GetNeutrinoDB(workingDir)
 	if err != nil {
 		return err
 	}
@@ -229,11 +229,11 @@ func chainTipHeight(workingDir string) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	params, err := chainParams(config.Network)
+	params, err := ChainParams(config.Network)
 	if err != nil {
 		return 0, err
 	}
-	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
+	neutrinoDataDir, db, err := GetNeutrinoDB(workingDir)
 	if err != nil {
 		return 0, err
 	}

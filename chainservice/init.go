@@ -146,7 +146,7 @@ func stopService() error {
 	return nil
 }
 
-func chainParams(network string) (*chaincfg.Params, error) {
+func ChainParams(network string) (*chaincfg.Params, error) {
 	var params *chaincfg.Params
 	switch network {
 	case "testnet":
@@ -196,7 +196,7 @@ newNeutrino creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
 */
 func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutrino.ChainService, walletdb.DB, error) {
-	params, err := chainParams(cfg.Network)
+	params, err := ChainParams(cfg.Network)
 
 	if err != nil {
 		return nil, nil, err
@@ -204,7 +204,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 
 	ensureNeutrinoSize(workingDir)
 
-	neutrinoDataDir, db, err := getNeutrinoDB(workingDir)
+	neutrinoDataDir, db, err := GetNeutrinoDB(workingDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -219,7 +219,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 	return chainService, db, err
 }
 
-func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
+func GetNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 	config, err := config.GetConfig(workingDir)
 	if err != nil {
 		return "", nil, err
@@ -231,6 +231,7 @@ func getNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 	}
 
 	db, err := walletdb.Create("bdb", neutrinoDB, false, time.Second*60)
+	fmt.Printf("neutrinoDB err = %v", err)
 	return neutrinoDataDir, db, err
 }
 
