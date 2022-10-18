@@ -130,6 +130,7 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 
 	t := bs.Timestamp
 	scid := lnwire.NewShortChanIDFromInt(chanID)
+	logger.Infof("highest channel id = %v bs.Height=%v", scid.String(), bs.Height)
 	_ = scid.BlockHeight
 	if uint32(bs.Height) > scid.BlockHeight {
 		hash, err := chainService.GetBlockHash(int64(scid.BlockHeight))
@@ -142,9 +143,11 @@ func GraphURL(workingDir string, breezDB *db.DB) (string, error) {
 			logger.Errorf("chainService.GetBlockHeader%v): %v", scid.BlockHeight, err)
 			return "", fmt.Errorf("chainService.GetBlockHeader(%v): %w", scid.BlockHeight, err)
 		}
+		logger.Infof("header graph timestamp = %v\n", header.Timestamp)
 		t = header.Timestamp
 	} else {
 		t = t.Add(time.Duration(int(scid.BlockHeight)-int(bs.Height)) * 10 * time.Minute)
+		logger.Infof("estimated graph timestamp = %v\n", t)
 	}
 
 	if time.Now().Before(t.Add(threshold)) {
