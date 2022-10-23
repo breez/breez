@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/aliasmgr"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
@@ -683,7 +684,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 			cltvExpiryDelta = remotePolicy.TimeLockDelta
 		}
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
-		hintID, err := a.getChannelLSPHint(aliasManager, h)
+		hintID, err := a.getChannelLSPHint(chanDB, aliasManager, h)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get lsp route hint for channel %v: %v", h.ChanId, err)
 		}
@@ -704,9 +705,22 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 	return hints, nil
 }
 
-func (a *Service) getChannelLSPHint(aliasManager *aliasmgr.Manager, h *lnrpc.Channel) (uint64, error) {
+func (a *Service) getChannelLSPHint(chandb *channeldb.DB, aliasManager *aliasmgr.Manager, h *lnrpc.Channel) (uint64, error) {
 	hintID := lnwire.NewShortChanIDFromInt(h.ChanId)
-	if aliasmgr.IsAlias(hintID) {
+
+	openChannels, err := chandb.ChannelStateDB().FetchAllOpenChannels()
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch all opened channels %v", err)
+	}
+	var dbChannel *channeldb.OpenChannel
+	for _, c := range openChannels {
+		if c.ShortChannelID.ToUint64() == h.ChanId {
+			dbChannel = c
+			break
+		}
+	}
+
+	if dbChannel != nil && dbChannel.NegotiatedAliasFeature() {
 		s := strings.Split(h.ChannelPoint, ":")
 		if len(s) != 2 {
 			return 0, fmt.Errorf("expected channel point with format txid:index %v", s)
