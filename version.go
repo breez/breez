@@ -20,7 +20,7 @@ func (a *App) CheckVersion() error {
 		if v == currentVersion {
 			currentVersionExists = true
 		}
-		if strings.Contains(v, "upgrading") {
+		if strings.Contains(v, "upgrading2") {
 			messages = append(messages, "upgrading")
 		}
 	}
