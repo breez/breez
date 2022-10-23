@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	currentVersion = "2022-10-09"
+	currentVersion = "2022-10-23"
 )
 
 func (a *App) CheckVersion() error {
