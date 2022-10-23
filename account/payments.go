@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 
 	"time"
@@ -24,8 +23,6 @@ import (
 	"github.com/breez/lspd/btceclegacy"
 	lspd "github.com/breez/lspd/rpc"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/aliasmgr"
@@ -637,6 +634,11 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 	}
 	defer chanDBCleanUp()
 
+	openChannels, err := chanDB.ChannelStateDB().FetchAllOpenChannels()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch all opened channels %v", err)
+	}
+
 	aliasManager, err := aliasmgr.NewManager(chanDB.Backend)
 	if err != nil {
 		return nil, fmt.Errorf("error in aliasmgr.NewManager: %w", err)
@@ -684,7 +686,7 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 			cltvExpiryDelta = remotePolicy.TimeLockDelta
 		}
 		a.log.Infof("adding routing hint = %v", h.RemotePubkey)
-		hintID, err := a.getChannelLSPHint(chanDB, aliasManager, h)
+		hintID, err := a.getChannelLSPHint(openChannels, aliasManager, h)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get lsp route hint for channel %v: %v", h.ChanId, err)
 		}
@@ -705,13 +707,9 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 	return hints, nil
 }
 
-func (a *Service) getChannelLSPHint(chandb *channeldb.DB, aliasManager *aliasmgr.Manager, h *lnrpc.Channel) (uint64, error) {
+func (a *Service) getChannelLSPHint(openChannels []*channeldb.OpenChannel, aliasManager *aliasmgr.Manager, h *lnrpc.Channel) (uint64, error) {
 	hintID := lnwire.NewShortChanIDFromInt(h.ChanId)
 
-	openChannels, err := chandb.ChannelStateDB().FetchAllOpenChannels()
-	if err != nil {
-		return 0, fmt.Errorf("failed to fetch all opened channels %v", err)
-	}
 	var dbChannel *channeldb.OpenChannel
 	for _, c := range openChannels {
 		if c.ShortChannelID.ToUint64() == h.ChanId {
@@ -721,21 +719,8 @@ func (a *Service) getChannelLSPHint(chandb *channeldb.DB, aliasManager *aliasmgr
 	}
 
 	if dbChannel != nil && dbChannel.NegotiatedAliasFeature() {
-		s := strings.Split(h.ChannelPoint, ":")
-		if len(s) != 2 {
-			return 0, fmt.Errorf("expected channel point with format txid:index %v", s)
-		}
-		index, err := strconv.ParseUint(s[1], 10, 32)
-		if err != nil {
-			return 0, fmt.Errorf("unable to parse channel point output index: %w", err)
-		}
-
-		hash, err := chainhash.NewHashFromStr(s[0])
-		if err != nil {
-			return 0, fmt.Errorf("unable to parse channel point tx hash: %w", err)
-		}
-		outpoint := wire.NewOutPoint(hash, uint32(index))
-		hintID, err = aliasManager.GetPeerAlias(lnwire.NewChanIDFromOutPoint(outpoint))
+		var err error
+		hintID, err = aliasManager.GetPeerAlias(lnwire.NewChanIDFromOutPoint(&dbChannel.FundingOutpoint))
 		if err != nil {
 			return 0, fmt.Errorf("error in aliasmgr.GetPeerAlias: %w", err)
 		}
