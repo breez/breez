@@ -471,7 +471,7 @@ func (s *Service) ReverseSwapPayments() (*data.ReverseSwapPaymentStatuses, error
 			return nil, fmt.Errorf("boltz.GetTransaction(%v, %v, %v): %w", rs.Id, rs.LockupAddress, rs.OnchainAmount, err)
 		}
 		s.log.Infof("Reverse swap: hash=%v, status=%v, txid=%v, eta=%v", hash, status, txid, eta)
-		statuses = append(statuses, &data.ReverseSwapPaymentStatus{Hash: hash, Eta: int32(eta)})
+		statuses = append(statuses, &data.ReverseSwapPaymentStatus{Hash: hash, TxID: txid, Eta: int32(eta)})
 	}
 	return &data.ReverseSwapPaymentStatuses{PaymentsStatus: statuses}, nil
 }

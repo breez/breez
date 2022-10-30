@@ -545,6 +545,7 @@ message PushNotificationDetails {
 
 message ReverseSwapPaymentStatus {
     string hash = 1;
+    string txID = 2;
     int32 eta = 3;
 }
 message ReverseSwapPaymentStatuses {
