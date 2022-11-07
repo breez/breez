@@ -238,7 +238,7 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 	return lnurlresp.Token, nil
 }
 
-func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
+func (a *Service) FinishLNURLWithdraw(bolt11 string) (err error) {
 	a.log.Info("FinishLNURLWithdraw")
 	callback := a.lnurlWithdrawing
 
