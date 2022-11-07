@@ -12,6 +12,7 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btclog"
 )
 
@@ -30,6 +31,7 @@ type MockTester struct {
 	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
 	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
 	MsgChannel              chan data.NotificationEvent
+	torConfig               *tor.TorConfig
 }
 
 func newDefaultMockTester() *MockTester {
@@ -63,13 +65,17 @@ func (m *MockTester) DownloadBackupFiles(nodeID, backupID string) ([]string, err
 	return m.DownloadBackupFilesImpl(nodeID, backupID)
 }
 
+func (m *MockTester) SetTor(torConfig *tor.TorConfig) {
+	m.torConfig = torConfig
+}
+
 func prepareBackupData() (paths []string, nodeID string, err error) {
 	return []string{"file1"}, "test-node-id", nil
 }
 
 func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	backupDelay = time.Duration(0)
-	RegisterProvider("mock", func(authServie AuthService, authData string, logger btclog.Logger) (Provider, error) { return mp, nil })
+	RegisterProvider("mock", func(providerFactoryInfo ProviderFactoryInfo) (Provider, error) { return mp, nil })
 
 	ntfnChan := make(chan data.NotificationEvent, 100)
 	dir := os.TempDir()

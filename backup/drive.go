@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/breez/breez/tor"
+
 	"github.com/btcsuite/btclog"
 	"golang.org/x/oauth2"
 	drive "google.golang.org/api/drive/v3"
@@ -35,6 +37,7 @@ type driveServiceError struct {
 func (d *driveServiceError) Error() string {
 	return d.err.Error()
 }
+
 func (d *driveServiceError) IsAuthError() bool {
 	if ferr, ok := d.err.(*googleapi.Error); ok {
 		return ferr.Code == 401 || ferr.Code == 403
@@ -206,6 +209,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 
 		// List all filed under the backup folder
 		r, err := p.driveService.Files.List().Spaces("appDataFolder").Q(fmt.Sprintf("'%v' in parents", currentFolderID)).Do()
+
 		if err != nil {
 			errorChan <- err
 			return
@@ -353,6 +357,10 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 		return nil, &driveServiceError{err}
 	}
 	return downloaded, nil
+}
+
+func (p *GoogleDriveProvider) SetTor(torConfig *tor.TorConfig) {
+	return
 }
 
 // nodeFolder is responsible for fetching the node folder. If it doesn't exist it creates it.

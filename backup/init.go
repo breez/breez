@@ -8,26 +8,37 @@ import (
 
 	"github.com/breez/breez/config"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/tor"
+
 	"github.com/btcsuite/btclog"
 )
+
+type ProviderFactoryInfo struct {
+	authService AuthService
+	authData    string
+	log         btclog.Logger
+	torConfig   *tor.TorConfig
+}
 
 // ProviderFactory is a factory for create a specific provider.
 // This is the function needed to be implemented for a new provider
 // to be registered and used.
-type ProviderFactory func(authService AuthService, authData string, log btclog.Logger) (Provider, error)
+type ProviderFactory func(providerFactoryInfo ProviderFactoryInfo) (Provider, error)
 
-var (
-	providersFactory = map[string]ProviderFactory{
-		"gdrive": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
-			return NewGoogleDriveProvider(authService, log)
-		},
-		"remoteserver": func(authService AuthService, authData string, log btclog.Logger) (Provider, error) {
-			var providerData ProviderData
-			_ = json.Unmarshal([]byte(authData), &providerData)
-			return NewRemoteServerProvider(providerData, log)
-		},
-	}
-)
+var providersFactory = map[string]ProviderFactory{
+	"gdrive": func(providerFactoryInfo ProviderFactoryInfo) (Provider, error) {
+		return NewGoogleDriveProvider(providerFactoryInfo.authService, providerFactoryInfo.log)
+	},
+	"remoteserver": func(providerFactoryInfo ProviderFactoryInfo) (Provider, error) {
+		var providerData ProviderData
+		_ = json.Unmarshal([]byte(providerFactoryInfo.authData), &providerData)
+		return NewRemoteServerProvider(
+			providerData,
+			providerFactoryInfo.log,
+			providerFactoryInfo.torConfig,
+		)
+	},
+}
 
 type BackupRequest struct {
 	BackupNodeData bool
@@ -52,6 +63,8 @@ type Manager struct {
 	encryptionType    string
 	mu                sync.Mutex
 	wg                sync.WaitGroup
+
+	TorConfig *tor.TorConfig
 }
 
 // NewManager creates a new Manager
@@ -66,7 +79,7 @@ func NewManager(
 	var provider Provider
 	var err error
 	if providerName != "" {
-		provider, err = createBackupProvider(providerName, authService, "", log)
+		provider, err = createBackupProvider(providerName, ProviderFactoryInfo{authService, "", log, nil})
 		if err != nil {
 			return nil, err
 		}
@@ -96,10 +109,10 @@ func RegisterProvider(providerName string, factory ProviderFactory) {
 	providersFactory[providerName] = factory
 }
 
-func createBackupProvider(providerName string, authService AuthService, authData string, log btclog.Logger) (Provider, error) {
+func createBackupProvider(providerName string, providerFactoryInfo ProviderFactoryInfo) (Provider, error) {
 	factory, ok := providersFactory[providerName]
 	if !ok {
 		return nil, fmt.Errorf("provider not found for %v", providerName)
 	}
-	return factory(authService, authData, log)
+	return factory(providerFactoryInfo)
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/breez/breez/backup"
-	"github.com/btcsuite/btclog"
+	"github.com/breez/breez/tor"
 )
 
 // NativeBackupProvider is interface that serves as backup provider and is intended to be
@@ -27,6 +27,7 @@ type nativeProviderError struct {
 func (d *nativeProviderError) Error() string {
 	return d.err.Error()
 }
+
 func (d *nativeProviderError) IsAuthError() bool {
 	if strings.Contains(d.err.Error(), "AuthError") {
 		return true
@@ -72,9 +73,13 @@ func (b *NativeBackupProviderBridge) DownloadBackupFiles(nodeID, backupID string
 	return strings.Split(files, ","), nil
 }
 
+func (b *NativeBackupProviderBridge) SetTor(torConfig *tor.TorConfig) {
+	return
+}
+
 // RegisterNativeBackupProvider registered a native backup provider
 func RegisterNativeBackupProvider(name string, provider NativeBackupProvider) {
-	backup.RegisterProvider(name, func(authService backup.AuthService, authData string, log btclog.Logger) (backup.Provider, error) {
+	backup.RegisterProvider(name, func(providerFactoryInfo backup.ProviderFactoryInfo) (backup.Provider, error) {
 		return &NativeBackupProviderBridge{nativeProvider: provider}, nil
 	})
 }

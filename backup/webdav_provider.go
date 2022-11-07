@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/breez/breez/tor"
+
 	"github.com/btcsuite/btclog"
 )
 
@@ -19,8 +21,9 @@ const (
 )
 
 type RemoteServerProvider struct {
-	authData ProviderData
-	log      btclog.Logger
+	authData  ProviderData
+	log       btclog.Logger
+	torConfig *tor.TorConfig
 }
 
 type ProviderData struct {
@@ -42,6 +45,7 @@ type webdavProviderError struct {
 func (d *webdavProviderError) Error() string {
 	return d.err.Error()
 }
+
 func (d *webdavProviderError) IsAuthError() bool {
 	if ferr, ok := d.err.(*WebdavRequestError); ok {
 		status := ferr.StatusCode
@@ -51,15 +55,21 @@ func (d *webdavProviderError) IsAuthError() bool {
 	return false
 }
 
-func NewRemoteServerProvider(authData ProviderData, log btclog.Logger) (*RemoteServerProvider, error) {
+func NewRemoteServerProvider(
+	authData ProviderData,
+	log btclog.Logger,
+	torConfig *tor.TorConfig,
+) (*RemoteServerProvider, error) {
 	return &RemoteServerProvider{
-		authData: authData,
-		log:      log,
+		authData:  authData,
+		log:       log,
+		torConfig: torConfig,
 	}, nil
 }
 
 func (n *RemoteServerProvider) getClient() (string, *WebdavClient, error) {
 	c, err := Dial(n.authData.Url, n.authData.User, n.authData.Password)
+	c.TorConfig = n.torConfig
 	return n.authData.BreezDir, c, err
 }
 
@@ -111,7 +121,8 @@ func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, enc
 			Encrypted:      encryptionType != "",
 			EncryptionType: encryptionType,
 			ModifiedTime:   time.Now().Format(time.RFC3339),
-		}}
+		},
+	}
 	data, err := json.Marshal(backupInfo)
 	if err != nil {
 		return "", err
@@ -233,4 +244,8 @@ func (n *RemoteServerProvider) DownloadBackupFiles(nodeID, backupID string) ([]s
 		downloaded = append(downloaded, localFilePath)
 	}
 	return downloaded, nil
+}
+
+func (p *RemoteServerProvider) SetTor(torConfig *tor.TorConfig) {
+	p.torConfig = torConfig
 }
