@@ -182,8 +182,14 @@ func SetBackupEncryptionKey(key []byte, encryptionType string) error {
 /*
 Start the lightning client
 */
-func Start() error {
-	err := getBreezApp().Start()
+func Start(torConfig []byte) error {
+	_torConfig := &data.TorConfig{}
+	if err := proto.Unmarshal(torConfig, _torConfig); err != nil {
+		return err
+	}
+
+	Log(fmt.Sprintf("api.go: Start: _torConfig: %+v", *_torConfig), "INFO")
+	err := getBreezApp().Start(_torConfig)
 	if err != nil {
 		return err
 	}
@@ -323,6 +329,16 @@ func AvailableSnapshots() (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func TestBackupAuth(provider, authData string) error {
+	manager := getBreezApp().BackupManager
+	if err := manager.SetBackupProvider(provider, authData); err != nil {
+		return errors.New("Failed to set backup provider.")
+	}
+	p := manager.GetProvider()
+
+	return p.TestAuth()
 }
 
 /*
@@ -967,6 +983,14 @@ func SyncGraphFromFile(sourceFilePath string) error {
 
 func PublishTransaction(tx []byte) error {
 	return getBreezApp().AccountService.PublishTransaction(tx)
+}
+
+func SetTorActive(enable bool) (err error) {
+	return getBreezApp().SetTorActive(enable)
+}
+
+func GetTorActive() bool {
+	return getBreezApp().GetTorActive()
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

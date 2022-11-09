@@ -1,6 +1,6 @@
 package breez
 
-//protoc -I data data/messages.proto --go_out=plugins=grpc:data
+// protoc -I data data/messages.proto --go_out=plugins=grpc:data
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	"github.com/breez/breez/db"
 	"github.com/breez/breez/doubleratchet"
 	"github.com/breez/breez/lnnode"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -33,17 +34,64 @@ type Service interface {
 /*
 Start is responsible for starting the lightning client and some go routines to track and notify for account changes
 */
-func (a *App) Start() error {
+func (a *App) Start(torConfig *data.TorConfig) error {
 	if atomic.SwapInt32(&a.started, 1) == 1 {
 		return errors.New("Breez already started")
 	}
 
 	a.log.Info("app.start before bootstrap")
 	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
-		a.log.Info("app.start bootstrap error %v", err)
+		a.log.Infof("app.start bootstrap error %v", err)
 		return err
 	}
 
+	useTor, _ := a.breezDB.GetTorActive()
+	if useTor {
+		if torConfig == nil {
+			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
+			a.log.Errorf("app.go: starting breez without tor: %v", err)
+			/* TODO(nochiel) Notify the user of an error. Give them options
+			- Try again.
+			- Disable Tor.
+			*/
+			a.breezDB.SetTorActive(false)
+			return err
+		}
+
+		a.log.Infof("app.Start: useTor = %v, torConfig = %+v.", useTor, *torConfig)
+		_torConfig := &tor.TorConfig{
+			Socks:   torConfig.Socks,
+			Http:    torConfig.Http,
+			Control: torConfig.Control,
+		}
+
+		/* The current backup provider has a pointer to a torConfig
+		but if torConfig was nil, then setting a.BackupManager.TorConfig
+		will only affect newly created backup providers. Therefore, we
+		reset the current backup provider's torConfig pointer here.
+		*/
+		provider := a.BackupManager.GetProvider()
+		provider.SetTor(_torConfig)
+		a.BackupManager.SetProvider(provider)
+
+		a.BackupManager.TorConfig = _torConfig
+		a.lnDaemon.TorConfig = _torConfig
+		a.AccountService.TorConfig = _torConfig
+
+	} else {
+		a.log.Info("app.Start: starting without Tor.")
+
+		a.lnDaemon.TorConfig = nil
+
+		a.BackupManager.TorConfig = nil
+		provider := a.BackupManager.GetProvider()
+		provider.SetTor(nil)
+		a.BackupManager.SetProvider(provider)
+
+		a.AccountService.TorConfig = nil
+	}
+
+	a.log.Info("app.start: starting services.")
 	services := []Service{
 		a.lnDaemon,
 		a.ServicesClient,
@@ -306,7 +354,7 @@ func (a *App) DeleteGraph() error {
 				channelEdgeInfo *channeldb.ChannelEdgeInfo,
 				_ *channeldb.ChannelEdgePolicy,
 				_ *channeldb.ChannelEdgePolicy) error {
-				//Add the channel only if it's not connected to our node
+				// Add the channel only if it's not connected to our node
 				if _, ok := ourCids[channelEdgeInfo.ChannelID]; !ok {
 					cids[channelEdgeInfo.ChannelID] = struct{}{}
 				}
@@ -396,4 +444,19 @@ func (a *App) CheckLSPClosedChannelMismatch(
 		return nil, err
 	}
 	return &data.CheckLSPClosedChannelMismatchResponse{Mismatch: mismatch}, nil
+}
+
+func (a *App) SetTorActive(enable bool) error {
+	a.log.Infof("setTorActive: setting enabled = %v", enable)
+	return a.breezDB.SetTorActive(enable)
+}
+
+func (a *App) GetTorActive() bool {
+	a.log.Info("getTorActive")
+
+	b, err := a.breezDB.GetTorActive()
+	if err != nil {
+		a.log.Infof("getTorActive: %v", err)
+	}
+	return b
 }

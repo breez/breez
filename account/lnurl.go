@@ -23,9 +23,9 @@ import (
 	"github.com/lightningnetwork/lnd/zpay32"
 	"github.com/tyler-smith/go-bip32"
 
-	"github.com/breez/breez/data"
-
 	"github.com/fiatjaf/go-lnurl"
+
+	"github.com/breez/breez/data"
 )
 
 type LoginResponse struct {
@@ -210,7 +210,16 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 		query.Add("jwt", "true")
 	}
 	url.RawQuery = query.Encode()
-	resp, err := http.Get(url.String())
+
+	client := &http.Client{}
+	if tor := a.TorConfig; tor != nil {
+		a.log.Info("FinishLNURLAuth: using Tor")
+		if client, err = tor.NewHttpClient(); err != nil {
+			return "", err
+		}
+	}
+
+	resp, err := client.Get(url.String())
 	if err != nil {
 		return "", err
 	}
@@ -229,11 +238,19 @@ func (a *Service) FinishLNURLAuth(authParams *data.LNURLAuth) (string, error) {
 	return lnurlresp.Token, nil
 }
 
-func (a *Service) FinishLNURLWithdraw(bolt11 string) error {
+func (a *Service) FinishLNURLWithdraw(bolt11 string) (err error) {
 	a.log.Info("FinishLNURLWithdraw")
 	callback := a.lnurlWithdrawing
 
-	resp, err := http.Get(callback + "&pr=" + bolt11)
+	client := &http.Client{}
+	if tor := a.TorConfig; tor != nil {
+		a.log.Info("FinishLNURLWithdraw: using Tor")
+		if client, err = tor.NewHttpClient(); err != nil {
+			return err
+		}
+	}
+
+	resp, err := client.Get(callback + "&pr=" + bolt11)
 	if err != nil {
 		a.log.Errorf("FinishLNURLWithdraw request error:", err.Error())
 		return err
@@ -328,7 +345,15 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 
 	url.RawQuery = query.Encode()
 	a.log.Infof("FinishLNURLPay: request.url: %v", url)
-	resp, err := http.Get(url.String())
+	client := &http.Client{}
+	if tor := a.TorConfig; tor != nil {
+		a.log.Info("FinishLNURLPay: using Tor")
+		if client, err = tor.NewHttpClient(); err != nil {
+			return nil, err
+		}
+	}
+
+	resp, err := client.Get(url.String())
 	if err != nil {
 		return nil, err
 	}

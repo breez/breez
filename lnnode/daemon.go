@@ -12,6 +12,8 @@ import (
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
 	breezlog "github.com/breez/breez/log"
+	"github.com/breez/breez/tor"
+
 	"github.com/dustin/go-humanize"
 	"github.com/jessevdk/go-flags"
 	"github.com/lightningnetwork/lnd"
@@ -271,7 +273,8 @@ func (d *Daemon) startDaemon() error {
 			chainService: chainSevice,
 			readyChan:    readyChan,
 			chanDB:       chanDB}
-		lndConfig, err := d.createConfig(deps.workingDir, interceptor)
+
+        lndConfig, err := d.createConfig(deps.workingDir, d.TorConfig, interceptor)
 		if err != nil {
 			d.log.Errorf("failed to create config %v", err)
 		}
@@ -290,7 +293,7 @@ func (d *Daemon) startDaemon() error {
 	return nil
 }
 
-func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor) (*lnd.Config, error) {
+func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, interceptor signal.Interceptor) (*lnd.Config, error) {
 	lndConfig := lnd.DefaultConfig()
 	lndConfig.Bitcoin.Active = true
 	if d.cfg.Network == "mainnet" {
@@ -308,6 +311,14 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 		d.log.Errorf("Failed to parse config %v", err)
 		return nil, err
 	}
+
+	if torConfig != nil {
+		d.log.Infof("Configuring daemon with Tor settings: %+v.", *torConfig)
+		cfg.Tor.Active = true
+		cfg.Tor.SOCKS = torConfig.Socks
+		cfg.Tor.Control = torConfig.Control
+	}
+
 	if d.startBeforeSync {
 		lndConfig.InitialHeadersSyncDelta = time.Hour * 2
 	}
