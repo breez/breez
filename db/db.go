@@ -52,9 +52,6 @@ const (
 	//lnurl-pay
 	lnurlPayBucket = "lnurl-pay-bucket"
 
-	//Tor
-	torBucket = "tor"
-
 	lnurlPayMetadataMigrationBucket = "lnurl-pay-metadata-migration-bucket"
 
 	//Tor
