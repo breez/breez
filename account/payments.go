@@ -258,7 +258,7 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 
 	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
-		TimeoutSeconds: 60,
+		TimeoutSeconds: timeoutSeconds,
 		FeeLimitSat:    feeLimit,
 		MaxParts:       maxParts,
 		Amt:            amountSatoshi,

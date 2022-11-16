@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/breez/breez v0.0.0-20191222101539-d9f37e24beee
 	github.com/deadsy/go-cli v0.0.0-20191117003156-1fbe7fd20d78
-	github.com/golang/protobuf v1.3.1
+	github.com/golang/protobuf v1.5.2
 )
 
 replace (

@@ -79,7 +79,7 @@ func prepareBackupData() (paths []string, nodeID string, err error) {
 
 func createTestManager(mp *MockTester) (manager *Manager, err error) {
 	backupDelay = time.Duration(0)
-	RegisterProvider("mock", func(authServie AuthService, authData string, logger btclog.Logger) (Provider, error) { return mp, nil })
+	RegisterProvider("mock", func(providerFactoryInfo ProviderFactoryInfo) (Provider, error) { return mp, nil })
 
 	ntfnChan := make(chan data.NotificationEvent, 100)
 	dir := os.TempDir()

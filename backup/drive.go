@@ -209,6 +209,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 
 		// List all filed under the backup folder
 		r, err := p.driveService.Files.List().Spaces("appDataFolder").Q(fmt.Sprintf("'%v' in parents", currentFolderID)).Do()
+
 		if err != nil {
 			errorChan <- err
 			return
