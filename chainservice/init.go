@@ -3,6 +3,7 @@ package chainservice
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/breez/breez/db"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/refcount"
+	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btclog"
@@ -30,6 +32,7 @@ var (
 	service           *neutrino.ChainService
 	walletDB          walletdb.DB
 	logger            btclog.Logger
+	TorConfig         *tor.TorConfig
 )
 
 // Get returned a reusable ChainService
@@ -70,12 +73,59 @@ func TestPeer(peer string) error {
 		return err
 	}
 
-	neutrinoConfig := neutrino.Config{
-		DataDir:      neutrinoDataDir,
-		Database:     db,
-		ChainParams:  chaincfg.MainNetParams,
-		ConnectPeers: []string{peer},
+	var neutrinoConfig neutrino.Config
+
+	// checking we are trying to connect to an onion address
+	splitAddr := strings.Split(peer, ":")
+	if strings.HasSuffix(splitAddr[0], ".onion") {
+
+		// We have to check if tor is active before attemting to connect
+		if TorConfig != nil {
+			logger.Infof("Tor socks:%v", TorConfig.Socks)
+			logger.Infof("Setting up proxy with torconf:%v", TorConfig)
+
+			proxy := TorConfig.NewProxy()
+			logger.Debugf("Setting up proxy: %v", proxy)
+
+			neutrinoConfig = neutrino.Config{
+				DataDir:      neutrinoDataDir,
+				Database:     db,
+				ChainParams:  chaincfg.MainNetParams,
+				ConnectPeers: []string{peer},
+				Dialer: func(addr net.Addr) (net.Conn, error) {
+					return proxy.Dial("onion", addr.String(), time.Second*120)
+				},
+				NameResolver: func(host string) ([]net.IP, error) {
+					addrs, err := proxy.LookupHost(host)
+					if err != nil {
+						return nil, err
+					}
+					ips := make([]net.IP, 0, len(addrs))
+					for _, strIP := range addrs {
+						ip := net.ParseIP(strIP)
+						if ip == nil {
+							continue
+						}
+						ips = append(ips, ip)
+					}
+					return ips, nil
+				},
+			}
+		}
+
+	} else {
+		logger.Info("Tor conf is nil")
+		neutrinoConfig = neutrino.Config{
+			DataDir:      neutrinoDataDir,
+			Database:     db,
+			ChainParams:  chaincfg.MainNetParams,
+			ConnectPeers: []string{peer},
+		}
+		logger.Debugf("neutrino conf %v", neutrinoConfig)
 	}
+
+	logger.Debugf("launcing neutrino with the following config:%v", neutrinoConfig)
+
 	chainService, err := neutrino.NewChainService(neutrinoConfig)
 	if err != nil {
 		logger.Errorf("Error in neutrino.NewChainService: %v", err)
@@ -121,7 +171,21 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		return nil, nil, err
 	}
 
-	service, walletDB, err = newNeutrino(workingDir, config, peers)
+	var p2pPeers []string
+	for _, p := range peers {
+		// first we need to check if tor is active in order to not
+		// add peers that are onion addresses.
+		if TorConfig == nil {
+			splitAddr := strings.Split(p, ":")
+			if !strings.HasSuffix(splitAddr[0], ".onion") {
+				p2pPeers = append(p2pPeers, p)
+			}
+		} else {
+			p2pPeers = append(p2pPeers, p)
+		}
+	}
+
+	service, walletDB, err = newNeutrino(workingDir, config, p2pPeers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
 		return nil, stopService, err
@@ -144,6 +208,16 @@ func stopService() error {
 		}
 	}
 	return nil
+}
+
+func SetTor(t *tor.TorConfig, active bool) bool {
+	if active && t != nil {
+		logger.Debugf("Setting tor to %v in chainserive, with config:%v", active, t)
+		TorConfig = t
+		return true
+	}
+	TorConfig = nil
+	return false
 }
 
 func ChainParams(network string) (*chaincfg.Params, error) {
@@ -208,11 +282,40 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 	if err != nil {
 		return nil, nil, err
 	}
-	neutrinoConfig := neutrino.Config{
-		DataDir:      neutrinoDataDir,
-		Database:     db,
-		ChainParams:  *params,
-		ConnectPeers: peers,
+	var neutrinoConfig neutrino.Config
+	if TorConfig != nil {
+		proxy := TorConfig.NewProxy()
+		neutrinoConfig = neutrino.Config{
+			DataDir:      neutrinoDataDir,
+			Database:     db,
+			ChainParams:  *params,
+			ConnectPeers: peers,
+			Dialer: func(addr net.Addr) (net.Conn, error) {
+				return proxy.Dial("onion", addr.String(), time.Second*120)
+			},
+			NameResolver: func(host string) ([]net.IP, error) {
+				addrs, err := proxy.LookupHost(host)
+				if err != nil {
+					return nil, err
+				}
+				ips := make([]net.IP, 0, len(addrs))
+				for _, strIP := range addrs {
+					ip := net.ParseIP(strIP)
+					if ip == nil {
+						continue
+					}
+					ips = append(ips, ip)
+				}
+				return ips, nil
+			},
+		}
+	} else {
+		neutrinoConfig = neutrino.Config{
+			DataDir:      neutrinoDataDir,
+			Database:     db,
+			ChainParams:  *params,
+			ConnectPeers: peers,
+		}
 	}
 	logger.Infof("creating new neutrino service.")
 	chainService, err := neutrino.NewChainService(neutrinoConfig)

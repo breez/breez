@@ -692,6 +692,8 @@ func SetPeers(request []byte) error {
 }
 
 func TestPeer(peer string) error {
+
+	Log(fmt.Sprintf("api.go: TestPeer: %+v", peer), "INFO")
 	return getBreezApp().TestPeer(peer)
 }
 

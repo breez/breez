@@ -21,6 +21,7 @@ require (
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
 	github.com/lightningnetwork/lnd v0.15.0-beta
 	github.com/lightningnetwork/lnd/kvdb v1.3.1
+	github.com/lightningnetwork/lnd/tor v1.0.1
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564
 	github.com/urfave/cli v1.22.9
@@ -104,7 +105,6 @@ require (
 	github.com/lightningnetwork/lnd/queue v1.1.0 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.1.0 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.0.3 // indirect
-	github.com/lightningnetwork/lnd/tor v1.0.1 // indirect
 	github.com/ltcsuite/ltcd v0.0.0-20190101042124-f37f8bf35796 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mholt/archiver/v3 v3.5.0 // indirect
@@ -180,6 +180,6 @@ replace (
 	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.15.2-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.1-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
-	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20220717090757-64cd9ef85ee7
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20221026101028-03447390d50f
 	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.15.3-beta.rc1.0.20221018111045-d2ae1275d721
 )
