@@ -145,18 +145,15 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	}
 
 	var restPeers []string
-	var p2pPeers []string
 	for _, p := range peers {
-		if strings.HasPrefix(p, "http") {
-			// since we found a rest peer we'll add it to the config
-			// and remove it from the peerslist in order to avoid duplication.
-			restPeers = append(restPeers, p)
-		} else {
-			p2pPeers = append(p2pPeers, p)
+		for _, dp := range config.JobCfg.ConnectedPeers {
+			if p == dp {
+				restPeers = append(restPeers, "https://"+p)
+			}
 		}
 	}
 
-	service, walletDB, err = newNeutrino(workingDir, config, p2pPeers, restPeers)
+	service, walletDB, err = newNeutrino(workingDir, config, peers, restPeers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
 		return nil, stopService, err
@@ -267,10 +264,10 @@ func GetNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 		return "", nil, err
 	}
 
-	logger.Infof("creating neutrino db at %v", workingDir)
+	fmt.Printf("creating neutrino db at %v", workingDir)
 	db, err := walletdb.Create("bdb", neutrinoDB, false, time.Second*60)
 	if err != nil {
-		logger.Infof("error creating neutrino db at %v, failed with %w", neutrinoDB, err)
+		fmt.Printf("error creating neutrino db at %v, failed with %v", neutrinoDB, err)
 		return "", nil, err
 	}
 	return neutrinoDataDir, db, err
