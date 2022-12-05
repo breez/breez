@@ -346,7 +346,7 @@ func TestBackupAuth(provider, authData string) error {
 		return errors.New("Failed to set backup provider.")
 	}
 	p := manager.GetProvider()
-
+	Log(fmt.Sprintf("manager provider is: %v", p), "INFO")
 	return p.TestAuth()
 }
 

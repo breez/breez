@@ -256,6 +256,7 @@ func (n *RemoteServerProvider) TestAuth() (err error) {
 		return err
 	}
 
+	n.log.Infof("Got remoteserverprovider client: %v", client)
 	_, err = client.ListDir("/")
 	return err
 }

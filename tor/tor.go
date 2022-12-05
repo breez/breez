@@ -26,11 +26,11 @@ func (t *TorConfig) NewHttpClient() (*http.Client, error) {
 	tr := &http.Transport{
 		Proxy: http.ProxyURL(proxyUrl),
 		Dial: (&net.Dialer{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		}).Dial,
 	}
 
-	client := &http.Client{Transport: tr, Timeout: time.Second * 30}
+	client := &http.Client{Transport: tr, Timeout: time.Second * 240}
 	return client, nil
 }
 
