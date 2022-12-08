@@ -3,7 +3,6 @@ package chainservice
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -69,26 +68,6 @@ func TestPeer(peer string) error {
 	if err != nil {
 		logger.Errorf("Error in walletdb.Create: %v", err)
 		return err
-	}
-
-	// check if peer is a restpeer or regular peer before creating the neutrino
-	// and whenever it returs a valid filter.
-	if strings.HasPrefix(peer, "http") {
-		client := &http.Client{Timeout: 10 * time.Second}
-		hash := "0000000000000000000687bca986194dc2c1f949318629b44bb54ec0a94d8244"
-		res, err := client.Get(fmt.Sprintf("%v/rest/blockfilter/basic/%v.bin", peer, hash))
-		if err != nil {
-			logger.Errorf("Error getting CFilter from rest peer: %w", err)
-			return err
-		}
-		defer res.Body.Close()
-		if res.StatusCode == http.StatusOK {
-			logger.Infof("Successfully received CFilter adding %v to peers", peer)
-			return nil
-		} else {
-			logger.Error("error getting CFilter from rest peer")
-			return err
-		}
 	}
 
 	neutrinoConfig := neutrino.Config{
@@ -229,7 +208,6 @@ in order to fetch chain data such as headers, filters, etc...
 */
 func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeers []string) (*neutrino.ChainService, walletdb.DB, error) {
 	params, err := ChainParams(cfg.Network)
-
 	if err != nil {
 		return nil, nil, err
 	}
