@@ -106,8 +106,8 @@ github.com/breez/lnd v0.15.3-beta.rc1.0.20221018111045-d2ae1275d721 h1:W6+x3eYeO
 github.com/breez/lnd v0.15.3-beta.rc1.0.20221018111045-d2ae1275d721/go.mod h1:+GuNSibVEaRLwklnYj5Nh/7VOChAwz4edUFzSuAooK4=
 github.com/breez/lspd v0.0.0-20220717150558-89212aa5ae59 h1:I7zElfeoxGi8iQLNQrE7D5XSBSLpjyGAzQR6tdrLcwM=
 github.com/breez/lspd v0.0.0-20220717150558-89212aa5ae59/go.mod h1:M0spIk2uz0nMW02VRLM+j0jkIGzsT88ev3SeGqEKE1w=
-github.com/breez/neutrino v0.14.3-0.20221026101028-03447390d50f h1:gavziP3jOYKS5pL+rXGJSbmqvY8kydEeNkhLDHGfyJo=
-github.com/breez/neutrino v0.14.3-0.20221026101028-03447390d50f/go.mod h1:OICUeTCn+4Tu27YRJIpWvvqySxx4oH4vgdP33Sw9RDc=
+github.com/breez/neutrino v0.14.3-0.20221209095721-623b47de44e2 h1:Ars2NRBWq7rkQc6UgqYnBRxM9ZTouIipD0Q62BpgQ1w=
+github.com/breez/neutrino v0.14.3-0.20221209095721-623b47de44e2/go.mod h1:vnBjb4cBxiPajpWpkycssByp5zyGeJBVaFTfHilAOow=
 github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
 github.com/btcsuite/btcd v0.22.0-beta.0.20220111032746-97732e52810c/go.mod h1:tjmYdS6MLJ5/s0Fj4DbLgSbDHbEqLJrtnHecBFkdz5M=
@@ -116,8 +116,9 @@ github.com/btcsuite/btcd v0.22.0-beta.0.20220207191057-4dc4ff7963b4/go.mod h1:7a
 github.com/btcsuite/btcd v0.22.0-beta.0.20220316175102-8d5c75c28923/go.mod h1:taIcYprAW2g6Z9S0gGUxyR+zDwimyDMK5ePOX+iJ2ds=
 github.com/btcsuite/btcd v0.23.0/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd v0.23.1/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
-github.com/btcsuite/btcd v0.23.2 h1:/YOgUp25sdCnP5ho6Hl3s0E438zlX+Kak7E6TgBgoT0=
 github.com/btcsuite/btcd v0.23.2/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
+github.com/btcsuite/btcd v0.23.3 h1:4KH/JKy9WiCd+iUS9Mu0Zp7Dnj17TGdKrg9xc/FGj24=
+github.com/btcsuite/btcd v0.23.3/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd/btcec/v2 v2.1.0/go.mod h1:2VzYrv4Gm4apmbVVsSq5bqf1Ec8v56E48Vt0Y/umPgA=
 github.com/btcsuite/btcd/btcec/v2 v2.1.1/go.mod h1:ctjw4H1kknNJmRN4iP1R7bTQ+v3GJkZBd6mui8ZsAZE=
 github.com/btcsuite/btcd/btcec/v2 v2.1.3/go.mod h1:ctjw4H1kknNJmRN4iP1R7bTQ+v3GJkZBd6mui8ZsAZE=

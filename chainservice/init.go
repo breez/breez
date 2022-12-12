@@ -136,12 +136,14 @@ func TestPeer(peer string) error {
 		logger.Errorf("Error in chainService.Start: %v", err)
 		return err
 	}
+
 	time.Sleep(10 * time.Second)
 	c := chainService.ConnectedCount()
 	if c < 1 {
 		logger.Errorf("chainService.ConnectedCount() returned 0")
-		return fmt.Errorf("Cannot connect to peer")
+		return fmt.Errorf("cannot connect to peer")
 	}
+
 	return nil
 }
 
@@ -171,21 +173,16 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		return nil, nil, err
 	}
 
-	var p2pPeers []string
+	var restPeers []string
 	for _, p := range peers {
-		// first we need to check if tor is active in order to not
-		// add peers that are onion addresses.
-		if TorConfig == nil {
-			splitAddr := strings.Split(p, ":")
-			if !strings.HasSuffix(splitAddr[0], ".onion") {
-				p2pPeers = append(p2pPeers, p)
+		for _, dp := range config.JobCfg.ConnectedPeers {
+			if p == dp {
+				restPeers = append(restPeers, "https://"+p)
 			}
-		} else {
-			p2pPeers = append(p2pPeers, p)
 		}
 	}
 
-	service, walletDB, err = newNeutrino(workingDir, config, p2pPeers)
+	service, walletDB, err = newNeutrino(workingDir, config, peers, restPeers)
 	if err != nil {
 		logger.Errorf("failed to create chain service %v", err)
 		return nil, stopService, err
@@ -269,9 +266,8 @@ func parseAssertFilterHeader(headerStr string) (*headerfs.FilterHeader, error) {
 newNeutrino creates a chain service that the sync job uses
 in order to fetch chain data such as headers, filters, etc...
 */
-func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutrino.ChainService, walletdb.DB, error) {
+func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeers []string) (*neutrino.ChainService, walletdb.DB, error) {
 	params, err := ChainParams(cfg.Network)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -280,6 +276,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string) (*neutri
 
 	neutrinoDataDir, db, err := GetNeutrinoDB(workingDir)
 	if err != nil {
+		logger.Infof("creating new neutrino service failed.")
 		return nil, nil, err
 	}
 	var neutrinoConfig neutrino.Config
@@ -333,8 +330,12 @@ func GetNeutrinoDB(workingDir string) (string, walletdb.DB, error) {
 		return "", nil, err
 	}
 
+	fmt.Printf("creating neutrino db at %v", workingDir)
 	db, err := walletdb.Create("bdb", neutrinoDB, false, time.Second*60)
-	fmt.Printf("neutrinoDB err = %v", err)
+	if err != nil {
+		fmt.Printf("error creating neutrino db at %v, failed with %v", neutrinoDB, err)
+		return "", nil, err
+	}
 	return neutrinoDataDir, db, err
 }
 
