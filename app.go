@@ -50,10 +50,6 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		if torConfig == nil {
 			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
 			a.log.Errorf("app.go: starting breez without tor: %v", err)
-			/* TODO(nochiel) Notify the user of an error. Give them options
-			- Try again.
-			- Disable Tor.
-			*/
 			a.breezDB.SetTorActive(false)
 			return err
 		}
