@@ -563,7 +563,7 @@ func (b *Manager) SetTorConfig(torConfig *data.TorConfig) {
 }
 
 func (b *Manager) SetBackupProvider(providerName, authData string) error {
-	b.log.Infof("setting backup provider %v, authData: %v", providerName, authData)
+	b.log.Infof("setting backup provider %v", providerName)
 	provider, err := createBackupProvider(providerName, ProviderFactoryInfo{b.authService, authData, b.log, b.TorConfig})
 	if err != nil {
 		return err
