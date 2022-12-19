@@ -107,12 +107,12 @@ func (d *Daemon) IsReadyForPayment() bool {
 	if lnclient == nil {
 		return false
 	}
-	anyChannelsActive, err := d.anyChannelsActive(lnclient)
+	allChannelsActive, err := d.allChannelsActive(lnclient)
 	if err != nil {
-		d.log.Errorf("Error in anyChannelsActive(): %v", err)
+		d.log.Errorf("Error in allChannelsActive(): %v", err)
 		return false
 	}
-	return anyChannelsActive
+	return allChannelsActive
 }
 
 // NodePubkey returns the identity public key of the lightning node.
@@ -385,17 +385,16 @@ func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
 	}
 }
 
-func (d *Daemon) anyChannelsActive(client lnrpc.LightningClient) (bool, error) {
+func (d *Daemon) allChannelsActive(client lnrpc.LightningClient) (bool, error) {
 	channels, err := client.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
 	if err != nil {
-		d.log.Errorf("Error in anyChannelsActive() > ListChannels(): %v", err)
+		d.log.Errorf("Error in allChannelsActive() > ListChannels(): %v", err)
 		return false, err
 	}
-	// we have to check if we have any active channels
 	for _, c := range channels.Channels {
-		if c.Active {
-			return true, nil
+		if !c.Active {
+			return false, nil
 		}
 	}
-	return false, nil
+	return true, nil
 }
