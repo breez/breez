@@ -179,6 +179,15 @@ func SetBackupEncryptionKey(key []byte, encryptionType string) error {
 	return getBreezApp().BackupManager.SetEncryptionKey(encKey, encryptionType)
 }
 
+func SetBackupTorConfig(torConfig []byte) error {
+	_torConfig := &data.TorConfig{}
+	if err := proto.Unmarshal(torConfig, _torConfig); err != nil {
+		return err
+	}
+	getBreezApp().BackupManager.SetTorConfig(_torConfig)
+	return nil
+}
+
 /*
 Start the lightning client
 */
@@ -337,7 +346,7 @@ func TestBackupAuth(provider, authData string) error {
 		return errors.New("Failed to set backup provider.")
 	}
 	p := manager.GetProvider()
-
+	Log(fmt.Sprintf("manager provider is: %v", p), "INFO")
 	return p.TestAuth()
 }
 
@@ -683,6 +692,8 @@ func SetPeers(request []byte) error {
 }
 
 func TestPeer(peer string) error {
+
+	Log(fmt.Sprintf("api.go: TestPeer: %+v", peer), "INFO")
 	return getBreezApp().TestPeer(peer)
 }
 

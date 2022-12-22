@@ -165,7 +165,6 @@ func (c *WebdavClient) sendWebDavRequest(
 	} else {
 		client = &http.Client{}
 	}
-	// joined := strings.Join([]string{c.Url.String(), relativeURL}, "/")
 	joined := joinPath(c.Url.String(), path)
 	req, err := http.NewRequest(request, joined, bytes.NewReader(data))
 	if err != nil {

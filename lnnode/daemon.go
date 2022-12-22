@@ -274,7 +274,7 @@ func (d *Daemon) startDaemon() error {
 			readyChan:    readyChan,
 			chanDB:       chanDB}
 
-        lndConfig, err := d.createConfig(deps.workingDir, d.TorConfig, interceptor)
+		lndConfig, err := d.createConfig(deps.workingDir, d.TorConfig, interceptor)
 		if err != nil {
 			d.log.Errorf("failed to create config %v", err)
 		}

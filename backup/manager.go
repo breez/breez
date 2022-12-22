@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/tor"
 )
 
 const backupFileName = "backup.zip"
@@ -547,8 +548,22 @@ func (b *Manager) getBackupIdentifier() (string, error) {
 	return "backup-id-" + hex.EncodeToString(id), nil
 }
 
+func (b *Manager) SetTorConfig(torConfig *data.TorConfig) {
+	if torConfig != nil {
+		config := &tor.TorConfig{
+			Socks:   torConfig.Socks,
+			Http:    torConfig.Http,
+			Control: torConfig.Control,
+		}
+		b.TorConfig = config
+		if b.provider != nil {
+			b.provider.SetTor(config)
+		}
+	}
+}
+
 func (b *Manager) SetBackupProvider(providerName, authData string) error {
-	b.log.Infof("setting backup provider %v, authData: %v", providerName, authData)
+	b.log.Infof("setting backup provider %v", providerName)
 	provider, err := createBackupProvider(providerName, ProviderFactoryInfo{b.authService, authData, b.log, b.TorConfig})
 	if err != nil {
 		return err

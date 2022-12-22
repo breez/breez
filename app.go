@@ -50,10 +50,6 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		if torConfig == nil {
 			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
 			a.log.Errorf("app.go: starting breez without tor: %v", err)
-			/* TODO(nochiel) Notify the user of an error. Give them options
-			- Try again.
-			- Disable Tor.
-			*/
 			a.breezDB.SetTorActive(false)
 			return err
 		}
@@ -74,6 +70,8 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		provider.SetTor(_torConfig)
 		a.BackupManager.SetProvider(provider)
 
+		chainservice.SetTor(_torConfig, true)
+
 		a.BackupManager.TorConfig = _torConfig
 		a.lnDaemon.TorConfig = _torConfig
 		a.AccountService.TorConfig = _torConfig
@@ -82,6 +80,8 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		a.log.Info("app.Start: starting without Tor.")
 
 		a.lnDaemon.TorConfig = nil
+
+		chainservice.SetTor(nil, false)
 
 		a.BackupManager.TorConfig = nil
 		provider := a.BackupManager.GetProvider()

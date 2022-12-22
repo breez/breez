@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/breez/breez/data"
+	lnTor "github.com/lightningnetwork/lnd/tor"
 )
 
 type TorConfig data.TorConfig
@@ -29,6 +30,17 @@ func (t *TorConfig) NewHttpClient() (*http.Client, error) {
 		}).Dial,
 	}
 
-	client := &http.Client{Transport: tr, Timeout: time.Second * 30}
+	client := &http.Client{Transport: tr, Timeout: time.Second * 60}
 	return client, nil
+}
+
+func (t *TorConfig) NewProxy() *lnTor.ProxyNet {
+	proxyAddress := fmt.Sprintf("127.0.0.1:%v", t.Socks)
+
+	return &lnTor.ProxyNet{
+		SOCKS:                       proxyAddress,
+		DNS:                         "",
+		StreamIsolation:             false,
+		SkipProxyForClearNetTargets: false,
+	}
 }

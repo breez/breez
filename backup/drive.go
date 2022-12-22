@@ -73,21 +73,21 @@ func (s *TokenSource) Token() (*oauth2.Token, error) {
 // GoogleDriveProvider is an implementation of backup.Provider interface.
 // It uses app data in google drive as a storage mechanism.
 // Backups are stored in the following manner:
-// 1. Nodes backup will be saved directly under "appDataFolder", which is the user
-//    data directory in google drive. Folders will be named by the convention:
-//    "snapshot-<node_id>".
-// 2. When a request for backup lands, this provider will do the following:
-//   2.1 Create a nested folder under the node folder.
-//   2.2 Save all the backup files under this created folder.
-//   2.3 Update the "activeBackupFolderProperty" metadata property of the node folder
-//       to be the newly created folder id.
-//   2.4 Delete stale backup folder that are not in use anymore for this node id.
-// 3. When a request for restore (download) lands, this provider will do the following:
-//   3.1 Identify the "active backup folder" by reading the metadata property of the node folder.
-//   3.2 Download the files
-//   3.3 Mark this backup as "restored by this instance" by assign the value "backupID" to the node
-//       metadata property "backupIDProperty". This value will be used to detect the problematic case
-//       where two nodes are running the same backup...
+//  1. Nodes backup will be saved directly under "appDataFolder", which is the user
+//     data directory in google drive. Folders will be named by the convention:
+//     "snapshot-<node_id>".
+//  2. When a request for backup lands, this provider will do the following:
+//     2.1 Create a nested folder under the node folder.
+//     2.2 Save all the backup files under this created folder.
+//     2.3 Update the "activeBackupFolderProperty" metadata property of the node folder
+//     to be the newly created folder id.
+//     2.4 Delete stale backup folder that are not in use anymore for this node id.
+//  3. When a request for restore (download) lands, this provider will do the following:
+//     3.1 Identify the "active backup folder" by reading the metadata property of the node folder.
+//     3.2 Download the files
+//     3.3 Mark this backup as "restored by this instance" by assign the value "backupID" to the node
+//     metadata property "backupIDProperty". This value will be used to detect the problematic case
+//     where two nodes are running the same backup...
 type GoogleDriveProvider struct {
 	driveService *drive.Service
 	log          btclog.Logger
@@ -148,10 +148,10 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 
 // UploadBackupFiles uploads the backup files related to a specific node to google drive.
 // It does the following:
-// 1. Creates a fresh new folder under the node folder.
-// 2. Uploads all files to the newly created folder.
-// 3. update the node folder metadata property "activeBackupFolderProperty" to contain the
-//    id of the new folder.
+//  1. Creates a fresh new folder under the node folder.
+//  2. Uploads all files to the newly created folder.
+//  3. update the node folder metadata property "activeBackupFolderProperty" to contain the
+//     id of the new folder.
 func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error) {
 	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
 
@@ -232,7 +232,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 				errorChan <- &driveServiceError{err}
 				return
 			}
-			p.log.Infof("uploadBackupFiles  succeeded to update file at folder:%v", currentFolderID)
+			p.log.Infof("uploadBackupFiles succeeded to update file at folder:%v", currentFolderID)
 		} else {
 			// At this case we need to upload a new file
 			p.log.Infof("Uploading file %v size: %v", fileName, info.Size())
@@ -245,7 +245,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 				errorChan <- &driveServiceError{err}
 				return
 			}
-			p.log.Infof("uploadBackupFiles  succeeded to upload file at folder:%v", currentFolderID)
+			p.log.Infof("uploadBackupFiles succeeded to upload file at folder:%v", currentFolderID)
 		}
 
 		checksum, err := fileChecksum(filePath)
