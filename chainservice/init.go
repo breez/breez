@@ -177,6 +177,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	for _, p := range peers {
 		for _, dp := range config.JobCfg.ConnectedPeers {
 			if p == dp {
+				logger.Infof("adding %v to restpeers", p, restPeers)
 				restPeers = append(restPeers, "https://"+p)
 			}
 		}
@@ -287,6 +288,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeer
 			Database:     db,
 			ChainParams:  *params,
 			ConnectPeers: peers,
+			RestPeers:    restPeers,
 			Dialer: func(addr net.Addr) (net.Conn, error) {
 				return proxy.Dial("onion", addr.String(), time.Second*120)
 			},
@@ -312,6 +314,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeer
 			Database:     db,
 			ChainParams:  *params,
 			ConnectPeers: peers,
+			RestPeers:    restPeers,
 		}
 	}
 	logger.Infof("creating new neutrino service.")
