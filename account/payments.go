@@ -410,14 +410,6 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		return "", err
 	}
 
-	lspReady, err := a.lspReadyPayment()
-	if err != nil {
-		a.log.Errorf("LSP is not ready for payment: %v", err)
-	}
-	if !lspReady {
-		return "", errors.New("LSP is not ready for payment")
-	}
-
 	if err := a.checkAmount(payReq, sendRequest); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err

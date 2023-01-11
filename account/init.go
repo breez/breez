@@ -41,10 +41,9 @@ type Service struct {
 	lnurlWithdrawing string
 	lnurlPayMetadata LnurlPayMetadata
 
-	activeParams    *chaincfg.Params
-	lspReadyPayment func() (bool, error)
-	notification    *notificationRequest
-	quitChan        chan struct{}
+	activeParams *chaincfg.Params
+	notification *notificationRequest
+	quitChan     chan struct{}
 
 	TorConfig *tor.TorConfig
 }
