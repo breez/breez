@@ -37,13 +37,12 @@ type Service struct {
 	onServiceEvent     func(data.NotificationEvent)
 	requestBackup      func()
 
-	lnurlWithdrawing   string
+	lnurlWithdrawing string
 	lnurlPayMetadata LnurlPayMetadata
 
-	activeParams     *chaincfg.Params
-	lspReadyPayment    func() (bool, error)
+	activeParams *chaincfg.Params
 	notification *notificationRequest
-	quitChan chan struct{}
+	quitChan     chan struct{}
 }
 
 type notificationRequest struct {
