@@ -58,7 +58,6 @@ func NewService(
 	breezAPI services.API,
 	daemonAPI lnnode.API,
 	requestBackup func(),
-	lspReadyPayment func() (bool, error),
 	onServiceEvent func(data.NotificationEvent)) (*Service, error) {
 
 	logger, err := breezlog.GetLogger(cfg.WorkingDir, "ACCNT")
@@ -79,15 +78,14 @@ func NewService(
 	}
 
 	return &Service{
-		cfg:             cfg,
-		log:             logger,
-		daemonAPI:       daemonAPI,
-		breezDB:         breezDB,
-		breezAPI:        breezAPI,
-		onServiceEvent:  onServiceEvent,
-		quitChan:        make(chan struct{}),
-		activeParams:    activeParams,
-		requestBackup:   requestBackup,
-		lspReadyPayment: lspReadyPayment,
+		cfg:            cfg,
+		log:            logger,
+		daemonAPI:      daemonAPI,
+		breezDB:        breezDB,
+		breezAPI:       breezAPI,
+		onServiceEvent: onServiceEvent,
+		quitChan:       make(chan struct{}),
+		activeParams:   activeParams,
+		requestBackup:  requestBackup,
 	}, nil
 }

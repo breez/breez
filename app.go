@@ -361,21 +361,6 @@ func (a *App) PopulateChannelPolicy() {
 	}
 }
 
-func (a *App) SyncLSPChannels(request *data.SyncLSPChannelsRequest) (*data.SyncLSPChannelsResponse, error) {
-	lsp := request.LspInfo
-	mismatch, err := a.lspChanStateSyncer.syncChannels(lsp.Pubkey, lsp.LspPubkey, lsp.Id)
-	if err != nil {
-		return nil, err
-	}
-	return &data.SyncLSPChannelsResponse{HasMismatch: mismatch}, nil
-}
-
-func (a *App) UnconfirmedChannelsStatus(request *data.UnconfirmedChannelsStatus) (
-	*data.UnconfirmedChannelsStatus, error) {
-
-	return a.lspChanStateSyncer.unconfirmedChannelsStatus(request)
-}
-
 func (a *App) ResetClosedChannelChainInfo(r *data.ResetClosedChannelChainInfoRequest) (
 	*data.ResetClosedChannelChainInfoReply, error) {
 
