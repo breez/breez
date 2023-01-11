@@ -154,7 +154,6 @@ func NewApp(workingDir string, applicationServices AppServices, startBeforeSync 
 		app.ServicesClient,
 		app.lnDaemon,
 		app.RequestBackup,
-		app.lspChanStateSyncer.unconfirmedChannelsInSync,
 		app.onServiceEvent,
 	)
 	app.log.Infof("New AccountService")

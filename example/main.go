@@ -29,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = bindings.Start()
+	err = bindings.Start(nil)
 	if err != nil {
 		fmt.Println("Error in binding.Start", err)
 		os.Exit(1)
