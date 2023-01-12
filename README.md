@@ -19,9 +19,11 @@ Or in case you want to use a direct ndk path
 ```
 export ANDROID_NDK_HOME=<your android ndk directory>
 ```
-If you are using NDK 24+, install [NDK r19](https://github.com/android/ndk/wiki/Unsupported-Downloads#r19c) and point ANDROID_NDK_HOME to it's folder due to [gomobile incompatibility](https://github.com/golang/go/issues/35030).
+If you are using NDK 24+, install [NDK r19](https://github.com/android/ndk/wiki/Unsupported-Downloads#r19c) and point ANDROID_NDK_HOME to it's folder due to [gomobile incompatibility](https://github.com/golang/go/issues/35030). Alternatively, you can add [-androidapi 19](https://github.com/golang/go/issues/52470#issuecomment-1203998993) to gomobile command in build script.
 
-Then you ready to run the build:
+If the library will be run on an emulator target, add `-ldflags=-extldflags=-Wl,-soname,libgojni.so` to gomobile command in build script.
+
+Then you are ready to run the build:
 ```
 ./build.sh
 ```
