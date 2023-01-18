@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/breez/breez/bootstrap"
@@ -46,7 +47,8 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 	}
 
 	useTor, _ := a.breezDB.GetTorActive()
-	if useTor {
+	a.log.Infof("OS is %v", runtime.GOOS)
+	if runtime.GOOS == "android" && useTor {
 		if torConfig == nil {
 			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
 			a.log.Errorf("app.go: starting breez without tor: %v", err)
