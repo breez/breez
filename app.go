@@ -57,7 +57,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		}
 
 		chainservice.SetTor(_torConfig, true)
-		a.BackupManager.TorConfig = _torConfig
+		a.BackupManager.SetTorConfig(_torConfig)
 		a.lnDaemon.TorConfig = _torConfig
 		a.AccountService.TorConfig = _torConfig
 
