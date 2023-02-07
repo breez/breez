@@ -48,14 +48,7 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 
 	useTor, _ := a.breezDB.GetTorActive()
 	a.log.Infof("OS is %v", runtime.GOOS)
-	if runtime.GOOS == "android" && useTor {
-		if torConfig == nil {
-			err := errors.New("app.go: start: tor is enabled but a configuration was not found.")
-			a.log.Errorf("app.go: starting breez without tor: %v", err)
-			a.breezDB.SetTorActive(false)
-			return err
-		}
-
+	if runtime.GOOS == "android" && useTor && torConfig != nil {
 		a.log.Infof("app.Start: useTor = %v, torConfig = %+v.", useTor, *torConfig)
 		_torConfig := &tor.TorConfig{
 			Socks:   torConfig.Socks,
@@ -63,34 +56,11 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			Control: torConfig.Control,
 		}
 
-		/* The current backup provider has a pointer to a torConfig
-		but if torConfig was nil, then setting a.BackupManager.TorConfig
-		will only affect newly created backup providers. Therefore, we
-		reset the current backup provider's torConfig pointer here.
-		*/
-		provider := a.BackupManager.GetProvider()
-		provider.SetTor(_torConfig)
-		a.BackupManager.SetProvider(provider)
-
 		chainservice.SetTor(_torConfig, true)
-
-		a.BackupManager.TorConfig = _torConfig
+		a.BackupManager.SetTorConfig(_torConfig)
 		a.lnDaemon.TorConfig = _torConfig
 		a.AccountService.TorConfig = _torConfig
 
-	} else {
-		a.log.Info("app.Start: starting without Tor.")
-
-		a.lnDaemon.TorConfig = nil
-
-		chainservice.SetTor(nil, false)
-
-		a.BackupManager.TorConfig = nil
-		provider := a.BackupManager.GetProvider()
-		provider.SetTor(nil)
-		a.BackupManager.SetProvider(provider)
-
-		a.AccountService.TorConfig = nil
 	}
 
 	a.log.Info("app.start: starting services.")

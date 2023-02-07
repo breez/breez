@@ -64,7 +64,7 @@ type Manager struct {
 	mu                sync.Mutex
 	wg                sync.WaitGroup
 
-	TorConfig *tor.TorConfig
+	torConfig *tor.TorConfig
 }
 
 // NewManager creates a new Manager
