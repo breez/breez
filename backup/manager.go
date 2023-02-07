@@ -568,6 +568,7 @@ func (b *Manager) SetBackupProvider(providerName, authData string) error {
 	if err != nil {
 		return err
 	}
+	provider.SetTor(b.TorConfig)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.provider = provider
