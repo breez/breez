@@ -947,6 +947,7 @@ func (a *Service) watchPayments() {
 				return
 			}
 			if invoice.Settled {
+				// TODO: Wait for pending htlcs here.
 				a.log.Infof("watchPayments adding a received payment")
 				if err = a.onNewReceivedPayment(invoice); err != nil {
 					a.log.Criticalf("Failed to update received payment : %v", err)

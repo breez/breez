@@ -11,6 +11,7 @@ import (
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	"github.com/lightningnetwork/lnd/chainntnfs"
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lnwire"
 )
@@ -79,7 +80,7 @@ func NewChannelsWatcher(
 		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
 
 		// query spend hint for channel
-		hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+		hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
 			QueryDisable: false,
 		}, chandb)
 		if err != nil {
