@@ -31,7 +31,7 @@ var (
 )
 
 func getURL(workingDir string, db *channeldb.DB, tx walletdb.ReadTx) (string, error) {
-	meta, err := db.FetchMeta(tx)
+	meta, err := db.FetchMeta()
 	if err != nil {
 		logger.Errorf("chanDB.FetchMeta(): %v", err)
 		return "", fmt.Errorf("chanDB.FetchMeta(): %w", err)

@@ -67,7 +67,7 @@ func (a *lspChanStateSync) resetClosedChannelChainInfo(chanPoint string, blockHe
 	defer cleanup()
 
 	// query spend hint for channel
-	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+	hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
 		QueryDisable: false,
 	}, chandb)
 
@@ -96,7 +96,7 @@ func (a *lspChanStateSync) checkLSPClosedChannelMismatch(lspNodePubkey string, l
 	defer cleanup()
 
 	// query spend hint for channel
-	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+	hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
 		QueryDisable: false,
 	}, chandb)
 
@@ -305,7 +305,7 @@ func (a *lspChanStateSync) collectChannelsStatus() (
 	}, func() {})
 
 	// query spend hint for channel
-	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+	hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
 		QueryDisable: false,
 	}, chandb)
 
@@ -425,7 +425,7 @@ func (a *lspChanStateSync) commitHeightHint(lspPubkey string, mismatched []db.Mi
 	defer cleanup()
 
 	// query spend hint for channel
-	hintCache, err := chainntnfs.NewHeightHintCache(chainntnfs.CacheConfig{
+	hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
 		QueryDisable: false,
 	}, chandb)
 
