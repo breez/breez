@@ -3,8 +3,8 @@ In order to build breez you will need to install [gomobile](https://github.com/g
 ## Prepare your environment
 ```
 git clone https://github.com/breez/breez.git
-go get -d golang.org/x/mobile/cmd/gomobile
-go get -d golang.org/x/mobile/cmd/gobind
+go install golang.org/x/mobile/cmd/gomobile
+go install golang.org/x/mobile/cmd/gobind
 export PATH=$PATH:$GOPATH/bin
 gomobile init
 ```
