@@ -119,6 +119,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 
 	logger.Infof("creating shared channeldb service.")
 	cfg := lnd.DefaultConfig()
+	cfg.StoreFinalHtlcResolutions = true
 	dbOptions := []channeldb.OptionModifier{
 		channeldb.OptionSetRejectCacheSize(cfg.Caches.RejectCacheSize),
 		channeldb.OptionSetChannelCacheSize(cfg.Caches.ChannelCacheSize),
@@ -128,6 +129,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		channeldb.OptionKeepFailedPaymentAttempts(cfg.KeepFailedPaymentAttempts),
 		channeldb.OptionPruneRevocationLog(cfg.DB.PruneRevocation),
 		channeldb.OptionSetPreAllocCacheNumNodes(channeldb.DefaultPreAllocCacheNumNodes),
+		channeldb.OptionStoreFinalHtlcResolutions(cfg.StoreFinalHtlcResolutions),
 	}
 
 	opts := channeldb.DefaultOptions()
