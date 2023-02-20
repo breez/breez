@@ -323,13 +323,17 @@ func AvailableSnapshots() (string, error) {
 	Log("Calling Availible Snapshots", "INFO")
 	snapshots, err := getBreezApp().BackupManager.AvailableSnapshots()
 	if err != nil {
-		Log("error in calling AvailableSnapshots: "+err.Error(), "INFO")
+		Log("error in calling AvailableSnapshots: %v"+err.Error(), "INFO")
 		return "", err
+	}
+	if len(snapshots) < 1 {
+		return "", errors.New("empty")
 	}
 	bytes, err := json.Marshal(snapshots)
 	if err != nil {
 		return "", err
 	}
+
 	return string(bytes), nil
 }
 
