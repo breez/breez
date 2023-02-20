@@ -180,6 +180,6 @@ replace (
 	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.15.2-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.1-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
-	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20230125112441-df2d096f5e4d
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20230220145539-be9fa20e4b34
 	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.15.3-beta.rc1.0.20221018111045-d2ae1275d721
 )
