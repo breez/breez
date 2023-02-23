@@ -406,7 +406,10 @@ func newLightningConnection(lndDir, address string) (*grpc.ClientConn, error) {
 	}
 
 	// Now we append the macaroon credentials to the dial options.
-	cred := macaroons.NewMacaroonCredential(mac)
+	cred, err := macaroons.NewMacaroonCredential(mac)
+	if err != nil {
+		return nil, err
+	}
 	opts = append(opts, grpc.WithPerRPCCredentials(cred))
 
 	// We need to use a custom dialer so we can also connect to unix sockets
