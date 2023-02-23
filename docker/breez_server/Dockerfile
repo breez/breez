@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine3.12 AS builder
+FROM golang:1.17-alpine3.16 AS builder
 RUN apk update
 RUN apk add git go musl-dev make
 COPY ./docker/breez_server/.env .

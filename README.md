@@ -1,10 +1,10 @@
 # breez
-In order to build breez you will need to install [gomobile](https://github.com/golang/go/wiki/Mobile) and [go 1.16.x](https://go.dev/dl/). If you install go from homebrew, you will have to ensure the GOPATH environment variable is set yourself.
+In order to build breez you will need to install [gomobile](https://github.com/golang/go/wiki/Mobile) and [go 1.17.x](https://go.dev/dl/). If you install go from homebrew, you will have to ensure the GOPATH environment variable is set yourself.
 ## Prepare your environment
 ```
 git clone https://github.com/breez/breez.git
-go get -d golang.org/x/mobile/cmd/gomobile
-go get -d golang.org/x/mobile/cmd/gobind
+go install golang.org/x/mobile/cmd/gomobile
+go install golang.org/x/mobile/cmd/gobind
 export PATH=$PATH:$GOPATH/bin
 gomobile init
 ```
