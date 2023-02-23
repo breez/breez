@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.16 AS builder
+FROM alpine:latest AS builder
 RUN apk update
 RUN apk add git go musl-dev make bash
 RUN export tags="experimental signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc"

@@ -1,6 +1,4 @@
-FROM golang:1.17-alpine3.16 AS builder
-RUN apk update
-RUN apk add git go musl-dev make
+FROM golang:latest AS builder
 COPY ./docker/breez_server/.env .
 
 COPY ./docker/breez_server/start.sh .
@@ -8,8 +6,8 @@ RUN chmod +x ./start.sh
 RUN git clone https://github.com/breez/server
 RUN cd server \
     && go build .
-RUN go get github.com/joho/godotenv/cmd/godotenv
-RUN git clone https://github.com/breez/lnd -b fix-subswapper-macaroon
+RUN go install github.com/joho/godotenv/cmd/godotenv@latest
+RUN git clone https://github.com/breez/lnd -b breez-node-v0.15.4
 RUN cd lnd \
     && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install

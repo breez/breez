@@ -1,7 +1,7 @@
-FROM alpine:3.12 AS builder
+FROM alpine:latest AS builder
 RUN apk update
 RUN apk add git go musl-dev make bash
-RUN git clone https://github.com/breez/lnd -b zero-conf-debug
+RUN git clone https://github.com/breez/lnd
 
 RUN cd lnd \
     && go build -tags=experimental,invoicesrpc,signrpc,autopilotrpc,experimental,submarineswaprpc,chanreservedynamic,routerrpc,walletrpc,chainrpc ./cmd/lnd/ \
