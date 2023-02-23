@@ -174,11 +174,13 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 	}
 
 	var restPeers []string
-	for _, p := range peers {
-		for _, dp := range config.JobCfg.ConnectedPeers {
-			if p == dp {
-				logger.Infof("adding %v to restpeers", p, restPeers)
-				restPeers = append(restPeers, "https://"+p)
+	if !config.JobCfg.DisableRest {
+		for _, p := range peers {
+			for _, dp := range config.JobCfg.ConnectedPeers {
+				if p == dp {
+					logger.Infof("adding %v to restpeers", p, restPeers)
+					restPeers = append(restPeers, "https://"+p)
+				}
 			}
 		}
 	}
