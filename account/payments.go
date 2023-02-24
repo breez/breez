@@ -407,7 +407,7 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	lnclient := a.daemonAPI.RouterClient()
+	routerclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
@@ -419,7 +419,7 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 	}
 
 	if payReq != nil && len(payReq.RouteHints) == 1 && len(payReq.RouteHints[0].HopHints) == 1 {
-		lnclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
+		routerclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
 			Pairs: []*routerrpc.PairHistory{{
 				NodeFrom: []byte(payReq.RouteHints[0].HopHints[0].NodeId),
 				NodeTo:   []byte(payReq.Destination),
@@ -430,15 +430,16 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 			}}})
 	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
-	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
+	response, err := routerclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return "", err
 	}
 
 	failureReason := lnrpc.PaymentFailureReason_FAILURE_REASON_NONE
+	var payment *lnrpc.Payment
 	for {
-		payment, err := response.Recv()
+		payment, err = response.Recv()
 		if err != nil {
 			a.log.Infof("Payment event error received %v", err)
 			return "", err
@@ -451,6 +452,48 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 			failureReason = payment.FailureReason
 		}
 		break
+	}
+
+	paymenthash, err := hex.DecodeString(payment.PaymentHash)
+	if err != nil {
+		a.log.Errorf("Failed to decode payment hash after payment succeeded: %+v", payment)
+		return "", fmt.Errorf("failed to decode payment hash: %w", err)
+	}
+
+	// The payment has completed, but there may still be htlcs that have to be
+	// revoked. Wait for revocation before notifying payment success/failure.
+	lnclient := a.daemonAPI.APIClient()
+	timeout := time.Now().Add(waitHtlcsSettledTimeout)
+out:
+	for {
+		hasPendingHtlcs := false
+		channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			a.log.Errorf("ListChannels error: %v", err)
+			return "", err
+		}
+
+	retry:
+		for _, c := range channels.Channels {
+			for _, htlc := range c.PendingHtlcs {
+				if bytes.Equal(htlc.HashLock, paymenthash) {
+					a.log.Debugf("HTLC still pending on chan %v. Waiting to finalize.", c.ChanId)
+					hasPendingHtlcs = true
+					break retry
+				}
+			}
+		}
+
+		if !hasPendingHtlcs {
+			break
+		}
+
+		select {
+		case <-time.After(waitHtlcsSettledInterval):
+		case <-time.After(time.Until(timeout)):
+			a.log.Warnf("Timed out waiting for htlcs to finalize. Sending notification anyway.")
+			break out
+		}
 	}
 
 	if failureReason != lnrpc.PaymentFailureReason_FAILURE_REASON_NONE {
