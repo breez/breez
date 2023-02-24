@@ -15,6 +15,7 @@ services:
       - MINING_ADDRESS
     volumes:
       - shared:/rpc
+      - ${TEST_DIR}/btcd:/data
     ports:
       - 18556:18556
     networks:

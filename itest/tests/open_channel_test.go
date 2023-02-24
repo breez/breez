@@ -156,7 +156,7 @@ func Test_zero_conf_mining_during_pending_sender(t *testing.T) {
 	t.Logf("generating blocks")
 	test.miner.Generate(6)
 
-	if err := waitForNodeSynced(aliceDir, aliceAddress, 0); err != nil {
+	if err := waitForNodeSynced("alice", aliceDir, aliceAddress, 0); err != nil {
 		t.Fatalf("failed to sync alice %v", err)
 	}
 	fmt.Println("after restargin alice")

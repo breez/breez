@@ -6,8 +6,8 @@ RUN git clone https://github.com/breez/lspd
 RUN cd lspd \
     && go mod tidy \
     && go build .
-RUN cd lspd \
-    && go get github.com/joho/godotenv/cmd/godotenv
+RUN go install github.com/joho/godotenv/cmd/godotenv@latest
+
 RUN git clone https://github.com/breez/lnd -b breez-node
 RUN cd lnd \
     && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \

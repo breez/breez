@@ -56,4 +56,4 @@ RUN apk add --no-cache \
 # You should NOT do this before certificate generation!
 # Otherwise manually generated certificate will be overridden with shared
 # mounted volume! For more info read dockerfile "VOLUME" documentation.
-VOLUME ["/rpc"]
+VOLUME ["/rpc", "/data"]
