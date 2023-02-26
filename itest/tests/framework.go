@@ -62,7 +62,6 @@ type framework struct {
 }
 
 func setup() error {
-	fmt.Println("setup started")
 	miner, err := getMiner()
 	if err != nil {
 		return err
@@ -72,18 +71,15 @@ func setup() error {
 		return err
 	}
 	_, _ = miner.Generate(1)
-	fmt.Printf("alice dir %v\n", aliceDir)
 	if _, err := os.Create(fmt.Sprintf("%v/delete_node", aliceDir)); err != nil {
 		return err
 	}
 	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
 		return err
 	}
-	fmt.Printf("bob dir %v\n", bobDir)
 	os.Create(fmt.Sprintf("%v/delete_node", bobDir))
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
 
-	fmt.Printf("lnd dir %v\n", lndDir)
 	if _, err := os.Create(fmt.Sprintf("%v/delete_node", lndDir)); err != nil {
 		return err
 	}
@@ -103,7 +99,6 @@ func setup() error {
 	if err := waitForNodeSynced("lnd", lndDir, lndAddress, bestBlock); err != nil {
 		return err
 	}
-	fmt.Println("setup completed")
 	return nil
 }
 
@@ -127,10 +122,8 @@ func poll(pred func() bool, timeout time.Duration) error {
 }
 
 func waitForNodeSynced(nodeName, dir, address string, bestBlock uint32) error {
-	fmt.Printf("%v: waiting for node to sync\n", nodeName)
 	var lastError error
 	for i := 0; i < 20; i++ {
-		fmt.Printf("%v: node sync iteration\n", nodeName)
 		node, err := newLightningConnection(dir, address)
 		if err != nil {
 			lastError = err
@@ -142,14 +135,13 @@ func waitForNodeSynced(nodeName, dir, address string, bestBlock uint32) error {
 
 		info, err := nodeClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if err == nil && info.SyncedToChain && (bestBlock == 0 || info.BlockHeight == bestBlock) {
-			fmt.Printf("%v: node is synched\n", nodeName)
 			return nil
 		}
 		if err != nil {
 			fmt.Printf("%v: failed to GetInfo %v\n", nodeName, err)
 			lastError = err
 		}
-		fmt.Printf("%v: node sync iteration SyncedToChain=%v bestBlock=%v desired=%v\n", nodeName, info.SyncedToChain, info.BlockHeight, bestBlock)
+		//fmt.Printf("%v: node sync iteration SyncedToChain=%v bestBlock=%v desired=%v\n", nodeName, info.SyncedToChain, info.BlockHeight, bestBlock)
 		time.Sleep(time.Second)
 	}
 	return fmt.Errorf("timeout in waiting for node to sync %w", lastError)
@@ -291,7 +283,6 @@ func (f *framework) initSwapperNode() {
 	if err != nil {
 		t.Fatalf("failed to get lsp list %v", err)
 	}
-	fmt.Println("lsps", list.Lsps)
 	lsp := list.Lsps["lspd-secret"]
 
 	// breezInfo, err := breezClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})

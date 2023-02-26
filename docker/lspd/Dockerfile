@@ -12,9 +12,10 @@ RUN git clone https://github.com/breez/lnd -b breez-node
 RUN cd lnd \
     && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install
-COPY ./itest/generate_macaroon_hex.go .
-RUN go build ./generate_macaroon_hex.go
-RUN chmod +x ./generate_macaroon_hex
+COPY . /src/breez
+RUN cd /src/breez && go build ./itest/generate_lspd_config.go
+RUN cp /src/breez/generate_lspd_config .
+RUN chmod +x ./generate_lspd_config
 RUN chmod +x ./lspd/lspd
 RUN ./lspd/lspd genkey >> .env
 

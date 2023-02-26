@@ -13,6 +13,8 @@ export SUBSWAP_LND_ADDRESS="127.0.0.1:10012"
 export BTCD_HOST="127.0.0.1:18556"
 export BTCD_CERT_FILE=$TEST_DIR/btcd-rpc.cert
 
+docker-compose -f simnet.yml down
+
 rm -rf $TEST_DIR
 mkdir $TEST_DIR
 
@@ -46,21 +48,48 @@ docker exec btcd /start-btcctl.sh generate 400
 
 # run breez node and get mining address
 docker-compose -f simnet.yml up -d breez
-#wait for breez rpc
+
+# waiting for breez node to be ready
 until docker exec breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
 do
     sleep 1
-    #echo "waiting for breez RPC..."
 done
-sleep 5
-docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address'
+sleep 2
+
+# generate mining address for breez node
 export MINING_ADDRESS=$(docker exec breez "/lnd/lncli" -network=simnet newaddress np2wkh | jq -r '.address')
 echo $MINING_ADDRESS
 docker exec btcd cat /rpc/rpc.cert > $TEST_DIR/btcd-rpc.cert
 
-# restart containers
-docker-compose -f simnet.yml down
-docker-compose -f simnet.yml up -d
-docker exec btcd /start-btcctl.sh generate 400
+# export the lspd node pubkey
+export NODE_PUBKEY=$(docker exec breez "/lnd/lncli" -network=simnet getinfo | jq -r '.identity_pubkey')
 
+# restart containers because we need now btcd to use the new mining address
+docker-compose -f simnet.yml down
+docker-compose -f simnet.yml up -d postgres
+docker-compose -f simnet.yml up -d --no-recreate postgres_interceptor
+docker-compose -f simnet.yml up -d --no-recreate breez
+
+# waiting for breez node to be ready so lspd won't crash
+until docker exec breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+do
+    sleep 1    
+done
+docker-compose -f simnet.yml up -d --no-recreate
+
+# waiting for breez server to start and be ready
+until docker logs breez_server | grep 'Breez server ready!' > /dev/null;
+do
+    sleep 1    
+done
+
+# waiting for subswap node to start and be ready
+until docker exec subswap_node "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+do
+    sleep 1    
+done
+
+docker exec -it postgres_breez_server psql -h 0.0.0.0 -U postgres -c "insert into api_keys (api_key, lsp_ids, api_user) values ('8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X',json_build_array('lspd-secret'),'test')"
+docker exec btcd /start-btcctl.sh generate 400
 #go test ../itest/tests
+#036233602
