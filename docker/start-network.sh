@@ -13,7 +13,7 @@ export SUBSWAP_LND_ADDRESS="127.0.0.1:10012"
 export BTCD_HOST="127.0.0.1:18556"
 export BTCD_CERT_FILE=$TEST_DIR/btcd-rpc.cert
 
-docker-compose -f simnet.yml down
+docker-compose -f simnet.yml down --remove-orphans
 
 rm -rf $TEST_DIR
 mkdir $TEST_DIR
