@@ -40,7 +40,7 @@ docker exec dev-btcd /start-btcctl.sh generate 400
 docker-compose -f dev-simnet.yml up -d dev-breez
 
 # waiting for breez node to be ready
-until docker exec dev-breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+until docker exec dev-breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'Starting sub RPC server: InvoicesRPC' > /dev/null;
 do
     sleep 1    
 done
@@ -61,7 +61,7 @@ docker-compose -f dev-simnet.yml up -d --no-recreate dev-postgres_interceptor
 docker-compose -f dev-simnet.yml up -d --no-recreate dev-breez
 
 # waiting for breez node to be ready so lspd won't crash
-until docker exec dev-breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+until docker exec dev-breez "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'Starting sub RPC server: InvoicesRPC' > /dev/null;
 do
     sleep 1    
 done
@@ -75,7 +75,7 @@ do
 done
 
 # waiting for subswap node to start and be ready
-until docker exec dev-subswap_node "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'RPC server listening on' > /dev/null;
+until docker exec dev-subswap_node "cat" /root/.lnd/logs/bitcoin/simnet/lnd.log | grep 'Starting sub RPC server: InvoicesRPC' > /dev/null;
 do
     sleep 1    
 done

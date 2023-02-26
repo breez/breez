@@ -310,8 +310,6 @@ func runZeroConfMultiple(test *framework, tests []zeroConfTest) {
 			receiverLNDNode = lnrpc.NewLightningClient(test.bobNode)
 		}
 
-		fmt.Println(list.Lsps["lspd-secret"])
-		fmt.Printf("adding invoice %v\n", amount)
 		reply, err := breezClient.AddInvoice(context.Background(), &data.AddInvoiceRequest{
 			InvoiceDetails: &data.InvoiceMemo{
 				Description: "Zero conf",
