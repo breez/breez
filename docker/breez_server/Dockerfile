@@ -9,7 +9,7 @@ RUN cd server \
 RUN go install github.com/joho/godotenv/cmd/godotenv@latest
 RUN git clone https://github.com/breez/lnd -b breez-node
 RUN cd lnd \
-    && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
+    && tags="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install
 COPY ./itest/generate_macaroon_hex.go .
 RUN go build ./generate_macaroon_hex.go
