@@ -81,4 +81,4 @@ do
 done
 
 docker exec -it dev-postgres-breez-server psql -h 0.0.0.0 -U postgres -c "insert into api_keys (api_key, lsp_ids, api_user) values ('8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X',json_build_array('lspd-secret'),'test')"
-#docker exec dev-btcd /start-btcctl.sh generate 400
+docker exec dev-btcd /start-btcctl.sh generate 400

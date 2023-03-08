@@ -149,7 +149,8 @@ services:
       context: ../
       dockerfile: docker/lspd/Dockerfile
     environment:
-      - NODE_PUBKEY
+      NODE_HOST: 10.5.0.3
+      NODE_PUBKEY: ${NODE_PUBKEY}
     volumes:
       - ${TEST_DIR}/breez_node:/root/breez_node
     links:

@@ -49,6 +49,7 @@ func main() {
 	macaroonFile := os.Args[2]
 	certFile := os.Args[3]
 	nodePubKey := os.Args[4]
+	nodeHost := os.Args[5]
 	binary, _ := ioutil.ReadFile(macaroonFile)
 	textCert, _ := ioutil.ReadFile(certFile)
 	macHexa := hex.EncodeToString(binary)
@@ -64,7 +65,7 @@ func main() {
 
 	config := NodeConfig{
 		LspdPrivateKey:            key,
-		Host:                      "10.5.0.3",
+		Host:                      nodeHost,
 		NodePubkey:                nodePubKey,
 		AdditionalChannelCapacity: 100000,
 		BaseFeeMsat:               1000,
