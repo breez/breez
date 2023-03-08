@@ -529,7 +529,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
 			lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
 		if amountMsat < channelFeesMsat+1000 {
-			return "", 0, fmt.Errorf("amount should be more than the minimum fees (%v sats)", lspInfo.ChannelMinimumFeeMsat/1000)
+			return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, lspInfo.ChannelMinimumFeeMsat/1000)
 		}
 
 		smallAmountMsat = amountMsat - channelFeesMsat

@@ -23,6 +23,7 @@ JobConfig hodls the job configuration
 type JobConfig struct {
 	ConnectedPeers     []string `long:"peer"`
 	AssertFilterHeader string   `long:"assertfilterheader"`
+	DisableRest        bool     `long:"disablerest"`
 }
 
 /*

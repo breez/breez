@@ -15,6 +15,7 @@ services:
       - MINING_ADDRESS
     volumes:
       - shared:/rpc
+      - ${TEST_DIR}/btcd:/data
     ports:
       - 18556:18556
     networks:
@@ -118,6 +119,8 @@ services:
       - "btcd:blockchain"
     depends_on:
       - "btcd"
+      - "breez"
+      - "lspd"
     networks:
       nodes:
         ipv4_address: 10.5.0.11
@@ -145,18 +148,23 @@ services:
     build:
       context: ../
       dockerfile: docker/lspd/Dockerfile
+    environment:
+      NODE_HOST: 10.5.0.3
+      NODE_PUBKEY: ${NODE_PUBKEY}
     volumes:
       - ${TEST_DIR}/breez_node:/root/breez_node
     links:
       - "postgres_interceptor:postgres_interceptor"
     depends_on:
       - postgres_interceptor
+      - postgres
       - breez
     networks:
       nodes:
         ipv4_address: 10.5.0.9
   postgres:
     image: postgres
+    container_name: postgres_breez_server
     networks:
       nodes:
         ipv4_address: 10.5.0.6
@@ -164,6 +172,7 @@ services:
       POSTGRES_PASSWORD: test
   postgres_interceptor:
     image: postgres
+    container_name: postgres_interceptor
     networks:
       nodes:
         ipv4_address: 10.5.0.8

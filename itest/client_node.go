@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = bindings.Start()
+	err = bindings.Start(nil)
 	if err != nil {
 		fmt.Println("Error in binding.Start", err)
 		os.Exit(1)
@@ -50,8 +50,12 @@ func main() {
 
 	rpcBinding := &bindings.RPC{}
 	rpcBinding.Start()
-
-	<-signal.ShutdownChannel()
+	i, err := signal.Intercept()
+	if err != nil {
+		fmt.Println("Error in signal.Intercept", err)
+		os.Exit(1)
+	}
+	<-i.ShutdownChannel()
 	fmt.Println("Shutdown requested")
 	os.Exit(0)
 }

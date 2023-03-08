@@ -15,6 +15,7 @@ services:
       - MINING_ADDRESS
     volumes:
       - shared:/rpc
+      - ${TEST_DIR}/btcd:/data
     ports:
       - ${DEV_HOST_IP}:18555:18555
     networks:
@@ -105,7 +106,7 @@ services:
     container_name: "dev-lspd"
     build:
       context: ../
-      dockerfile: docker/lspd/Dockerfile
+      dockerfile: docker/lspd/Dockerfile    
     volumes:
       - ${TEST_DIR}/breez_node:/root/breez_node
     links:
@@ -118,8 +119,10 @@ services:
         ipv4_address: 10.5.0.9
     environment:
       NODE_HOST: ${DEV_HOST_IP}:9736
+      NODE_PUBKEY: ${NODE_PUBKEY}
   dev-postgres:
     image: postgres
+    container_name: dev-postgres-breez-server
     networks:
       nodes:
         ipv4_address: 10.5.0.6
@@ -127,6 +130,7 @@ services:
       POSTGRES_PASSWORD: test
   dev-postgres_interceptor:
     image: postgres
+    container_name: dev-postgres-interceptor
     networks:
       nodes:
         ipv4_address: 10.5.0.8

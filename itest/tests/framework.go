@@ -62,7 +62,6 @@ type framework struct {
 }
 
 func setup() error {
-	fmt.Println("setup started")
 	miner, err := getMiner()
 	if err != nil {
 		return err
@@ -72,18 +71,15 @@ func setup() error {
 		return err
 	}
 	_, _ = miner.Generate(1)
-	fmt.Printf("alice dir %v\n", aliceDir)
 	if _, err := os.Create(fmt.Sprintf("%v/delete_node", aliceDir)); err != nil {
 		return err
 	}
 	if _, err := os.Create(fmt.Sprintf("%v/shutdown", aliceDir)); err != nil {
 		return err
 	}
-	fmt.Printf("bob dir %v\n", bobDir)
 	os.Create(fmt.Sprintf("%v/delete_node", bobDir))
 	os.Create(fmt.Sprintf("%v/shutdown", bobDir))
 
-	fmt.Printf("lnd dir %v\n", lndDir)
 	if _, err := os.Create(fmt.Sprintf("%v/delete_node", lndDir)); err != nil {
 		return err
 	}
@@ -94,16 +90,15 @@ func setup() error {
 	bestBlock := uint32(info.Blocks) + 1
 
 	time.Sleep(time.Second * 12)
-	if err := waitForNodeSynced(aliceDir, aliceAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("alice", aliceDir, aliceAddress, bestBlock); err != nil {
 		return err
 	}
-	if err := waitForNodeSynced(bobDir, bobAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("bob", bobDir, bobAddress, bestBlock); err != nil {
 		return err
 	}
-	if err := waitForNodeSynced(lndDir, lndAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("lnd", lndDir, lndAddress, bestBlock); err != nil {
 		return err
 	}
-	fmt.Println("setup completed")
 	return nil
 }
 
@@ -126,11 +121,9 @@ func poll(pred func() bool, timeout time.Duration) error {
 	}
 }
 
-func waitForNodeSynced(dir, address string, bestBlock uint32) error {
-	fmt.Println("waiting for node to sync")
+func waitForNodeSynced(nodeName, dir, address string, bestBlock uint32) error {
 	var lastError error
 	for i := 0; i < 20; i++ {
-		fmt.Println("node sync iteration")
 		node, err := newLightningConnection(dir, address)
 		if err != nil {
 			lastError = err
@@ -142,17 +135,16 @@ func waitForNodeSynced(dir, address string, bestBlock uint32) error {
 
 		info, err := nodeClient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
 		if err == nil && info.SyncedToChain && (bestBlock == 0 || info.BlockHeight == bestBlock) {
-			fmt.Println("node is not synched")
 			return nil
 		}
 		if err != nil {
-			fmt.Println("failed to GetInfo ", err)
+			fmt.Printf("%v: failed to GetInfo %v\n", nodeName, err)
 			lastError = err
 		}
-		fmt.Printf("node sync iteration SyncedToChain=%v bestBlock=%v desired=%v", info.SyncedToChain, info.BlockHeight, bestBlock)
+		//fmt.Printf("%v: node sync iteration SyncedToChain=%v bestBlock=%v desired=%v\n", nodeName, info.SyncedToChain, info.BlockHeight, bestBlock)
 		time.Sleep(time.Second)
 	}
-	return fmt.Errorf("Timeout in waiting for node to sync %w", lastError)
+	return fmt.Errorf("timeout in waiting for node to sync %w", lastError)
 }
 
 // func waitSynced(nodeClient lnrpc.LightningClient, bestBlock uint32) error {
@@ -245,16 +237,16 @@ func (f *framework) GenerateBlocks(num uint32) {
 		f.test.Fatalf("failed to generate blocks")
 	}
 	time.Sleep(time.Second)
-	if err := waitForNodeSynced(aliceDir, aliceAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("alice", aliceDir, aliceAddress, bestBlock); err != nil {
 		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 	}
-	if err := waitForNodeSynced(bobDir, bobAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("bob", bobDir, bobAddress, bestBlock); err != nil {
 		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 	}
-	if err := waitForNodeSynced(breezDir, breezAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("breez", breezDir, breezAddress, bestBlock); err != nil {
 		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 	}
-	if err := waitForNodeSynced(subswapDir, subswapAddress, bestBlock); err != nil {
+	if err := waitForNodeSynced("subswap", subswapDir, subswapAddress, bestBlock); err != nil {
 		f.test.Fatalf("failed to wait for nodes to sync %v %v", bestBlock, err)
 	}
 }
@@ -406,7 +398,10 @@ func newLightningConnection(lndDir, address string) (*grpc.ClientConn, error) {
 	}
 
 	// Now we append the macaroon credentials to the dial options.
-	cred := macaroons.NewMacaroonCredential(mac)
+	cred, err := macaroons.NewMacaroonCredential(mac)
+	if err != nil {
+		return nil, err
+	}
 	opts = append(opts, grpc.WithPerRPCCredentials(cred))
 
 	// We need to use a custom dialer so we can also connect to unix sockets

@@ -1,21 +1,21 @@
-FROM golang:1.17-alpine3.16 AS builder
-RUN apk update
-RUN apk add git go musl-dev make
+FROM golang:latest AS builder
 COPY ./docker/lspd/.env .
 COPY ./docker/lspd/start.sh .
 RUN chmod +x ./start.sh
-RUN git clone https://github.com/breez/lspd -b master
+RUN git clone https://github.com/breez/lspd
 RUN cd lspd \
     && go mod tidy \
     && go build .
-RUN go get github.com/joho/godotenv/cmd/godotenv
-RUN git clone https://github.com/breez/lnd -b fix-subswapper-macaroon
+RUN go install github.com/joho/godotenv/cmd/godotenv@latest
+
+RUN git clone https://github.com/breez/lnd -b breez-node
 RUN cd lnd \
-    && tage="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
+    && tags="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install
-COPY ./itest/generate_macaroon_hex.go .
-RUN go build ./generate_macaroon_hex.go
-RUN chmod +x ./generate_macaroon_hex
+COPY . /src/breez
+RUN cd /src/breez && go build ./itest/generate_lspd_config.go
+RUN cp /src/breez/generate_lspd_config .
+RUN chmod +x ./generate_lspd_config
 RUN chmod +x ./lspd/lspd
 RUN ./lspd/lspd genkey >> .env
 
