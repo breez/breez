@@ -12,6 +12,7 @@ import (
 	"github.com/lightninglabs/neutrino/headerfs"
 	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/input"
+	"github.com/lightningnetwork/lnd/lnwire"
 )
 
 // ChannelsWatcher contains all the data that is needed in order to scan several
@@ -54,7 +55,7 @@ func NewChannelsWatcher(
 	var firstChannelBlockHeight uint64
 
 	for _, c := range channels {
-		if c.LocalCommitment.LocalBalance < 1000 {
+		if c.LocalCommitment.LocalBalance < lnwire.MilliSatoshi(1000000) {
 			log.Infof("Skipping watching channel with less than 1000 sats balance: %v", c.ShortChannelID.String())
 			continue
 		}
