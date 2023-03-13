@@ -55,7 +55,7 @@ func NewChannelsWatcher(
 	var firstChannelBlockHeight uint64
 
 	for _, c := range channels {
-		if c.LocalCommitment.LocalBalance < lnwire.MilliSatoshi(1000000) {
+		if c.LocalCommitment.LocalBalance < lnwire.NewMSatFromSatoshis(1000) {
 			log.Infof("Skipping watching channel with less than 1000 sats balance: %v", c.ShortChannelID.String())
 			continue
 		}
