@@ -20,6 +20,7 @@ import (
 	"github.com/breez/breez/lnnode"
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcwallet/walletdb"
+	"github.com/fiatjaf/go-lnurl"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -56,10 +57,15 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			Control: torConfig.Control,
 		}
 
+		var err error
+
 		chainservice.SetTor(_torConfig, true)
 		a.BackupManager.SetTorConfig(_torConfig)
 		a.lnDaemon.TorConfig = _torConfig
 		a.AccountService.TorConfig = _torConfig
+		if lnurl.TorClient, err = _torConfig.NewHttpClient(); err != nil {
+			return err
+		}
 
 	}
 

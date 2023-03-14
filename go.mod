@@ -14,7 +14,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fiatjaf/go-lnurl v1.12.0
+	github.com/fiatjaf/go-lnurl v1.12.1
 	github.com/golang/protobuf v1.5.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/lightninglabs/neutrino v0.14.2
