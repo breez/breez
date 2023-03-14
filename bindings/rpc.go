@@ -10,7 +10,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-type RPC struct{}
+type RPC struct {
+	data.UnimplementedBreezAPIServer
+}
 
 func (r *RPC) GetLSPList(ctx context.Context, in *data.LSPListRequest) (
 	*data.LSPList, error) {
