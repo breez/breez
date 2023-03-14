@@ -206,8 +206,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fergusstrange/embedded-postgres v1.10.0 h1:YnwF6xAQYmKLAXXrrRx4rHDLih47YJwVPvg8jeKfdNg=
 github.com/fergusstrange/embedded-postgres v1.10.0/go.mod h1:a008U8/Rws5FtIOTGYDYa7beVWsT3qVKyqExqYYjL+c=
-github.com/fiatjaf/go-lnurl v1.12.0 h1:oEUQtxpDE43uJqW5hDczd07rCxunVPEfLEhLcsYNHdA=
-github.com/fiatjaf/go-lnurl v1.12.0/go.mod h1:KJfs14iAY3gCgt/3T6fxfBvPhU67OfIp7PSrBg/v/R8=
+github.com/fiatjaf/go-lnurl v1.12.1 h1:ekDEetuSqvdRcCxiykmw/N4UfjgYgUTjmd/1vAoPXyE=
+github.com/fiatjaf/go-lnurl v1.12.1/go.mod h1:KJfs14iAY3gCgt/3T6fxfBvPhU67OfIp7PSrBg/v/R8=
 github.com/form3tech-oss/jwt-go v3.2.3+incompatible h1:7ZaBxOI7TMoYBfyA3cQHErNNyAWIKUMIwqxEtgHOs5c=
 github.com/form3tech-oss/jwt-go v3.2.3+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/frankban/quicktest v1.2.2 h1:xfmOhhoH5fGPgbEAlhLpJH9p0z/0Qizio9osmvn9IUY=
