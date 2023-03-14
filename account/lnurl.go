@@ -61,7 +61,6 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 		}
 		encodedLnurl = url.String()
 	}
-
 	lnurl.Client.Timeout = time.Second * 60
 	rawurl, iparams, err := lnurl.HandleLNURL(encodedLnurl)
 	if err != nil {
@@ -244,14 +243,13 @@ func (a *Service) FinishLNURLWithdraw(bolt11 string) (err error) {
 	callback := a.lnurlWithdrawing
 
 	client := &http.Client{}
-	resp, err := client.Get(callback + "&pr=" + bolt11)
 	if tor := a.TorConfig; tor != nil {
 		a.log.Info("FinishLNURLWithdraw: using Tor")
 		if client, err = tor.NewHttpClient(); err != nil {
 			return err
 		}
 	}
-
+	resp, err := client.Get(callback + "&pr=" + bolt11)
 	if err != nil {
 		a.log.Errorf("FinishLNURLWithdraw request error:", err.Error())
 		return err
