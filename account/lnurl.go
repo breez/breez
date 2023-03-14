@@ -36,13 +36,6 @@ type LoginResponse struct {
 func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err error) {
 	var lightningAddress string
 
-	if tor := a.TorConfig; tor != nil {
-		a.log.Info("HandleLNURL: using Tor")
-		if lnurl.TorClient, err = tor.NewHttpClient(); err != nil {
-			return nil, err
-		}
-	}
-
 	handleLNUrlError := fmt.Errorf("%q does not contain an LNURL", rawString)
 
 	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
