@@ -325,7 +325,6 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 
 	writer, err := breezlog.GetLogWriter(workingDir)
 	if err != nil {
-		d.log.Errorf("GetLogWriter function returned with error: %v", err)
 		return nil, err
 	}
 
@@ -333,7 +332,7 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 	cfg.MinBackoff = time.Second * 20
 	cfg.TLSDisableAutofill = true
 
-	fileParser := flags.NewParser(&cfg, flags.Default)
+	fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
 	err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
 	if err != nil {
 		return nil, err
@@ -341,7 +340,7 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 
 	// Finally, parse the remaining command line options again to ensure
 	// they take precedence.
-	flagParser := flags.NewParser(&cfg, flags.Default)
+	flagParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
 	if _, err := flagParser.Parse(); err != nil {
 		return nil, err
 	}
