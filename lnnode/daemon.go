@@ -325,6 +325,7 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 
 	writer, err := breezlog.GetLogWriter(workingDir)
 	if err != nil {
+		d.log.Errorf("GetLogWriter function returned with error: %v", err)
 		return nil, err
 	}
 
