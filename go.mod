@@ -28,7 +28,7 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.1.0
 	golang.org/x/mobile v0.0.0-20221110043201-43a038452099
-	golang.org/x/net v0.1.0
+	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 	google.golang.org/api v0.30.0
@@ -159,9 +159,9 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
@@ -180,6 +180,6 @@ replace (
 	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.15.2-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.1-0.20220717090508-739787f948a6
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
-	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20230222083733-c73395e3e4f7
+	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20230403110849-764e81e4722d
 	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.15.3-beta.rc1.0.20230320111621-99fa19e3e643
 )
