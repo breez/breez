@@ -2,7 +2,10 @@ package bindings
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/breez/breez/backup"
 	"github.com/breez/breez/tor"
@@ -16,6 +19,7 @@ type NativeBackupProvider interface {
 	UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error)
 	AvailableSnapshots() (string, error)
 	DownloadBackupFiles(nodeID, backupID string) (string, error)
+	GetProviderTimestamp(nodeID string) (string, error)
 }
 
 // nativeProviderError is the type of error this provider returns in case
@@ -41,7 +45,7 @@ type NativeBackupProviderBridge struct {
 }
 
 // UploadBackupFiles is called when files needs to be uploaded as part of the backup
-func (b *NativeBackupProviderBridge) UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error) {
+func (b *NativeBackupProviderBridge) UploadBackupFiles(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
 	acc, err := b.nativeProvider.UploadBackupFiles(file, nodeID, encryptionType)
 	if err != nil {
 		return "", &nativeProviderError{err: err}
@@ -71,6 +75,19 @@ func (b *NativeBackupProviderBridge) DownloadBackupFiles(nodeID, backupID string
 		return nil, err
 	}
 	return strings.Split(files, ","), nil
+}
+
+// GetProviderTimestamp is called in order to get a more accurate timestamp from the cloud.
+func (b *NativeBackupProviderBridge) GetProviderTimestamp(nodeID string) (time.Time, error) {
+	timestamp, err := b.nativeProvider.GetProviderTimestamp(nodeID)
+	if err != nil {
+		fmt.Printf("Failed to get timestamp for UploadFileAndRetriveTimeStamp: %v\n", err)
+		return time.Time{}, err
+	}
+	if timestamp == "" {
+		return time.Time{}, errors.New("GetProviderTimestamp got empty timestamp")
+	}
+	return time.Parse(time.RFC3339, timestamp)
 }
 
 func (b *NativeBackupProviderBridge) SetTor(torConfig *tor.TorConfig) {

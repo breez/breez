@@ -296,6 +296,16 @@ func BackupFiles() (string, error) {
 	return getBreezApp().BackupFiles()
 }
 
+// LatestBackupTime return the UnixMilli of the latest backup from our local file that keeps track
+// of the latest backup's snapshot.
+func LatestBackupTime() int64 {
+	t, err := getBreezApp().LatestBackupTime()
+	if err != nil {
+		Log(fmt.Sprintf("Failed to get latest backup time: %v", err), "ERROR")
+	}
+	return t.UnixMilli()
+}
+
 /*
 DownloadBackup is part of the binding inteface which is delegated to breez.DownloadBackup
 */
@@ -327,6 +337,7 @@ func RestoreBackup(nodeID string, encryptionKey []byte) (err error) {
 		Log("error in calling breez.NewAp: "+newAppErr.Error(), "INFO")
 	}
 	breezApp.BackupManager.SetProvider(oldProvider)
+	err = breezApp.BackupManager.UpdateLatestBackupTime(nodeID)
 	return err
 }
 

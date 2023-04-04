@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync/atomic"
+	"time"
 
 	"github.com/breez/breez/bootstrap"
 	"github.com/breez/breez/chainservice"
@@ -40,7 +41,6 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 	if atomic.SwapInt32(&a.started, 1) == 1 {
 		return errors.New("Breez already started")
 	}
-
 	a.log.Info("app.start before bootstrap")
 	if err := chainservice.Bootstrap(a.cfg.WorkingDir); err != nil {
 		a.log.Infof("app.start bootstrap error %v", err)
@@ -87,7 +87,6 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 			return err
 		}
 	}
-
 	a.wg.Add(1)
 	go a.watchDaemonEvents()
 
@@ -153,6 +152,10 @@ func (a *App) Restore(nodeID string, key []byte) error {
 		a.breezDB, a.releaseBreezDB, _ = db.Get(a.cfg.WorkingDir)
 	}()
 	_, err := a.BackupManager.Restore(nodeID, key)
+	if err != nil {
+		return err
+	}
+	err = a.BackupManager.UpdateLatestBackupTime(nodeID)
 	return err
 }
 
@@ -191,6 +194,7 @@ func (a *App) watchDaemonEvents() error {
 			case lnnode.DaemonReadyEvent:
 				atomic.StoreInt32(&a.isReady, 1)
 				go a.ensureSafeToRunNode()
+				go a.ensureLatestBackup()
 				go a.notify(data.NotificationEvent{Type: data.NotificationEvent_READY})
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&a.isReady, 0)
@@ -241,12 +245,37 @@ func (a *App) ensureSafeToRunNode() bool {
 	return true
 }
 
+func (a *App) ensureLatestBackup() bool {
+	lnclient := a.lnDaemon.APIClient()
+	info, err := lnclient.GetInfo(context.Background(), &lnrpc.GetInfoRequest{})
+	if err != nil {
+		a.log.Errorf("ensureLatestBackup failed, continue anyway %v", err)
+		return true
+	}
+
+	safe, err := a.BackupManager.EnsureLatestBackup(info.IdentityPubkey)
+	if err != nil {
+		a.log.Errorf("EnsureLatestBackup failed with error: %v", err)
+	}
+	if !safe {
+		a.log.Errorf("EnsureLatestBackup detected a newer backup! stopping breez since it is not safe to run")
+		go a.notify(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NOT_LATEST_CONFLICT})
+		a.lnDaemon.Stop()
+		return false
+	}
+	return safe
+}
+
 func (a *App) onServiceEvent(event data.NotificationEvent) {
 	a.notify(event)
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED ||
 		event.Type == data.NotificationEvent_LSP_CHANNEL_OPENED {
 		a.BackupManager.RequestNodeBackup()
 	}
+}
+
+func (a *App) LatestBackupTime() (time.Time, error) {
+	return a.BackupManager.LatestBackupTime()
 }
 
 func (a *App) RequestBackup() {
