@@ -27,6 +27,7 @@ import (
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
+	"github.com/lightningnetwork/lnd/kvdb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
@@ -155,6 +156,18 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 				startBeforeSync = false
 				appLogger.Log(fmt.Sprintf("Removed file: %v result: %v", forceBootstrap, err), "INFO")
 			}
+		}
+
+		// drop last sweeper tx
+		db, close, _ := channeldbservice.Get(workingDir)
+		defer close()
+		err := kvdb.Update(db.Backend, func(tx kvdb.RwTx) error {
+			b := tx.ReadWriteBucket([]byte("sweeper-last-tx"))
+			return b.Delete([]byte("last-tx"))
+		}, func() {})
+		if err != nil {
+			fmt.Printf("failed to drop last sweeper tx: %v", err)
+			return err
 		}
 	}
 	mu.Lock()
