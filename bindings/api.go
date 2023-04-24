@@ -128,6 +128,10 @@ func Init(tempDir string, workingDir string, services AppServices) (err error) {
 		return err
 	}
 	appLogger.Log("Breez initialization started", "INFO")
+	if breezApp != nil {
+		appLogger.Log("Breez has already initialized", "INFO")
+		return
+	}
 	startBeforeSync := true
 	shouldForceRescan := false
 	shouldForceBootstrap := false
