@@ -40,6 +40,8 @@ const (
 	defaultInvoiceExpiry       int64 = 3600
 	invoiceCustomPartDelimiter       = " |\n"
 	transferFundsRequest             = "Bitcoin Transfer"
+	waitHtlcsSettledInterval         = time.Millisecond * 20
+	waitHtlcsSettledTimeout          = time.Second * 5
 )
 
 // PaymentResponse is the response of a payment attempt.
@@ -405,7 +407,7 @@ func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendP
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
-	lnclient := a.daemonAPI.RouterClient()
+	routerclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
@@ -417,7 +419,7 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 	}
 
 	if payReq != nil && len(payReq.RouteHints) == 1 && len(payReq.RouteHints[0].HopHints) == 1 {
-		lnclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
+		routerclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
 			Pairs: []*routerrpc.PairHistory{{
 				NodeFrom: []byte(payReq.RouteHints[0].HopHints[0].NodeId),
 				NodeTo:   []byte(payReq.Destination),
@@ -428,15 +430,16 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 			}}})
 	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
-	response, err := lnclient.SendPaymentV2(context.Background(), sendRequest)
+	response, err := routerclient.SendPaymentV2(context.Background(), sendRequest)
 	if err != nil {
 		a.log.Infof("sendPaymentForRequest: error sending payment %v", err)
 		return "", err
 	}
 
 	failureReason := lnrpc.PaymentFailureReason_FAILURE_REASON_NONE
+	var payment *lnrpc.Payment
 	for {
-		payment, err := response.Recv()
+		payment, err = response.Recv()
 		if err != nil {
 			a.log.Infof("Payment event error received %v", err)
 			return "", err
@@ -449,6 +452,48 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 			failureReason = payment.FailureReason
 		}
 		break
+	}
+
+	paymenthash, err := hex.DecodeString(payment.PaymentHash)
+	if err != nil {
+		a.log.Errorf("Failed to decode payment hash after payment succeeded: %+v", payment)
+		return "", fmt.Errorf("failed to decode payment hash: %w", err)
+	}
+
+	// The payment has completed, but there may still be htlcs that have to be
+	// revoked. Wait for revocation before notifying payment success/failure.
+	lnclient := a.daemonAPI.APIClient()
+	timeout := time.Now().Add(waitHtlcsSettledTimeout)
+out:
+	for {
+		hasPendingHtlcs := false
+		channels, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+		if err != nil {
+			a.log.Errorf("ListChannels error: %v", err)
+			return "", err
+		}
+
+	retry:
+		for _, c := range channels.Channels {
+			for _, htlc := range c.PendingHtlcs {
+				if bytes.Equal(htlc.HashLock, paymenthash) {
+					a.log.Debugf("HTLC still pending on chan %v. Waiting to finalize.", c.ChanId)
+					hasPendingHtlcs = true
+					break retry
+				}
+			}
+		}
+
+		if !hasPendingHtlcs {
+			break
+		}
+
+		select {
+		case <-time.After(waitHtlcsSettledInterval):
+		case <-time.After(time.Until(timeout)):
+			a.log.Warnf("Timed out waiting for htlcs to finalize. Sending notification anyway.")
+			break out
+		}
 	}
 
 	if failureReason != lnrpc.PaymentFailureReason_FAILURE_REASON_NONE {
@@ -946,8 +991,14 @@ func (a *Service) watchPayments() {
 				a.log.Criticalf("Failed to receive an invoice : %v", err)
 				return
 			}
-			if invoice.Settled {
-				// TODO: Wait for pending htlcs here.
+			if invoice.State == lnrpc.Invoice_SETTLED {
+				err := a.waitHtlcsSettled(ctx, invoice)
+				if err != nil {
+					// NOTE: On error, we'll notify invoice settled anyway.
+					// Not returning here.
+					a.log.Errorf("Failed wait for htlc settlement: %v", err)
+				}
+
 				a.log.Infof("watchPayments adding a received payment")
 				if err = a.onNewReceivedPayment(invoice); err != nil {
 					a.log.Criticalf("Failed to update received payment : %v", err)
@@ -962,6 +1013,76 @@ func (a *Service) watchPayments() {
 		a.log.Infof("Canceling subscription")
 		cancel()
 	}()
+}
+
+func (a *Service) waitHtlcsSettled(ctx context.Context, invoice *lnrpc.Invoice) error {
+	lnclient := a.daemonAPI.APIClient()
+	routerclient := a.daemonAPI.RouterClient()
+
+	subctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	htlcclient, err := routerclient.SubscribeHtlcEvents(
+		subctx,
+		&routerrpc.SubscribeHtlcEventsRequest{},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Get the subscribed event so htlc lookups are reliable.
+	for {
+		ev, err := htlcclient.Recv()
+		if err != nil {
+			return err
+		}
+
+		if ev.GetSubscribedEvent() != nil {
+			break
+		}
+	}
+
+	a.log.Debugf("Invoice %x: lookup state for %v htlcs", invoice.RHash, len(invoice.Htlcs))
+	unsettled := make(map[string]*lnrpc.InvoiceHTLC, len(invoice.Htlcs))
+	for _, h := range invoice.Htlcs {
+		_, err := lnclient.LookupHtlcResolution(subctx, &lnrpc.LookupHtlcResolutionRequest{
+			ChanId:    h.ChanId,
+			HtlcIndex: h.HtlcIndex,
+		})
+
+		if err == nil {
+			// No error means the htlc is finalized (either failed or settled).
+			continue
+		}
+
+		if !strings.Contains(err.Error(), "htlc unknown") {
+			return fmt.Errorf("failed to lookup htlc: %w", err)
+		}
+
+		unsettled[fmt.Sprintf("%vx%v", h.ChanId, h.HtlcIndex)] = h
+	}
+
+	for len(unsettled) > 0 {
+		a.log.Debugf(
+			"Invoice %x: Waiting for htlcs to settle. %v remaining.",
+			invoice.RHash,
+			len(unsettled),
+		)
+		h, err := htlcclient.Recv()
+		if err != nil {
+			return fmt.Errorf("htlcclient.Recv(): %w", err)
+		}
+
+		f := h.GetFinalHtlcEvent()
+		if f == nil {
+			continue
+		}
+
+		delete(unsettled, fmt.Sprintf("%vx%v", h.IncomingChannelId, h.IncomingHtlcId))
+	}
+
+	a.log.Debugf("Invoice %x: All htlcs settled.", invoice.RHash)
+	return nil
 }
 
 func (a *Service) syncSentPayments() error {

@@ -332,6 +332,7 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 	cfg.LogWriter = writer
 	cfg.MinBackoff = time.Second * 20
 	cfg.TLSDisableAutofill = true
+	cfg.StoreFinalHtlcResolutions = true
 
 	fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
 	err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
