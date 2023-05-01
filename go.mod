@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcwallet v0.16.8
+	github.com/btcsuite/btcwallet v0.16.9
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/dustin/go-humanize v1.0.0
@@ -33,6 +33,7 @@ require (
 	golang.org/x/sync v0.1.0
 	google.golang.org/api v0.30.0
 	google.golang.org/grpc v1.50.1
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/macaroon.v2 v2.0.0
 )
 
@@ -169,7 +170,6 @@ require (
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20210617175327-b9e0b3197ced // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/errgo.v1 v1.0.1 // indirect
 	gopkg.in/macaroon-bakery.v2 v2.0.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
@@ -190,9 +190,9 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
-	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.16.8-breez
+	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.16.9-breez
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.0-breez
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.15.0-breez
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.16.1-breez
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.16.2-breez
 )
