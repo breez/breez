@@ -161,6 +161,7 @@ message InvoiceMemo {
 message AddInvoiceRequest {
   InvoiceMemo invoiceDetails = 1;
   LSPInformation lspInfo = 2;
+  OpeningFeeParams opening_fee_params = 3;
 }
 
 message Invoice {
@@ -363,13 +364,34 @@ message LSPInformation {
   /// the channel.
   int64 min_htlc_msat = 11;
 
-  int64 channel_fee_permyriad = 12;
+  int64 channel_fee_permyriad = 12 [deprecated = true];
 
   bytes lsp_pubkey = 13;
   // The channel can be closed if not used this duration in seconds.
-  int64 max_inactive_duration = 14;
+  int64 max_inactive_duration = 14 [deprecated = true];
 
-  int64 channel_minimum_fee_msat = 15;
+  int64 channel_minimum_fee_msat = 15 [deprecated = true];
+
+  // The menu of fee options to pick from for opening a channel. Note that this
+  // menu could be empty if the LSP doesn't support opening channels right now.
+  repeated OpeningFeeParams opening_fee_params_menu = 16;
+
+  // The cheapest fee option for opening a channel. Could be null if there are
+  // no opening_fee_params in the menu (i.e. the LSP does not support opening 
+  // channels right now).
+  OpeningFeeParams cheapest_opening_fee_params = 17;
+}
+message OpeningFeeParams {
+  /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
+  uint64 min_msat = 1;
+  /// The fee in ppm charged over liquidity when buying a channel.
+  uint32 proportional = 2;
+  /// The time this opening fee params promise expires.
+  string valid_until = 3;
+  // The channel can be closed if not used this duration in blocks.
+  uint32 max_idle_time = 4;
+  uint32 max_client_to_self_delay = 5;
+  string promise = 6;
 }
 
 message LSPListRequest {}
