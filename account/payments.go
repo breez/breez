@@ -566,15 +566,34 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 		routingHints = []*lnrpc.RouteHint{fakeHints}
 		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
 
-		// Calculate the channel fee such that it's an integral number of sat.
-		channelFeesMsat := amountMsat * lspInfo.ChannelFeePermyriad / 10_000 / 1_000 * 1_000
-		if channelFeesMsat < lspInfo.ChannelMinimumFeeMsat {
-			channelFeesMsat = lspInfo.ChannelMinimumFeeMsat
-		}
-		a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
-			lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
-		if amountMsat < channelFeesMsat+1000 {
-			return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, lspInfo.ChannelMinimumFeeMsat/1000)
+		var channelFeesMsat int64
+
+		if invoiceRequest.OpeningFeeParams == nil {
+			// TODO: This branch only exists because there may be existing swaps
+			// that use the old fee rate mechanism. Remove this after those
+			// swaps have expired.
+			channelFeesMsat = amountMsat * lspInfo.ChannelFeePermyriad / 10_000 / 1_000 * 1_000
+			if channelFeesMsat < lspInfo.ChannelMinimumFeeMsat {
+				channelFeesMsat = lspInfo.ChannelMinimumFeeMsat
+			}
+			a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
+				lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
+
+			if amountMsat < channelFeesMsat+1000 {
+				return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, lspInfo.ChannelMinimumFeeMsat/1000)
+			}
+		} else {
+			// Calculate the channel fee such that it's an integral number of sat.
+			channelFeesMsat = amountMsat * int64(invoiceRequest.OpeningFeeParams.Proportional) / 1_000_000 / 1_000 * 1_000
+			if channelFeesMsat < int64(invoiceRequest.OpeningFeeParams.MinMsat) {
+				channelFeesMsat = int64(invoiceRequest.OpeningFeeParams.MinMsat)
+			}
+			a.log.Infof("zero-conf fee calculation option: lsp fee rate (proportional): %v (minimum %v), total fees for channel: %v",
+				invoiceRequest.OpeningFeeParams.Proportional, invoiceRequest.OpeningFeeParams.MinMsat, channelFeesMsat)
+
+			if amountMsat < channelFeesMsat+1000 {
+				return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, invoiceRequest.OpeningFeeParams.MinMsat/1000)
+			}
 		}
 
 		smallAmountMsat = amountMsat - channelFeesMsat
@@ -640,7 +659,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 			return "", 0, fmt.Errorf("failed to fetch zero-conf invoice %w", err)
 		}
 		if existingZeroInvoice == nil || string(existingZeroInvoice) != payeeInvoice {
-			if err := a.registerPayment(payeeInvoiceHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id); err != nil {
+			if err := a.registerPayment(payeeInvoiceHash, paymentAddress, amountMsat, smallAmountMsat, pubKey, lspInfo.Id, invoiceRequest.OpeningFeeParams); err != nil {
 				return "", 0, fmt.Errorf("failed to register payment with LSP %w", err)
 			}
 			if err := a.breezDB.AddZeroConfHash(payeeInvoiceHash, []byte(payeeInvoice)); err != nil {
@@ -1468,7 +1487,7 @@ func (a *Service) onNewReceivedPayment(invoice *lnrpc.Invoice) error {
 }
 
 func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmountMsat,
-	outgoingAmountMsat int64, lspPubkey []byte, lspID string) error {
+	outgoingAmountMsat int64, lspPubkey []byte, lspID string, params *data.OpeningFeeParams) error {
 
 	destination, err := hex.DecodeString(a.daemonAPI.NodePubkey())
 	if err != nil {
@@ -1481,6 +1500,21 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 		return fmt.Errorf("generateTag() error: %w", err)
 	}
 
+	var p *lspd.OpeningFeeParams
+
+	// TODO: This nil check can be removed once all branches use the
+	// opening_fee_params flow. This only exists because some swaps may use the
+	// old fee structure.
+	if params != nil {
+		p = &lspd.OpeningFeeParams{
+			MinMsat:              params.MinMsat,
+			Proportional:         params.Proportional,
+			ValidUntil:           params.ValidUntil,
+			MaxIdleTime:          params.MaxIdleTime,
+			MaxClientToSelfDelay: params.MaxClientToSelfDelay,
+			Promise:              params.Promise,
+		}
+	}
 	pi := &lspd.PaymentInformation{
 		PaymentHash:        paymentHash,
 		PaymentSecret:      paymentSecret,
@@ -1488,6 +1522,7 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 		IncomingAmountMsat: incomingAmountMsat,
 		OutgoingAmountMsat: outgoingAmountMsat,
 		Tag:                tag,
+		OpeningFeeParams:   p,
 	}
 	data, err := proto.Marshal(pi)
 
