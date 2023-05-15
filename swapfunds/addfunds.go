@@ -51,6 +51,20 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	c, ctx, cancel := s.breezAPI.NewSwapper(0)
 	defer cancel()
 
+	lsps, err := s.lspList()
+	if err != nil {
+		s.log.Errorf("Failed to get lspList: %v", err)
+		return nil, err
+	}
+	lsp, ok := lsps.Lsps[lspID]
+	if !ok {
+		return nil, errors.New("LSP is not selected")
+	}
+	params, err := s.getOpeningFeeParams(lsp)
+	if err != nil {
+		return nil, err
+	}
+
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
 	if err != nil {
 		s.log.Errorf("Error in AddFundInit: %v", err)
@@ -65,7 +79,6 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 
 	client, err := lnclient.SubSwapClientWatch(context.Background(), &submarineswaprpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
-		s.log.Errorf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
 	}
 
@@ -77,14 +90,20 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	}
 
 	swapInfo := &db.SwapAddressInfo{
-		LspID:            lspID,
-		Address:          r.Address,
-		CreatedTimestamp: time.Now().Unix(),
-		PaymentHash:      swap.Hash,
-		Preimage:         swap.Preimage,
-		PrivateKey:       swap.Key,
-		PublicKey:        swap.Pubkey,
-		Script:           client.Script,
+		LspID:                lspID,
+		Address:              r.Address,
+		CreatedTimestamp:     time.Now().Unix(),
+		PaymentHash:          swap.Hash,
+		Preimage:             swap.Preimage,
+		PrivateKey:           swap.Key,
+		PublicKey:            swap.Pubkey,
+		Script:               client.Script,
+		MinMsat:              params.MinMsat,
+		Proportional:         params.Proportional,
+		ValidUntil:           params.ValidUntil,
+		MaxIdleTime:          params.MaxIdleTime,
+		MaxClientToSelfDelay: params.MaxClientToSelfDelay,
+		Promise:              params.Promise,
 	}
 	s.log.Infof("Saving new swap info %v", swapInfo)
 	s.breezDB.SaveSwapAddressInfo(swapInfo)
@@ -607,6 +626,21 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	if !ok {
 		return "", data.SwapError_NO_ERROR, errors.New("LSP is not selected")
 	}
+	var params *data.OpeningFeeParams
+
+	// This check is to make sure old swaps can still complete. They won't have
+	// a promise, so that has to be taken from lspinfo here.
+	if addressInfo.Promise != "" {
+		params = &data.OpeningFeeParams{
+			MinMsat:              addressInfo.MinMsat,
+			Proportional:         addressInfo.Proportional,
+			ValidUntil:           addressInfo.ValidUntil,
+			MaxIdleTime:          addressInfo.MaxIdleTime,
+			MaxClientToSelfDelay: addressInfo.MaxClientToSelfDelay,
+			Promise:              addressInfo.Promise,
+		}
+	}
+
 	addInvoice, _, err := s.addInvoice(&data.AddInvoiceRequest{
 		InvoiceDetails: &data.InvoiceMemo{
 			Preimage:    addressInfo.Preimage,
@@ -614,7 +648,8 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 			Description: transferFundsRequest,
 			Expiry:      60 * 60 * 24 * 30,
 		},
-		LspInfo: lsp,
+		LspInfo:          lsp,
+		OpeningFeeParams: params,
 	})
 
 	if err != nil {
@@ -623,6 +658,35 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	}
 
 	return addInvoice, data.SwapError_NO_ERROR, nil
+}
+
+func (s *Service) getOpeningFeeParams(lspInfo *data.LSPInformation) (*data.OpeningFeeParams, error) {
+	if len(lspInfo.OpeningFeeParamsMenu) == 0 {
+		return nil, errors.New("LSPInformation does not contain OpeningFeeParams")
+	}
+
+	// Take the longest validity.
+	var params *data.OpeningFeeParams
+	var validUntil time.Time
+	for _, p := range lspInfo.OpeningFeeParamsMenu {
+		v, err := time.Parse("2006-01-02T15:04:05.999Z", p.ValidUntil)
+		if err != nil {
+			return nil, fmt.Errorf("LSPInformation OpeningFeeParams got invalid time format: %v", p.ValidUntil)
+		}
+
+		if params == nil {
+			params = p
+			validUntil = v
+			continue
+		}
+
+		if v.After(validUntil) {
+			params = p
+			validUntil = v
+		}
+	}
+
+	return params, nil
 }
 
 func (s *Service) onUnspentChanged() {
