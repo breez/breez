@@ -35,10 +35,14 @@ var (
 /*
 AddFundsInit is responsible for topping up an existing channel
 */
-func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundInitReply, error) {
+func (s *Service) AddFundsInit(notificationToken, lspID string, params *data.OpeningFeeParams) (*data.AddFundInitReply, error) {
 	accountID := s.daemonAPI.NodePubkey()
 	if accountID == "" {
 		return nil, fmt.Errorf("Account is not ready")
+	}
+
+	if params == nil {
+		return nil, fmt.Errorf("opening_fee_params cannot be nil")
 	}
 
 	lnclient := s.daemonAPI.SubSwapClient()
@@ -51,16 +55,6 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	c, ctx, cancel := s.breezAPI.NewSwapper(0)
 	defer cancel()
 
-	lsps, err := s.lspList()
-	if err != nil {
-		s.log.Errorf("Failed to get lspList: %v", err)
-		return nil, err
-	}
-	lsp, ok := lsps.Lsps[lspID]
-	if !ok {
-		return nil, errors.New("LSP is not selected")
-	}
-	params := lsp.CheapestOpeningFeeParams
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
 	if err != nil {
 		s.log.Errorf("Error in AddFundInit: %v", err)
