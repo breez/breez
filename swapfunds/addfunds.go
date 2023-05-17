@@ -60,11 +60,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	if !ok {
 		return nil, errors.New("LSP is not selected")
 	}
-	params, err := s.getOpeningFeeParams(lsp)
-	if err != nil {
-		return nil, err
-	}
-
+	params := lsp.CheapestOpeningFeeParams
 	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
 	if err != nil {
 		s.log.Errorf("Error in AddFundInit: %v", err)
@@ -658,35 +654,6 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	}
 
 	return addInvoice, data.SwapError_NO_ERROR, nil
-}
-
-func (s *Service) getOpeningFeeParams(lspInfo *data.LSPInformation) (*data.OpeningFeeParams, error) {
-	if len(lspInfo.OpeningFeeParamsMenu) == 0 {
-		return nil, errors.New("LSPInformation does not contain OpeningFeeParams")
-	}
-
-	// Take the longest validity.
-	var params *data.OpeningFeeParams
-	var validUntil time.Time
-	for _, p := range lspInfo.OpeningFeeParamsMenu {
-		v, err := time.Parse("2006-01-02T15:04:05.999Z", p.ValidUntil)
-		if err != nil {
-			return nil, fmt.Errorf("LSPInformation OpeningFeeParams got invalid time format: %v", p.ValidUntil)
-		}
-
-		if params == nil {
-			params = p
-			validUntil = v
-			continue
-		}
-
-		if v.After(validUntil) {
-			params = p
-			validUntil = v
-		}
-	}
-
-	return params, nil
 }
 
 func (s *Service) onUnspentChanged() {

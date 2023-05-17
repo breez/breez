@@ -380,6 +380,11 @@ message LSPInformation {
   // no opening_fee_params in the menu (i.e. the LSP does not support opening 
   // channels right now).
   OpeningFeeParams cheapest_opening_fee_params = 17;
+
+  // The opening fee options that are valid for the longest duration. Could be
+  // null if there are no opening_fee_params in the menu (i.e. the LSP does not
+  // support opening channels right now).
+  OpeningFeeParams longest_valid_opening_fee_params = 18;
 }
 message OpeningFeeParams {
   /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.

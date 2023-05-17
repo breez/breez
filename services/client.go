@@ -217,10 +217,14 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 			OpeningFeeParamsMenu:  menu,
 		}
 
-		params := c.getCheapestOpeningFeeParams(lspInfo)
-
+		cheapestParams := c.getCheapestOpeningFeeParams(lspInfo)
+		longestParams, err := c.getLongestValidOpeningFeeParams(lspInfo)
+		if err != nil {
+			return nil, fmt.Errorf("received invalid lsp response: %w", err)
+		}
 		// NOTE: This could be nil, if there are no params in the response.
-		lspInfo.CheapestOpeningFeeParams = params
+		lspInfo.CheapestOpeningFeeParams = cheapestParams
+		lspInfo.LongestValidOpeningFeeParams = longestParams
 		r[id] = lspInfo
 	}
 	c.lspList = &data.LSPList{Lsps: r}
@@ -234,6 +238,36 @@ func (c *Client) getCheapestOpeningFeeParams(lspInfo *data.LSPInformation) *data
 	}
 
 	return lspInfo.OpeningFeeParamsMenu[0]
+}
+
+func (c *Client) getLongestValidOpeningFeeParams(lspInfo *data.LSPInformation) (*data.OpeningFeeParams, error) {
+	if len(lspInfo.OpeningFeeParamsMenu) == 0 {
+		c.log.Info("No channel opening params are available in lsp info: %+v", lspInfo)
+		return nil, nil
+	}
+
+	// Take the longest validity.
+	var params *data.OpeningFeeParams
+	var validUntil time.Time
+	for _, p := range lspInfo.OpeningFeeParamsMenu {
+		v, err := time.Parse("2006-01-02T15:04:05.999Z", p.ValidUntil)
+		if err != nil {
+			return nil, fmt.Errorf("LSPInformation OpeningFeeParams got invalid time format: %v", p.ValidUntil)
+		}
+
+		if params == nil {
+			params = p
+			validUntil = v
+			continue
+		}
+
+		if v.After(validUntil) {
+			params = p
+			validUntil = v
+		}
+	}
+
+	return params, nil
 }
 
 func dial(serverURL string, noTLS bool) (*grpc.ClientConn, error) {
