@@ -22,6 +22,7 @@ message RestartDaemonReply {}
 message AddFundInitRequest {
   string notificationToken = 1;
   string lspID = 2;
+  OpeningFeeParams opening_fee_params = 3;
 }
 
 message FundStatusRequest { string notificationToken = 1; }
@@ -372,19 +373,15 @@ message LSPInformation {
 
   int64 channel_minimum_fee_msat = 15 [deprecated = true];
 
-  // The menu of fee options to pick from for opening a channel. Note that this
-  // menu could be empty if the LSP doesn't support opening channels right now.
-  repeated OpeningFeeParams opening_fee_params_menu = 16;
-
   // The cheapest fee option for opening a channel. Could be null if there are
   // no opening_fee_params in the menu (i.e. the LSP does not support opening 
   // channels right now).
-  OpeningFeeParams cheapest_opening_fee_params = 17;
+  OpeningFeeParams cheapest_opening_fee_params = 16;
 
   // The opening fee options that are valid for the longest duration. Could be
   // null if there are no opening_fee_params in the menu (i.e. the LSP does not
   // support opening channels right now).
-  OpeningFeeParams longest_valid_opening_fee_params = 18;
+  OpeningFeeParams longest_valid_opening_fee_params = 17;
 }
 message OpeningFeeParams {
   /// The minimum value in millisatoshi we will require for incoming HTLCs on the channel.
