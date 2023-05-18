@@ -273,13 +273,10 @@ func (b *Manager) Start() error {
 				var err error
 				var accountName string
 
-				if req.BackupNodeData {
-					b.log.Infof("starting backup node data")
-					if accountName, err = b.processBackupRequest(true); err != nil {
-						b.log.Errorf("failed to process backup request: %v", err)
-						b.notifyBackupFailed(err)
-						continue
-					}
+				if accountName, err = b.processBackupRequest(true); err != nil {
+					b.log.Errorf("failed to process backup request: %v", err)
+					b.notifyBackupFailed(err)
+					continue
 				}
 				if req.BackupAppData {
 					b.log.Infof("starting backup app data")
