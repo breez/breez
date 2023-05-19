@@ -414,7 +414,7 @@ func AddFundsInit(initRequest []byte) ([]byte, error) {
 		return nil, err
 	}
 	return marshalResponse(getBreezApp().SwapService.AddFundsInit(
-		request.NotificationToken, request.LspID))
+		request.NotificationToken, request.LspID, request.OpeningFeeParams))
 }
 
 // RefundFees transfers the funds in address to the user destination address

@@ -7,13 +7,21 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-//SwapAddressInfo contains all the infromation regarding
-//a submarine swap address.
+// SwapAddressInfo contains all the infromation regarding
+// a submarine swap address.
 type SwapAddressInfo struct {
 	LspID            string
 	PaymentRequest   string
 	Address          string
 	CreatedTimestamp int64
+
+	// Opening fee params
+	MinMsat              uint64
+	Proportional         uint32
+	ValidUntil           string
+	MaxIdleTime          uint32
+	MaxClientToSelfDelay uint32
+	Promise              string
 
 	//client side data
 	PaymentHash []byte
@@ -46,9 +54,7 @@ func (s *SwapAddressInfo) Confirmed() bool {
 	return s.LockHeight > 0
 }
 
-/**
-Swap addresses
-**/
+// Swap addresses
 func (db *DB) FetchAllSwapAddresses() ([]*SwapAddressInfo, error) {
 	return db.FetchSwapAddresses(func(addr *SwapAddressInfo) bool {
 		return true

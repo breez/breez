@@ -35,10 +35,14 @@ var (
 /*
 AddFundsInit is responsible for topping up an existing channel
 */
-func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundInitReply, error) {
+func (s *Service) AddFundsInit(notificationToken, lspID string, params *data.OpeningFeeParams) (*data.AddFundInitReply, error) {
 	accountID := s.daemonAPI.NodePubkey()
 	if accountID == "" {
 		return nil, fmt.Errorf("Account is not ready")
+	}
+
+	if params == nil {
+		return nil, fmt.Errorf("opening_fee_params cannot be nil")
 	}
 
 	lnclient := s.daemonAPI.SubSwapClient()
@@ -65,7 +69,6 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 
 	client, err := lnclient.SubSwapClientWatch(context.Background(), &submarineswaprpc.SubSwapClientWatchRequest{Preimage: swap.Preimage, Key: swap.Key, ServicePubkey: r.Pubkey, LockHeight: r.LockHeight})
 	if err != nil {
-		s.log.Errorf("Failed to call SubSwapClientWatch %v", err)
 		return nil, err
 	}
 
@@ -77,14 +80,20 @@ func (s *Service) AddFundsInit(notificationToken, lspID string) (*data.AddFundIn
 	}
 
 	swapInfo := &db.SwapAddressInfo{
-		LspID:            lspID,
-		Address:          r.Address,
-		CreatedTimestamp: time.Now().Unix(),
-		PaymentHash:      swap.Hash,
-		Preimage:         swap.Preimage,
-		PrivateKey:       swap.Key,
-		PublicKey:        swap.Pubkey,
-		Script:           client.Script,
+		LspID:                lspID,
+		Address:              r.Address,
+		CreatedTimestamp:     time.Now().Unix(),
+		PaymentHash:          swap.Hash,
+		Preimage:             swap.Preimage,
+		PrivateKey:           swap.Key,
+		PublicKey:            swap.Pubkey,
+		Script:               client.Script,
+		MinMsat:              params.MinMsat,
+		Proportional:         params.Proportional,
+		ValidUntil:           params.ValidUntil,
+		MaxIdleTime:          params.MaxIdleTime,
+		MaxClientToSelfDelay: params.MaxClientToSelfDelay,
+		Promise:              params.Promise,
 	}
 	s.log.Infof("Saving new swap info %v", swapInfo)
 	s.breezDB.SaveSwapAddressInfo(swapInfo)
@@ -607,6 +616,21 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 	if !ok {
 		return "", data.SwapError_NO_ERROR, errors.New("LSP is not selected")
 	}
+	var params *data.OpeningFeeParams
+
+	// This check is to make sure old swaps can still complete. They won't have
+	// a promise, so that has to be taken from lspinfo here.
+	if addressInfo.Promise != "" {
+		params = &data.OpeningFeeParams{
+			MinMsat:              addressInfo.MinMsat,
+			Proportional:         addressInfo.Proportional,
+			ValidUntil:           addressInfo.ValidUntil,
+			MaxIdleTime:          addressInfo.MaxIdleTime,
+			MaxClientToSelfDelay: addressInfo.MaxClientToSelfDelay,
+			Promise:              addressInfo.Promise,
+		}
+	}
+
 	addInvoice, _, err := s.addInvoice(&data.AddInvoiceRequest{
 		InvoiceDetails: &data.InvoiceMemo{
 			Preimage:    addressInfo.Preimage,
@@ -614,7 +638,8 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 			Description: transferFundsRequest,
 			Expiry:      60 * 60 * 24 * 30,
 		},
-		LspInfo: lsp,
+		LspInfo:          lsp,
+		OpeningFeeParams: params,
 	})
 
 	if err != nil {
