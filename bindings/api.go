@@ -38,10 +38,11 @@ const (
 )
 
 var (
-	appServices AppServices
-	breezApp    *breez.App
-	appLogger   Logger
-	mu          sync.Mutex
+	appServices   AppServices
+	breezApp      *breez.App
+	appLogger     Logger
+	cachedLSPList *data.LSPList
+	mu            sync.Mutex
 
 	ErrorForceRescan    = fmt.Errorf("Force rescan")
 	ErrorForceBootstrap = fmt.Errorf("Force bootstrap")
@@ -767,11 +768,19 @@ func LSPList() ([]byte, error) {
 }
 
 func LSPActivity() ([]byte, error) {
-	lspList, err := getBreezApp().ServicesClient.LSPList()
-	if err != nil {
-		return nil, err
+	var lspList *data.LSPList
+	mu.Lock()
+	lspList = cachedLSPList
+	mu.Unlock()
+	if lspList == nil {
+		lspList, err := getBreezApp().ServicesClient.LSPList()
+		if err != nil {
+			return nil, err
+		}
+		mu.Lock()
+		cachedLSPList = lspList
+		mu.Unlock()
 	}
-
 	return marshalResponse(getBreezApp().AccountService.LSPActivity(lspList))
 }
 

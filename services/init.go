@@ -35,7 +35,6 @@ type Client struct {
 	cfg        *config.Config
 	log        btclog.Logger
 	connection *grpc.ClientConn
-	lspList    *data.LSPList
 }
 
 // NewClient creates a new client struct
