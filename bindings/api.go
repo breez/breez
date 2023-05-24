@@ -772,8 +772,9 @@ func LSPActivity() ([]byte, error) {
 	mu.Lock()
 	lspList = cachedLSPList
 	mu.Unlock()
+	var err error
 	if lspList == nil {
-		lspList, err := getBreezApp().ServicesClient.LSPList()
+		lspList, err = getBreezApp().ServicesClient.LSPList()
 		if err != nil {
 			return nil, err
 		}
