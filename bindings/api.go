@@ -763,11 +763,11 @@ func ReceiverNode() (string, error) {
 }
 
 func LSPList() ([]byte, error) {
-	return marshalResponse(getBreezApp().ServicesClient.LSPList())
+	return marshalResponse(getBreezApp().ServicesClient.LSPList(true))
 }
 
 func LSPActivity() ([]byte, error) {
-	lspList, err := getBreezApp().ServicesClient.LSPList()
+	lspList, err := getBreezApp().ServicesClient.LSPList(false)
 	if err != nil {
 		return nil, err
 	}

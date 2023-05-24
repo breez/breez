@@ -17,7 +17,7 @@ type RPC struct {
 func (r *RPC) GetLSPList(ctx context.Context, in *data.LSPListRequest) (
 	*data.LSPList, error) {
 
-	return getBreezApp().ServicesClient.LSPList()
+	return getBreezApp().ServicesClient.LSPList(true)
 }
 
 func (r *RPC) ConnectToLSP(ctx context.Context, in *data.ConnectLSPRequest) (
