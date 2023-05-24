@@ -160,11 +160,6 @@ func (c *Client) ReceiverNode() (string, error) {
 // LSPList returns the list of the LSPs
 func (c *Client) LSPList() (*data.LSPList, error) {
 	con := c.getBreezClientConnection()
-	c.Lock()
-	defer c.Unlock()
-	if c.lspList != nil {
-		return c.lspList, nil
-	}
 	ctx, cancel := context.WithTimeout(
 		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
 		endpointTimeout*time.Second,
@@ -226,8 +221,8 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 		lspInfo.LongestValidOpeningFeeParams = longestParams
 		r[id] = lspInfo
 	}
-	c.lspList = &data.LSPList{Lsps: r}
-	return c.lspList, nil
+
+	return &data.LSPList{Lsps: r}, nil
 }
 
 func (c *Client) getCheapestOpeningFeeParams(menu []*data.OpeningFeeParams) *data.OpeningFeeParams {
