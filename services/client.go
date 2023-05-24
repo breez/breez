@@ -160,10 +160,11 @@ func (c *Client) ReceiverNode() (string, error) {
 // LSPList returns the list of the LSPs
 func (c *Client) LSPList(forceRefresh bool) (*data.LSPList, error) {
 	con := c.getBreezClientConnection()
-	if !forceRefresh && c.lspList != nil {
-		c.Lock()
-		defer c.Unlock()
-		return c.lspList, nil
+	c.Lock()
+	lspList := c.lspList
+	c.Unlock()
+	if !forceRefresh && lspList != nil {
+		return lspList, nil
 	}
 	ctx, cancel := context.WithTimeout(
 		metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+c.cfg.LspToken),
