@@ -118,6 +118,7 @@ services:
       nodes:
         ipv4_address: 10.5.0.9
     environment:
+      MEMPOOL_API_BASE_URL: ${MEMPOOL_API_BASE_URL}
       NODE_HOST: ${DEV_HOST_IP}:9736
       NODE_PUBKEY: ${NODE_PUBKEY}
   dev-postgres:

@@ -1,5 +1,6 @@
 export DEV_HOST_IP=127.0.0.1
 export TEST_DIR=/Users/roeierez/test/docker
+export MEMPOOL_API_BASE_URL=https://mempool.space/api/v1/
 
 export ALICE_BREEZ_ADDRESS="127.0.0.1:50053"
 export ALICE_DIR=$TEST_DIR/alice_node

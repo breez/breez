@@ -1,3 +1,5 @@
+export MEMPOOL_API_BASE_URL=https://mempool.space/api/v1/
+
 export ALICE_BREEZ_ADDRESS="127.0.0.1:50053"
 export ALICE_DIR=$TEST_DIR/alice_node
 export ALICE_LND_ADDRESS="127.0.0.1:10009"
