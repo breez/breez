@@ -27,6 +27,7 @@ const (
 	backupEncryptedProperty      = "backupEncrypted" //legacy
 	backupEncryptionTypeProperty = "backupEncryptionType"
 	backupModifiedTimestamp      = "backupModifiedTimestamp"
+	timestamp                    = "timestamp"
 )
 
 // driveServiceError is the type of error this provider returns in case
@@ -392,7 +393,7 @@ func (p *GoogleDriveProvider) GetProviderTimestamp(nodeID string) (time.Time, er
 		return time.Time{}, &driveServiceError{err}
 	}
 	folderUpdate := &drive.File{AppProperties: map[string]string{
-		backupModifiedTimestamp: nodeFolder.ModifiedTime,
+		timestamp: nodeFolder.ModifiedTime,
 	}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {

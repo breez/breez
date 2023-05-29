@@ -80,23 +80,13 @@ func (n *RemoteServerProvider) GetProviderTimestamp(nodeID string) (time.Time, e
 		return time.Time{}, &webdavProviderError{err: err}
 	}
 
-	// create the backup dir
-	nodeDir := path.Join(breezDir, nodeID)
-	if err := n.createDirIfNotExists(c, nodeDir); err != nil {
-		return time.Time{}, &webdavProviderError{err: err}
-	}
-	backupDir := path.Join(nodeDir, "node_data")
-	if err := n.createDirIfNotExists(c, backupDir); err != nil {
-		return time.Time{}, &webdavProviderError{err: err}
-	}
-
 	bytesArray := make([]byte, 2)
-	n.log.Infof("Uploading file timestamp to %s", nodeDir)
-	if err := c.Upload(bytesArray, path.Join(nodeDir, "timestamp")); err != nil {
+	n.log.Infof("Uploading file timestamp to %s", breezDir)
+	if err := c.Upload(bytesArray, path.Join(breezDir, "timestamp")); err != nil {
 		return time.Time{}, &webdavProviderError{err: err}
 	}
 
-	files, err := c.ListDir(nodeDir)
+	files, err := c.ListDir(breezDir)
 	if err != nil {
 		return time.Time{}, &webdavProviderError{err: err}
 	}
