@@ -369,7 +369,11 @@ func (b *Manager) Start() error {
 					b.notifyBackupFailed(err)
 					continue
 				}
-				b.log.Info("calling GetProviderTimestamp from processBackupRequest, with nodeID=%v", nodeID)
+				provider := b.GetProvider()
+				if provider == nil {
+					continue
+				}
+				b.log.Infof("calling GetProviderTimestamp from processBackupRequest, with nodeID=%v", nodeID)
 				timestamp, err := b.provider.GetProviderTimestamp(nodeID)
 				if err != nil {
 					b.log.Errorf("failed to GetProviderTimestamp %v", err)
