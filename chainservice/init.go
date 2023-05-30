@@ -368,13 +368,13 @@ func resetChainService(workingDir string) error {
 	}
 	neutrinoDataDir := neutrinoDataDir(workingDir, config.Network)
 	if err = os.Remove(path.Join(neutrinoDataDir, "neutrino.db")); err != nil {
-		logger.Errorf("failed to remove neutrino.db %v", err)
+		fmt.Printf("failed to remove neutrino.db %v", err)
 	}
 	if err = os.Remove(path.Join(neutrinoDataDir, "reg_filter_headers.bin")); err != nil {
-		logger.Errorf("failed to remove reg_filter_headers.bin %v", err)
+		fmt.Printf("failed to remove reg_filter_headers.bin %v", err)
 	}
 	if err = os.Remove(path.Join(neutrinoDataDir, "block_headers.bin")); err != nil {
-		logger.Errorf("failed to remove block_headers.bin %v", err)
+		fmt.Printf("failed to remove block_headers.bin %v", err)
 	}
 
 	return nil
