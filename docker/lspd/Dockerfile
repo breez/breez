@@ -17,8 +17,8 @@ RUN cd /src/breez && go build ./itest/generate_lspd_config.go
 RUN cp /src/breez/generate_lspd_config .
 RUN chmod +x ./generate_lspd_config
 RUN chmod +x ./lspd/lspd
-RUN ./lspd/lspd genkey >> .env
-
+RUN ./lspd/lspd genkey >> .env.template
+RUN echo ' UPDATE public.new_channel_params set token='"'"'8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X'"';" >> ./lspd/postgresql/migrations/000012_new_channel_params_token.up.sql
 RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 #CMD /root/go/bin/godotenv ./server/server
 ENTRYPOINT ./start.sh

@@ -15,7 +15,7 @@ type NodeConfig struct {
 	Name                      string     `json:name,omitempty`
 	NodePubkey                string     `json:nodePubkey,omitempty`
 	LspdPrivateKey            string     `json:"lspdPrivateKey"`
-	Token                     string     `json:"token"`
+	Tokens                    []string   `json:"tokens"`
 	Host                      string     `json:"host"`
 	PublicChannelAmount       int64      `json:"publicChannelAmount,string"`
 	ChannelAmount             uint64     `json:"channelAmount,string"`
@@ -74,7 +74,7 @@ func main() {
 		ChannelFeePermyriad:       40,
 		MinHtlcMsat:               600,
 		TimeLockDelta:             144,
-		Token:                     "8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X",
+		Tokens:                    []string{"8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X"},
 	}
 	config.Lnd = &LndConfig{
 		Address:  address,
