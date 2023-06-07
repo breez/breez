@@ -54,11 +54,16 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 
 		lightningAddress = parsedAddress.Address
 
-		url := &url.URL{
-			Scheme: "https",
-			Host:   parts[1],
-			Path:   ".well-known/lnurlp/" + parts[0],
+		var url url.URL
+		if strings.Contains(parts[1], ".onion") {
+			url.Scheme = "http"
+
+		} else {
+			url.Scheme = "https"
 		}
+		url.Host = parts[1]
+		url.Path = ".well-known/lnurlp/" + parts[0]
+
 		encodedLnurl = url.String()
 	}
 	lnurl.Client.Timeout = time.Second * 60
