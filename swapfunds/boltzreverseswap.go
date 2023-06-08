@@ -355,7 +355,7 @@ func (s *Service) NewReverseSwap(amt int64, feesHash, claimAddress string) (stri
 		TimeoutBlockHeight: r.TimeoutBlockHeight,
 		StartBlockHeight:   int64(info.BlockHeight),
 	}
-	s.log.Errorf("data.ReverseSwap: %#v", rs)
+	s.log.Infof("data.ReverseSwap: %#v", rs)
 	h, err := s.breezDB.SaveReverseSwap(rs)
 	if err != nil {
 		return "", fmt.Errorf("breezDB.SaveReverseSwap(%#v): %w", rs, err)
