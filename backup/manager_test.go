@@ -2,6 +2,7 @@ package backup
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -23,15 +24,16 @@ func (s *MockAuthService) SignIn() (string, error) {
 }
 
 type MockTester struct {
-	uploadCounter           int
-	downloadCounter         int
-	preparer                DataPreparer
-	lastNotification        data.NotificationEvent
-	UploadBackupFilesImpl   func(file string, nodeID string, encryptionType string) (string, error)
-	AvailableSnapshotsImpl  func() ([]SnapshotInfo, error)
-	DownloadBackupFilesImpl func(nodeID, backupID string) ([]string, error)
-	MsgChannel              chan data.NotificationEvent
-	torConfig               *tor.TorConfig
+	uploadCounter            int
+	downloadCounter          int
+	preparer                 DataPreparer
+	lastNotification         data.NotificationEvent
+	UploadBackupFilesImpl    func(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error)
+	AvailableSnapshotsImpl   func() ([]SnapshotInfo, error)
+	DownloadBackupFilesImpl  func(nodeID, backupID string) ([]string, error)
+	GetProviderTimestampImpl func(nodeID string) (time.Time, error)
+	MsgChannel               chan data.NotificationEvent
+	torConfig                *tor.TorConfig
 }
 
 func newDefaultMockTester() *MockTester {
@@ -46,23 +48,32 @@ func newDefaultMockTester() *MockTester {
 		p.downloadCounter++
 		return []string{}, nil
 	}
-	p.UploadBackupFilesImpl = func(file string, nodeID string, encryptionType string) (string, error) {
+	p.UploadBackupFilesImpl = func(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
 		time.Sleep(time.Millisecond * 10)
+		fmt.Printf("p.uploadCounter: %v", p.uploadCounter)
 		p.uploadCounter++
 		return "", nil
+	}
+	p.GetProviderTimestampImpl = func(nodeID string) (time.Time, error) {
+		time.Sleep(time.Millisecond * 10)
+		return time.Now(), nil
 	}
 	p.MsgChannel = make(chan data.NotificationEvent, 100)
 	return &p
 }
 
-func (m *MockTester) UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error) {
-	return m.UploadBackupFilesImpl(file, nodeID, "")
+func (m *MockTester) UploadBackupFiles(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
+	return m.UploadBackupFilesImpl(file, nodeID, "", timestamp)
 }
 func (m *MockTester) AvailableSnapshots() ([]SnapshotInfo, error) {
 	return m.AvailableSnapshotsImpl()
 }
 func (m *MockTester) DownloadBackupFiles(nodeID, backupID string) ([]string, error) {
 	return m.DownloadBackupFilesImpl(nodeID, backupID)
+}
+
+func (m *MockTester) GetProviderTimestamp(nodeID string) (time.Time, error) {
+	return m.GetProviderTimestampImpl(nodeID)
 }
 
 func (m *MockTester) SetTor(torConfig *tor.TorConfig) {
@@ -198,7 +209,7 @@ func TestErrorInPrepareBackup(t *testing.T) {
 
 func TestErrorInUpload(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files string, nodeID string, encryptionType string) (string, error) {
+	tester.UploadBackupFilesImpl = func(files string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
 		return "", errors.New("failed to upload files")
 	}
 	manager, err := createTestManager(tester)
@@ -220,7 +231,7 @@ func TestErrorInUpload(t *testing.T) {
 
 func TestAuthError(t *testing.T) {
 	tester := newDefaultMockTester()
-	tester.UploadBackupFilesImpl = func(files string, nodeID string, encryptionType string) (string, error) {
+	tester.UploadBackupFilesImpl = func(files string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
 		return "", &mockAuthError{}
 	}
 	manager, err := createTestManager(tester)
@@ -318,7 +329,7 @@ func TestBackupConflict(t *testing.T) {
 			SnapshotInfo{
 				NodeID:       "test-node-id",
 				BackupID:     "conflict-backup-id",
-				ModifiedTime: time.Now().String(),
+				ModifiedTime: time.Now(),
 			},
 		}, nil
 	}
@@ -330,8 +341,106 @@ func TestBackupConflict(t *testing.T) {
 	defer manager.destroy()
 
 	safe, err := manager.IsSafeToRunNode("test-node-id")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if safe {
 		t.Fatal("returned safe to run even though it isn't")
+	}
+}
+
+func TestBackupNotLatest(t *testing.T) {
+	tester := newDefaultMockTester()
+	snapshots, err := tester.AvailableSnapshots()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshots) > 0 {
+		t.Fatal("expected 0 snapshot")
+	}
+	manager, err := createTestManager(tester)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.destroy()
+	err = manager.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+	safe, err := manager.EnsureLatestBackup("test-node-id")
+	if err != nil {
+		t.Logf("received error: %v", err)
+	}
+	if !safe {
+		t.Fatal("returned not safe to run even though it is.")
+	}
+}
+
+func TestBackupNotLatestError(t *testing.T) {
+	tester := newDefaultMockTester()
+	tester.AvailableSnapshotsImpl = func() ([]SnapshotInfo, error) {
+		return []SnapshotInfo{
+			SnapshotInfo{
+				NodeID:       "test-node-id",
+				BackupID:     "2",
+				ModifiedTime: time.Date(2009, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+		}, nil
+	}
+	manager, err := createTestManager(tester)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.destroy()
+	manager.Start()
+
+	// Create a local snapshot that is older than the latest backup.
+	err = manager.SetLatestBackupTime(time.Date(2008, 10, 31, 0, 0, 0, 0, time.UTC), "test-node-id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	safe, _ := manager.EnsureLatestBackup("test-node-id")
+	if safe {
+		t.Fatal("returned not safe to run even though it is")
+	}
+}
+
+func TestBackupWardsComaptible(t *testing.T) {
+
+	type SnapshotInfoOld struct {
+		NodeID       string
+		BackupID     string
+		ModifiedTime string
+	}
+	tester := newDefaultMockTester()
+
+	legacySnapshot := SnapshotInfoOld{
+		NodeID:       "test-node-id",
+		BackupID:     "1",
+		ModifiedTime: time.Now().Format(time.RFC3339),
+	}
+	bytes, err := json.Marshal(&legacySnapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var snapshot SnapshotInfo
+	json.Unmarshal(bytes, &snapshot)
+	tester.AvailableSnapshotsImpl = func() ([]SnapshotInfo, error) {
+		return []SnapshotInfo{snapshot}, nil
+	}
+	manager, err := createTestManager(tester)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.destroy()
+	manager.Start()
+	snapshots, err := manager.AvailableSnapshots()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(snapshots) != 1 {
+		t.Fatal("expected 1 snapshot")
 	}
 }
 
@@ -379,7 +488,7 @@ func TestEncryptedBackup(t *testing.T) {
 
 	preparer := func() (paths []string, nodeID string, err error) {
 		for _, backupFile := range downloads {
-			if err := ioutil.WriteFile(backupFile, originalContent, os.ModePerm); err != nil {
+			if err := os.WriteFile(backupFile, originalContent, os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -420,7 +529,7 @@ func TestEncryptedBackup(t *testing.T) {
 	if err != nil {
 		t.Error("Restore failed", err)
 	}
-	if bytes.Compare(content, originalContent) != 0 {
+	if !bytes.Equal(content, originalContent) {
 		t.Error("Restore failed to decreypt file", err, content)
 	}
 }

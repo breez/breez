@@ -26,6 +26,8 @@ const (
 	activeBackupFolderProperty   = "activeBackupFolder"
 	backupEncryptedProperty      = "backupEncrypted" //legacy
 	backupEncryptionTypeProperty = "backupEncryptionType"
+	backupModifiedTimestamp      = "backupModifiedTimestamp"
+	timestamp                    = "timestamp"
 )
 
 // driveServiceError is the type of error this provider returns in case
@@ -127,16 +129,35 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 	for _, f := range r.Files {
 		p.log.Infof("GoogleDriveProvider checking snapshot, name:%v, id:%v, size=%v", f.Name, f.Id, f.Size)
 		var backupID string
+		var modifiedTime time.Time
 		for k, v := range f.AppProperties {
 			if k == backupIDProperty {
 				backupID = v
+			}
+			// we wish to use the modfied time set by us.
+			if k == backupModifiedTimestamp {
+				modifiedTime, err = time.Parse(time.RFC3339, v)
+				if err != nil {
+					p.log.Errorf("unable to parse modified time: %v", err)
+					return nil, &driveServiceError{err}
+				}
+			}
+		}
+		// if we have not set the modfied time, we will use the time of the last backup.
+		if modifiedTime.IsZero() {
+			modifiedTime, err = time.Parse(time.RFC3339, f.ModifiedTime)
+			if err != nil {
+				if err != nil {
+					p.log.Errorf("unable to parse modified time: %v", err)
+					return nil, &driveServiceError{err}
+				}
 			}
 		}
 		legacyEncrypted := f.AppProperties[backupEncryptedProperty]
 		encryptionType, hasEncryptionType := f.AppProperties[backupEncryptionTypeProperty]
 		backups = append(backups, SnapshotInfo{
 			NodeID:         string(f.Name[9:]),
-			ModifiedTime:   f.ModifiedTime,
+			ModifiedTime:   modifiedTime,
 			Encrypted:      !hasEncryptionType && legacyEncrypted == "true" || encryptionType != "",
 			EncryptionType: encryptionType,
 			BackupID:       backupID,
@@ -152,7 +173,7 @@ func (p *GoogleDriveProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 //  2. Uploads all files to the newly created folder.
 //  3. update the node folder metadata property "activeBackupFolderProperty" to contain the
 //     id of the new folder.
-func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error) {
+func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error) {
 	p.log.Infof("uploadBackupFiles started, nodeID=%v", nodeID)
 
 	// Fetch the node folder
@@ -277,6 +298,7 @@ func (p *GoogleDriveProvider) UploadBackupFiles(file string, nodeID string, encr
 	folderUpdate := &drive.File{AppProperties: map[string]string{
 		activeBackupFolderProperty:   backupFolderID,
 		backupEncryptionTypeProperty: encryptionType,
+		backupModifiedTimestamp:      timestamp.Format(time.RFC3339),
 	}}
 	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
 	if err != nil {
@@ -299,7 +321,7 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 		return nil, &driveServiceError{err}
 	}
 
-	// Fetch thte backup folder
+	// Fetch the backup folder
 	if nodeFolder.AppProperties == nil {
 		return nil, fmt.Errorf("can't find active backup for node %v", nodeID)
 	}
@@ -359,10 +381,37 @@ func (p *GoogleDriveProvider) DownloadBackupFiles(nodeID, backupID string) ([]st
 	return downloaded, nil
 }
 
+// GetProviderTimestamp edits the timestamp metadata for the given node's file and returns
+// a time if successfull.
+func (p *GoogleDriveProvider) GetProviderTimestamp(nodeID string) (time.Time, error) {
+	p.log.Infof("GetProviderTimestamp started, nodeID=%v", nodeID)
+
+	// Fetch the node folder.
+	nodeFolder, err := p.nodeFolder(nodeID)
+	if err != nil {
+		p.log.Infof("GetProviderTimestamp failed to fetch node folder:%v", nodeID)
+		return time.Time{}, &driveServiceError{err}
+	}
+	folderUpdate := &drive.File{AppProperties: map[string]string{
+		timestamp: nodeFolder.ModifiedTime,
+	}}
+	_, err = p.driveService.Files.Update(nodeFolder.Id, folderUpdate).Do()
+	if err != nil {
+		p.log.Errorf("GetProviderTimestamp failed to update file at folder:%v", nodeFolder.Id)
+		return time.Time{}, &driveServiceError{err}
+	}
+
+	latestNodeFolder, err := p.nodeFolder(nodeID)
+	if err != nil {
+		return time.Time{}, &driveServiceError{err}
+	}
+	return time.Parse(time.RFC3339, latestNodeFolder.ModifiedTime)
+}
+
 // nodeFolder is responsible for fetching the node folder. If it doesn't exist it creates it.
 func (p *GoogleDriveProvider) nodeFolder(nodeID string) (*drive.File, error) {
 	r, err := p.driveService.Files.List().Spaces("appDataFolder").
-		Fields("files(id)", "files(appProperties)", "files(name)").
+		Fields("files(id)", "files(appProperties)", "files(name)", "files(modifiedTime)").
 		Q(fmt.Sprintf("'appDataFolder' in parents and name = 'snapshot-%v'", nodeID)).
 		Do()
 	if err != nil {

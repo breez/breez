@@ -207,6 +207,7 @@ message NotificationEvent {
     REVERSE_SWAP_CLAIM_FAILED = 17;
     REVERSE_SWAP_CLAIM_CONFIRMED = 18;
     LSP_CHANNEL_OPENED = 19;
+    BACKUP_NOT_LATEST_CONFLICT = 20;
   }
 
   NotificationType type = 1;

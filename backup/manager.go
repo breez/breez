@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ import (
 const backupFileName = "backup.zip"
 const appDataBackupFileName = "app_data_backup.zip"
 const appDataBackupDir = "app_data_backup"
+const latestBackupSnapShot = "latest_backup_snapshot.json"
 
 var (
 	backupDelay     = time.Duration(time.Second * 2)
@@ -241,6 +243,7 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	for _, s := range snapshots {
 		if s.NodeID == nodeID && s.BackupID != "" && backupID != s.BackupID {
 			b.log.Errorf("remote restore was found for node %v.", nodeID)
@@ -248,7 +251,93 @@ func (b *Manager) IsSafeToRunNode(nodeID string) (bool, error) {
 			return false, nil
 		}
 	}
+
 	return true, nil
+}
+
+// LatestBackupInfo returns the latest backup time which is saved locally.
+// If the file does not exist, it returns the zero time and an error.
+func (b *Manager) LatestBackupTime() (time.Time, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	file, err := os.Open(path.Join(b.workingDir, latestBackupSnapShot))
+	if err != nil {
+		b.log.Errorf("LatestBackupTime, detected err %v", err)
+		return time.Time{}, err
+	}
+	defer file.Close()
+	byteValue, err := io.ReadAll(file)
+	if err != nil {
+		b.log.Errorf("LatestBackupTime, detected err %v", err)
+		return time.Time{}, err
+	}
+	var snapshot SnapshotInfo
+	json.Unmarshal([]byte(byteValue), &snapshot)
+	return snapshot.ModifiedTime, nil
+}
+
+// EnsureLatestBackup checks whenever a given local state is newer than our snapshot.
+// if there is no local state, it returns true.
+func (b *Manager) EnsureLatestBackup(nodeID string) (bool, error) {
+	provider := b.GetProvider()
+	if provider == nil {
+		b.log.Infof("Provider is not set, EnsureLatestBackup return true")
+		return true, nil
+	}
+	snapshots, err := provider.AvailableSnapshots()
+	if err != nil {
+		return true, err
+	}
+	var snapshot SnapshotInfo
+	for _, s := range snapshots {
+		if s.NodeID == nodeID {
+			snapshot = s
+		}
+	}
+	if snapshot.ModifiedTime.IsZero() {
+		b.log.Infof("Time from snapshot is zero, EnsureLatestBackup returns true")
+		return true, nil
+	}
+	latestBackup, err := b.LatestBackupTime()
+	if err != nil && os.IsNotExist(err) {
+		b.log.Infof("error getting latestBackup local backup file does not exist: %v", err)
+		return true, err
+	}
+	b.log.Infof("latest backup is: %v", latestBackup)
+	if latestBackup.IsZero() {
+		b.log.Errorf("error time is Zero in latestBackup")
+		return false, nil
+	}
+	if snapshot.ModifiedTime.After(latestBackup) {
+		return false, fmt.Errorf("local backup: %v is older than latest snapshot: %v, please reinstall app", latestBackup, snapshot.ModifiedTime)
+	}
+	b.log.Infof("ensureLatestBackup latest found no issues.")
+	return true, nil
+}
+
+// SetLatestBackupTime takes two pararms time.Time, nodeID and saves it locally.
+// If the file already exists it overwrite it.
+func (b *Manager) SetLatestBackupTime(time time.Time, nodeID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	file, err := os.Create(path.Join(b.workingDir, latestBackupSnapShot))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	snapshot := SnapshotInfo{
+		NodeID:       nodeID,
+		ModifiedTime: time,
+	}
+	bytes, err := json.Marshal(snapshot)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(bytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Start is the main go routine that listens to backup requests and is resopnsible for executing it.
@@ -273,21 +362,59 @@ func (b *Manager) Start() error {
 				var err error
 				var accountName string
 
-				if accountName, err = b.processBackupRequest(true); err != nil {
+				// Before we upload the backup, we need to retrive a timestamp from the current provider.
+				_, nodeID, err := b.prepareBackupData()
+				if err != nil {
+					b.log.Errorf("error preparing backup data %v", err)
+					b.notifyBackupFailed(err)
+					continue
+				}
+				provider := b.GetProvider()
+				if provider == nil {
+					continue
+				}
+				b.log.Infof("calling GetProviderTimestamp from processBackupRequest, with nodeID=%v", nodeID)
+				timestamp, err := b.provider.GetProviderTimestamp(nodeID)
+				if err != nil {
+					b.log.Errorf("failed to GetProviderTimestamp %v", err)
+					b.notifyBackupFailed(err)
+					continue
+				}
+				err = b.SetLatestBackupTime(timestamp, nodeID)
+				if err != nil {
+					b.log.Errorf("SetLatestBackupTime returned error: %v", err)
+					b.notifyBackupFailed(err)
+					continue
+				}
+
+				if accountName, err = b.processBackupRequest(true, timestamp); err != nil {
 					b.log.Errorf("failed to process backup request: %v", err)
 					b.notifyBackupFailed(err)
 					continue
 				}
+
+				// Now we need to upload the backup.
+				if req.BackupNodeData {
+					b.log.Infof("starting backup node data")
+					if accountName, err = b.processBackupRequest(true, timestamp); err != nil {
+						b.log.Errorf("failed to process backup request: %v", err)
+						b.notifyBackupFailed(err)
+						continue
+					}
+				}
 				if req.BackupAppData {
 					b.log.Infof("starting backup app data")
-					if accountName, err = b.processBackupRequest(false); err != nil {
+					if accountName, err = b.processBackupRequest(false, timestamp); err != nil {
 						b.log.Errorf("failed to process backup request: %v", err)
 						b.notifyBackupFailed(err)
 						continue
 					}
 				}
 
-				b.db.markBackupRequestCompleted(pendingID)
+				err = b.db.markBackupRequestCompleted(pendingID)
+				if err != nil {
+					b.log.Errorf("markBackupRequestCompleted returned with %v", err)
+				}
 				b.log.Infof("backup finished successfully")
 				b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_SUCCESS, Data: []string{accountName}})
 
@@ -301,7 +428,25 @@ func (b *Manager) Start() error {
 	return nil
 }
 
-func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
+func (b *Manager) UpdateLatestBackupTime(nodeID string) error {
+	provider := b.GetProvider()
+	if provider == nil {
+		return ErrorNoProvider
+	}
+	b.log.Infof("UpdateLatestBackupTime calling provider.GetProviderTimestamp")
+	timestamp, err := provider.GetProviderTimestamp(nodeID)
+	if err != nil {
+		return err
+	}
+	err = b.SetLatestBackupTime(timestamp, nodeID)
+	if err != nil {
+		b.log.Errorf("SetLatestBackupTime returned error: %v", err)
+	}
+	b.log.Infof("sucessfully updated to latest timestamp: %v", timestamp)
+	return nil
+}
+
+func (b *Manager) processBackupRequest(nodeData bool, timestamp time.Time) (string, error) {
 	b.mu.Lock()
 	encryptionKey := b.encryptionKey
 	encryptionType := b.encryptionType
@@ -318,7 +463,7 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 	b.onServiceEvent(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_REQUEST})
 	paths, nodeID, err := b.prepareBackupData()
 	if err != nil {
-		return "", fmt.Errorf("error in backup %v", err)
+		return "", fmt.Errorf("error in backup %w", err)
 	}
 	fileName := backupFileName
 	if !nodeData {
@@ -329,14 +474,14 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 		}
 		dirs, err := os.ReadDir(appDataPath)
 		if err != nil {
-			return "", fmt.Errorf("error in backup %v", err)
+			return "", fmt.Errorf("error in backup %w", err)
 		}
 		paths = []string{}
 		for _, d := range dirs {
 			srcPath := path.Join(appDataPath, d.Name())
 			destPath := path.Join(tempDir, d.Name())
 			if _, err := copyFile(srcPath, destPath); err != nil {
-				return "", fmt.Errorf("failed to copy app data file %v", err)
+				return "", fmt.Errorf("failed to copy app data file %w", err)
 			}
 			paths = append(paths, destPath)
 		}
@@ -366,7 +511,7 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 		}
 
 		if err != nil {
-			return "", fmt.Errorf("error in encrypting backup files %v", err)
+			return "", fmt.Errorf("error in encrypting backup files %w", err)
 		}
 	}
 
@@ -380,20 +525,20 @@ func (b *Manager) processBackupRequest(nodeData bool) (string, error) {
 	// Zip files
 	compressedFile := path.Join(path.Dir(paths[0]), fileName)
 	if err := b.compressFiles(paths, compressedFile); err != nil {
-		return "", fmt.Errorf("failed to compress backup files", err)
+		return "", fmt.Errorf("failed to compress backup files %w", err)
 	}
 
-	accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType)
+	accountName, err := provider.UploadBackupFiles(compressedFile, nodeID, encryptionType, timestamp)
 	if err != nil {
 		for _, p := range paths {
 			fmt.Printf("removing backup dir: %v\n", path.Dir(p))
 			_ = os.RemoveAll(path.Dir(p))
 		}
-		return "", fmt.Errorf("error in backup %v", err)
+		return "", fmt.Errorf("error in backup %w", err)
 	}
 
 	for _, p := range paths {
-		fmt.Printf("removing backup dir: %v\n", path.Dir(p))
+		b.log.Infof("removing backup dir: %v\n", path.Dir(p))
 		_ = os.RemoveAll(path.Dir(p))
 	}
 
@@ -500,6 +645,9 @@ func (b *Manager) destroy() error {
 		return err
 	}
 	if err := os.RemoveAll(path.Join(b.workingDir, "data")); err != nil {
+		return err
+	}
+	if err := os.Remove(path.Join(b.workingDir, "latest_backup_snapshot.json")); err != nil {
 		return err
 	}
 	return os.Remove(path.Join(b.workingDir, "backup.db"))

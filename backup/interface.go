@@ -1,6 +1,10 @@
 package backup
 
-import "github.com/breez/breez/tor"
+import (
+	"time"
+
+	"github.com/breez/breez/tor"
+)
 
 // SnapshotInfo is an existing backup information for a specific node id.
 type SnapshotInfo struct {
@@ -8,7 +12,7 @@ type SnapshotInfo struct {
 	BackupID       string
 	Encrypted      bool
 	EncryptionType string
-	ModifiedTime   string
+	ModifiedTime   time.Time
 }
 
 // Service is the interface to expose from this package as Backup Service API.
@@ -22,10 +26,11 @@ type Service interface {
 // Provider represents the functionality needed to be implemented for any backend backup
 // storage provider. This provider will be used and inststiated by the service.
 type Provider interface {
-	UploadBackupFiles(file string, nodeID string, encryptionType string) (string, error)
+	UploadBackupFiles(file string, nodeID string, encryptionType string, timestamp time.Time) (string, error)
 	AvailableSnapshots() ([]SnapshotInfo, error)
 	DownloadBackupFiles(nodeID, backupID string) ([]string, error)
 	SetTor(t *tor.TorConfig)
+	GetProviderTimestamp(nodeID string) (time.Time, error)
 	TestAuth() error
 }
 

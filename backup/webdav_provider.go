@@ -16,10 +16,6 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
-const (
-	timeFormat = "2006-01-02 15-04-05"
-)
-
 type RemoteServerProvider struct {
 	authData  ProviderData
 	log       btclog.Logger
@@ -73,7 +69,42 @@ func (n *RemoteServerProvider) getClient() (string, *WebdavClient, error) {
 	return n.authData.BreezDir, c, err
 }
 
-func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, encryptionType string) (
+// Upload a mock file to the breez server in order to be able to use the timestamp for the backup.
+func (n *RemoteServerProvider) GetProviderTimestamp(nodeID string) (time.Time, error) {
+	breezDir, c, err := n.getClient()
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if err := n.createDirIfNotExists(c, breezDir); err != nil {
+		return time.Time{}, &webdavProviderError{err: err}
+	}
+
+	bytesArray := make([]byte, 2)
+	n.log.Infof("Uploading file timestamp to %s", breezDir)
+	if err := c.Upload(bytesArray, path.Join(breezDir, "timestamp")); err != nil {
+		return time.Time{}, &webdavProviderError{err: err}
+	}
+
+	files, err := c.ListDir(breezDir)
+	if err != nil {
+		return time.Time{}, &webdavProviderError{err: err}
+	}
+
+	for _, file := range files.Files {
+		isTimeStampFile := strings.Contains(file.Href, "timestamp")
+		if isTimeStampFile {
+			for _, props := range file.Stat.Props {
+				n.log.Infof("Got timestamp %v", props.LastModified)
+				timeStamp, err := time.Parse(time.RFC1123, props.LastModified)
+				return timeStamp, err
+			}
+		}
+	}
+	return time.Time{}, nil
+}
+
+func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, encryptionType string, timestamp time.Time) (
 	string, error) {
 
 	breezDir, c, err := n.getClient()
@@ -120,7 +151,7 @@ func (n *RemoteServerProvider) UploadBackupFiles(file string, nodeID string, enc
 			NodeID:         nodeID,
 			Encrypted:      encryptionType != "",
 			EncryptionType: encryptionType,
-			ModifiedTime:   time.Now().Format(time.RFC3339),
+			ModifiedTime:   timestamp,
 		},
 	}
 	data, err := json.Marshal(backupInfo)
@@ -188,6 +219,7 @@ func (n *RemoteServerProvider) AvailableSnapshots() ([]SnapshotInfo, error) {
 		}
 		var backupInfo BackupInfo
 		if err := json.Unmarshal(bytes, &backupInfo); err != nil {
+			n.log.Errorf("Error unmarshalling backup info: %v", err)
 			return nil, err
 		}
 		snapshots = append(snapshots, *backupInfo.Info)

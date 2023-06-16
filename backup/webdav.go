@@ -57,7 +57,7 @@ type FileInfo struct {
 
 type FilePropStats struct {
 	XMLName xml.Name   `xml:"propstat"`
-	props   []FileProp `xml:"prop"`
+	Props   []FileProp `xml:"prop"`
 }
 
 type FileProp struct {
@@ -135,7 +135,6 @@ func (c *WebdavClient) ListDir(path string) (*ListFileResponse, error) {
 		return nil, err
 	}
 	response.Files = response.Files[1:]
-
 	for i, f := range response.Files {
 		f.Path, err = c.getRelativePath(f.Href)
 		if err != nil {
