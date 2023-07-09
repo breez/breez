@@ -826,6 +826,16 @@ func ResetClosedChannelChainInfo(request []byte) ([]byte, error) {
 	return marshalResponse(getBreezApp().ResetClosedChannelChainInfo(&r))
 }
 
+
+func GetNostrKeyPair() (string, error) {
+
+	nostrKeyPair, err := getBreezApp().AccountService.GetKeyPair()
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch nostr keypair: %w", err)
+	}
+	return nostrKeyPair, nil
+}
+
 func ConnectDirectToLnurl(channel []byte) error {
 	var c data.LNURLChannel
 	if err := proto.Unmarshal(channel, &c); err != nil {
