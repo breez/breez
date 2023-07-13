@@ -6,7 +6,6 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 )
 
-// func(a *Service) GetKeyPair()(map[string]string, error){
 func(a *Service) GetKeyPair()(string, error){
 
 	needsBackup := false
@@ -15,7 +14,6 @@ func(a *Service) GetKeyPair()(string, error){
 		needsBackup = true
 		return nostr.GeneratePrivateKey()
 	})
-	// nostrKeyPair := make(map[string]string)
 	if err != nil {
 		return nostrPrivateKey, fmt.Errorf("failed to fetch nostrprivatekey %w", err)
 	}
