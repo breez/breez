@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
@@ -43,6 +44,7 @@ func Get(workingDir string) (db *channeldb.DB, cleanupFn func() error, err error
 func newService(workingDir string) (db *channeldb.DB, rel refcount.ReleaseFunc, err error) {
 	chanDB, err = createService(workingDir)
 	if err != nil {
+		logger.Errorf("unabled to call createService finsished with %v", err)
 		return nil, nil, err
 	}
 	return chanDB, release, err
@@ -63,15 +65,17 @@ func compactDB(graphDir string) error {
 	}
 	logger.Infof("channel db size = %v", f.Size())
 
-	if f.Size() <= 400000000 {
+	if f.Size() <= 100000000 {
 		return nil
 	}
 	newFile, err := ioutil.TempFile(graphDir, "cdb-compact")
 	if err != nil {
+		logger.Errorf("Error creating cdb-compact at %v", graphDir)
 		return err
 	}
 	if err = chainservice.BoltCopy(dbPath, newFile.Name(),
 		func(keyPath [][]byte, k []byte, v []byte) bool { return false }); err != nil {
+		logger.Errorf("Error calling chainservice.BoltCopy finished with %v", err)
 		return err
 	}
 	if err = os.Rename(dbPath, dbPath+".old"); err != nil {
@@ -133,15 +137,20 @@ func createService(workingDir string) (*channeldb.DB, error) {
 	}
 
 	opts := channeldb.DefaultOptions()
+	logger.Infof("Calling kvdb.GetBoltBackend with timeout: %v", time.Minute*2)
+	start := time.Now()
 	backend, err := kvdb.GetBoltBackend(&kvdb.BoltBackendConfig{
 		DBPath:            graphDir,
 		DBFileName:        dbName,
 		NoFreelistSync:    false,
 		AutoCompact:       opts.AutoCompact,
 		AutoCompactMinAge: opts.AutoCompactMinAge,
-		DBTimeout:         opts.DBTimeout,
+		DBTimeout:         time.Minute * 2,
 	})
+	elapsed := time.Since(start)
+	logger.Infof("kvdb.GetBoltBackend used %v", elapsed)
 	if err != nil {
+		logger.Errorf("kvdb.GetBoltBackend finsished with %v", err)
 		return nil, err
 	}
 
