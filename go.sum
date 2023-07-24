@@ -81,8 +81,8 @@ github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6 h1:wKdLeI
 github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6/go.mod h1:TQVDhFxseiGtZwEPvLgtfyxuNUDsIdaJdshvWzR0HJ4=
 github.com/breez/lnd v0.16.4-beta-breez h1:nIizHySYiximOpBbYorCSUwqEAZRANYmVhoa0syKM+o=
 github.com/breez/lnd v0.16.4-beta-breez/go.mod h1:o9fS8yy79RDcLlZLBhea82OpIRPsofsmXhCJcP8nrYY=
-github.com/breez/lspd v0.0.0-20230216140105-14f93d934eb1 h1:YeNozvjzg1+hmzVkEsAVeJQFvDS152Z8bsuWchOgaTM=
-github.com/breez/lspd v0.0.0-20230216140105-14f93d934eb1/go.mod h1:b/gOqsUBpr0JwQmv6aKLZk36QcGoAoNVffKLwk9Sneg=
+github.com/breez/lspd v0.0.0-20230630175015-34646d50a591 h1:vSyn3d0GOlNWUaWtRtSwjwIS8+3qLLirVWN+flQOt3I=
+github.com/breez/lspd v0.0.0-20230630175015-34646d50a591/go.mod h1:sziWG8CyL2rBHr7d6ncxFiK2R3f18SRtOEcFeP7Rvz4=
 github.com/breez/neutrino v0.15.0-breez h1:thAtS07C67HSO7OQAa6uX32Eig7E6BQ06KzGeiy/N4g=
 github.com/breez/neutrino v0.15.0-breez/go.mod h1:pmjwElN/091TErtSE9Vd5W4hpxoG2/+xlb+HoPm9Gug=
 github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
@@ -845,6 +845,8 @@ golang.org/x/exp v0.0.0-20220426173459-3bcf042a4bf5/go.mod h1:lgLbSvA5ygNOMpwM/9
 golang.org/x/exp v0.0.0-20221111094246-ab4555d3164f/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
 golang.org/x/exp v0.0.0-20221212164502-fae10dda9338 h1:OvjRkcNHnf6/W5FZXSxODbxwD+X7fspczG7Jn/xQVD4=
 golang.org/x/exp v0.0.0-20221212164502-fae10dda9338/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
+golang.org/x/exp v0.0.0-20230321023759-10a507213a29 h1:ooxPy7fPvB4kwsA2h+iBNHkAbp/4JxTSwCmvdjEYmug=
+golang.org/x/exp v0.0.0-20230321023759-10a507213a29/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20180702182130-06c8688daad7/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=

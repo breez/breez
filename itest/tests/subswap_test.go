@@ -58,6 +58,7 @@ func TestSubswap(t *testing.T) {
 		&data.AddFundInitRequest{
 			NotificationToken: "testtoken",
 			LspID:             "lspd-secret",
+			OpeningFeeParams:  list.Lsps["lspd-secret"].LongestValidOpeningFeeParams,
 		})
 	if err != nil {
 		t.Fatalf("error in AddFundInit %v", err)

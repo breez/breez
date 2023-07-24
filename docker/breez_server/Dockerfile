@@ -7,7 +7,7 @@ RUN git clone https://github.com/breez/server
 RUN cd server \
     && go build .
 RUN go install github.com/joho/godotenv/cmd/godotenv@latest
-RUN git clone https://github.com/breez/lnd -b breez-node
+RUN git clone --depth 1 --branch breez-node-v0.16.4-beta https://github.com/breez/lnd
 RUN cd lnd \
     && tags="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install

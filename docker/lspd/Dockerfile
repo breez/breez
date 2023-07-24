@@ -1,5 +1,5 @@
 FROM golang:latest AS builder
-COPY ./docker/lspd/.env .
+COPY ./docker/lspd/.env.template .
 COPY ./docker/lspd/start.sh .
 RUN chmod +x ./start.sh
 RUN git clone https://github.com/breez/lspd
@@ -8,7 +8,7 @@ RUN cd lspd \
     && go build .
 RUN go install github.com/joho/godotenv/cmd/godotenv@latest
 
-RUN git clone https://github.com/breez/lnd -b breez-node
+RUN git clone https://github.com/breez/lnd -b breez-node-v0.16.4-beta
 RUN cd lnd \
     && tags="signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" \
     && make install

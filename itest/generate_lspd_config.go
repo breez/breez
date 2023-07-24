@@ -8,41 +8,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/breez/lspd/config"
 	"github.com/btcsuite/btcd/btcec/v2"
 )
-
-type NodeConfig struct {
-	Name                      string     `json:name,omitempty`
-	NodePubkey                string     `json:nodePubkey,omitempty`
-	LspdPrivateKey            string     `json:"lspdPrivateKey"`
-	Tokens                    []string   `json:"tokens"`
-	Host                      string     `json:"host"`
-	PublicChannelAmount       int64      `json:"publicChannelAmount,string"`
-	ChannelAmount             uint64     `json:"channelAmount,string"`
-	ChannelPrivate            bool       `json:"channelPrivate"`
-	TargetConf                uint32     `json:"targetConf,string"`
-	MinHtlcMsat               uint64     `json:"minHtlcMsat,string"`
-	BaseFeeMsat               uint64     `json:"baseFeeMsat,string"`
-	FeeRate                   float64    `json:"feeRate,string"`
-	TimeLockDelta             uint32     `json:"timeLockDelta,string"`
-	ChannelFeePermyriad       int64      `json:"channelFeePermyriad,string"`
-	ChannelMinimumFeeMsat     int64      `json:"channelMinimumFeeMsat,string"`
-	AdditionalChannelCapacity int64      `json:"additionalChannelCapacity,string"`
-	MaxInactiveDuration       uint64     `json:"maxInactiveDuration,string"`
-	Lnd                       *LndConfig `json:"lnd,omitempty"`
-	Cln                       *ClnConfig `json:"cln,omitempty"`
-}
-
-type LndConfig struct {
-	Address  string `json:"address"`
-	Cert     string `json:"cert"`
-	Macaroon string `json:"macaroon"`
-}
-
-type ClnConfig struct {
-	PluginAddress string `json:"pluginAddress"`
-	SocketPath    string `json:"socketPath"`
-}
 
 func main() {
 	address := os.Args[1]
@@ -63,7 +31,7 @@ func main() {
 	}
 	key := hex.EncodeToString(p.Serialize())
 
-	config := NodeConfig{
+	cfg := config.NodeConfig{
 		LspdPrivateKey:            key,
 		Host:                      nodeHost,
 		NodePubkey:                nodePubKey,
@@ -76,11 +44,11 @@ func main() {
 		TimeLockDelta:             144,
 		Tokens:                    []string{"8qFbOxF8K8frgrhNE/Hq/UkUlq7A1Qvh8um1VdCUv2L4es/RXEe500E+FAKkLI4X"},
 	}
-	config.Lnd = &LndConfig{
+	cfg.Lnd = &config.LndConfig{
 		Address:  address,
 		Cert:     string(textCert),
 		Macaroon: macHexa,
 	}
-	json, _ := json.Marshal([]NodeConfig{config})
+	json, _ := json.Marshal([]config.NodeConfig{cfg})
 	fmt.Printf(fmt.Sprintf("\nNODES='%v'\n", string(json)))
 }

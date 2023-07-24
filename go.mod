@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/breez/boltz v0.0.0-20230529122619-7972e1f7a7b7
-	github.com/breez/lspd v0.0.0-20230216140105-14f93d934eb1
+	github.com/breez/lspd v0.0.0-20230630175015-34646d50a591
 	github.com/btcsuite/btcd v0.23.5-0.20230228185050-38331963bddd
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
@@ -170,7 +170,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/exp v0.0.0-20221212164502-fae10dda9338 // indirect
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect

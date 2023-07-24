@@ -9,8 +9,8 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
-func Test_open_channel_competability(t *testing.T) {
-	t.Logf("Testing Test_open_channel_competability")
+func Test_open_channel_compatibility(t *testing.T) {
+	t.Logf("Testing Test_open_channel_compatibility")
 	test := newTestFramework(t)
 	lndClient := lnrpc.NewLightningClient(test.lndNode)
 	bobClient := lnrpc.NewLightningClient(test.bobNode)

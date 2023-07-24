@@ -2,7 +2,7 @@ FROM alpine:latest AS builder
 RUN apk update
 RUN apk add git go musl-dev make bash
 RUN export tags="experimental signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc"
-RUN git clone https://github.com/lightningnetwork/lnd
+RUN git clone --depth 1 --branch lnd-merge-0.16.4 https://github.com/breez/lnd
 ENV tags="experimental signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc"
 ENV DEV_TAGS="experimental signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc"
 RUN cd lnd && tags="experimental signrpc walletrpc chainrpc invoicesrpc routerrpc backuprpc peerrpc submarineswaprpc breezbackuprpc" && make install
