@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcwallet v0.16.9
+	github.com/btcsuite/btcwallet v0.16.10-0.20230621165747-9c21f464ce13
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/dustin/go-humanize v1.0.0
@@ -19,7 +19,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/lightninglabs/neutrino v0.15.0
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
-	github.com/lightningnetwork/lnd v0.16.2-beta
+	github.com/lightningnetwork/lnd v0.16.4-beta
 	github.com/lightningnetwork/lnd/kvdb v1.4.1
 	github.com/lightningnetwork/lnd/tor v1.1.0
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
@@ -190,9 +190,9 @@ require (
 
 replace (
 	git.schwanenlied.me/yawning/bsaes.git => github.com/Yawning/bsaes v0.0.0-20180720073208-c0276d75487e
-	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.16.9-breez
+	github.com/btcsuite/btcwallet => github.com/breez/btcwallet v0.16.10-9c21f46-breez
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.0-breez
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.15.0-breez
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.16.2-breez
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.16.4-beta-breez
 )
