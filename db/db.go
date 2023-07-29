@@ -46,6 +46,9 @@ const (
 
 	zeroConfInvoicesBucket = "zero-conf-invoices-bucket"
 
+	// nostr auth
+	nostrAuthBucket = "nostr-auth-bucket"
+
 	//lnurl auth
 	lnurlAuthBucket = "lnurl-auth-bucket"
 
@@ -174,6 +177,11 @@ func openDB(dbPath string, log btclog.Logger) (*DB, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(zeroConfInvoicesBucket))
+		if err != nil {
+			return err
+		}
+		
+		_, err = tx.CreateBucketIfNotExists([]byte(nostrAuthBucket))
 		if err != nil {
 			return err
 		}
