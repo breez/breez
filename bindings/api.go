@@ -368,7 +368,7 @@ func TestBackupAuth(provider, authData string) error {
 		return errors.New("Failed to set backup provider.")
 	}
 	p := manager.GetProvider()
-	Log(fmt.Sprintf("manager provider is: %v", p), "INFO")
+	Log(fmt.Sprintf("manager provider is: %v", provider), "INFO")
 	return p.TestAuth()
 }
 
@@ -825,7 +825,6 @@ func ResetClosedChannelChainInfo(request []byte) ([]byte, error) {
 
 	return marshalResponse(getBreezApp().ResetClosedChannelChainInfo(&r))
 }
-
 
 func GetNostrKeyPair() (string, error) {
 
