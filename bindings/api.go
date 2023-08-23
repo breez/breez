@@ -836,7 +836,7 @@ func GetNostrKeyPair() (string, error) {
 	return nostrKeyPair, nil
 }
 
-func LoginWithImportedNostrKey(privateKey string)error{
+func StoreNostrKey(privateKey string)error{
 	return getBreezApp().AccountService.StoreImportedKey(privateKey); 
 }
 
