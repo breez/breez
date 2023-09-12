@@ -307,19 +307,16 @@ func (a *Service) getLNURLAuthKey() (*bip32.Key, error) {
 
 func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPayInfo, error) {
 
-	// Ref. https://github.com/fiatjaf/lnurl-rfc/blob/master/lnurl-pay.md
-	// TODO Check for response elements that might be null before using them.
+	// Ref. https://github.com/lnurl/luds/blob/luds/06.md
 
 	a.log.Infof("FinishLNURLPay: params: %+v", params)
 
 	/*
-	   5. LN WALLET makes a GET request using callback with the following query parameters:
-	   amount (input) - user specified sum in MilliSatoshi
-	   nonce - an optional parameter used to prevent server response caching
-	   fromnodes - an optional parameter with value set to comma separated nodeIds if payer wishes a service to provide payment routes starting from specified LN nodeIds
-	   comment (input) - an optional parameter to pass the LN WALLET user's comment to LN SERVICE
-
-	   result: obtain bolt11 invoice
+		5. LN WALLET makes a GET request using
+		{
+			<callback><?|&>amount=<milliSatoshi>
+		}
+		`amount` being the amount specified by the user in millisatoshis.
 	*/
 
 	url, err := url.Parse(params.Callback)
@@ -335,13 +332,6 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		return nil, err
 	}
 	query.Add("nonce", hex.EncodeToString(nonce))
-
-	/* TODO FINDOUT Should we populate the FromNodes optional parameter?
-	   If yes, then how?
-	   if params.FromNodes != "" {
-	       query.Add("fromnodes", params.FromNodes)
-	   }
-	*/
 
 	if params.CommentAllowed > 0 && params.Comment != "" {
 		query.Add("comment", params.Comment)
@@ -368,65 +358,19 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 	a.log.Infof("FinishLNURLPay: response.Status: %s", resp.Status)
 
 	/*
-	   6. `LN Service` takes the GET request and returns JSON response of form:
+		6. `LN Service` takes the GET request and returns JSON response of form:
+		 ```Typescript
+		 {
+			pr: string, // bech32-serialized lightning invoice
+			routes: [] // an empty array
+		}
+		```
 
-	   ```
-	   {
-	       pr: String, // bech32-serialized lightning invoice
-	       successAction: Object or null, // An optional action to be executed after successfully paying an invoice
-	       disposable: Boolean or null, // An optional flag to let a wallet know whether to persist the link from step 1, if null should be interpreted as true
-	       routes:
-	       [
-	       [
-	       {
-	           nodeId: String,
-	           channelUpdate: String // hex-encoded serialized ChannelUpdate gossip message
-	       },
-	       ... // next hop
-	       ],
-	       ... // next route
-	       ] // array with payment routes, should be left empty if no routes are to be provided
-	   }
-	   ```
+		or
 
-	   or
-
-	   ```
-	   {"status":"ERROR", "reason":"error details..."}
-	   ```
-
-	   `pr` must have the [`h` tag (`description_hash`)](https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields) set to `sha256(utf8ByteArray(metadata))`.
-
-	   Currently supported tags for `successAction` object are `url`, `message`, and `aes`. If there is no action then `successAction` value must be set to `null`.
-
-	   ```
-	   {
-	       tag: String, // action type
-	       ... rest of fields depends on tag value
-	   }
-	   ```
-
-	   Examples of `successAction`:
-
-	   ```
-	   {
-	       tag: 'url'
-	       description: 'Thank you for your purchase. Here is your order details' // Up to 144 characters
-	       url: 'https://www.ln-service.com/order/<orderId>' // url domain must be the same as `callback` domain at step 3
-	   }
-
-	   {
-	       tag: 'message'
-	       message: 'Thank you for using bike-over-ln CO! Your rental bike is unlocked now' // Up to 144 characters
-	   }
-
-	   {
-	       tag: 'aes'
-	       description: 'Here is your redeem code' // Up to 144 characters
-	       ciphertext: <base64> // an AES-encrypted data where encryption key is payment preimage, up to 4kb of characters
-	       iv: <base64> // initialization vector, exactly 24 characters
-	   }
-
+		```JSON
+		{"status":"ERROR", "reason":"error details..."}
+		```
 	*/
 
 	var payResponse2 lnurl.LNURLPayValues
@@ -446,26 +390,16 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		return nil, err
 	}
 
-	if invoice.DescriptionHash == nil {
-		return nil, errors.New("Description hash not found in invoice.")
-	}
-
-	if sum := sha256.Sum256([]byte(a.lnurlPayMetadata.encoded)); hex.EncodeToString(sum[:]) != hex.EncodeToString((*invoice.DescriptionHash)[:]) {
-		err = errors.New("Invoice description hash does not match metadata.")
-		a.log.Error(fmt.Sprintf("FinishLNURLPay: %v", err))
-		return nil, err
-	}
-
 	/* 8. `LN WALLET` Verifies that amount in provided invoice equals an amount previously specified by user.
 	   amount from client is in millisats.
 	*/
 
 	a.log.Info("FinishLNURLPay: verify invoice.amount == params.Amount.")
 	if params.Amount != uint64(*invoice.MilliSat) {
-		return nil, errors.New("Invoice amount does not match the amount set by user.")
+		return nil, errors.New("invoice amount does not match the amount set by user")
 	}
 
-	// 10. If `successAction` is not null: `LN WALLET` makes sure that `tag` value of is of supported type, aborts a payment otherwise.
+	// If `successAction` is not null: `LN WALLET` makes sure that `tag` value of is of supported type, aborts a payment otherwise.
 	sa := payResponse2.SuccessAction
 	var _sa *data.SuccessAction
 	if sa != nil {
@@ -473,7 +407,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 		if t := sa.Tag; t != "message" &&
 			t != "url" &&
 			t != "aes" {
-			return nil, fmt.Errorf("Unknown SuccessAction: %s", t)
+			return nil, fmt.Errorf("unknown SuccessAction: %s", t)
 		}
 
 		_sa = &data.SuccessAction{
@@ -489,7 +423,7 @@ func (a *Service) FinishLNURLPay(params *data.LNURLPayResponse1) (*data.LNUrlPay
 
 	}
 
-	// 11. `LN WALLET` pays the invoice, no additional user confirmation is required at this point.
+	// 8.`LN WALLET` pays the invoice, no additional user confirmation is required at this point.
 	info := &data.LNUrlPayInfo{
 		PaymentHash:        hex.EncodeToString(invoice.PaymentHash[:]),
 		SuccessAction:      _sa,
