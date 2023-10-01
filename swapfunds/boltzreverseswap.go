@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/breez/boltz"
@@ -199,19 +201,39 @@ func (s *Service) handleClaimTransaction() error {
 }
 
 func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error) {
-	blockRange := []int32{2, 6, 24}
-	walletKitClient := s.daemonAPI.WalletKitClient()
+	resp, err := http.Get("https://mempool.space/api/v1/fees/recommended")
+	if err != nil {
+		s.log.Errorf("mempool.space recommended fees error: %v", err)
+		return nil, fmt.Errorf("mempool.space recommended fees error: %w", err)
+	}
+	defer resp.Body.Close()
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		s.log.Errorf("mempool.space recommended bad statuscode %v", resp.StatusCode)
+		return nil, fmt.Errorf("mempool.space recommended bad statuscode %v", resp.StatusCode)
+	}
+	recommendedFees := struct {
+		FastestFee  int64 `json:"fastestFee"`
+		HalfHourFee int64 `json:"halfHourFee"`
+		HourFee     int64 `json:"hourFee"`
+		EconomyFee  int64 `json:"economyFee"`
+		MinimumFee  int64 `json:"minimumFee"`
+	}{}
+	err = json.NewDecoder(resp.Body).Decode(&recommendedFees)
+	if err != nil {
+		s.log.Errorf("mempool.space recommended fees unmarshall error: %v", err)
+		return nil, fmt.Errorf("mempool.space recommended fees unmarshall error: %w", err)
+	}
+	rFees := map[int32]int64{
+		1: recommendedFees.FastestFee * 1000 / 4,
+		3: recommendedFees.HalfHourFee * 1000 / 4,
+		6: recommendedFees.HourFee * 1000 / 4,
+	}
 	fees := make(map[int32]int64)
-	for _, b := range blockRange {
-		f, err := walletKitClient.EstimateFee(context.Background(), &walletrpc.EstimateFeeRequest{ConfTarget: b})
+	for b, f := range rFees {
+		fAmt, err := boltz.ClaimFee(claimAddress, f)
 		if err != nil {
-			s.log.Errorf("walletKitClient.EstimateFee(%v): %v", b, err)
-			return nil, fmt.Errorf("walletKitClient.EstimateFee(%v): %w", b, err)
-		}
-		fAmt, err := boltz.ClaimFee(claimAddress, f.SatPerKw)
-		if err != nil {
-			s.log.Errorf("boltz.ClaimFee(%v, %v): %v", claimAddress, f.SatPerKw, err)
-			return nil, fmt.Errorf("boltz.ClaimFee(%v, %v): %w", claimAddress, f.SatPerKw, err)
+			s.log.Errorf("boltz.ClaimFee(%v, %v): %v", claimAddress, f, err)
+			return nil, fmt.Errorf("boltz.ClaimFee(%v, %v): %w", claimAddress, f, err)
 		}
 		fees[b] = fAmt
 	}
