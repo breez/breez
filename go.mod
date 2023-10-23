@@ -3,7 +3,7 @@ module github.com/breez/breez
 go 1.19
 
 require (
-	github.com/breez/boltz v0.0.0-20230529122619-7972e1f7a7b7
+	github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4
 	github.com/breez/lspd v0.0.0-20230630175015-34646d50a591
 	github.com/btcsuite/btcd v0.23.5-0.20230228185050-38331963bddd
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
