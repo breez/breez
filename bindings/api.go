@@ -1042,6 +1042,32 @@ func GetTorActive() bool {
 	return getBreezApp().GetTorActive()
 }
 
+func GetMempoolAddressInfo(address string) ([]byte, error) {
+	utxos, err := getBreezApp().SwapService.GetMempoolAddressUTXOs(address)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	info := data.AddressInfo{
+		ConfirmedBalance:   0,
+		UnconfirmedBalance: 0,
+		Utxos:              make([]*data.Utxo, len(utxos)),
+	}
+	for i, utxo := range utxos {
+		if utxo.Status.Confirmed {
+			info.ConfirmedBalance += utxo.Value
+		} else {
+			info.UnconfirmedBalance += utxo.Value
+		}
+		info.Utxos[i] = &data.Utxo{
+			Txid:        utxo.Txid,
+			Vout:        utxo.Vout,
+			Value:       utxo.Value,
+			IsConfirmed: utxo.Status.Confirmed,
+		}
+	}
+	return marshalResponse(&info, nil)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan

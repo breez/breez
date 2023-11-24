@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/breez/boltz"
@@ -201,27 +199,10 @@ func (s *Service) handleClaimTransaction() error {
 }
 
 func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error) {
-	resp, err := http.Get("https://mempool.space/api/v1/fees/recommended")
+	recommendedFees, err := s.GetMempoolRecommendedFees()
 	if err != nil {
-		s.log.Errorf("mempool.space recommended fees error: %v", err)
-		return nil, fmt.Errorf("mempool.space recommended fees error: %w", err)
-	}
-	defer resp.Body.Close()
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		s.log.Errorf("mempool.space recommended bad statuscode %v", resp.StatusCode)
-		return nil, fmt.Errorf("mempool.space recommended bad statuscode %v", resp.StatusCode)
-	}
-	recommendedFees := struct {
-		FastestFee  int64 `json:"fastestFee"`
-		HalfHourFee int64 `json:"halfHourFee"`
-		HourFee     int64 `json:"hourFee"`
-		EconomyFee  int64 `json:"economyFee"`
-		MinimumFee  int64 `json:"minimumFee"`
-	}{}
-	err = json.NewDecoder(resp.Body).Decode(&recommendedFees)
-	if err != nil {
-		s.log.Errorf("mempool.space recommended fees unmarshall error: %v", err)
-		return nil, fmt.Errorf("mempool.space recommended fees unmarshall error: %w", err)
+		s.log.Errorf("s.GetMempoolRecommendedFees: %v", err)
+		return nil, fmt.Errorf("s.GetMempoolRecommendedFees: %v", err)
 	}
 	rFees := map[int32]int64{
 		1: recommendedFees.FastestFee * 1000 / 4,

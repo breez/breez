@@ -578,3 +578,16 @@ message TorConfig {
   string http = 2;
   string socks = 3;
 }
+
+message Utxo {
+  string txid = 1;
+  int32 vout = 2;
+  int64 value = 3;
+  bool isConfirmed = 4;
+}
+
+message AddressInfo {
+  int64 confirmedBalance = 1;
+  int64 unconfirmedBalance = 2;
+  repeated Utxo utxos = 3;
+}
