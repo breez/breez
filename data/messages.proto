@@ -591,3 +591,11 @@ message AddressInfo {
   int64 unconfirmedBalance = 2;
   repeated Utxo utxos = 3;
 }
+
+message MempoolFeeRates {
+  int64 fastest = 1;
+  int64 halfHour = 2;
+  int64 hour = 3;
+  int64 economy = 4;
+  int64 minimum = 5;
+}

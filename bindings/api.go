@@ -1068,6 +1068,20 @@ func GetMempoolAddressInfo(address string) ([]byte, error) {
 	return marshalResponse(&info, nil)
 }
 
+func GetMempoolRecommendedFees() ([]byte, error) {
+	fees, err := getBreezApp().SwapService.GetMempoolRecommendedFees()
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	return marshalResponse(&data.MempoolFeeRates{
+		Fastest:  fees.FastestFee,
+		HalfHour: fees.HalfHourFee,
+		Hour:     fees.HourFee,
+		Economy:  fees.EconomyFee,
+		Minimum:  fees.MinimumFee,
+	}, nil)
+}
+
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
 	for {
 		notification := <-notificationsChan
