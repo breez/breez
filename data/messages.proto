@@ -581,15 +581,16 @@ message TorConfig {
 
 message Utxo {
   string txid = 1;
-  int32 vout = 2;
+  uint32 vout = 2;
   int64 value = 3;
   bool isConfirmed = 4;
 }
 
 message AddressInfo {
-  int64 confirmedBalance = 1;
-  int64 unconfirmedBalance = 2;
-  repeated Utxo utxos = 3;
+  string address = 1;
+  int64 confirmedBalance = 2;
+  int64 unconfirmedBalance = 3;
+  repeated Utxo utxos = 4;
 }
 
 message MempoolFeeRates {
@@ -598,4 +599,22 @@ message MempoolFeeRates {
   int64 hour = 3;
   int64 economy = 4;
   int64 minimum = 5;
+}
+
+message CreateSlotSweepRequest {
+  AddressInfo slot = 1;
+  string recipient = 2;
+}
+
+message UnsignedTransaction {
+  bytes tx = 1;
+  int64 input = 2;
+  int64 output = 3;
+  double vbytes = 4;
+  int64 fees = 5;
+  int32 targetConfirmations = 6;
+}
+
+message CreateSlotSweepResponse {
+  repeated UnsignedTransaction txs = 1;
 }

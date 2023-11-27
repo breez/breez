@@ -1,10 +1,12 @@
 package bindings
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"path"
@@ -25,6 +27,11 @@ import (
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/kvdb"
@@ -32,9 +39,11 @@ import (
 )
 
 const (
-	forceRescan        = "FORCE_RESCAN"
-	forceBootstrap     = "FORCE_BOOTSTRAP"
-	disabledTxSpentURL = "<DISABLED>"
+	forceRescan           = "FORCE_RESCAN"
+	forceBootstrap        = "FORCE_BOOTSTRAP"
+	disabledTxSpentURL    = "<DISABLED>"
+	segwitFlagVBytes      = 0.5
+	satscardWitnessVBytes = 27.0
 )
 
 var (
@@ -1048,6 +1057,7 @@ func GetMempoolAddressInfo(address string) ([]byte, error) {
 		return marshalResponse(nil, err)
 	}
 	info := data.AddressInfo{
+		Address:            address,
 		ConfirmedBalance:   0,
 		UnconfirmedBalance: 0,
 		Utxos:              make([]*data.Utxo, len(utxos)),
@@ -1080,6 +1090,77 @@ func GetMempoolRecommendedFees() ([]byte, error) {
 		Economy:  fees.EconomyFee,
 		Minimum:  fees.MinimumFee,
 	}, nil)
+}
+
+func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
+	request := data.CreateSlotSweepRequest{}
+	err := proto.Unmarshal(requestBytes, &request)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	outAddress, err := btcutil.DecodeAddress(request.Recipient, &chaincfg.MainNetParams)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	outScript, err := txscript.PayToAddrScript(outAddress)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	mempoolRates, err := getBreezApp().SwapService.GetMempoolRecommendedFees()
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	isStale, err := getBreezApp().SwapService.IsAddressInfoStale(request.Slot)
+	if isStale {
+		err = fmt.Errorf("address info was stale and can't be used")
+	}
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+
+	// Construct a feeless unsigned transaction
+	baseTx := wire.NewMsgTx(wire.TxVersion)
+	baseTx.AddTxOut(wire.NewTxOut(request.Slot.ConfirmedBalance, outScript))
+	for _, utxo := range request.Slot.Utxos {
+		hash, err := chainhash.NewHashFromStr(utxo.Txid)
+		if err != nil {
+			return marshalResponse(nil, err)
+		}
+		prevOut := wire.NewOutPoint(hash, utxo.Vout)
+		baseTx.AddTxIn(wire.NewTxIn(prevOut, nil, nil))
+	}
+
+	// Satscard use only P2WPKH inputs so we can determine an approximate vsize for the transaction
+	witnessLenVBytes := float64(wire.VarIntSerializeSize(uint64(len(baseTx.TxIn)))) / 4.0
+	witnessVBytes := witnessLenVBytes + satscardWitnessVBytes*float64(len(baseTx.TxIn))
+	vbytes := float64(baseTx.SerializeSizeStripped()) + segwitFlagVBytes + witnessVBytes
+
+	// Create copied transactions with the correct fee settings
+	feeRates := [3]int64{mempoolRates.HourFee, mempoolRates.HalfHourFee, mempoolRates.FastestFee}
+	targetConfs := [3]int32{6, 3, 1}
+	result := data.CreateSlotSweepResponse{
+		Txs: make([]*data.UnsignedTransaction, 3),
+	}
+	for i := range result.Txs {
+		newTx := baseTx.Copy()
+		fee := int64(math.Ceil(float64(feeRates[i]) * vbytes))
+		newTx.TxOut[0].Value -= fee
+		buffer := bytes.Buffer{}
+		err := newTx.Serialize(&buffer)
+		if err != nil {
+			return marshalResponse(nil, err)
+		}
+		result.Txs[i] = &data.UnsignedTransaction{
+			Tx:                  buffer.Bytes(),
+			Input:               request.Slot.ConfirmedBalance,
+			Output:              newTx.TxOut[0].Value,
+			Vbytes:              vbytes,
+			Fees:                fee,
+			TargetConfirmations: targetConfs[i],
+		}
+	}
+
+	return marshalResponse(&result, nil)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

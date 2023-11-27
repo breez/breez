@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/breez/breez/data"
 )
 
 const (
@@ -12,7 +14,7 @@ const (
 
 type AddressUTXO struct {
 	Txid   string `json:"txid"`
-	Vout   int32  `json:"vout"`
+	Vout   uint32 `json:"vout"`
 	Value  int64  `json:"value"`
 	Status struct {
 		Confirmed   bool   `json:"confirmed"`
@@ -65,4 +67,30 @@ func (s *Service) GetMempoolRecommendedFees() (RecommendedFees, error) {
 		return RecommendedFees{}, fmt.Errorf("mempool.space recommended fees unmarshall error: %w", err)
 	}
 	return fees, nil
+}
+
+func (s *Service) IsAddressInfoStale(info *data.AddressInfo) (bool, error) {
+	utxos, err := s.GetMempoolAddressUTXOs(info.Address)
+	if err != nil {
+		s.log.Error(err)
+		return false, err
+	}
+	if len(utxos) != len(info.Utxos) {
+		return true, nil
+	}
+	for _, utxo := range utxos {
+		if !s.doesAddressInfoContainUTXO(info, utxo) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *Service) doesAddressInfoContainUTXO(info *data.AddressInfo, utxo AddressUTXO) bool {
+	for _, u := range info.Utxos {
+		if u.Txid == utxo.Txid && u.Vout == utxo.Vout {
+			return u.Value == utxo.Value && u.IsConfirmed == utxo.Status.Confirmed
+		}
+	}
+	return false
 }
