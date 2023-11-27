@@ -1110,13 +1110,6 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
-	isStale, err := getBreezApp().SwapService.IsAddressInfoStale(request.Slot)
-	if isStale {
-		err = fmt.Errorf("address info was stale and can't be used")
-	}
-	if err != nil {
-		return marshalResponse(nil, err)
-	}
 
 	// Construct a feeless unsigned transaction
 	baseTx := wire.NewMsgTx(wire.TxVersion)
