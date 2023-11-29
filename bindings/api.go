@@ -27,8 +27,8 @@ import (
 	breezlog "github.com/breez/breez/log"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -1098,7 +1098,11 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
-	outAddress, err := btcutil.DecodeAddress(request.Recipient, &chaincfg.MainNetParams)
+	network, err := getBreezApp().AccountService.GetNetwork()
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	outAddress, err := btcutil.DecodeAddress(request.Recipient, network)
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
@@ -1132,7 +1136,7 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	feeRates := [3]int64{mempoolRates.HourFee, mempoolRates.HalfHourFee, mempoolRates.FastestFee}
 	targetConfs := [3]int32{6, 3, 1}
 	result := data.CreateSlotSweepResponse{
-		Txs: make([]*data.UnsignedTransaction, 3),
+		Txs: make([]*data.RawSlotSweepTransaction, 3),
 	}
 	for i := range result.Txs {
 		newTx := baseTx.Copy()
@@ -1143,7 +1147,7 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 		if err != nil {
 			return marshalResponse(nil, err)
 		}
-		result.Txs[i] = &data.UnsignedTransaction{
+		result.Txs[i] = &data.RawSlotSweepTransaction{
 			Tx:                  buffer.Bytes(),
 			Input:               request.Slot.ConfirmedBalance,
 			Output:              newTx.TxOut[0].Value,
@@ -1152,8 +1156,86 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 			TargetConfirmations: targetConfs[i],
 		}
 	}
-
 	return marshalResponse(&result, nil)
+}
+
+func SignSlotSweepTransaction(requestBytes []byte) ([]byte, error) {
+	request := data.SignSlotSweepRequest{}
+	err := proto.Unmarshal(requestBytes, &request)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+
+	// Ensure we have a valid network to and private key to sign with
+	key, _ := btcec.PrivKeyFromBytes(request.GetPrivateKey())
+	network, err := getBreezApp().AccountService.GetNetwork()
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+
+	// Reconstruct the unsigned transaction
+	tx := wire.NewMsgTx(wire.TxVersion)
+	if err = tx.Deserialize(bytes.NewReader(request.Transaction.Tx)); err != nil {
+		return marshalResponse(nil, err)
+	}
+	if len(tx.TxIn) != len(request.AddressInfo.Utxos) {
+		return marshalResponse(nil, fmt.Errorf("mismatch in lengths for the given transaction UTXOs and the AddressInfo UTXOs"))
+	}
+
+	// All Satscard slots all use P2WPKH so we can calculate their pay script locally
+	slotAddress, err := btcutil.DecodeAddress(request.AddressInfo.Address, network)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	utxoPayScript, err := txscript.PayToAddrScript(slotAddress)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+
+	// We need a way to map wire.OutPoint to a TxOut
+	fetcherMap := make(map[wire.OutPoint]*wire.TxOut, len(tx.TxIn))
+	for _, utxo := range request.AddressInfo.Utxos {
+		hash, err := chainhash.NewHashFromStr(utxo.Txid)
+		if err != nil {
+			return marshalResponse(nil, err)
+		}
+		outPoint := wire.NewOutPoint(hash, utxo.Vout)
+		fetcherMap[*outPoint] = wire.NewTxOut(utxo.Value, utxoPayScript)
+	}
+	fetcher := txscript.NewMultiPrevOutFetcher(fetcherMap)
+	sigHashes := txscript.NewTxSigHashes(tx, fetcher)
+
+	// Since Satscard slots all use P2WPKH formats we can sign UTXOs the same way
+	for i, txIn := range tx.TxIn {
+		amount := fetcherMap[txIn.PreviousOutPoint].Value
+		witness, err := txscript.WitnessSignature(tx, sigHashes, i, amount, utxoPayScript, txscript.SigHashAll, key, true)
+		if err != nil {
+			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.WitnessSignature: %v", err))
+		}
+		tx.TxIn[i].Witness = witness
+
+		// Verify that the UTXO signature is valid
+		flags := txscript.StandardVerifyFlags
+		vm, err := txscript.NewEngine(utxoPayScript, tx, i, flags, nil, sigHashes, amount, fetcher)
+		if err != nil {
+			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.NewEngine: %v", err))
+		}
+		if err := vm.Execute(); err != nil {
+			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.Execute: %v", err))
+		}
+	}
+
+	// Finally we can return our signed transaction
+	buffer := bytes.Buffer{}
+	err = tx.BtcEncode(&buffer, 0, wire.WitnessEncoding)
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, wire.Encode: %v", err))
+	}
+	return marshalResponse(&data.TransactionDetails{
+		Tx:     buffer.Bytes(),
+		TxHash: tx.TxHash().String(),
+		Fees:   request.Transaction.Fees,
+	}, nil)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

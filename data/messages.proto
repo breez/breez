@@ -606,7 +606,7 @@ message CreateSlotSweepRequest {
   string recipient = 2;
 }
 
-message UnsignedTransaction {
+message RawSlotSweepTransaction {
   bytes tx = 1;
   int64 input = 2;
   int64 output = 3;
@@ -616,5 +616,11 @@ message UnsignedTransaction {
 }
 
 message CreateSlotSweepResponse {
-  repeated UnsignedTransaction txs = 1;
+  repeated RawSlotSweepTransaction txs = 1;
+}
+
+message SignSlotSweepRequest {
+  AddressInfo addressInfo = 1;
+  RawSlotSweepTransaction transaction = 2;
+  bytes privateKey = 3;
 }
