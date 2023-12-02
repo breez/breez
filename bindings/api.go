@@ -1148,7 +1148,7 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 			return marshalResponse(nil, err)
 		}
 		result.Txs[i] = &data.RawSlotSweepTransaction{
-			Tx:                  buffer.Bytes(),
+			MsgTx:               buffer.Bytes(),
 			Input:               request.Slot.ConfirmedBalance,
 			Output:              newTx.TxOut[0].Value,
 			Vbytes:              vbytes,
@@ -1166,8 +1166,8 @@ func SignSlotSweepTransaction(requestBytes []byte) ([]byte, error) {
 		return marshalResponse(nil, err)
 	}
 
-	// Ensure we have a valid network to and private key to sign with
-	key, _ := btcec.PrivKeyFromBytes(request.GetPrivateKey())
+	// Ensure we know the current network type and have a private key to sign with
+	key, _ := btcec.PrivKeyFromBytes(request.PrivateKey)
 	network, err := getBreezApp().AccountService.GetNetwork()
 	if err != nil {
 		return marshalResponse(nil, err)
@@ -1175,7 +1175,7 @@ func SignSlotSweepTransaction(requestBytes []byte) ([]byte, error) {
 
 	// Reconstruct the unsigned transaction
 	tx := wire.NewMsgTx(wire.TxVersion)
-	if err = tx.Deserialize(bytes.NewReader(request.Transaction.Tx)); err != nil {
+	if err = tx.Deserialize(bytes.NewReader(request.Transaction.MsgTx)); err != nil {
 		return marshalResponse(nil, err)
 	}
 	if len(tx.TxIn) != len(request.AddressInfo.Utxos) {
