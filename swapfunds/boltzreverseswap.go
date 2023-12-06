@@ -12,6 +12,7 @@ import (
 	breezservice "github.com/breez/breez/breez"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/breez/breez/data"
+	"github.com/breez/breez/mempool"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -199,7 +200,7 @@ func (s *Service) handleClaimTransaction() error {
 }
 
 func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error) {
-	recommendedFees, err := s.GetMempoolRecommendedFees()
+	recommendedFees, err := mempool.GetRecommendedFees()
 	if err != nil {
 		s.log.Errorf("s.GetMempoolRecommendedFees: %v", err)
 		return nil, fmt.Errorf("s.GetMempoolRecommendedFees: %v", err)

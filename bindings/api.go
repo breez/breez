@@ -25,6 +25,7 @@ import (
 	"github.com/breez/breez/dropwtx"
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
+	"github.com/breez/breez/mempool"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -1051,8 +1052,8 @@ func GetTorActive() bool {
 	return getBreezApp().GetTorActive()
 }
 
-func GetMempoolAddressInfo(address string) ([]byte, error) {
-	utxos, err := getBreezApp().SwapService.GetMempoolAddressUTXOs(address)
+func GetAddressInfo(address string) ([]byte, error) {
+	utxos, err := mempool.GetAddressUTXO(address)
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
@@ -1078,20 +1079,6 @@ func GetMempoolAddressInfo(address string) ([]byte, error) {
 	return marshalResponse(&info, nil)
 }
 
-func GetMempoolRecommendedFees() ([]byte, error) {
-	fees, err := getBreezApp().SwapService.GetMempoolRecommendedFees()
-	if err != nil {
-		return marshalResponse(nil, err)
-	}
-	return marshalResponse(&data.MempoolFeeRates{
-		Fastest:  fees.FastestFee,
-		HalfHour: fees.HalfHourFee,
-		Hour:     fees.HourFee,
-		Economy:  fees.EconomyFee,
-		Minimum:  fees.MinimumFee,
-	}, nil)
-}
-
 func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	request := data.CreateSlotSweepRequest{}
 	err := proto.Unmarshal(requestBytes, &request)
@@ -1110,7 +1097,7 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
-	mempoolRates, err := getBreezApp().SwapService.GetMempoolRecommendedFees()
+	mempoolRates, err := mempool.GetRecommendedFees()
 	if err != nil {
 		return marshalResponse(nil, err)
 	}
