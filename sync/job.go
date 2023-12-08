@@ -172,7 +172,7 @@ syncHeaders:
 		if err != nil {
 			return false, err
 		}
-		s.log.Errorf("setting filter height to %v", currentHeight)
+		s.log.Infof("setting filter height to %v", currentHeight)
 
 		if s.terminated() {
 			return false, nil
