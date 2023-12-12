@@ -135,7 +135,7 @@ func (db *DB) AddChannelClosedPayment(accPayment *PaymentInfo) error {
 			}
 		}
 
-		db.log.Infof("adding not existing closed channel payment %v, sweep: ",
+		db.log.Infof("adding not existing closed channel payment %v, sweep: %v",
 			accPayment.ClosedChannelPoint, accPayment.ClosedChannelSweepTxID)
 
 		id, err := db.addPayment(accPayment, tx, paymentID)
