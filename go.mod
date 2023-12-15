@@ -5,23 +5,23 @@ go 1.19
 require (
 	github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4
 	github.com/breez/lspd v0.0.0-20230630175015-34646d50a591
-	github.com/btcsuite/btcd v0.23.5-0.20230228185050-38331963bddd
+	github.com/btcsuite/btcd v0.23.5-0.20230905170901-80f5a0ffdf36
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
-	github.com/btcsuite/btcd/btcutil v1.1.3
+	github.com/btcsuite/btcd/btcutil v1.1.4-0.20230904040416-d4f519f5dc05
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcwallet v0.16.10-0.20230621165747-9c21f464ce13
+	github.com/btcsuite/btcwallet v0.16.10-0.20230804184612-07be54bc22cf
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fiatjaf/go-lnurl v1.12.1
+	github.com/fiatjaf/go-lnurl v1.13.1
 	github.com/golang/protobuf v1.5.2
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/lightninglabs/neutrino v0.15.0
+	github.com/lightninglabs/neutrino v0.16.0
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
-	github.com/lightningnetwork/lnd v0.16.4-beta
+	github.com/lightningnetwork/lnd v0.17.0-beta
 	github.com/lightningnetwork/lnd/kvdb v1.4.1
-	github.com/lightningnetwork/lnd/tor v1.1.0
+	github.com/lightningnetwork/lnd/tor v1.1.2
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
 	github.com/tyler-smith/go-bip32 v1.0.0
 	github.com/urfave/cli v1.22.9
@@ -30,7 +30,7 @@ require (
 	golang.org/x/mobile v0.0.0-20221110043201-43a038452099
 	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.2.0
 	google.golang.org/api v0.30.0
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.27.1
@@ -112,11 +112,11 @@ require (
 	github.com/lightninglabs/neutrino/cache v1.1.1 // indirect
 	github.com/lightningnetwork/lightning-onion v1.2.1-0.20221202012345-ca23184850a1 // indirect
 	github.com/lightningnetwork/lnd/cert v1.2.1 // indirect
-	github.com/lightningnetwork/lnd/clock v1.1.0 // indirect
+	github.com/lightningnetwork/lnd/clock v1.1.1 // indirect
 	github.com/lightningnetwork/lnd/healthcheck v1.2.2 // indirect
-	github.com/lightningnetwork/lnd/queue v1.1.0 // indirect
-	github.com/lightningnetwork/lnd/ticker v1.1.0 // indirect
-	github.com/lightningnetwork/lnd/tlv v1.1.0 // indirect
+	github.com/lightningnetwork/lnd/queue v1.1.1 // indirect
+	github.com/lightningnetwork/lnd/ticker v1.1.1 // indirect
+	github.com/lightningnetwork/lnd/tlv v1.1.1 // indirect
 	github.com/ltcsuite/ltcd v0.0.0-20190101042124-f37f8bf35796 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nbd-wtf/go-nostr v0.19.4
-	github.com/nbd-wtf/ln-decodepay v1.5.1 // indirect
+	github.com/nbd-wtf/ln-decodepay v1.6.0 // indirect
 	github.com/nwaples/rardecode v1.1.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
