@@ -1,12 +1,10 @@
 package bindings
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net/url"
 	"os"
 	"path"
@@ -26,13 +24,10 @@ import (
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/mempool"
+	"github.com/breez/breez/satscard"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/kvdb"
@@ -40,11 +35,9 @@ import (
 )
 
 const (
-	forceRescan           = "FORCE_RESCAN"
-	forceBootstrap        = "FORCE_BOOTSTRAP"
-	disabledTxSpentURL    = "<DISABLED>"
-	segwitFlagVBytes      = 0.5
-	satscardWitnessVBytes = 27.0
+	forceRescan        = "FORCE_RESCAN"
+	forceBootstrap     = "FORCE_BOOTSTRAP"
+	disabledTxSpentURL = "<DISABLED>"
 )
 
 var (
@@ -1055,7 +1048,7 @@ func GetTorActive() bool {
 func GetAddressInfo(address string) ([]byte, error) {
 	utxos, err := mempool.GetAddressUTXO(address)
 	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("mempool.GetAddressUTXO, %v", err))
 	}
 	info := data.AddressInfo{
 		Address:            address,
@@ -1087,142 +1080,43 @@ func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
 	}
 	network, err := getBreezApp().AccountService.GetNetwork()
 	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("unable to determine network: %v", err))
 	}
 	outAddress, err := btcutil.DecodeAddress(request.Recipient, network)
 	if err != nil {
-		return marshalResponse(nil, err)
-	}
-	outScript, err := txscript.PayToAddrScript(outAddress)
-	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("btcutil.DecodeAddress(%s), %v", request.Recipient, err))
 	}
 	mempoolRates, err := mempool.GetRecommendedFees()
 	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("mempool.GetRecommendFees, couldn't get mempool fees: %v", err))
 	}
 
-	// Construct a feeless unsigned transaction
-	baseTx := wire.NewMsgTx(wire.TxVersion)
-	baseTx.AddTxOut(wire.NewTxOut(request.Slot.ConfirmedBalance, outScript))
-	for _, utxo := range request.Slot.Utxos {
-		hash, err := chainhash.NewHashFromStr(utxo.Txid)
-		if err != nil {
-			return marshalResponse(nil, err)
-		}
-		prevOut := wire.NewOutPoint(hash, utxo.Vout)
-		baseTx.AddTxIn(wire.NewTxIn(prevOut, nil, nil))
-	}
-
-	// Satscard use only P2WPKH inputs so we can determine an approximate vsize for the transaction
-	witnessLenVBytes := float64(wire.VarIntSerializeSize(uint64(len(baseTx.TxIn)))) / 4.0
-	witnessVBytes := witnessLenVBytes + satscardWitnessVBytes*float64(len(baseTx.TxIn))
-	vbytes := float64(baseTx.SerializeSizeStripped()) + segwitFlagVBytes + witnessVBytes
-
-	// Create copied transactions with the correct fee settings
 	feeRates := [3]int64{mempoolRates.HourFee, mempoolRates.HalfHourFee, mempoolRates.FastestFee}
 	targetConfs := [3]int32{6, 3, 1}
-	result := data.CreateSlotSweepResponse{
-		Txs: make([]*data.RawSlotSweepTransaction, 3),
+	txs, err := satscard.CreateSweepTransactions(request.Slot, outAddress, feeRates[:], targetConfs[:])
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("satscard.CreateSweepTransactions, %v", err))
 	}
-	for i := range result.Txs {
-		newTx := baseTx.Copy()
-		fee := int64(math.Ceil(float64(feeRates[i]) * vbytes))
-		newTx.TxOut[0].Value -= fee
-		buffer := bytes.Buffer{}
-		err := newTx.Serialize(&buffer)
-		if err != nil {
-			return marshalResponse(nil, err)
-		}
-		result.Txs[i] = &data.RawSlotSweepTransaction{
-			MsgTx:               buffer.Bytes(),
-			Input:               request.Slot.ConfirmedBalance,
-			Output:              newTx.TxOut[0].Value,
-			Vbytes:              vbytes,
-			Fees:                fee,
-			TargetConfirmations: targetConfs[i],
-		}
-	}
-	return marshalResponse(&result, nil)
+	return marshalResponse(&data.CreateSlotSweepResponse{
+		Txs: txs,
+	}, nil)
 }
 
 func SignSlotSweepTransaction(requestBytes []byte) ([]byte, error) {
 	request := data.SignSlotSweepRequest{}
-	err := proto.Unmarshal(requestBytes, &request)
-	if err != nil {
+	if err := proto.Unmarshal(requestBytes, &request); err != nil {
 		return marshalResponse(nil, err)
 	}
-
-	// Ensure we know the current network type and have a private key to sign with
-	key, _ := btcec.PrivKeyFromBytes(request.PrivateKey)
 	network, err := getBreezApp().AccountService.GetNetwork()
 	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("unable to determine network: %v", err))
 	}
 
-	// Reconstruct the unsigned transaction
-	tx := wire.NewMsgTx(wire.TxVersion)
-	if err = tx.Deserialize(bytes.NewReader(request.Transaction.MsgTx)); err != nil {
-		return marshalResponse(nil, err)
-	}
-	if len(tx.TxIn) != len(request.AddressInfo.Utxos) {
-		return marshalResponse(nil, fmt.Errorf("mismatch in lengths for the given transaction UTXOs and the AddressInfo UTXOs"))
-	}
-
-	// All Satscard slots all use P2WPKH so we can calculate their pay script locally
-	slotAddress, err := btcutil.DecodeAddress(request.AddressInfo.Address, network)
+	tx, err := satscard.SignTransaction(request.AddressInfo, request.Transaction, request.PrivateKey, network)
 	if err != nil {
-		return marshalResponse(nil, err)
+		return marshalResponse(nil, fmt.Errorf("satscard.SignTransaction(), %v", err))
 	}
-	utxoPayScript, err := txscript.PayToAddrScript(slotAddress)
-	if err != nil {
-		return marshalResponse(nil, err)
-	}
-
-	// We need a way to map wire.OutPoint to a TxOut
-	fetcherMap := make(map[wire.OutPoint]*wire.TxOut, len(tx.TxIn))
-	for _, utxo := range request.AddressInfo.Utxos {
-		hash, err := chainhash.NewHashFromStr(utxo.Txid)
-		if err != nil {
-			return marshalResponse(nil, err)
-		}
-		outPoint := wire.NewOutPoint(hash, utxo.Vout)
-		fetcherMap[*outPoint] = wire.NewTxOut(utxo.Value, utxoPayScript)
-	}
-	fetcher := txscript.NewMultiPrevOutFetcher(fetcherMap)
-	sigHashes := txscript.NewTxSigHashes(tx, fetcher)
-
-	// Since Satscard slots all use P2WPKH formats we can sign UTXOs the same way
-	for i, txIn := range tx.TxIn {
-		amount := fetcherMap[txIn.PreviousOutPoint].Value
-		witness, err := txscript.WitnessSignature(tx, sigHashes, i, amount, utxoPayScript, txscript.SigHashAll, key, true)
-		if err != nil {
-			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.WitnessSignature: %v", err))
-		}
-		tx.TxIn[i].Witness = witness
-
-		// Verify that the UTXO signature is valid
-		flags := txscript.StandardVerifyFlags
-		vm, err := txscript.NewEngine(utxoPayScript, tx, i, flags, nil, sigHashes, amount, fetcher)
-		if err != nil {
-			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.NewEngine: %v", err))
-		}
-		if err := vm.Execute(); err != nil {
-			return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, txscript.Execute: %v", err))
-		}
-	}
-
-	// Finally we can return our signed transaction
-	buffer := bytes.Buffer{}
-	err = tx.BtcEncode(&buffer, 0, wire.WitnessEncoding)
-	if err != nil {
-		return marshalResponse(nil, fmt.Errorf("SignSlotSweepTransaction, wire.Encode: %v", err))
-	}
-	return marshalResponse(&data.TransactionDetails{
-		Tx:     buffer.Bytes(),
-		TxHash: tx.TxHash().String(),
-		Fees:   request.Transaction.Fees,
-	}, nil)
+	return marshalResponse(tx, nil)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {

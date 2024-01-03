@@ -202,8 +202,8 @@ func (s *Service) handleClaimTransaction() error {
 func (s *Service) ClaimFeeEstimates(claimAddress string) (map[int32]int64, error) {
 	recommendedFees, err := mempool.GetRecommendedFees()
 	if err != nil {
-		s.log.Errorf("s.GetMempoolRecommendedFees: %v", err)
-		return nil, fmt.Errorf("s.GetMempoolRecommendedFees: %v", err)
+		s.log.Errorf("mempool.GetRecommendedFees: %v", err)
+		return nil, fmt.Errorf("mempool.GetRecommendedFees: %v", err)
 	}
 	rFees := map[int32]int64{
 		1: recommendedFees.FastestFee * 1000 / 4,

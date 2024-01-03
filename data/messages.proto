@@ -593,14 +593,6 @@ message AddressInfo {
   repeated Utxo utxos = 4;
 }
 
-message MempoolFeeRates {
-  int64 fastest = 1;
-  int64 halfHour = 2;
-  int64 hour = 3;
-  int64 economy = 4;
-  int64 minimum = 5;
-}
-
 message CreateSlotSweepRequest {
   AddressInfo slot = 1;
   string recipient = 2;
@@ -610,7 +602,7 @@ message RawSlotSweepTransaction {
   bytes msgTx = 1;
   int64 input = 2;
   int64 output = 3;
-  double vbytes = 4;
+  double vSize = 4;
   int64 fees = 5;
   int32 targetConfirmations = 6;
 }
