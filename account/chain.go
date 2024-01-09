@@ -17,19 +17,28 @@ const (
 )
 
 /*
+GetNetwork retrieves the current network parameters
+*/
+func (a *Service) GetNetwork() (*chaincfg.Params, error) {
+	if a.cfg.Network == "testnet" {
+		return &chaincfg.TestNet3Params, nil
+	} else if a.cfg.Network == "simnet" {
+		return &chaincfg.SimNetParams, nil
+	} else if a.cfg.Network == "mainnet" {
+		return &chaincfg.MainNetParams, nil
+	} else {
+		return nil, errors.New("unknown network type " + a.cfg.Network)
+	}
+}
+
+/*
 ValidateAddress validates a bitcoin address based on the network type
 */
 func (a *Service) ValidateAddress(address string) error {
-	var network *chaincfg.Params
-
-	if a.cfg.Network == "testnet" {
-		network = &chaincfg.TestNet3Params
-	} else if a.cfg.Network == "simnet" {
-		network = &chaincfg.SimNetParams
-	} else if a.cfg.Network == "mainnet" {
-		network = &chaincfg.MainNetParams
-	} else {
-		return errors.New("unknown network type " + a.cfg.Network)
+	network, err := a.GetNetwork()
+	if err != nil {
+		a.log.Errorf("Can't validate address %s for network: %v", err)
+		return err
 	}
 
 	addr, err := btcutil.DecodeAddress(address, network)

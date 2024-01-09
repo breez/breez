@@ -23,8 +23,11 @@ import (
 	"github.com/breez/breez/dropwtx"
 	"github.com/breez/breez/lnnode"
 	breezlog "github.com/breez/breez/log"
+	"github.com/breez/breez/mempool"
+	"github.com/breez/breez/satscard"
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btclog"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/kvdb"
@@ -1040,6 +1043,80 @@ func SetBackupTorConfig(torConfig []byte) error {
 
 func GetTorActive() bool {
 	return getBreezApp().GetTorActive()
+}
+
+func GetAddressInfo(address string) ([]byte, error) {
+	utxos, err := mempool.GetAddressUTXO(address)
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("mempool.GetAddressUTXO, %v", err))
+	}
+	info := data.AddressInfo{
+		Address:            address,
+		ConfirmedBalance:   0,
+		UnconfirmedBalance: 0,
+		Utxos:              make([]*data.Utxo, len(utxos)),
+	}
+	for i, utxo := range utxos {
+		if utxo.Status.Confirmed {
+			info.ConfirmedBalance += utxo.Value
+		} else {
+			info.UnconfirmedBalance += utxo.Value
+		}
+		info.Utxos[i] = &data.Utxo{
+			Txid:        utxo.Txid,
+			Vout:        utxo.Vout,
+			Value:       utxo.Value,
+			IsConfirmed: utxo.Status.Confirmed,
+		}
+	}
+	return marshalResponse(&info, nil)
+}
+
+func CreateSlotSweepTransactions(requestBytes []byte) ([]byte, error) {
+	request := data.CreateSlotSweepRequest{}
+	err := proto.Unmarshal(requestBytes, &request)
+	if err != nil {
+		return marshalResponse(nil, err)
+	}
+	network, err := getBreezApp().AccountService.GetNetwork()
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("unable to determine network: %v", err))
+	}
+	outAddress, err := btcutil.DecodeAddress(request.Recipient, network)
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("btcutil.DecodeAddress(%s), %v", request.Recipient, err))
+	}
+	mempoolRates, err := mempool.GetRecommendedFees()
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("mempool.GetRecommendFees, couldn't get mempool fees: %v", err))
+	}
+
+	feeRates := [3]int64{mempoolRates.HourFee, mempoolRates.HalfHourFee, mempoolRates.FastestFee}
+	targetConfs := [3]int32{6, 3, 1}
+	txs, err := satscard.CreateSweepTransactions(request.Slot, outAddress, feeRates[:], targetConfs[:])
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("satscard.CreateSweepTransactions, %v", err))
+	}
+	return marshalResponse(&data.CreateSlotSweepResponse{
+		Txs: txs,
+	}, nil)
+}
+
+func SignSlotSweepTransaction(requestBytes []byte) ([]byte, error) {
+	request := data.SignSlotSweepRequest{}
+	if err := proto.Unmarshal(requestBytes, &request); err != nil {
+		return marshalResponse(nil, err)
+	}
+	network, err := getBreezApp().AccountService.GetNetwork()
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("unable to determine network: %v", err))
+	}
+
+	tx, err := satscard.SignTransaction(request.AddressInfo, request.Transaction, request.PrivateKey, network)
+	if err != nil {
+		return marshalResponse(nil, fmt.Errorf("satscard.SignTransaction(), %v", err))
+	}
+	return marshalResponse(tx, nil)
 }
 
 func deliverNotifications(notificationsChan chan data.NotificationEvent, appServices AppServices) {
