@@ -63,7 +63,7 @@ func compactDB(graphDir string) error {
 	}
 	logger.Infof("channel db size = %v", f.Size())
 
-	if f.Size() <= 400000000 {
+	if f.Size() <= 100000000 {
 		return nil
 	}
 	newFile, err := ioutil.TempFile(graphDir, "cdb-compact")
