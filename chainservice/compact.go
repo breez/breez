@@ -51,6 +51,7 @@ func deleteCompactFilters(neutrinoFile string) error {
 
 func BoltCopy(srcfile, destfile string, skip skipFunc) error {
 	// Open source database.
+	logger.Infof("BoltCopy: Opening srcFile")
 	src, err := bbolt.Open(srcfile, 0444, nil)
 	if err != nil {
 		return err
@@ -58,6 +59,7 @@ func BoltCopy(srcfile, destfile string, skip skipFunc) error {
 	defer src.Close()
 
 	// Open destination database.
+	logger.Infof("BoltCopy: Opening destFile")
 	dst, err := bbolt.Open(destfile, 0600, nil)
 	if err != nil {
 		return err
@@ -65,6 +67,7 @@ func BoltCopy(srcfile, destfile string, skip skipFunc) error {
 	defer dst.Close()
 
 	// Run compaction.
+	logger.Infof("BoltCopy: About to compact")
 	err = compact(dst, src, skip)
 	return err
 }

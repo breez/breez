@@ -63,17 +63,22 @@ func compactDB(graphDir string) error {
 	}
 	logger.Infof("channel db size = %v", f.Size())
 
-	if f.Size() <= 100000000 {
+	if f.Size() <= 40_000_000 {
+		logger.Infof("skipping compacting because channeldb size <= 40000000", f.Size())
 		return nil
 	}
 	newFile, err := ioutil.TempFile(graphDir, "cdb-compact")
 	if err != nil {
 		return err
 	}
+
+	logger.Infof("compactDB: before chainservice.BoltCopy", f.Size())
 	if err = chainservice.BoltCopy(dbPath, newFile.Name(),
 		func(keyPath [][]byte, k []byte, v []byte) bool { return false }); err != nil {
+		logger.Infof("init.go compactDB: BoltCopy returned error: %v", err)
 		return err
 	}
+	logger.Infof("compactDB: after chainservice.BoltCopy", f.Size())
 	if err = os.Rename(dbPath, dbPath+".old"); err != nil {
 		return err
 	}
@@ -113,9 +118,11 @@ func createService(workingDir string) (*channeldb.DB, error) {
 	}
 
 	graphDir := path.Join(workingDir, strings.Replace(directoryPattern, "{{network}}", config.Network, -1))
+	logger.Infof("createService: before compactDB")
 	if err = compactDB(graphDir); err != nil {
 		logger.Errorf("Error in compactDB: %v", err)
 	}
+	logger.Infof("createService: after compactDB")
 
 	logger.Infof("creating shared channeldb service.")
 	cfg := lnd.DefaultConfig()
@@ -133,6 +140,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 	}
 
 	opts := channeldb.DefaultOptions()
+	logger.Infof("createService: before kvdb.GetBoltBackend", err)
 	backend, err := kvdb.GetBoltBackend(&kvdb.BoltBackendConfig{
 		DBPath:            graphDir,
 		DBFileName:        dbName,
@@ -142,9 +150,12 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		DBTimeout:         opts.DBTimeout,
 	})
 	if err != nil {
+		logger.Infof("createService: kvdb.GetBoltBackend returned error: %v", err)
 		return nil, err
 	}
 
+	logger.Infof("createService: after kvdb.GetBoltBackend", err)
+	logger.Infof("createService: before channeldb.CreateWithBackend", err)
 	chanDB, err := channeldb.CreateWithBackend(
 		backend, dbOptions...,
 	)
@@ -152,6 +163,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		logger.Errorf("unable to open channeldb: %v", err)
 		return nil, err
 	}
+	logger.Infof("createService: after channeldb.CreateWithBackend", err)
 	deleteOldDB(graphDir)
 	deleteOldBootstrap(workingDir)
 
