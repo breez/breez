@@ -78,15 +78,20 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		a.BackupManager,
 	}
 
+	a.log.Info("before lspChanStateSyncer.recordChannelsStatus()")
 	if err := a.lspChanStateSyncer.recordChannelsStatus(); err != nil {
 		a.log.Errorf("failed to collect channels state %v", err)
 	}
 
+	a.log.Info("after lspChanStateSyncer.recordChannelsStatus()")
 	for i, s := range services {
+		idx := i
+		a.log.Info("before start service %v", idx)
 		if err := s.Start(); err != nil {
-			a.log.Errorf("failed to start service %v", i)
+			a.log.Errorf("failed to start service %v", idx)
 			return err
 		}
+		a.log.Info("after start service %v", idx)
 	}
 	a.wg.Add(1)
 	go a.watchDaemonEvents()

@@ -39,6 +39,7 @@ func (d *Daemon) Start() error {
 	}
 	d.startTime = time.Now()
 
+	d.log.Info("about to start ntfnServer")
 	if err := d.ntfnServer.Start(); err != nil {
 		return fmt.Errorf("failed to start nftnServer: %w", err)
 	}
@@ -234,6 +235,7 @@ func (d *Daemon) startDaemon() error {
 	go d.notifyWhenReady(readyChan)
 	d.daemonRunning = true
 
+	d.log.Info("before running lndeamon goroutine")
 	// Run the daemon
 	go func() {
 		defer func() {
@@ -241,11 +243,15 @@ func (d *Daemon) startDaemon() error {
 			go d.stopDaemon()
 		}()
 
+		d.log.Info("inside lndeamon goroutine")
+		d.log.Info("before channeldbservice.Get")
 		chanDB, chanDBCleanUp, err := channeldbservice.Get(d.cfg.WorkingDir)
 		if err != nil {
 			d.log.Errorf("failed to create channeldbservice", err)
 			return
 		}
+
+		d.log.Info("before chanDB.ChannelStateDB().FetchAllChannels()")
 		c, err := chanDB.ChannelStateDB().FetchAllChannels()
 		if err != nil {
 			d.log.Errorf("error when calling chanDB.FetchAllChannels(): %v", err)
@@ -254,13 +260,19 @@ func (d *Daemon) startDaemon() error {
 				d.startBeforeSync = false
 			}
 		}
+
+		d.log.Info("before deleteZombies(chanDB)")
 		deleteZombies(chanDB)
+
+		d.log.Info("before chainservice.Get(d.cfg.WorkingDir, d.breezDB)")
 		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
 			d.log.Errorf("failed to create chainservice: %v", err)
 			chanDBCleanUp()
 			return
 		}
+
+		d.log.Info("before signal.Intercept()")
 		interceptor, err := signal.Intercept()
 		if err != nil {
 			d.log.Errorf("failed to create signal interceptor %v", err)
@@ -274,6 +286,7 @@ func (d *Daemon) startDaemon() error {
 			readyChan:    readyChan,
 			chanDB:       chanDB}
 
+		d.log.Info("before d.createConfig(deps.workingDir, d.TorConfig, interceptor)")
 		lndConfig, err := d.createConfig(deps.workingDir, d.TorConfig, interceptor)
 		if err != nil {
 			d.log.Errorf("failed to create config %v", err)
