@@ -40,12 +40,12 @@ func (d *Daemon) Start() error {
 	d.startTime = time.Now()
 
 	if err := d.ntfnServer.Start(); err != nil {
-		return err
+		return fmt.Errorf("failed to start nftnServer: %w", err)
 	}
 
 	checkMacaroons(d.cfg)
 	if err := d.startDaemon(); err != nil {
-		return fmt.Errorf("Failed to start daemon: %v", err)
+		return fmt.Errorf("Failed to start daemon: %w", err)
 	}
 
 	return nil
@@ -257,8 +257,8 @@ func (d *Daemon) startDaemon() error {
 		deleteZombies(chanDB)
 		chainSevice, cleanupFn, err := chainservice.Get(d.cfg.WorkingDir, d.breezDB)
 		if err != nil {
+			d.log.Errorf("failed to create chainservice: %v", err)
 			chanDBCleanUp()
-			d.log.Errorf("failed to create chainservice", err)
 			return
 		}
 		interceptor, err := signal.Intercept()

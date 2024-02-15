@@ -82,8 +82,9 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		a.log.Errorf("failed to collect channels state %v", err)
 	}
 
-	for _, s := range services {
+	for i, s := range services {
 		if err := s.Start(); err != nil {
+			a.log.Errorf("failed to start service %v", i)
 			return err
 		}
 	}
