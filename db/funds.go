@@ -21,6 +21,8 @@ type SwapAddressInfo struct {
 	ValidUntil           string
 	MaxIdleTime          uint32
 	MaxClientToSelfDelay uint32
+	MinPaymentSizeMsat   uint64
+	MaxPaymentSizeMsat   uint64
 	Promise              string
 
 	//client side data

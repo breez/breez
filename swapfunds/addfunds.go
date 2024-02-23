@@ -628,6 +628,8 @@ func (s *Service) createSwapInvoice(addressInfo *db.SwapAddressInfo) (payReq str
 			MaxIdleTime:          addressInfo.MaxIdleTime,
 			MaxClientToSelfDelay: addressInfo.MaxClientToSelfDelay,
 			Promise:              addressInfo.Promise,
+			MinPaymentSizeMsat:   addressInfo.MinPaymentSizeMsat,
+			MaxPaymentSizeMsat:   addressInfo.MaxPaymentSizeMsat,
 		}
 	}
 

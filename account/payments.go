@@ -1513,6 +1513,8 @@ func (a *Service) registerPayment(paymentHash, paymentSecret []byte, incomingAmo
 			MaxIdleTime:          params.MaxIdleTime,
 			MaxClientToSelfDelay: params.MaxClientToSelfDelay,
 			Promise:              params.Promise,
+			MinPaymentSizeMsat:   params.MinPaymentSizeMsat,
+			MaxPaymentSizeMsat:   params.MaxPaymentSizeMsat,
 		}
 	}
 	pi := &lspd.PaymentInformation{

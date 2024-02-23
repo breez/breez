@@ -187,6 +187,8 @@ func (c *Client) LSPList() (*data.LSPList, error) {
 				MaxIdleTime:          params.MaxIdleTime,
 				MaxClientToSelfDelay: params.MaxClientToSelfDelay,
 				Promise:              params.Promise,
+				MinPaymentSizeMsat:   params.MinPaymentSizeMsat,
+				MaxPaymentSizeMsat:   params.MaxPaymentSizeMsat,
 			})
 
 			lastmin = params.MinMsat
