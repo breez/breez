@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4
 	github.com/breez/lspd v0.0.0-20230630175015-34646d50a591
-	github.com/btcsuite/btcd v0.24.1-0.20240123000108-62e6af035ec5
+	github.com/btcsuite/btcd v0.24.2-beta.rc1.0.20240403021926-ae5533602c46
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
@@ -18,7 +18,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/lightninglabs/neutrino v0.16.0
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
-	github.com/lightningnetwork/lnd v0.17.4-beta
+	github.com/lightningnetwork/lnd v0.17.5-beta
 	github.com/lightningnetwork/lnd/kvdb v1.4.4
 	github.com/lightningnetwork/lnd/tor v1.1.2
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a
@@ -216,5 +216,5 @@ replace (
 	github.com/btcsuite/btcwallet/walletdb => github.com/breez/btcwallet/walletdb v1.4.0-breez
 	github.com/btcsuite/btcwallet/wtxmgr => github.com/breez/btcwallet/wtxmgr v1.5.1-0.20220717090508-739787f948a6
 	github.com/lightninglabs/neutrino => github.com/breez/neutrino v0.14.3-0.20240422211338-038ae860735b
-	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.17.4-breez
+	github.com/lightningnetwork/lnd => github.com/breez/lnd v0.17.5-breez
 )
