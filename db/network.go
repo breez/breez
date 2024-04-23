@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/breez/breez/data"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

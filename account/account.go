@@ -8,9 +8,9 @@ import (
 	"github.com/breez/breez/db"
 
 	"github.com/breez/breez/data"
-	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

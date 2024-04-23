@@ -28,10 +28,10 @@ import (
 	"github.com/breez/breez/services"
 	"github.com/breez/lspd/btceclegacy"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/chainntnfs"
 	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lnrpc/signrpc"
+	"google.golang.org/protobuf/proto"
 )
 
 type peerSnapshot struct {

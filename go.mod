@@ -15,7 +15,6 @@ require (
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fiatjaf/go-lnurl v1.12.1
-	github.com/golang/protobuf v1.5.3
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/lightninglabs/neutrino v0.16.0
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
@@ -45,6 +44,7 @@ require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.2.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa // indirect
