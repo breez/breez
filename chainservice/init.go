@@ -290,7 +290,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeer
 			Database:     db,
 			ChainParams:  *params,
 			ConnectPeers: peers,
-			// RestPeers:    restPeers,
+			RestPeers:    restPeers,
 			Dialer: func(addr net.Addr) (net.Conn, error) {
 				return proxy.Dial("onion", addr.String(), time.Second*120)
 			},
@@ -316,7 +316,7 @@ func newNeutrino(workingDir string, cfg *config.Config, peers []string, restPeer
 			Database:     db,
 			ChainParams:  *params,
 			ConnectPeers: peers,
-			// RestPeers:    restPeers,
+			RestPeers:    restPeers,
 		}
 	}
 	logger.Infof("creating new neutrino service.")
