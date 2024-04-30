@@ -16,6 +16,7 @@ import (
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/prometheus/common/log"
 )
 
 const (
@@ -161,7 +162,37 @@ func (s *Job) importClosedChannels(chanDB *channeldb.DB, dirname string, file ui
 func (s *Job) downloadClosedChannels() error {
 
 	directory := path.Join(s.workingDir, "pruned")
+	resetPath := path.Join(directory, "20240430-channel-download-reset")
+	if dirExists(directory) && !fileExists(resetPath) {
+		// The 20240430-channel-download-reset patch is a one-time patch applied
+		// because the backend server would always return 'OK'. This caused
+		// clients to download infinite amounts of channel files, and the
+		// numbering on their filesystem would be off. The solution is to start
+		// over, but only this one time.
+		s.log.Infof("20240430-channel-download-reset not yet applied. "+
+			"Removing %s to re-initiate closed channel downloads.", directory)
+		err := os.RemoveAll(directory)
+		if err != nil {
+			log.Warnf("Failed to apply 20240430-channel-download-reset: %v", err)
+		}
+	}
+
+	dirExisted := dirExists(directory)
 	os.MkdirAll(directory, 0755)
+
+	// If the directory did not exist, that means channel downloads start from
+	// scratch, and we can consider the 20240430-channel-download-reset patch
+	// aplied.
+	if !dirExisted {
+		resetFile, err := os.Create(resetPath)
+		if err != nil {
+			log.Warnf("20240430-channel-download-reset applied, but failed "+
+				"to write file: %v", err)
+		} else {
+			resetFile.Close()
+			log.Infof("20240430-channel-download-reset applied succesfully.")
+		}
+	}
 
 	f, err := firstFileNumberToDownload(directory)
 	if err != nil {
@@ -178,6 +209,22 @@ func (s *Job) downloadClosedChannels() error {
 	}
 
 	return err
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func dirExists(dirname string) bool {
+	info, err := os.Stat(dirname)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
 }
 
 func firstFileNumberToDownload(dirname string) (uint64, error) {
