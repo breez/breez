@@ -16,7 +16,6 @@ import (
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/channeldbservice"
 	"github.com/lightningnetwork/lnd/channeldb"
-	"github.com/prometheus/common/log"
 )
 
 const (
@@ -173,7 +172,7 @@ func (s *Job) downloadClosedChannels() error {
 			"Removing %s to re-initiate closed channel downloads.", directory)
 		err := os.RemoveAll(directory)
 		if err != nil {
-			log.Warnf("Failed to apply 20240430-channel-download-reset: %v", err)
+			s.log.Warnf("Failed to apply 20240430-channel-download-reset: %v", err)
 		}
 	}
 
@@ -186,11 +185,11 @@ func (s *Job) downloadClosedChannels() error {
 	if !dirExisted {
 		resetFile, err := os.Create(resetPath)
 		if err != nil {
-			log.Warnf("20240430-channel-download-reset applied, but failed "+
+			s.log.Warnf("20240430-channel-download-reset applied, but failed "+
 				"to write file: %v", err)
 		} else {
 			resetFile.Close()
-			log.Infof("20240430-channel-download-reset applied succesfully.")
+			s.log.Infof("20240430-channel-download-reset applied succesfully.")
 		}
 	}
 
