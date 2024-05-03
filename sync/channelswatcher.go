@@ -77,7 +77,12 @@ func NewChannelsWatcher(
 		}
 
 		log.Infof("watching channel id: %v", c.ShortChannelID.String())
-		channelBlockHeight := uint64(c.ShortChannelID.BlockHeight)
+		var channelBlockHeight uint64
+		if c.IsZeroConf() {
+			channelBlockHeight = uint64(c.ZeroConfRealScid().BlockHeight)
+		} else {
+			channelBlockHeight = uint64(c.ShortChannelID.BlockHeight)
+		}
 
 		// query spend hint for channel
 		hintCache, err := channeldb.NewHeightHintCache(channeldb.CacheConfig{
