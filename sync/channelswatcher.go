@@ -126,7 +126,7 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 
 	startHeight, err := b.db.fetchChannelsWatcherBlockHeight()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to fetch start height: %w", err)
 	}
 	b.log.Info("fetchChannelsWatcherBlockHeight = %v", startHeight)
 	if b.firstChannelBlockHeight > startHeight {
@@ -135,12 +135,12 @@ func (b *ChannelsWatcher) Scan(tipHeight uint64) (bool, error) {
 
 	startHash, err := b.chainService.GetBlockHash(int64(startHeight))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get start block hash for start height %d: %w", startHeight, err)
 	}
 
 	tipHash, err := b.chainService.GetBlockHash(int64(tipHeight))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get end block hash for end height %d: %w", tipHeight, err)
 	}
 
 	b.log.Infof("Scanning for closed channels in range %v-%v", startHeight, tipHeight)

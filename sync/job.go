@@ -70,20 +70,20 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 
 	breezDB, cleanupDB, err := db.Get(s.workingDir)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get db: %w", err)
 	}
 	defer cleanupDB()
 
 	jobDB, err := openJobDB(path.Join(s.workingDir, "job.db"))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to open job db: %w", err)
 	}
 	defer jobDB.close()
 
 	//ensure job is rate limited.
 	lastRun, err := jobDB.lastSuccessRunDate()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get last success run date: %w", err)
 	}
 	if time.Now().Sub(lastRun) < rateLimitJobInterval {
 		s.log.Infof("job was not running due to rate limit, last run was at %v", lastRun)
@@ -92,13 +92,13 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 
 	startSyncHeight, err := jobDB.fetchCFilterSyncHeight()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to fetch CFilter sync height: %w", err)
 	}
 
 	chainService, cleanFn, err := chainservice.Get(s.workingDir, breezDB)
 	if err != nil {
 		s.log.Errorf("Error creating ChainService: %s", err)
-		return false, err
+		return false, fmt.Errorf("failed to get chainservice: %w", err)
 	}
 
 	chainService.Start()
@@ -107,7 +107,7 @@ func (s *Job) syncFilters() (channelClosed bool, err error) {
 
 	bestBlockHeight, err := s.waitForHeaders(chainService, startSyncHeight)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to wait for headers: %w", err)
 	}
 
 	if startSyncHeight == 0 {
@@ -132,7 +132,7 @@ syncHeaders:
 		case <-time.After(time.Millisecond * 100):
 			bestBlockHeight, err = s.waitForHeaders(chainService, startSyncHeight)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("failed to wait for headers: %w", err)
 			}
 			continue
 		case <-s.quit:
@@ -156,7 +156,7 @@ syncHeaders:
 		h, err := chainService.GetBlockHash(int64(currentHeight))
 		if err != nil {
 			s.log.Errorf("fail to fetch block hash", err)
-			return false, err
+			return false, fmt.Errorf("failed to get block hash: %w", err)
 		}
 		if s.terminated() {
 			return false, nil
@@ -166,11 +166,11 @@ syncHeaders:
 		_, err = chainService.GetCFilter(*h, wire.GCSFilterRegular, neutrino.OptimisticBatch())
 		if err != nil {
 			s.log.Errorf("fail to download block filter", err)
-			return false, err
+			return false, fmt.Errorf("failed to get CFilter: %w", err)
 		}
 		err = jobDB.setCFilterSyncHeight(currentHeight)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("failed to set CFilter sync height: %w", err)
 		}
 		s.log.Infof("setting filter height to %v", currentHeight)
 
@@ -181,18 +181,18 @@ syncHeaders:
 		//wait for the backend to sync if needed
 		bestBlockHeight, err = s.waitForHeaders(chainService, currentHeight)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("failed to wait for headers: %w", err)
 		}
 	}
 	s.log.Info("syncFilters completed successfully, checking for close channels...")
 
 	channelsWatcher, err := NewChannelsWatcher(s.workingDir, chainService, s.log, jobDB, s.quit)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to create channels watcher: %w", err)
 	}
 	channelClosedDetected, err := channelsWatcher.Scan(bestBlockHeight)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to scan channels watcher: %w", err)
 	}
 
 	if err := breezDB.SetLastSyncedHeaderTimestamp(time.Now().Unix()); err != nil {
