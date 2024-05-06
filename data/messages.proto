@@ -12,6 +12,7 @@ service BreezAPI {
   rpc PayInvoice(PayInvoiceRequest) returns (PaymentResponse) {}
   rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonReply) {}
   rpc ListPayments(ListPaymentsRequest) returns (PaymentsList) {}
+  rpc CloseChannels(CloseChannelsRequest) returns (CloseChannelsReply) {}
 }
 
 message ListPaymentsRequest {}
@@ -577,4 +578,20 @@ message TorConfig {
   string control = 1;
   string http = 2;
   string socks = 3;
+}
+
+message CloseChannelsRequest {
+  string address = 1;
+}
+
+message CloseChannelsReply {
+  repeated CloseChannelResult channels = 1;
+}
+
+message CloseChannelResult {
+  string remote_pubkey = 1;
+  string channel_point = 2;
+  bool is_skipped = 3;
+  string closing_txid = 4;
+  string fail_err = 5;
 }
