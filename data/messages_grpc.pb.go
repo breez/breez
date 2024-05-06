@@ -30,6 +30,7 @@ type BreezAPIClient interface {
 	PayInvoice(ctx context.Context, in *PayInvoiceRequest, opts ...grpc.CallOption) (*PaymentResponse, error)
 	RestartDaemon(ctx context.Context, in *RestartDaemonRequest, opts ...grpc.CallOption) (*RestartDaemonReply, error)
 	ListPayments(ctx context.Context, in *ListPaymentsRequest, opts ...grpc.CallOption) (*PaymentsList, error)
+	CloseChannels(ctx context.Context, in *CloseChannelsRequest, opts ...grpc.CallOption) (*CloseChannelsReply, error)
 }
 
 type breezAPIClient struct {
@@ -112,6 +113,15 @@ func (c *breezAPIClient) ListPayments(ctx context.Context, in *ListPaymentsReque
 	return out, nil
 }
 
+func (c *breezAPIClient) CloseChannels(ctx context.Context, in *CloseChannelsRequest, opts ...grpc.CallOption) (*CloseChannelsReply, error) {
+	out := new(CloseChannelsReply)
+	err := c.cc.Invoke(ctx, "/data.BreezAPI/CloseChannels", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BreezAPIServer is the server API for BreezAPI service.
 // All implementations must embed UnimplementedBreezAPIServer
 // for forward compatibility
@@ -124,6 +134,7 @@ type BreezAPIServer interface {
 	PayInvoice(context.Context, *PayInvoiceRequest) (*PaymentResponse, error)
 	RestartDaemon(context.Context, *RestartDaemonRequest) (*RestartDaemonReply, error)
 	ListPayments(context.Context, *ListPaymentsRequest) (*PaymentsList, error)
+	CloseChannels(context.Context, *CloseChannelsRequest) (*CloseChannelsReply, error)
 	mustEmbedUnimplementedBreezAPIServer()
 }
 
@@ -154,6 +165,9 @@ func (UnimplementedBreezAPIServer) RestartDaemon(context.Context, *RestartDaemon
 }
 func (UnimplementedBreezAPIServer) ListPayments(context.Context, *ListPaymentsRequest) (*PaymentsList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPayments not implemented")
+}
+func (UnimplementedBreezAPIServer) CloseChannels(context.Context, *CloseChannelsRequest) (*CloseChannelsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CloseChannels not implemented")
 }
 func (UnimplementedBreezAPIServer) mustEmbedUnimplementedBreezAPIServer() {}
 
@@ -312,6 +326,24 @@ func _BreezAPI_ListPayments_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BreezAPI_CloseChannels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloseChannelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BreezAPIServer).CloseChannels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/data.BreezAPI/CloseChannels",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BreezAPIServer).CloseChannels(ctx, req.(*CloseChannelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BreezAPI_ServiceDesc is the grpc.ServiceDesc for BreezAPI service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -350,6 +382,10 @@ var BreezAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPayments",
 			Handler:    _BreezAPI_ListPayments_Handler,
+		},
+		{
+			MethodName: "CloseChannels",
+			Handler:    _BreezAPI_CloseChannels_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

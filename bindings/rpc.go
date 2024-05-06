@@ -73,6 +73,11 @@ func (r *RPC) RestartDaemon(ctx context.Context, in *data.RestartDaemonRequest) 
 	return &data.RestartDaemonReply{}, nil
 }
 
+func (r *RPC) CloseChannels(ctx context.Context, in *data.CloseChannelsRequest) (
+	*data.CloseChannelsReply, error) {
+	return getBreezApp().AccountService.CloseChannels(in.Address)
+}
+
 func (r *RPC) Start() {
 	s := grpc.NewServer()
 	data.RegisterBreezAPIServer(s, r)
