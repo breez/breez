@@ -1040,6 +1040,14 @@ func deliverNotifications(notificationsChan chan data.NotificationEvent, appServ
 	}
 }
 
+func CloseChannels(address string) ([]byte, error) {
+	closedChannels, err := getBreezApp().AccountService.CloseChannels(address)
+	if err != nil {
+		return nil, err
+	}
+	return marshalResponse(closedChannels, nil)
+}
+
 func marshalResponse(message proto.Message, responseError error) (buffer []byte, err error) {
 	if responseError != nil {
 		return nil, responseError
