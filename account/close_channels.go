@@ -20,17 +20,17 @@ the specified address.
 func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error) {
 	lnclient := a.daemonAPI.APIClient()
 	if !a.daemonRPCReady() {
-		return nil, fmt.Errorf("api is not ready")
+		return nil, fmt.Errorf("API is not ready")
 	}
 
 	listReq := &lnrpc.ListChannelsRequest{}
 	openChannels, err := lnclient.ListChannels(context.Background(), listReq)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch open channels: %v", err)
+		return nil, fmt.Errorf("Unable to retrieve channels: %v", err)
 	}
 
 	if len(openChannels.Channels) == 0 {
-		return nil, errors.New("no open channels to close")
+		return nil, errors.New("You don't have open channels.")
 	}
 
 	var channelsToSkip []*lnrpc.Channel
@@ -70,13 +70,13 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 			// channel request.
 			s := strings.Split(res.ChannelPoint, ":")
 			if len(s) != 2 {
-				res.FailErr = "expected channel point with " +
+				res.FailErr = "Expected channel point with " +
 					"format txid:index"
 				return
 			}
 			index, err := strconv.ParseUint(s[1], 10, 32)
 			if err != nil {
-				res.FailErr = fmt.Sprintf("unable to parse "+
+				res.FailErr = fmt.Sprintf("Unable to parse "+
 					"channel point output index: %v", err)
 				return
 			}
@@ -100,7 +100,7 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 			defer close(txidChan)
 			err = executeChannelClose(lnclient, req, txidChan, false)
 			if err != nil {
-				res.FailErr = fmt.Sprintf("unable to close "+
+				res.FailErr = fmt.Sprintf("Unable to close "+
 					"channel: %v", err)
 				return
 			}
