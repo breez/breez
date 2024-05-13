@@ -96,16 +96,14 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 				DeliveryAddress: address,
 			}
 
-			txidChan := make(chan string, 1)
-			defer close(txidChan)
-			err = executeChannelClose(lnclient, req, txidChan, false)
+			txid, err := executeChannelClose(lnclient, req)
 			if err != nil {
 				res.FailErr = fmt.Sprintf("Unable to close "+
 					"channel: %v", err)
 				return
 			}
 
-			res.ClosingTxid = <-txidChan
+			res.ClosingTxid = txid
 		}(channel)
 	}
 
@@ -135,37 +133,37 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 // transaction ID is sent through `txidChan` as soon as it is broadcasted to the
 // network. The block boolean is used to determine if we should block until the
 // closing transaction receives all of its required confirmations.
-func executeChannelClose(client lnrpc.LightningClient, req *lnrpc.CloseChannelRequest,
-	txidChan chan<- string, block bool) error {
+func executeChannelClose(
+	client lnrpc.LightningClient,
+	req *lnrpc.CloseChannelRequest,
+) (string, error) {
 
-	stream, err := client.CloseChannel(context.Background(), req)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	stream, err := client.CloseChannel(ctx, req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		switch update := resp.Update.(type) {
-		case *lnrpc.CloseStatusUpdate_ClosePending:
-			closingHash := update.ClosePending.Txid
-			txid, err := chainhash.NewHash(closingHash)
-			if err != nil {
-				return err
-			}
-
-			txidChan <- txid.String()
-
-			if !block {
-				return nil
-			}
-		case *lnrpc.CloseStatusUpdate_ChanClose:
-			return nil
-		}
+	resp, err := stream.Recv()
+	if err == io.EOF {
+		return "", fmt.Errorf("unexpected EOF while reading close channel response")
+	} else if err != nil {
+		return "", err
 	}
+
+	var closingHash []byte
+	switch update := resp.Update.(type) {
+	case *lnrpc.CloseStatusUpdate_ClosePending:
+		closingHash = update.ClosePending.Txid
+	case *lnrpc.CloseStatusUpdate_ChanClose:
+		closingHash = update.ChanClose.ClosingTxid
+	}
+
+	txid, err := chainhash.NewHash(closingHash)
+	if err != nil {
+		return "", err
+	}
+	return txid.String(), nil
 }
