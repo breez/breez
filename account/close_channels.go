@@ -23,6 +23,7 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 		return nil, fmt.Errorf("API is not ready")
 	}
 
+	a.log.Info("Close channels requested")
 	listReq := &lnrpc.ListChannelsRequest{}
 	openChannels, err := lnclient.ListChannels(context.Background(), listReq)
 	if err != nil {
@@ -42,6 +43,10 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 			channelsToSkip = append(channelsToSkip, channel)
 		}
 	}
+
+	a.log.Info(
+		"Close channels has %d channels to close and %d channels to skip due "+
+			"to inactivity.", len(channelsToClose), len(channelsToSkip))
 
 	// result defines the result of closing a channel. The closing
 	// transaction ID is populated if a channel is successfully closed.
@@ -63,7 +68,9 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 			res.RemotePubKey = channel.RemotePubkey
 			res.ChannelPoint = channel.ChannelPoint
 			defer func() {
+				a.log.Infof("Adding result of channel close %s to response.", res.ChannelPoint)
 				resultChan <- res
+				a.log.Infof("Done adding result of channel close %s to response.", res.ChannelPoint)
 			}()
 
 			// Parse the channel point in order to create the close
@@ -96,13 +103,16 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 				DeliveryAddress: address,
 			}
 
+			a.log.Info("About to close channel %s", res.ChannelPoint)
 			txid, err := executeChannelClose(lnclient, req)
 			if err != nil {
+				a.log.Info("Close channel %s failed with %v", res.ChannelPoint, err)
 				res.FailErr = fmt.Sprintf("Unable to close "+
 					"channel: %v", err)
 				return
 			}
 
+			a.log.Info("Close channel %s succeeded, txid %s", res.ChannelPoint, txid)
 			res.ClosingTxid = txid
 		}(channel)
 	}
@@ -117,7 +127,9 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 	}
 
 	for range channelsToClose {
+		a.log.Info("Waiting for channel close to complete")
 		res := <-resultChan
+		a.log.Info("Got channel close result for %s", res.ChannelPoint)
 		resp.Channels = append(resp.Channels, &data.CloseChannelResult{
 			RemotePubkey: res.RemotePubKey,
 			ChannelPoint: res.ChannelPoint,
