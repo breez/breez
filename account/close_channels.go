@@ -47,7 +47,7 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 		}
 	}
 
-	a.log.Info(
+	a.log.Infof(
 		"Close channels has %d channels to close and %d channels to skip due "+
 			"to inactivity.", len(channelsToClose), len(channelsToSkip))
 
@@ -106,10 +106,10 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 				DeliveryAddress: address,
 			}
 
-			a.log.Info("About to close channel %s", res.ChannelPoint)
+			a.log.Infof("About to close channel %s", res.ChannelPoint)
 			txid, err := executeChannelClose(lnclient, req)
 			if err != nil {
-				a.log.Info("Close channel %s failed with %v", res.ChannelPoint, err)
+				a.log.Infof("Close channel %s failed with %v", res.ChannelPoint, err)
 				if err == context.DeadlineExceeded {
 					res.FailErr = timeoutError
 				} else {
@@ -120,7 +120,7 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 				return
 			}
 
-			a.log.Info("Close channel %s succeeded, txid %s", res.ChannelPoint, txid)
+			a.log.Infof("Close channel %s succeeded, txid %s", res.ChannelPoint, txid)
 			res.ClosingTxid = txid
 		}(channel)
 	}
@@ -146,7 +146,7 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 				FailErr:      res.FailErr,
 			})
 		} else {
-			a.log.Info("Got channel close result for %s", res.ChannelPoint)
+			a.log.Infof("Got channel close result for %s", res.ChannelPoint)
 			resp.Channels = append(resp.Channels, &data.CloseChannelResult{
 				RemotePubkey: res.RemotePubKey,
 				ChannelPoint: res.ChannelPoint,
