@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/breez/breez/data"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
+
+const closeChannelTimeout = time.Second * 15
+const timeoutError = "Deadline exceeded"
 
 /*
 CloseChannels attempts to cooperatively close all channels, sending the funds to
@@ -107,8 +110,13 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 			txid, err := executeChannelClose(lnclient, req)
 			if err != nil {
 				a.log.Info("Close channel %s failed with %v", res.ChannelPoint, err)
-				res.FailErr = fmt.Sprintf("Unable to close "+
-					"channel: %v", err)
+				if err == context.DeadlineExceeded {
+					res.FailErr = timeoutError
+				} else {
+					res.FailErr = fmt.Sprintf("Unable to close "+
+						"channel: %v", err)
+				}
+
 				return
 			}
 
@@ -126,19 +134,99 @@ func (a *Service) CloseChannels(address string) (*data.CloseChannelsReply, error
 		})
 	}
 
+	var timedOut []*data.CloseChannelResult
 	for range channelsToClose {
 		a.log.Info("Waiting for channel close to complete")
 		res := <-resultChan
-		a.log.Info("Got channel close result for %s", res.ChannelPoint)
-		resp.Channels = append(resp.Channels, &data.CloseChannelResult{
-			RemotePubkey: res.RemotePubKey,
-			ChannelPoint: res.ChannelPoint,
-			ClosingTxid:  res.ClosingTxid,
-			FailErr:      res.FailErr,
-		})
+		if res.FailErr == timeoutError {
+			timedOut = append(timedOut, &data.CloseChannelResult{
+				RemotePubkey: res.RemotePubKey,
+				ChannelPoint: res.ChannelPoint,
+				ClosingTxid:  res.ClosingTxid,
+				FailErr:      res.FailErr,
+			})
+		} else {
+			a.log.Info("Got channel close result for %s", res.ChannelPoint)
+			resp.Channels = append(resp.Channels, &data.CloseChannelResult{
+				RemotePubkey: res.RemotePubKey,
+				ChannelPoint: res.ChannelPoint,
+				ClosingTxid:  res.ClosingTxid,
+				FailErr:      res.FailErr,
+			})
+		}
+	}
+
+	// If channels timed out to close, check whether the closing tx can be found
+	// in pendingchannels now.
+	if len(timedOut) > 0 {
+		handleTimeouts(lnclient, timedOut)
+		resp.Channels = append(resp.Channels, timedOut...)
 	}
 
 	return &resp, nil
+}
+
+func handleTimeouts(
+	client lnrpc.LightningClient,
+	timedOut []*data.CloseChannelResult,
+) {
+	pending, err := client.PendingChannels(
+		context.Background(),
+		&lnrpc.PendingChannelsRequest{},
+	)
+	if err != nil {
+		return
+	}
+
+	waitingCloseLookup := make(map[string]*lnrpc.PendingChannelsResponse_WaitingCloseChannel, len(pending.WaitingCloseChannels))
+	for _, waitingClose := range pending.WaitingCloseChannels {
+		waitingCloseLookup[waitingClose.Channel.ChannelPoint] = waitingClose
+	}
+
+	pendingForceCloseLookup := make(map[string]*lnrpc.PendingChannelsResponse_ForceClosedChannel, len(pending.PendingForceClosingChannels))
+	for _, pendingForceClose := range pending.PendingForceClosingChannels {
+		pendingForceCloseLookup[pendingForceClose.Channel.ChannelPoint] = pendingForceClose
+	}
+
+	allhandled := true
+	for _, t := range timedOut {
+		waitingClose, ok := waitingCloseLookup[t.ChannelPoint]
+		if ok {
+			t.ClosingTxid = waitingClose.ClosingTxid
+			t.FailErr = ""
+			continue
+		}
+
+		pendingForceClose, ok := pendingForceCloseLookup[t.ChannelPoint]
+		if ok {
+			t.ClosingTxid = pendingForceClose.ClosingTxid
+			t.FailErr = ""
+			continue
+		}
+
+		allhandled = false
+	}
+
+	if allhandled {
+		return
+	}
+
+	closed, err := client.ClosedChannels(context.Background(), &lnrpc.ClosedChannelsRequest{})
+	if err != nil {
+		return
+	}
+	closedLookup := make(map[string]*lnrpc.ChannelCloseSummary, len(closed.Channels))
+	for _, close := range closed.Channels {
+		closedLookup[close.ChannelPoint] = close
+	}
+
+	for _, t := range timedOut {
+		close, ok := closedLookup[t.ChannelPoint]
+		if ok {
+			t.ClosingTxid = close.ClosingTxHash
+			t.FailErr = ""
+		}
+	}
 }
 
 // executeChannelClose attempts to close the channel from a request. The closing
@@ -150,7 +238,7 @@ func executeChannelClose(
 	req *lnrpc.CloseChannelRequest,
 ) (string, error) {
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), closeChannelTimeout)
 	defer cancel()
 
 	stream, err := client.CloseChannel(ctx, req)
@@ -159,9 +247,7 @@ func executeChannelClose(
 	}
 
 	resp, err := stream.Recv()
-	if err == io.EOF {
-		return "", fmt.Errorf("unexpected EOF while reading close channel response")
-	} else if err != nil {
+	if err != nil {
 		return "", err
 	}
 
