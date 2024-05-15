@@ -564,7 +564,7 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 			return "", 0, err
 		}
 		routingHints = []*lnrpc.RouteHint{fakeHints}
-		a.log.Infof("Generated zero-conf invoice for amount: %v", amountMsat)
+		a.log.Infof("Generated zero-conf invoice for amount: %v sats", invoice.Amount)
 
 		var channelFeesMsat int64
 
@@ -576,11 +576,11 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 			if channelFeesMsat < lspInfo.ChannelMinimumFeeMsat {
 				channelFeesMsat = lspInfo.ChannelMinimumFeeMsat
 			}
-			a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v), total fees for channel: %v",
-				lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat, channelFeesMsat)
+			a.log.Infof("zero-conf fee calculation: lsp fee rate (permyriad): %v (minimum %v sats), total fees for channel: %v sats",
+				lspInfo.ChannelFeePermyriad, lspInfo.ChannelMinimumFeeMsat/1_000, channelFeesMsat/1_000)
 
 			if amountMsat < channelFeesMsat+1000 {
-				return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, lspInfo.ChannelMinimumFeeMsat/1000)
+				return "", 0, fmt.Errorf("amount %v sats should be more than the minimum fees (%v sats)", invoice.Amount, lspInfo.ChannelMinimumFeeMsat/1_000)
 			}
 		} else {
 			// Calculate the channel fee such that it's an integral number of sat.
@@ -588,11 +588,11 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 			if channelFeesMsat < int64(invoiceRequest.OpeningFeeParams.MinMsat) {
 				channelFeesMsat = int64(invoiceRequest.OpeningFeeParams.MinMsat)
 			}
-			a.log.Infof("zero-conf fee calculation option: lsp fee rate (proportional): %v (minimum %v), total fees for channel: %v",
-				invoiceRequest.OpeningFeeParams.Proportional, invoiceRequest.OpeningFeeParams.MinMsat, channelFeesMsat)
+			a.log.Infof("zero-conf fee calculation option: lsp fee rate (proportional): %v (minimum %v sats), total fees for channel: %v sats",
+				invoiceRequest.OpeningFeeParams.Proportional, invoiceRequest.OpeningFeeParams.MinMsat/1_000, channelFeesMsat/1_000)
 
 			if amountMsat < channelFeesMsat+1000 {
-				return "", 0, fmt.Errorf("amount %v should be more than the minimum fees (%v sats)", amountMsat, invoiceRequest.OpeningFeeParams.MinMsat/1000)
+				return "", 0, fmt.Errorf("amount %v sats should be more than the minimum fees (%v sats)", invoice.Amount, invoiceRequest.OpeningFeeParams.MinMsat/1_000)
 			}
 		}
 
