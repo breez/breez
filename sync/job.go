@@ -18,10 +18,17 @@ const (
 	rateLimitJobInterval = time.Duration(time.Minute * 10)
 )
 
+var jobIsRunning int32
+
 /*
 Run executes the download filter operation synchronousely
 */
 func (s *Job) Run() (channelClosed bool, err error) {
+	if !atomic.CompareAndSwapInt32(&jobIsRunning, 0, 1) {
+		return false, fmt.Errorf("job already running")
+	}
+	defer atomic.StoreInt32(&jobIsRunning, 0)
+
 	s.wg.Add(1)
 	defer s.wg.Done()
 

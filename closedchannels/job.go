@@ -23,10 +23,17 @@ const (
 	deletedSuffix   = ".deleted"
 )
 
+var jobIsRunning int32
+
 /*
 Run executes the download filter operation synchronousely
 */
 func (s *Job) Run() error {
+	if !atomic.CompareAndSwapInt32(&jobIsRunning, 0, 1) {
+		return fmt.Errorf("job already running")
+	}
+	defer atomic.StoreInt32(&jobIsRunning, 0)
+
 	s.wg.Add(1)
 	defer s.wg.Done()
 	bootstrapped, err := chainservice.Bootstrapped(s.workingDir)
