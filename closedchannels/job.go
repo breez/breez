@@ -30,7 +30,7 @@ Run executes the download filter operation synchronousely
 */
 func (s *Job) Run() error {
 	if !atomic.CompareAndSwapInt32(&jobIsRunning, 0, 1) {
-		return fmt.Errorf("job already running")
+		return nil
 	}
 	defer atomic.StoreInt32(&jobIsRunning, 0)
 
