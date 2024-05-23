@@ -419,15 +419,7 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 	}
 
 	if payReq != nil && len(payReq.RouteHints) == 1 && len(payReq.RouteHints[0].HopHints) == 1 {
-		routerclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
-			Pairs: []*routerrpc.PairHistory{{
-				NodeFrom: []byte(payReq.RouteHints[0].HopHints[0].NodeId),
-				NodeTo:   []byte(payReq.Destination),
-				History: &routerrpc.PairData{
-					SuccessTime:    time.Now().UnixNano(),
-					SuccessAmtMsat: payReq.NumMsat,
-				},
-			}}})
+		xImportMissionControl(payReq, routerclient)
 	}
 	a.log.Infof("sending payment with max fee = %v msat", sendRequest.FeeLimitMsat)
 	response, err := routerclient.SendPaymentV2(context.Background(), sendRequest)
@@ -515,6 +507,26 @@ out:
 	a.syncSentPayments()
 	// a.notifyPaymentResult(true, sendRequest.PaymentRequest, paymentHash, "", "")
 	return "", nil
+}
+
+func xImportMissionControl(payReq *lnrpc.PayReq, routerclient routerrpc.RouterClient) {
+	nodeFrom, err := hex.DecodeString(payReq.RouteHints[0].HopHints[0].NodeId)
+	if err != nil {
+		return
+	}
+	nodeTo, err := hex.DecodeString(payReq.Destination)
+	if err != nil {
+		return
+	}
+	routerclient.XImportMissionControl(context.Background(), &routerrpc.XImportMissionControlRequest{
+		Pairs: []*routerrpc.PairHistory{{
+			NodeFrom: nodeFrom,
+			NodeTo:   nodeTo,
+			History: &routerrpc.PairData{
+				SuccessTime:    time.Now().UnixNano(),
+				SuccessAmtMsat: payReq.NumMsat,
+			},
+		}}})
 }
 
 /*
