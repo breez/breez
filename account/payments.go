@@ -438,6 +438,20 @@ func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequ
 		}
 		a.log.Infof("Payment event received %v", payment.Status)
 		if payment.Status == lnrpc.Payment_IN_FLIGHT {
+			if len(payment.Htlcs) > 0 {
+				attempt := payment.Htlcs[len(payment.Htlcs)-1]
+				if attempt.Route != nil {
+					var hops []string
+					for _, hop := range attempt.Route.Hops {
+						scid := lnwire.NewShortChanIDFromInt(hop.ChanId)
+						hops = append(hops, scid.String())
+					}
+					a.log.Infof("Route used: %s", strings.Join(hops, "->"))
+				}
+				if attempt.Failure != nil {
+					a.log.Infof("Htlc attempt %d failed with code %v from index %d", attempt.AttemptId, attempt.Failure.Code, attempt.Failure.FailureSourceIndex)
+				}
+			}
 			continue
 		}
 		if payment.Status != lnrpc.Payment_SUCCEEDED {
