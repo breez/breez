@@ -246,9 +246,9 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 		maxParts = 1
 	}
 
-	feeLimit := fee
-	if feeLimit < 0 {
-		feeLimit = math.MaxInt64
+	feeLimitMsat := fee * 1000
+	if feeLimitMsat < 0 {
+		feeLimitMsat = math.MaxInt64
 	}
 	// At this stage we are ready to send asynchronously the payment through the daemon.
 	var timeoutSeconds int32 = 60
@@ -262,7 +262,7 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
 		PaymentRequest: paymentRequest,
 		TimeoutSeconds: timeoutSeconds,
-		FeeLimitSat:    feeLimit,
+		FeeLimitMsat:   feeLimitMsat,
 		MaxParts:       maxParts,
 		Amt:            amountSatoshi,
 		LastHopPubkey:  lastHopPubkey,
