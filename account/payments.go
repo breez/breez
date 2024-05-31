@@ -205,6 +205,7 @@ func (a *Service) LSPActivity(lspList *data.LSPList) (*data.LSPActivity, error) 
 		}
 	}
 
+	a.log.Infof("returning lspActivity with lastPayments: %v", lastPayments)
 	return &data.LSPActivity{Activity: lastPayments}, nil
 }
 
