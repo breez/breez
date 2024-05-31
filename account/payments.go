@@ -23,6 +23,8 @@ import (
 	lspd "github.com/breez/breez/lspd"
 	"github.com/breez/lspd/btceclegacy"
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/aliasmgr"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -32,8 +34,6 @@ import (
 	"github.com/lightningnetwork/lnd/record"
 	"github.com/lightningnetwork/lnd/routing"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -858,7 +858,8 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		a.log.Errorf("GetNetworkInfo error: %v", err)
 		return "", err
 	}
-	netInfoData, err := protojson.Marshal(netInfo)
+	marshaller := jsonpb.Marshaler{}
+	netInfoData, err := marshaller.MarshalToString(netInfo)
 	if err != nil {
 		a.log.Errorf("failed to marshal network info: %v", err)
 		return "", err
@@ -869,7 +870,7 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 		a.log.Errorf("ListChannels error: %v", err)
 		return "", err
 	}
-	chanData, err := protojson.Marshal(channels)
+	chanData, err := marshaller.MarshalToString(channels)
 	if err != nil {
 		a.log.Errorf("failed to marshal channels info: %v", err)
 		return "", err
@@ -884,8 +885,8 @@ func (a *Service) createPaymentTraceReport(paymentRequest string, amount int64, 
 			"source_node":     lnInfo.IdentityPubkey,
 			"amount":          amount,
 			"payment_request": decodedPayReq,
-			"network_info":    string(netInfoData),
-			"channels":        string(chanData),
+			"network_info":    netInfoData,
+			"channels":        chanData,
 		},
 	}
 

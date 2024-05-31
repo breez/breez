@@ -9,7 +9,7 @@ import (
 	"github.com/breez/breez/bindings"
 	"github.com/breez/breez/data"
 	cli "github.com/deadsy/go-cli"
-	"google.golang.org/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 var cmdHelp = cli.Leaf{

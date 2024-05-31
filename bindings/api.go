@@ -26,8 +26,8 @@ import (
 	breezSync "github.com/breez/breez/sync"
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btclog"
+	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
