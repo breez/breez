@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcd/chaincfg"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/lightninglabs/neutrino/headerfs"
 )
@@ -61,8 +62,11 @@ func GenerateCheckpoints(workingDir string, tplFilePath string, outputFilePath s
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(height/wire.CFCheckptInterval); i++ {
-		height := uint32(i * wire.CFCheckptInterval)
+
+	targetTimespan := int64(chaincfg.MainNetParams.TargetTimespan / time.Second)
+	targetTimePerBlock := int64(chaincfg.MainNetParams.TargetTimePerBlock / time.Second)
+	for i := 0; i <= int(height); i += int(targetTimespan / targetTimePerBlock) {
+		height := uint32(i)
 		wireHeader, err := blockHeaderStore.FetchHeaderByHeight(height)
 		if err != nil {
 			return err
