@@ -11,7 +11,6 @@ import (
 	"github.com/breez/breez/config"
 	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/lightninglabs/neutrino/headerfs"
@@ -177,33 +176,48 @@ func ensureMinimumTip(db walletdb.DB, bootstrapDir string, startHeader *headerfs
 	}
 
 	// populating all the predefined checpoints
-	for i, ck := range checkpoints {
-		height := uint32(i * wire.CFCheckptInterval)
-		if height > startHeader.Height {
+	for _, ck := range checkpoints {
+		if ck.Height > startHeader.Height {
 			break
 		}
+		if err := writeCheckpoint(&ck, headersFile, filterHeadersFile); err != nil {
+			return err
+		}
+	}
 
-		if _, err := headersFile.Seek(int64(height*headerfs.BlockHeaderSize), 0); err != nil {
-			return err
+	// populating all the predefined difficulty adjustments
+	for _, ck := range difficultyAdjustments {
+		if ck.Height > startHeader.Height {
+			break
 		}
-		var buf bytes.Buffer
-		if err = ck.BlockHeader.Serialize(&buf); err != nil {
-			return err
-		}
-		if _, err := headersFile.Write(buf.Bytes()); err != nil {
-			return err
-		}
-
-		if _, err := filterHeadersFile.Seek(int64(height*headerfs.RegularFilterHeaderSize), 0); err != nil {
-			return err
-		}
-
-		if _, err := filterHeadersFile.Write(ck.FilterHeader[:]); err != nil {
+		if err := writeCheckpoint(&ck, headersFile, filterHeadersFile); err != nil {
 			return err
 		}
 	}
 
 	return updateDBTip(db, startHeader.Height, startHeader.BlockHash())
+}
+
+func writeCheckpoint(ck *Checkpoint, headersFile *os.File, filterHeadersFile *os.File) error {
+	if _, err := headersFile.Seek(int64(ck.Height*headerfs.BlockHeaderSize), 0); err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	if err := ck.BlockHeader.Serialize(&buf); err != nil {
+		return err
+	}
+	if _, err := headersFile.Write(buf.Bytes()); err != nil {
+		return err
+	}
+
+	if _, err := filterHeadersFile.Seek(int64(ck.Height*headerfs.RegularFilterHeaderSize), 0); err != nil {
+		return err
+	}
+
+	if _, err := filterHeadersFile.Write(ck.FilterHeader[:]); err != nil {
+		return err
+	}
+	return nil
 }
 
 func updateDBTip(db walletdb.DB, height uint32, hash chainhash.Hash) error {

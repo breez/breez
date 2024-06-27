@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"path"
+	"time"
 
 	"github.com/breez/breez/chainservice"
 	"github.com/breez/breez/config"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/lightninglabs/neutrino/headerfs"
@@ -73,6 +76,36 @@ func GenerateCheckpoints(workingDir string, tplFilePath string, outputFilePath s
 		}
 
 		err = tmpl.Execute(writer, chainservice.Checkpoint{
+			Height:       height,
+			BlockHeader:  wireHeader,
+			FilterHeader: filterHeader,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	difficultyDir, difficultyFile := path.Split(outputFilePath)
+	difficultyPath := path.Join(difficultyDir, "difficulty-"+difficultyFile)
+	difficultyWriter, err := os.OpenFile(difficultyPath, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer difficultyWriter.Close()
+	targetTimespan := int64(chaincfg.MainNetParams.TargetTimespan / time.Second)
+	targetTimePerBlock := int64(chaincfg.MainNetParams.TargetTimePerBlock / time.Second)
+	for i := 0; i <= int(height); i += int(targetTimespan / targetTimePerBlock) {
+		height := uint32(i)
+		wireHeader, err := blockHeaderStore.FetchHeaderByHeight(height)
+		if err != nil {
+			return err
+		}
+		filterHeader, err := filterHeaderStore.FetchHeaderByHeight(height)
+		if err != nil {
+			return err
+		}
+
+		err = tmpl.Execute(difficultyWriter, chainservice.Checkpoint{
 			Height:       height,
 			BlockHeader:  wireHeader,
 			FilterHeader: filterHeader,
