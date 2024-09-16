@@ -8,6 +8,7 @@ import (
 	"github.com/breez/breez/db"
 
 	"github.com/breez/breez/data"
+	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/proto"
@@ -127,11 +128,14 @@ func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 
 	var maxAllowedReceive int64
 	for _, b := range channels.Channels {
-		thisChannelCanReceive := b.RemoteBalance - b.RemoteChanReserveSat
+		thisChannelCanReceive := b.RemoteBalance - int64(b.RemoteConstraints.ChanReserveSat)
 		if !b.Initiator {
-			// In case this is a remote initated channel we will take a buffer of half commit fee size
-			// to ensure the remote balance won't get too close to the channel reserve.
-			thisChannelCanReceive -= b.CommitFee / 2
+			buffer := (b.CommitWeight + input.HTLCWeight) * 2 * b.FeePerKw / 1000
+			if buffer < thisChannelCanReceive {
+				thisChannelCanReceive -= buffer
+			} else {
+				thisChannelCanReceive = 0
+			}
 		}
 		if maxAllowedReceive < thisChannelCanReceive {
 			maxAllowedReceive = thisChannelCanReceive
