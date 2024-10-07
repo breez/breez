@@ -40,9 +40,15 @@ func (a *Service) HandleLNURL(rawString string) (result *data.LNUrlResponse, err
 
 	encodedLnurl, ok := lnurl.FindLNURLInText(rawString)
 	if !ok {
+		addressRawString := rawString
+
+		// Strip the ₿ prefix to support lightning addresses compatible with BIP-353.
+		if strings.HasPrefix(addressRawString, "₿") {
+			addressRawString = strings.Replace(addressRawString, "₿", "", 1)
+		}
 
 		// ref. Lightning-Address https://github.com/andrerfneves/lightning-address/blob/master/DIY.md
-		parsedAddress, err := mail.ParseAddress(rawString)
+		parsedAddress, err := mail.ParseAddress(addressRawString)
 		if err != nil {
 			return nil, fmt.Errorf("%v : %w", handleLNUrlError, err)
 		}
