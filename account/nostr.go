@@ -32,3 +32,15 @@ func(a *Service) GetKeyPair()(string, error){
 
 	return nostrKeyPair , nil
 }
+
+func(a *Service) StoreImportedKey(privateKey string)(error){
+	return a.breezDB.StoreNostrPrivKey(privateKey)
+}
+
+func (a* Service) DeleteKey()(error){
+	return a.breezDB.DeletePresentKey();
+}
+
+
+
+
