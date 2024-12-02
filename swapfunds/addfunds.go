@@ -55,7 +55,7 @@ func (s *Service) AddFundsInit(notificationToken, lspID string, params *data.Ope
 	c, ctx, cancel := s.breezAPI.NewSwapper(0)
 	defer cancel()
 
-	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash})
+	r, err := c.AddFundInit(ctx, &breezservice.AddFundInitRequest{NodeID: accountID, NotificationToken: notificationToken, Pubkey: swap.Pubkey, Hash: swap.Hash, Version: 1})
 	if err != nil {
 		s.log.Errorf("Error in AddFundInit: %v", err)
 		return nil, err
