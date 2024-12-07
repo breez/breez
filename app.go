@@ -78,10 +78,6 @@ func (a *App) Start(torConfig *data.TorConfig) error {
 		a.BackupManager,
 	}
 
-	if err := a.lspChanStateSyncer.recordChannelsStatus(); err != nil {
-		a.log.Errorf("failed to collect channels state %v", err)
-	}
-
 	for _, s := range services {
 		if err := s.Start(); err != nil {
 			return err
