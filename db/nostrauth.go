@@ -23,3 +23,12 @@ func (db *DB) FetchNostrPrivKey(createNew func() (string)) (string, error) {
 	
 	return string(key), err
 }
+
+
+func(db *DB) StoreNostrPrivKey(privateKey string)(error){
+	return db.saveItem([]byte(nostrAuthBucket) ,[]byte("key") ,  []byte(privateKey))
+}
+
+func(db *DB) DeletePresentKey()error{
+	return db.deleteItem([]byte(nostrAuthBucket) , []byte("key"))
+}
