@@ -520,7 +520,7 @@ func (s *Service) retryGetPayment(addressInfo *db.SwapAddressInfo, retries int) 
 }
 
 func isTemporaryChannelError(err string) bool {
-	return strings.Contains(err, "TemporaryChannelFailure")
+	return strings.Contains(err, "TemporaryChannelFailure") || strings.Contains(err, "no_route")
 }
 
 func (s *Service) getPayment(addressInfo *db.SwapAddressInfo) (bool, error) {
