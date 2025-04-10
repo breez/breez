@@ -25,13 +25,13 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/lightningnetwork/lnd/aliasmgr"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/record"
 	"github.com/lightningnetwork/lnd/routing"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -340,80 +340,105 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 		a.log.Errorf("lnclient.ListChannels error: %v", err)
 		return 0, fmt.Errorf("lnclient.ListChannels error: %w", err)
 	}
+
 	var totalMax uint64
+OUTER:
 	for _, c := range channels.Channels {
-		if c.LocalBalance == 0 {
+		// Calculate how much can be sent through this channel after accounting for channel reserve
+		thisChannelCanSendSat := c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat)
+
+		// If we're the initiator, account for commitment and HTLC transaction fees
+		if c.Initiator {
+			buffer := (c.CommitWeight + input.HTLCWeight) * 2 * c.FeePerKw / 1000
+			if buffer < thisChannelCanSendSat {
+				thisChannelCanSendSat -= buffer
+			} else {
+				thisChannelCanSendSat = 0
+			}
+		}
+
+		minHtlcMsat := c.LocalConstraints.MinHtlcMsat
+		if minHtlcMsat == 0 {
+			minHtlcMsat = 1
+		}
+
+		if thisChannelCanSendSat*1000 <= int64(minHtlcMsat) {
 			continue
 		}
-		a.log.Infof("cid: %v, active: %v, balance: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, c.LocalConstraints.ChanReserveSat)
-		_, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+
+		a.log.Infof("cid: %v, active: %v, balance: %v, can send: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, thisChannelCanSendSat, c.LocalConstraints.ChanReserveSat)
+
+		// Try to find a route for the maximum amount we can send through this channel
+		// Start with a small probe amount to check if the route exists
+		routes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
 			PubKey:         destination,
-			Amt:            c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat) + 1,
+			AmtMsat:        int64(minHtlcMsat),
 			OutgoingChanId: c.ChanId,
 			RouteHints:     routeHints,
 			LastHopPubkey:  lastHopPubkey,
 		})
+
 		if err != nil {
-			errStatus, _ := status.FromError(err)
-			a.log.Infof("message: %v", errStatus.Message())
-			var max uint64
-			_, _ = fmt.Sscanf(errStatus.Message(), "insufficient local balance. Try to lower the amount to: %d mSAT", &max)
-			a.log.Infof("max: %v", max)
-			if max/1000 <= uint64(c.LocalBalance) {
-				a.log.Infof("Adding: %v+%v -> %v", totalMax, max, totalMax+max)
-				totalMax += max
+			a.log.Infof("lnclient.QueryRoutes error: %v", err)
+			continue
+		}
+
+		if routes == nil || len(routes.Routes) == 0 {
+			a.log.Debugf("no route on channel %v", c.ChanId)
+			continue
+		}
+
+		route := routes.Routes[0]
+		var prevPubkey string = a.daemonAPI.NodePubkey()
+		var routePolicies []*lnrpc.RoutingPolicy
+		for _, hop := range route.Hops {
+			chanInfo, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+				ChanId: hop.ChanId,
+			})
+			if err != nil {
+				a.log.Errorf("Failed to get chaninfo (%v) for hop in route: %v", hop.ChanId, err)
+				continue
+			}
+
+			var policy *lnrpc.RoutingPolicy
+			if chanInfo.Node1Pub == prevPubkey {
+				policy = chanInfo.Node1Policy
+				prevPubkey = chanInfo.Node2Pub
+			} else if chanInfo.Node2Pub == prevPubkey {
+				policy = chanInfo.Node2Policy
+				prevPubkey = chanInfo.Node1Pub
 			} else {
-				a.log.Infof("Not adding: %v to totalMax!!!", max)
+				a.log.Errorf("Failed to get policy for hop (%v): %v", hop.ChanId, err)
+			}
+
+			routePolicies = append(routePolicies, policy)
+		}
+
+		if len(routePolicies) == 0 {
+			a.log.Errorf("Got route without policies for %v", destination)
+			continue
+		}
+
+		destinationAmtMsat := thisChannelCanSendSat * 1000
+		// Skip the first hop for fees, because that's our own channel.
+		for i := 1; i < len(routePolicies); i++ {
+			policy := routePolicies[i]
+			feeMsat := policy.FeeBaseMsat + (destinationAmtMsat * int64(policy.FeeRateMilliMsat) / 1_000_000)
+			destinationAmtMsat = destinationAmtMsat - feeMsat
+			if destinationAmtMsat <= 0 {
+				continue OUTER
 			}
 		}
+
+		totalMax += uint64(destinationAmtMsat)
 	}
 	return totalMax, nil
-}
-
-func (a *Service) checkAmount(payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) error {
-	var amt lnwire.MilliSatoshi
-	var destination string
-	var routeHints []*lnrpc.RouteHint
-	if payReq != nil {
-		destination = payReq.Destination
-		routeHints = payReq.RouteHints
-		sat := payReq.NumSatoshis
-		if payReq.NumMsat != 0 {
-			sat = 0
-		}
-		amt, _ = lnrpc.UnmarshallAmt(sat, payReq.NumMsat)
-		if amt == 0 {
-			amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
-		}
-	} else {
-		destination = hex.EncodeToString(sendRequest.Dest)
-		amt, _ = lnrpc.UnmarshallAmt(sendRequest.Amt, sendRequest.AmtMsat)
-	}
-	max, err := a.getMaxAmount(destination, routeHints, sendRequest.LastHopPubkey)
-	if err != nil {
-		a.log.Errorf("a.getMaxAmount error: %v", err)
-		return fmt.Errorf("a.getMaxAmount error: %w", err)
-	}
-	if max == 0 {
-		return errors.New(lnrpc.PaymentFailureReason_FAILURE_REASON_NO_ROUTE.String())
-	}
-
-	if uint64(amt) > max {
-		a.log.Errorf("insufficient balance: %v < %v", max, amt)
-		return fmt.Errorf("insufficient balance:%v", max/1000)
-	}
-	return nil
 }
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
 
 	routerclient := a.daemonAPI.RouterClient()
 	if err := a.waitReadyForPayment(); err != nil {
-		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
-		return "", err
-	}
-
-	if err := a.checkAmount(payReq, sendRequest); err != nil {
 		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
 		return "", err
 	}
