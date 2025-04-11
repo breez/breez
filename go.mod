@@ -3,7 +3,7 @@ module github.com/breez/breez
 go 1.23.8
 
 require (
-	github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4
+	github.com/breez/boltz v0.0.0-20250411100539-2f9ac32f077f
 	github.com/breez/lspd v0.0.0-20230630175015-34646d50a591
 	github.com/btcsuite/btcd v0.24.3-0.20240921052913-67b8efd3ba53
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
@@ -18,7 +18,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/lightninglabs/neutrino v0.16.1-0.20240425105051-602843d34ffd
 	github.com/lightninglabs/protobuf-hex-display v1.4.3-hex-display
-	github.com/lightningnetwork/lnd v0.17.5-beta
+	github.com/lightningnetwork/lnd v0.18.5-beta
 	github.com/lightningnetwork/lnd/kvdb v1.4.10
 	github.com/lightningnetwork/lnd/tor v1.1.2
 	github.com/status-im/doubleratchet v0.0.0-20181102064121-4dcb6cba284a

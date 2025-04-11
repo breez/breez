@@ -1026,8 +1026,8 @@ github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJm
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
-github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4 h1:8mdW/G5bEJbTjaQ9cbsB4+rFxXJoPbu+xYnSkvRAqZg=
-github.com/breez/boltz v0.0.0-20230924045418-f934a24010d4/go.mod h1:dG529kzhIfB2W9PWFRo7/mldB3m+M1TTHgPZcAfQj2Y=
+github.com/breez/boltz v0.0.0-20250411100539-2f9ac32f077f h1:SuBXOFpurDLLuHBDMN+ybQbQmac5ZbYA12Ci8lNK+pU=
+github.com/breez/boltz v0.0.0-20250411100539-2f9ac32f077f/go.mod h1:5zr9v5/ML2cEhKNRe6TBGgxdLLo+M+wzEBDJxwPwp0o=
 github.com/breez/btcwallet v0.16.10-0.20241026173810-25a62401fb87 h1:Ruv/UQAIg1NwbeL5pj4SHszwEogcEfmiWVkfxqrhhFY=
 github.com/breez/btcwallet v0.16.10-0.20241026173810-25a62401fb87/go.mod h1:X2xDre+j1QphTRo54y2TikUzeSvreL1t1aMXrD8Kc5A=
 github.com/breez/btcwallet/walletdb v1.4.3-0.20241026173810-25a62401fb87 h1:7O2Hx81XPIGmlUwZUrNcKXJJoHkMY2fJI6/MXvC7QMw=
@@ -1053,7 +1053,6 @@ github.com/btcsuite/btcd v0.23.1/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZg
 github.com/btcsuite/btcd v0.23.2/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd v0.23.3/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd v0.23.4/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
-github.com/btcsuite/btcd v0.23.5-0.20230228185050-38331963bddd/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd v0.23.5-0.20230711222809-7faa9b266231/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=
 github.com/btcsuite/btcd v0.23.5-0.20231215221805-96c9fd8078fd/go.mod h1:nm3Bko6zh6bWP60UxwoT5LzdGJsQJaPo6HjduXq9p6A=
 github.com/btcsuite/btcd v0.24.1-0.20240301210420-1a2b599bf1af/go.mod h1:5C8ChTkl5ejr3WHj8tkQSCmydiMEPB0ZhQhehpq7Dgg=
@@ -1071,7 +1070,6 @@ github.com/btcsuite/btcd/btcec/v2 v2.3.4/go.mod h1:zYzJ8etWJQIv1Ogk7OzpWjowwOdXY
 github.com/btcsuite/btcd/btcutil v1.0.0/go.mod h1:Uoxwv0pqYWhD//tfTiipkxNfdhG9UrLwaeswfjfdF0A=
 github.com/btcsuite/btcd/btcutil v1.1.0/go.mod h1:5OapHB7A2hBBWLm48mmw4MOHNJCcUBTwmWH/0Jn8VHE=
 github.com/btcsuite/btcd/btcutil v1.1.1/go.mod h1:nbKlBMNm9FGsdvKvu0essceubPiAcI57pYBNnsLAa34=
-github.com/btcsuite/btcd/btcutil v1.1.3/go.mod h1:UR7dsSJzJUfMmFiiLlIrMq1lS9jh9EdCV7FStZSnpi0=
 github.com/btcsuite/btcd/btcutil v1.1.5 h1:+wER79R5670vs/ZusMTF1yTcRYE5GUsFbdjdisflzM8=
 github.com/btcsuite/btcd/btcutil v1.1.5/go.mod h1:PSZZ4UitpLBWzxGd5VGOrLnmOjtPP/a6HaFo12zMs00=
 github.com/btcsuite/btcd/btcutil/psbt v1.1.4/go.mod h1:9AyU6EQVJ9Iw9zPyNT1lcdHd6cnEZdno5wLu5FY74os=
