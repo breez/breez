@@ -728,7 +728,11 @@ func (a *Service) getLSPRoutingHints(lspInfo *data.LSPInformation) ([]*lnrpc.Rou
 		return nil, fmt.Errorf("failed to fetch all opened channels %v", err)
 	}
 
-	aliasManager, err := aliasmgr.NewManager(chanDB.Backend)
+	linkUpdater := func(shortID lnwire.ShortChannelID) error {
+		return nil
+	}
+
+	aliasManager, err := aliasmgr.NewManager(chanDB.Backend, linkUpdater)
 	if err != nil {
 		return nil, fmt.Errorf("error in aliasmgr.NewManager: %w", err)
 	}
@@ -809,7 +813,7 @@ func (a *Service) getChannelLSPHint(openChannels []*channeldb.OpenChannel, alias
 
 	if dbChannel != nil && dbChannel.NegotiatedAliasFeature() {
 		var err error
-		hintID, err = aliasManager.GetPeerAlias(lnwire.NewChanIDFromOutPoint(&dbChannel.FundingOutpoint))
+		hintID, err = aliasManager.GetPeerAlias(lnwire.NewChanIDFromOutPoint(dbChannel.FundingOutpoint))
 		if err != nil {
 			return 0, fmt.Errorf("error in aliasmgr.GetPeerAlias: %w", err)
 		}

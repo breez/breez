@@ -46,5 +46,12 @@ func (a *Service) generateInvoiceWithNewAmount(payReq string, newAmount int64) (
 	if err != nil {
 		log.Printf("invoice.Encode() error: %v", err)
 	}
-	return newInvoice, (*invoice.PaymentAddr)[:], err
+
+	paymentAddr, err := invoice.PaymentAddr.UnwrapOrErr(fmt.Errorf("invoice missing payment address"))
+	if err != nil {
+		log.Printf("invoice.PaymentAddr.UnwrapOrErr() error: %v", err)
+		return "", nil, err
+	}
+
+	return newInvoice, paymentAddr[:], err
 }

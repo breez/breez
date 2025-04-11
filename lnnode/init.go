@@ -14,7 +14,7 @@ import (
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btclog"
-	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/channeldb/models"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
@@ -136,7 +136,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 		}
 		a.log.Infof("PopulateChannelsGraph: populating edge %v", c.ShortChanID().ToUint64())
 
-		edge := &channeldb.ChannelEdgeInfo{
+		edge := &models.ChannelEdgeInfo{
 			ChannelID:    c.ShortChanID().ToUint64(),
 			ChainHash:    c.ChainHash,
 			Features:     featureBuf.Bytes(),
@@ -167,7 +167,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 			chanFlags = 1
 		}
 
-		policy1 := &channeldb.ChannelEdgePolicy{
+		policy1 := &models.ChannelEdgePolicy{
 			// SigBytes:                  msg.Signature.ToSignatureBytes(),
 			ChannelID:                 c.ShortChanID().ToUint64(),
 			LastUpdate:                time.Now(),
@@ -186,7 +186,7 @@ func (a *Daemon) PopulateChannelsGraph() error {
 			chanFlags = 1
 		}
 
-		policy2 := &channeldb.ChannelEdgePolicy{
+		policy2 := &models.ChannelEdgePolicy{
 			// SigBytes:                  msg.Signature.ToSignatureBytes(),
 			ChannelID:                 c.ShortChanID().ToUint64(),
 			LastUpdate:                time.Now(),

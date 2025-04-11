@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"encoding/hex"
 	"fmt"
 	"net/url"
 	"path"
@@ -16,6 +15,7 @@ import (
 	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/channeldb/models"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"go.etcd.io/bbolt"
 )
@@ -167,8 +167,7 @@ func hasSourceNode(tx *bbolt.Tx) bool {
 	return selfPub != nil
 }
 
-func ourNode(chanDB *channeldb.DB) (*channeldb.LightningNode, error) {
-	graph := chanDB.ChannelGraph()
+func ourNode(graph *channeldb.ChannelGraph) (*channeldb.LightningNode, error) {
 	node, err := graph.SourceNode()
 	if err == channeldb.ErrSourceNodeNotSet || err == channeldb.ErrGraphNotFound {
 		return nil, nil
@@ -176,44 +175,47 @@ func ourNode(chanDB *channeldb.DB) (*channeldb.LightningNode, error) {
 	return node, err
 }
 
-func ourData(tx walletdb.ReadWriteTx, ourNode *channeldb.LightningNode) (
-	[]*channeldb.LightningNode, []*channeldb.ChannelEdgeInfo, []*channeldb.ChannelEdgePolicy, error) {
+func ourData(tx walletdb.ReadWriteTx, ourNode *channeldb.LightningNode, graph *channeldb.ChannelGraph) (
+	[]*channeldb.LightningNode, []*models.ChannelEdgeInfo, []*models.ChannelEdgePolicy, error) {
 
-	nodeMap := make(map[string]*channeldb.LightningNode)
-	var edges []*channeldb.ChannelEdgeInfo
-	var policies []*channeldb.ChannelEdgePolicy
+	nodeMap := make(map[[33]byte]bool)
+	var edges []*models.ChannelEdgeInfo
+	var policies []*models.ChannelEdgePolicy
 
-	err := ourNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
-		channelEdgeInfo *channeldb.ChannelEdgeInfo,
-		toPolicy *channeldb.ChannelEdgePolicy,
-		fromPolicy *channeldb.ChannelEdgePolicy) error {
+	err := graph.ForEachNodeChannelTx(tx, ourNode.PubKeyBytes, func(tx walletdb.ReadTx,
+		channelEdgeInfo *models.ChannelEdgeInfo,
+		toPolicy *models.ChannelEdgePolicy,
+		fromPolicy *models.ChannelEdgePolicy) error {
 
 		if toPolicy == nil || fromPolicy == nil {
 			return ErrMissingPolicyError
 		}
-		nodeMap[hex.EncodeToString(toPolicy.Node.PubKeyBytes[:])] = toPolicy.Node
+		nodeMap[fromPolicy.ToNode] = true
 		edges = append(edges, channelEdgeInfo)
-		if toPolicy != nil {
-			policies = append(policies, toPolicy)
-		}
-		if fromPolicy != nil {
-			policies = append(policies, fromPolicy)
-		}
+		policies = append(policies, toPolicy)
+		policies = append(policies, fromPolicy)
+
 		return nil
 	})
-
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	var nodes []*channeldb.LightningNode
-	for _, node := range nodeMap {
+	for pubkey, _ := range nodeMap {
+		node, err := graph.FetchLightningNodeTx(tx, pubkey)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("FetchLightningNodeTx(%x): %w", pubkey, err)
+		}
+
 		nodes = append(nodes, node)
 	}
+
 	return nodes, edges, policies, nil
 }
 
 func putOurData(chanDB *channeldb.DB, node *channeldb.LightningNode, nodes []*channeldb.LightningNode,
-	edges []*channeldb.ChannelEdgeInfo, policies []*channeldb.ChannelEdgePolicy) error {
+	edges []*models.ChannelEdgeInfo, policies []*models.ChannelEdgePolicy) error {
 
 	graph := chanDB.ChannelGraph()
 

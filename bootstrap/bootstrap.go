@@ -59,7 +59,8 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 		return append(path, string(key))
 	}
 
-	ourNode, err := ourNode(channelDBDest)
+	destGraph := channelDBDest.ChannelGraph()
+	ourNode, err := ourNode(destGraph)
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func SyncGraphDB(workingDir, sourceDBPath string) error {
 	}
 
 	if ourNode != nil {
-		channelNodes, channels, policies, err := ourData(kvdbTx, ourNode)
+		channelNodes, channels, policies, err := ourData(kvdbTx, ourNode, destGraph)
 		if err != nil {
 			return err
 		}

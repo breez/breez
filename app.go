@@ -24,6 +24,7 @@ import (
 	"github.com/fiatjaf/go-lnurl"
 	"github.com/lightninglabs/neutrino/filterdb"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/channeldb/models"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
 )
@@ -335,10 +336,10 @@ func (a *App) DeleteGraph() error {
 	ourCids := make(map[uint64]struct{})
 	ourNodeKeyBytes := ourNode.PubKeyBytes
 	err = chanDB.View(func(tx walletdb.ReadTx) error {
-		return ourNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
-			channelEdgeInfo *channeldb.ChannelEdgeInfo,
-			_ *channeldb.ChannelEdgePolicy,
-			_ *channeldb.ChannelEdgePolicy) error {
+		return graph.ForEachNodeChannelTx(tx, ourNodeKeyBytes, func(tx walletdb.ReadTx,
+			channelEdgeInfo *models.ChannelEdgeInfo,
+			_ *models.ChannelEdgePolicy,
+			_ *models.ChannelEdgePolicy) error {
 			ourCids[channelEdgeInfo.ChannelID] = struct{}{}
 			return nil
 		})
@@ -353,10 +354,10 @@ func (a *App) DeleteGraph() error {
 				return nil
 			}
 			nodes++
-			return lightningNode.ForEachChannel(tx, func(tx walletdb.ReadTx,
-				channelEdgeInfo *channeldb.ChannelEdgeInfo,
-				_ *channeldb.ChannelEdgePolicy,
-				_ *channeldb.ChannelEdgePolicy) error {
+			return graph.ForEachNodeChannelTx(tx, lightningNode.PubKeyBytes, func(tx walletdb.ReadTx,
+				channelEdgeInfo *models.ChannelEdgeInfo,
+				_ *models.ChannelEdgePolicy,
+				_ *models.ChannelEdgePolicy) error {
 				// Add the channel only if it's not connected to our node
 				if _, ok := ourCids[channelEdgeInfo.ChannelID]; !ok {
 					cids[channelEdgeInfo.ChannelID] = struct{}{}
