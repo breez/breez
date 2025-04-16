@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	breezservice "github.com/breez/breez/breez"
@@ -213,7 +214,7 @@ SendPaymentForRequestV2 send the payment according to the details specified in t
 If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequestV2(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, fee int64) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey, fee)
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, lastHopPubkey, fee, true)
 }
 
 /*
@@ -221,10 +222,10 @@ SendPaymentForRequest send the payment according to the details specified in the
 If the payment was failed an error is returned
 */
 func (a *Service) SendPaymentForRequest(paymentRequest string, amountSatoshi int64, fee int64) (string, error) {
-	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil, fee)
+	return a.sendPaymentForRequest(paymentRequest, amountSatoshi, nil, fee, false)
 }
 
-func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, fee int64) (string, error) {
+func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int64, lastHopPubkey []byte, fee int64, selfSplit bool) (string, error) {
 	a.log.Infof("sendPaymentForRequest: amount = %v", amountSatoshi)
 	routing.DefaultShardMinAmt = 5000
 	lnclient := a.daemonAPI.APIClient()
@@ -259,14 +260,291 @@ func (a *Service) sendPaymentForRequest(paymentRequest string, amountSatoshi int
 		timeoutSeconds *= 2
 	}
 
-	return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
-		PaymentRequest: paymentRequest,
-		TimeoutSeconds: timeoutSeconds,
-		FeeLimitMsat:   feeLimitMsat,
-		MaxParts:       maxParts,
-		Amt:            amountSatoshi,
-		LastHopPubkey:  lastHopPubkey,
+	if selfSplit {
+		paymentHash, err := hex.DecodeString(decodedReq.PaymentHash)
+		if err != nil {
+			a.log.Errorf("Failed to decode payment hash: %v", err)
+			return "", fmt.Errorf("failed to decode payment hash: %w", err)
+		}
+		return a.sendPaymentSelfSplit(paymentHash, decodedReq, feeLimitMsat, maxParts, amountSatoshi, lastHopPubkey)
+	} else {
+		return a.sendPayment(decodedReq.PaymentHash, decodedReq, &routerrpc.SendPaymentRequest{
+			PaymentRequest: paymentRequest,
+			TimeoutSeconds: timeoutSeconds,
+			FeeLimitMsat:   feeLimitMsat,
+			MaxParts:       maxParts,
+			Amt:            amountSatoshi,
+			LastHopPubkey:  lastHopPubkey,
+		})
+	}
+}
+
+func (a *Service) sendPaymentSelfSplit(paymentHash []byte, payReq *lnrpc.PayReq, feeLimitMsat int64, maxParts uint32, amountSat int64, lastHopPubkey []byte) (string, error) {
+	routerclient := a.daemonAPI.RouterClient()
+	if err := a.waitReadyForPayment(); err != nil {
+		a.log.Infof("sendPaymentAsync: error sending payment %v", err)
+		return "", err
+	}
+	lnclient := a.daemonAPI.APIClient()
+	channelsResp, err := lnclient.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
+	if err != nil {
+		a.log.Errorf("lnclient.ListChannels error: %v", err)
+		return "", fmt.Errorf("lnclient.ListChannels error: %w", err)
+	}
+
+	var amountMsat int64
+	if amountSat == 0 {
+		amountMsat = payReq.NumMsat
+	} else {
+		amountMsat = amountSat * 1000
+	}
+
+	channels := channelsResp.Channels
+
+	// Try to deplete the smallest balance first.
+	sort.SliceStable(channels, func(i, j int) bool {
+		iCanSend, _ := channelConstraints(channels[i])
+		jCanSend, _ := channelConstraints(channels[j])
+		return iCanSend < jCanSend
 	})
+
+	var routes []*lnrpc.Route
+
+	amountRemainingMsat := amountMsat
+	for i, c := range channels {
+		if amountRemainingMsat <= 0 {
+			a.log.Infof("All routes computed, amount remaining %v msat on channel (%d/%d)", amountRemainingMsat, i+1, len(channels))
+			break
+		}
+
+		thisChannelCanSendSat, minHtlcMsat := channelConstraints(c)
+
+		var route *lnrpc.Route
+
+		// if the amount exceeds the amount remaining, we can simply query the route.
+		if thisChannelCanSendSat*1000 >= amountRemainingMsat {
+			a.log.Infof("Channel %v can send %v msat, amount remaining %v msat, querying route for %v", c.ChanId, thisChannelCanSendSat*1000, amountRemainingMsat, amountRemainingMsat)
+			queriedRoutes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+				PubKey:         payReq.Destination,
+				AmtMsat:        amountRemainingMsat,
+				OutgoingChanId: c.ChanId,
+				RouteHints:     payReq.RouteHints,
+				LastHopPubkey:  lastHopPubkey,
+				FinalCltvDelta: max(144, int32(payReq.CltvExpiry)),
+			})
+			if err == nil && queriedRoutes != nil && len(queriedRoutes.Routes) > 0 {
+				route = queriedRoutes.Routes[0]
+
+				// Make sure to add the MPP record.
+				route.Hops[len(route.Hops)-1].MppRecord = &lnrpc.MPPRecord{
+					PaymentAddr:  payReq.PaymentAddr,
+					TotalAmtMsat: amountMsat,
+				}
+
+				routes = append(routes, route)
+
+				// All the funds have a route now.
+				amountRemainingMsat = 0
+				continue
+			}
+
+			// If this fails, try finding a path ourselves anyway below.
+			a.log.Infof("lnclient.QueryRoutes error: %v", err)
+		}
+
+		// If the amount is above the current channel amount, create a route using the maximum available amount.
+		a.log.Infof("Forward pathfinding for channel %v. Can send %v msat, amount remaining %v msat", c.ChanId, thisChannelCanSendSat*1000, amountRemainingMsat)
+		currentChanAmountMsat := min(thisChannelCanSendSat*1000, amountRemainingMsat)
+		if currentChanAmountMsat <= int64(minHtlcMsat) {
+			a.log.Infof("Channel %v can only send %v msat, which is less than minHtlcMsat %v", c.ChanId, currentChanAmountMsat, minHtlcMsat)
+			continue
+		}
+
+		// Find a path with a very low amount. NOTE: This won't work if the minHtlc on another channel is above our own minHtlc.
+		queriedRoutes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+			PubKey:         payReq.Destination,
+			AmtMsat:        int64(minHtlcMsat),
+			OutgoingChanId: c.ChanId,
+			RouteHints:     payReq.RouteHints,
+			LastHopPubkey:  lastHopPubkey,
+			FinalCltvDelta: max(144, int32(payReq.CltvExpiry)),
+		})
+
+		if err != nil {
+			a.log.Infof("lnclient.QueryRoutes error: %v", err)
+			continue
+		}
+
+		if queriedRoutes == nil || len(queriedRoutes.Routes) == 0 {
+			a.log.Debugf("no route on channel %v", c.ChanId)
+			continue
+		}
+
+		queriedRoute := queriedRoutes.Routes[0]
+		var prevPubkey string = a.daemonAPI.NodePubkey()
+		var hops []struct {
+			policy *lnrpc.RoutingPolicy
+			hint   *lnrpc.HopHint
+			hop    *lnrpc.Hop
+		}
+
+		// Iterate over all the hops in the route to find their policies
+	HOPS:
+		for _, hop := range queriedRoute.Hops {
+			// If the hop is from a route hint, use the hint.
+			for _, hint := range payReq.RouteHints {
+				for _, hintHop := range hint.HopHints {
+					if hintHop.ChanId == hop.ChanId {
+						hops = append(hops, struct {
+							policy *lnrpc.RoutingPolicy
+							hint   *lnrpc.HopHint
+							hop    *lnrpc.Hop
+						}{
+							hint: hintHop,
+							hop:  hop,
+						})
+						a.log.Infof("added hop from hop hint: %v", hintHop.ChanId)
+						continue HOPS
+					}
+				}
+			}
+
+			// Otherwise look up the routing policy.
+			chanInfo, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+				ChanId: hop.ChanId,
+			})
+			if err != nil {
+				a.log.Errorf("Failed to get chaninfo (%v) for hop in route: %v", hop.ChanId, err)
+				return "", fmt.Errorf("failed to get chaninfo (%v) for hop in route: %w", hop.ChanId, err)
+			}
+
+			// Find the policy in the right direction.
+			var policy *lnrpc.RoutingPolicy
+			if chanInfo.Node1Pub == prevPubkey {
+				policy = chanInfo.Node1Policy
+				prevPubkey = chanInfo.Node2Pub
+			} else if chanInfo.Node2Pub == prevPubkey {
+				policy = chanInfo.Node2Policy
+				prevPubkey = chanInfo.Node1Pub
+			} else {
+				a.log.Errorf("Failed to get policy for hop (%v): %v", hop.ChanId, err)
+				return "", fmt.Errorf("failed to get policy for hop (%v): %w", hop.ChanId, err)
+			}
+
+			hops = append(hops, struct {
+				policy *lnrpc.RoutingPolicy
+				hint   *lnrpc.HopHint
+				hop    *lnrpc.Hop
+			}{
+				policy: policy,
+				hop:    hop,
+			})
+		}
+
+		if len(hops) == 0 {
+			a.log.Errorf("Got route without hops for %v, chanid %v", payReq.Destination, c.ChanId)
+			continue
+		}
+
+		a.log.Debugf("Got route with %v hops", len(hops))
+		route = &lnrpc.Route{
+			TotalTimeLock: queriedRoute.TotalTimeLock,
+			TotalAmtMsat:  currentChanAmountMsat,
+		}
+
+		// Now build the route from the hops. The Route struct is very counterintuitive.
+		currentHopAmountMsat := currentChanAmountMsat
+		for i, hop := range hops {
+			var feeMsat int64
+			if len(hops) > i+1 {
+				var feeBaseMsat int64
+				var feePpm int64
+				if hop.policy != nil {
+					feeBaseMsat = hop.policy.FeeBaseMsat
+					feePpm = hop.policy.FeeRateMilliMsat
+				}
+				if hop.hint != nil {
+					feeBaseMsat = int64(hop.hint.FeeBaseMsat)
+					feePpm = int64(hop.hint.FeeProportionalMillionths)
+				}
+
+				// Calculate the fee backwards, normally the fee is calculated on top
+				// of the outgoing amount. Now we compute the fee from the incoming amount.
+				feeMsat = (((currentHopAmountMsat - feeBaseMsat) * 1_000_000) / (1_000_000 + feePpm)) / 1_000_000
+			}
+
+			currentHopAmountMsat -= feeMsat
+			route.Hops = append(route.Hops, &lnrpc.Hop{
+				ChanId:           hop.hop.ChanId,
+				Expiry:           hop.hop.Expiry,
+				AmtToForwardMsat: currentHopAmountMsat,
+				FeeMsat:          feeMsat,
+				PubKey:           hop.hop.PubKey,
+			})
+		}
+
+		// The remaining currentHopAmountMsat is the destination amount.
+		amountRemainingMsat -= currentHopAmountMsat
+
+		// Add the mpp record.
+		route.Hops[len(route.Hops)-1].MppRecord = &lnrpc.MPPRecord{
+			PaymentAddr:  payReq.PaymentAddr,
+			TotalAmtMsat: amountMsat,
+		}
+
+		routes = append(routes, route)
+	}
+
+	if amountRemainingMsat > 0 {
+		return "", fmt.Errorf("amount %v msat could not be sent, only %v msat could be routed", amountMsat, amountMsat-amountRemainingMsat)
+	}
+
+	var mtx sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(len(routes))
+	var errors []error
+	havePreimage := false
+	for i, r := range routes {
+		go func(index int, route *lnrpc.Route) {
+			defer wg.Done()
+			a.log.Infof("Sending partial payment %d/%d", index+1, len(routes))
+			a.log.Debugf("route: %+v", route)
+			attempt, err := routerclient.SendToRouteV2(context.Background(), &routerrpc.SendToRouteRequest{
+				PaymentHash: paymentHash,
+				Route:       route,
+			})
+
+			mtx.Lock()
+			defer mtx.Unlock()
+			if err != nil {
+				a.log.Infof("Partial payment %d/%d returned error: %v", index+1, len(routes), err)
+				errors = append(errors, err)
+				return
+			}
+			if attempt.Failure != nil {
+				a.log.Infof("Partial payment %d/%d returned failure %v at index %v", index+1, len(routes), attempt.Failure.Code, attempt.Failure.FailureSourceIndex)
+				errors = append(errors, fmt.Errorf(attempt.Failure.Code.String()))
+			}
+			emptyPreimage := [32]byte{}
+			if attempt.Preimage != nil && len(attempt.Preimage) == 32 && !bytes.Equal(attempt.Preimage, emptyPreimage[:]) {
+				a.log.Infof("Partial payment %d/%d returned preimage %x", index+1, len(routes), attempt.Preimage)
+				havePreimage = true
+			}
+		}(i, r)
+	}
+
+	wg.Wait()
+	if havePreimage {
+		a.log.Infof("sendPaymentForRequest finished successfully")
+		a.syncSentPayments()
+		return "", nil
+	}
+
+	if len(errors) == 0 {
+		return "", fmt.Errorf("payment completed with no errors, but no preimage was returned")
+	}
+
+	return "", fmt.Errorf("partial payment failed: %v", errors[0])
 }
 
 // SendSpontaneousPayment send a payment without a payment request.
@@ -345,28 +623,13 @@ func (a *Service) getMaxAmount(destination string, routeHints []*lnrpc.RouteHint
 OUTER:
 	for _, c := range channels.Channels {
 		// Calculate how much can be sent through this channel after accounting for channel reserve
-		thisChannelCanSendSat := c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat)
-
-		// If we're the initiator, account for commitment and HTLC transaction fees
-		if c.Initiator {
-			buffer := (c.CommitWeight + input.HTLCWeight) * 2 * c.FeePerKw / 1000
-			if buffer < thisChannelCanSendSat {
-				thisChannelCanSendSat -= buffer
-			} else {
-				thisChannelCanSendSat = 0
-			}
-		}
-
-		minHtlcMsat := c.LocalConstraints.MinHtlcMsat
-		if minHtlcMsat == 0 {
-			minHtlcMsat = 1
-		}
+		thisChannelCanSendSat, minHtlcMsat := channelConstraints(c)
 
 		if thisChannelCanSendSat*1000 <= int64(minHtlcMsat) {
 			continue
 		}
 
-		a.log.Infof("cid: %v, active: %v, balance: %v, can send: %v, channnel reserve: %v", c.ChanId, c.Active, c.LocalBalance, thisChannelCanSendSat, c.LocalConstraints.ChanReserveSat)
+		a.log.Infof("cid: %v, active: %v, balance: %v, can send: %v, channel reserve: %v, minHtlcMsat: %v", c.ChanId, c.Active, c.LocalBalance, thisChannelCanSendSat, c.LocalConstraints.ChanReserveSat, minHtlcMsat)
 
 		// Try to find a route for the maximum amount we can send through this channel
 		// Start with a small probe amount to check if the route exists
@@ -419,20 +682,42 @@ OUTER:
 			continue
 		}
 
+		a.log.Debugf("Got route with %v hops", len(routePolicies))
 		destinationAmtMsat := thisChannelCanSendSat * 1000
 		// Skip the first hop for fees, because that's our own channel.
 		for i := 1; i < len(routePolicies); i++ {
 			policy := routePolicies[i]
-			feeMsat := policy.FeeBaseMsat + (destinationAmtMsat * int64(policy.FeeRateMilliMsat) / 1_000_000)
+			feeMsat := (((destinationAmtMsat - policy.FeeBaseMsat) * 1_000_000) / (1_000_000 + policy.FeeRateMilliMsat)) / 1_000_000
 			destinationAmtMsat = destinationAmtMsat - feeMsat
 			if destinationAmtMsat <= 0 {
+				a.log.Debugf("Skipping channel %v because fees exceed channel balance.")
 				continue OUTER
 			}
 		}
 
+		a.log.Debugf("Adding %v to total sendable amount for channel %v", destinationAmtMsat, c.ChanId)
 		totalMax += uint64(destinationAmtMsat)
 	}
 	return totalMax, nil
+}
+
+func channelConstraints(c *lnrpc.Channel) (int64, int64) {
+	// Calculate how much can be sent through this channel after accounting for channel reserve
+	thisChannelCanSendSat := c.LocalBalance - int64(c.LocalConstraints.ChanReserveSat)
+
+	// If we're the initiator, account for commitment and HTLC transaction fees
+	if c.Initiator {
+		buffer := (c.CommitWeight + input.HTLCWeight) * 2 * c.FeePerKw / 1000
+		if buffer < thisChannelCanSendSat {
+			thisChannelCanSendSat -= buffer
+		} else {
+			thisChannelCanSendSat = 0
+		}
+	}
+
+	minHtlcMsat := max(c.LocalConstraints.MinHtlcMsat, 1000)
+
+	return thisChannelCanSendSat, int64(minHtlcMsat)
 }
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
