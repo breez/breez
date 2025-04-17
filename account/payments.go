@@ -45,10 +45,20 @@ const (
 	waitHtlcsSettledTimeout          = time.Second * 5
 )
 
+var (
+	errNoRoute = errors.New("no route")
+)
+
 // PaymentResponse is the response of a payment attempt.
 type PaymentResponse struct {
 	PaymentError string
 	TraceReport  string
+}
+
+type hopInfo struct {
+	policy *lnrpc.RoutingPolicy
+	hint   *lnrpc.HopHint
+	hop    *lnrpc.Hop
 }
 
 /*
@@ -359,120 +369,22 @@ func (a *Service) sendPaymentSelfSplit(paymentHash []byte, payReq *lnrpc.PayReq,
 			a.log.Infof("Channel %v can only send %v msat, which is less than minHtlcMsat %v", c.ChanId, currentChanAmountMsat, minHtlcMsat)
 			continue
 		}
-
-		// Find a path with a very low amount. NOTE: This won't work if the minHtlc on another channel is above our own minHtlc.
-		queriedRoutes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
-			PubKey:         payReq.Destination,
-			AmtMsat:        int64(minHtlcMsat),
-			OutgoingChanId: c.ChanId,
-			RouteHints:     payReq.RouteHints,
-			LastHopPubkey:  lastHopPubkey,
-			FinalCltvDelta: max(144, int32(payReq.CltvExpiry)),
-		})
-
+		hops, totalTimeLock, err := a.getHops(c, payReq.Destination, payReq.RouteHints, lastHopPubkey, max(144, int32(payReq.CltvExpiry)))
 		if err != nil {
-			a.log.Infof("lnclient.QueryRoutes error: %v", err)
-			continue
-		}
-
-		if queriedRoutes == nil || len(queriedRoutes.Routes) == 0 {
-			a.log.Debugf("no route on channel %v", c.ChanId)
-			continue
-		}
-
-		queriedRoute := queriedRoutes.Routes[0]
-		var prevPubkey string = a.daemonAPI.NodePubkey()
-		var hops []struct {
-			policy *lnrpc.RoutingPolicy
-			hint   *lnrpc.HopHint
-			hop    *lnrpc.Hop
-		}
-
-		// Iterate over all the hops in the route to find their policies
-	HOPS:
-		for _, hop := range queriedRoute.Hops {
-			// If the hop is from a route hint, use the hint.
-			for _, hint := range payReq.RouteHints {
-				for _, hintHop := range hint.HopHints {
-					if hintHop.ChanId == hop.ChanId {
-						hops = append(hops, struct {
-							policy *lnrpc.RoutingPolicy
-							hint   *lnrpc.HopHint
-							hop    *lnrpc.Hop
-						}{
-							hint: hintHop,
-							hop:  hop,
-						})
-						a.log.Infof("added hop from hop hint: %v", hintHop.ChanId)
-						continue HOPS
-					}
-				}
-			}
-
-			// Otherwise look up the routing policy.
-			chanInfo, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
-				ChanId: hop.ChanId,
-			})
-			if err != nil {
-				a.log.Errorf("Failed to get chaninfo (%v) for hop in route: %v", hop.ChanId, err)
-				return "", fmt.Errorf("failed to get chaninfo (%v) for hop in route: %w", hop.ChanId, err)
-			}
-
-			// Find the policy in the right direction.
-			var policy *lnrpc.RoutingPolicy
-			if chanInfo.Node1Pub == prevPubkey {
-				policy = chanInfo.Node1Policy
-				prevPubkey = chanInfo.Node2Pub
-			} else if chanInfo.Node2Pub == prevPubkey {
-				policy = chanInfo.Node2Policy
-				prevPubkey = chanInfo.Node1Pub
-			} else {
-				a.log.Errorf("Failed to get policy for hop (%v): %v", hop.ChanId, err)
-				return "", fmt.Errorf("failed to get policy for hop (%v): %w", hop.ChanId, err)
-			}
-
-			hops = append(hops, struct {
-				policy *lnrpc.RoutingPolicy
-				hint   *lnrpc.HopHint
-				hop    *lnrpc.Hop
-			}{
-				policy: policy,
-				hop:    hop,
-			})
-		}
-
-		if len(hops) == 0 {
-			a.log.Errorf("Got route without hops for %v, chanid %v", payReq.Destination, c.ChanId)
+			a.log.Infof("getHops error: %v", err)
 			continue
 		}
 
 		a.log.Debugf("Got route with %v hops", len(hops))
 		route = &lnrpc.Route{
-			TotalTimeLock: queriedRoute.TotalTimeLock,
+			TotalTimeLock: totalTimeLock,
 			TotalAmtMsat:  currentChanAmountMsat,
 		}
 
 		// Now build the route from the hops. The Route struct is very counterintuitive.
 		currentHopAmountMsat := currentChanAmountMsat
-		for i, hop := range hops {
-			var feeMsat int64
-			if len(hops) > i+1 {
-				var feeBaseMsat int64
-				var feePpm int64
-				if hop.policy != nil {
-					feeBaseMsat = hop.policy.FeeBaseMsat
-					feePpm = hop.policy.FeeRateMilliMsat
-				}
-				if hop.hint != nil {
-					feeBaseMsat = int64(hop.hint.FeeBaseMsat)
-					feePpm = int64(hop.hint.FeeProportionalMillionths)
-				}
-
-				// Calculate the fee backwards, normally the fee is calculated on top
-				// of the outgoing amount. Now we compute the fee from the incoming amount.
-				feeMsat = (((currentHopAmountMsat - feeBaseMsat) * 1_000_000) / (1_000_000 + feePpm)) / 1_000_000
-			}
-
+		for _, hop := range hops {
+			feeMsat := computeFeeForNextHop(hop, currentHopAmountMsat)
 			currentHopAmountMsat -= feeMsat
 			route.Hops = append(route.Hops, &lnrpc.Hop{
 				ChanId:           hop.hop.ChanId,
@@ -631,63 +543,16 @@ OUTER:
 
 		a.log.Infof("cid: %v, active: %v, balance: %v, can send: %v, channel reserve: %v, minHtlcMsat: %v", c.ChanId, c.Active, c.LocalBalance, thisChannelCanSendSat, c.LocalConstraints.ChanReserveSat, minHtlcMsat)
 
-		// Try to find a route for the maximum amount we can send through this channel
-		// Start with a small probe amount to check if the route exists
-		routes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
-			PubKey:         destination,
-			AmtMsat:        int64(minHtlcMsat),
-			OutgoingChanId: c.ChanId,
-			RouteHints:     routeHints,
-			LastHopPubkey:  lastHopPubkey,
-		})
-
+		hops, _, err := a.getHops(c, destination, routeHints, lastHopPubkey, 9)
 		if err != nil {
-			a.log.Infof("lnclient.QueryRoutes error: %v", err)
+			a.log.Infof("getHops error: %v", err)
 			continue
 		}
-
-		if routes == nil || len(routes.Routes) == 0 {
-			a.log.Debugf("no route on channel %v", c.ChanId)
-			continue
-		}
-
-		route := routes.Routes[0]
-		var prevPubkey string = a.daemonAPI.NodePubkey()
-		var routePolicies []*lnrpc.RoutingPolicy
-		for _, hop := range route.Hops {
-			chanInfo, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
-				ChanId: hop.ChanId,
-			})
-			if err != nil {
-				a.log.Errorf("Failed to get chaninfo (%v) for hop in route: %v", hop.ChanId, err)
-				continue
-			}
-
-			var policy *lnrpc.RoutingPolicy
-			if chanInfo.Node1Pub == prevPubkey {
-				policy = chanInfo.Node1Policy
-				prevPubkey = chanInfo.Node2Pub
-			} else if chanInfo.Node2Pub == prevPubkey {
-				policy = chanInfo.Node2Policy
-				prevPubkey = chanInfo.Node1Pub
-			} else {
-				a.log.Errorf("Failed to get policy for hop (%v): %v", hop.ChanId, err)
-			}
-
-			routePolicies = append(routePolicies, policy)
-		}
-
-		if len(routePolicies) == 0 {
-			a.log.Errorf("Got route without policies for %v", destination)
-			continue
-		}
-
-		a.log.Debugf("Got route with %v hops", len(routePolicies))
+		a.log.Debugf("Got route with %v hops", len(hops))
 		destinationAmtMsat := thisChannelCanSendSat * 1000
 		// Skip the first hop for fees, because that's our own channel.
-		for i := 1; i < len(routePolicies); i++ {
-			policy := routePolicies[i]
-			feeMsat := (((destinationAmtMsat - policy.FeeBaseMsat) * 1_000_000) / (1_000_000 + policy.FeeRateMilliMsat)) / 1_000_000
+		for i := 1; i < len(hops); i++ {
+			feeMsat := computeFeeForNextHop(hops[i], destinationAmtMsat)
 			destinationAmtMsat = destinationAmtMsat - feeMsat
 			if destinationAmtMsat <= 0 {
 				a.log.Debugf("Skipping channel %v because fees exceed channel balance.")
@@ -718,6 +583,105 @@ func channelConstraints(c *lnrpc.Channel) (int64, int64) {
 	minHtlcMsat := max(c.LocalConstraints.MinHtlcMsat, 1000)
 
 	return thisChannelCanSendSat, int64(minHtlcMsat)
+}
+
+func (a *Service) getHops(c *lnrpc.Channel, destination string, routeHints []*lnrpc.RouteHint, lastHopPubkey []byte, finalCltvDelta int32) ([]*hopInfo, uint32, error) {
+	_, minHtlcMsat := channelConstraints(c)
+	lnclient := a.daemonAPI.APIClient()
+	queriedRoutes, err := lnclient.QueryRoutes(context.Background(), &lnrpc.QueryRoutesRequest{
+		PubKey:         destination,
+		AmtMsat:        int64(minHtlcMsat),
+		OutgoingChanId: c.ChanId,
+		RouteHints:     routeHints,
+		LastHopPubkey:  lastHopPubkey,
+		FinalCltvDelta: finalCltvDelta,
+	})
+
+	if err != nil {
+		a.log.Infof("lnclient.QueryRoutes error: %v", err)
+		return nil, 0, errNoRoute
+	}
+
+	if queriedRoutes == nil || len(queriedRoutes.Routes) == 0 {
+		a.log.Debugf("no route on channel %v", c.ChanId)
+		return nil, 0, errNoRoute
+	}
+
+	queriedRoute := queriedRoutes.Routes[0]
+	var prevPubkey string = a.daemonAPI.NodePubkey()
+	var hops []*hopInfo
+	// Iterate over all the hops in the route to find their policies
+HOPS:
+	for _, hop := range queriedRoute.Hops {
+		// If the hop is from a route hint, use the hint.
+		for _, hint := range routeHints {
+			for _, hintHop := range hint.HopHints {
+				if hintHop.ChanId == hop.ChanId {
+					hops = append(hops, &hopInfo{
+						hint: hintHop,
+						hop:  hop,
+					})
+					a.log.Infof("added hop from hop hint: %v", hintHop.ChanId)
+					continue HOPS
+				}
+			}
+		}
+
+		// Otherwise look up the routing policy.
+		chanInfo, err := lnclient.GetChanInfo(context.Background(), &lnrpc.ChanInfoRequest{
+			ChanId: hop.ChanId,
+		})
+		if err != nil {
+			a.log.Errorf("Failed to get chaninfo (%v) for hop in route: %v", hop.ChanId, err)
+			return nil, 0, fmt.Errorf("failed to get chaninfo (%v) for hop in route: %w", hop.ChanId, err)
+		}
+
+		// Find the policy in the right direction.
+		var policy *lnrpc.RoutingPolicy
+		if chanInfo.Node1Pub == prevPubkey {
+			policy = chanInfo.Node1Policy
+			prevPubkey = chanInfo.Node2Pub
+		} else if chanInfo.Node2Pub == prevPubkey {
+			policy = chanInfo.Node2Policy
+			prevPubkey = chanInfo.Node1Pub
+		} else {
+			a.log.Errorf("Failed to get policy for hop (%v): %v", hop.ChanId, err)
+			return nil, 0, fmt.Errorf("failed to get policy for hop (%v): %w", hop.ChanId, err)
+		}
+
+		hops = append(hops, &hopInfo{
+			policy: policy,
+			hop:    hop,
+		})
+	}
+
+	if len(hops) == 0 {
+		a.log.Errorf("Got route without hops for %v, chanid %v", destination, c.ChanId)
+		return nil, 0, errNoRoute
+	}
+
+	return hops, queriedRoute.TotalTimeLock, nil
+}
+
+func computeFeeForNextHop(hop *hopInfo, amountMsat int64) int64 {
+	if hop == nil {
+		return 0
+	}
+
+	var feeBaseMsat int64
+	var feePpm int64
+	if hop.policy != nil {
+		feeBaseMsat = hop.policy.FeeBaseMsat
+		feePpm = hop.policy.FeeRateMilliMsat
+	}
+	if hop.hint != nil {
+		feeBaseMsat = int64(hop.hint.FeeBaseMsat)
+		feePpm = int64(hop.hint.FeeProportionalMillionths)
+	}
+
+	// Calculate the fee backwards, normally the fee is calculated on top
+	// of the outgoing amount. Now we compute the fee from the incoming amount.
+	return (((amountMsat - feeBaseMsat) * 1_000_000) / (1_000_000 + feePpm)) / 1_000_000
 }
 
 func (a *Service) sendPayment(paymentHash string, payReq *lnrpc.PayReq, sendRequest *routerrpc.SendPaymentRequest) (string, error) {
