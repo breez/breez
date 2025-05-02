@@ -822,6 +822,14 @@ func GetNostrKeyPair() (string, error) {
 	return nostrKeyPair, nil
 }
 
+func StoreNostrKey(privateKey string)error{
+	return getBreezApp().AccountService.StoreImportedKey(privateKey); 
+}
+
+func DeleteNostrKey()error{
+	return getBreezApp().AccountService.DeleteKey();
+}
+
 func ConnectDirectToLnurl(channel []byte) error {
 	var c data.LNURLChannel
 	if err := proto.Unmarshal(channel, &c); err != nil {
