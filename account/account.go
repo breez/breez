@@ -128,7 +128,14 @@ func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 
 	var maxAllowedReceive int64
 	for _, b := range channels.Channels {
-		thisChannelCanReceive := b.RemoteBalance - int64(b.RemoteConstraints.ChanReserveSat)
+		chanReserveSat := int64(b.RemoteConstraints.ChanReserveSat)
+		thisChannelCanReceive := b.RemoteBalance
+		if chanReserveSat < thisChannelCanReceive {
+			thisChannelCanReceive -= chanReserveSat
+		} else {
+			thisChannelCanReceive = 0
+		}
+
 		if !b.Initiator {
 			buffer := (b.CommitWeight + input.HTLCWeight) * 2 * b.FeePerKw / 1000
 			if buffer < thisChannelCanReceive {
@@ -140,6 +147,8 @@ func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 		if maxAllowedReceive < thisChannelCanReceive {
 			maxAllowedReceive = thisChannelCanReceive
 		}
+
+		a.log.Debugf("Channel %v can receive %v, reserve %v, max allowed receive %v", b.ChannelPoint, thisChannelCanReceive, chanReserveSat, maxAllowedReceive)
 	}
 	return maxAllowedReceive, nil
 }
