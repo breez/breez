@@ -854,6 +854,8 @@ func (a *Service) AddInvoice(invoiceRequest *data.AddInvoiceRequest) (paymentReq
 	amountMsat := invoice.Amount * 1000
 	smallAmountMsat := amountMsat
 	needOpenChannel := maxReceiveMsat < amountMsat
+	a.log.Debugf("AddInvoice: amountMsat=%v, maxReceiveMsat=%v, needOpenChannel=%v", amountMsat, maxReceiveMsat, needOpenChannel)
+
 	var routingHints []*lnrpc.RouteHint
 
 	// We need the LSP to open a channel.

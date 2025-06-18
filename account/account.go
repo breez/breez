@@ -147,6 +147,8 @@ func (a *Service) getMaxReceiveSingleChannel() (maxPay int64, err error) {
 		if maxAllowedReceive < thisChannelCanReceive {
 			maxAllowedReceive = thisChannelCanReceive
 		}
+
+		a.log.Debugf("Channel %v can receive %v, reserve %v, max allowed receive %v", b.ChannelPoint, thisChannelCanReceive, chanReserveSat, maxAllowedReceive)
 	}
 	return maxAllowedReceive, nil
 }
