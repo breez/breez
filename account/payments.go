@@ -1565,7 +1565,6 @@ func (a *Service) createPendingPayment(htlc *lnrpc.HTLC, currentBlockHeight uint
 		invoice, err := lnclient.LookupInvoice(context.Background(), &lnrpc.PaymentHash{RHash: htlc.HashLock})
 		if err != nil {
 			a.log.Errorf("createPendingPayment - failed to call LookupInvoice %v", err)
-			return nil, err
 		}
 		if invoice != nil {
 			paymentRequest = invoice.PaymentRequest
