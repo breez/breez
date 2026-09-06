@@ -6,3 +6,5 @@ docker/breez_node/
 docker/bob_node/
 docker/test
 .DS_Store
+
+.planning/debug/
